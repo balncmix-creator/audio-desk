@@ -1,27 +1,187 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#080808"><title>Audio Desk</title>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080808">
+<title>THE AUDIO DESK // 8-BIT NEWS</title>
 <style>
-:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#080808;color:#f4f4f4;font:14px ui-monospace,SFMono-Regular,Consolas,monospace}header{padding:22px 18px 14px;border-bottom:2px solid #eee;background:#050505}h1{font-size:25px;letter-spacing:-2px;margin:0}h1 span{color:#888}header p{font-size:10px;letter-spacing:2px;color:#aaa;margin:8px 0 0}.tabs{display:flex;position:sticky;top:0;background:#080808;border-bottom:1px solid #555;z-index:3}.tabs button{flex:1;padding:14px 4px;background:#080808;color:#888;border:0;border-right:1px solid #333;font: bold 11px monospace}.tabs button.active{background:#eee;color:#080808}.toolbar{padding:12px 16px;display:flex;gap:8px;align-items:center;border-bottom:1px dashed #555}.toolbar button{background:#111;color:#eee;border:1px solid #888;padding:8px 12px;font:11px monospace}.toolbar small{color:#888;margin-left:auto}.feed{padding:14px;max-width:760px;margin:auto}.story{border:1px solid #777;margin:0 0 14px;background:#101010}.story img{width:100%;max-height:210px;object-fit:cover;display:block;background:#222}.story .body{padding:13px}.meta{font-size:10px;color:#aaa;display:flex;gap:8px;flex-wrap:wrap;text-transform:uppercase}.story h2{font-size:17px;line-height:1.35;margin:9px 0}.story p{color:#bbb;line-height:1.5;font:12px Arial,sans-serif}.story a{color:#fff;text-decoration:none;border-bottom:1px solid #aaa;font-size:11px}.tag{border:1px solid #777;padding:2px 5px}.status{color:#999;padding:20px;text-align:center}.pixel{font-size:10px;letter-spacing:2px;color:#888}.error{color:#ff7777}
-</style></head><body>
-<header><h1>AUDIO<span>_</span>DESK</h1><p>/// AUDIO INDUSTRY INTELLIGENCE TERMINAL</p></header>
-<nav class="tabs"><button id="allTab" class="active" onclick="setTab('all')">ALL AUDIO</button><button id="reaperTab" onclick="setTab('reaper')">REAPER_</button></nav>
-<div class="toolbar"><button onclick="loadFeed()">↻ REFRESH</button><small id="status">INITIALIZING FEED...</small></div><main class="feed" id="feed"><div class="status">LOADING SIGNAL...</div></main>
+:root{color-scheme:dark;--bg:#080808;--panel:#101010;--ink:#f4f4f4;--muted:#929292;--line:#555;--soft:#1b1b1b;--pixel:#fff}
+*{box-sizing:border-box}html{background:var(--bg)}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 "Courier New",Courier,monospace;letter-spacing:.1px;-webkit-font-smoothing:none}
+header{background:#080808;border-bottom:2px solid var(--ink);padding:17px 16px 13px}.mast{max-width:900px;margin:auto}.top{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{font:900 23px/1.15 "Courier New",monospace;letter-spacing:-1.5px;text-transform:uppercase}.brand span{color:#080808;background:#f4f4f4;padding:1px 4px}.sub{font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:#aaa;margin-top:7px}.edition{font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:#aaa;margin-top:13px;border-top:1px dashed #555;padding-top:8px}
+button,input,select{font:inherit}button{background:#080808;border:2px solid #eee;color:#eee;border-radius:0;padding:8px 10px;cursor:pointer;box-shadow:3px 3px 0 #555;text-transform:uppercase;font-size:11px}button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #555}button.primary{background:#f4f4f4;border-color:#f4f4f4;color:#080808;font-weight:900}button:disabled{opacity:.5}
+main{max-width:900px;margin:auto;padding:16px 16px 55px}.tools{display:flex;gap:10px;align-items:center;margin-bottom:13px}.search{flex:1;min-width:0;background:#101010;border:2px solid #777;border-radius:0;padding:10px;color:#fff;outline:none;font-family:inherit}.search:focus{border-color:#fff}.toolbar{display:flex;gap:7px;overflow-x:auto;white-space:nowrap;border-bottom:2px solid #eee;margin:0 -16px 15px;padding:0 16px 10px;scrollbar-width:thin;scrollbar-color:#aaa #111}.toolbar button{border:1px solid #777;box-shadow:none;padding:7px 9px;margin:0;color:#bbb;font-size:10px}.toolbar button.active{background:#f4f4f4;color:#080808;border-color:#fff;font-weight:900}
+.stats{display:flex;justify-content:space-between;gap:10px;color:#aaa;font-size:10px;text-transform:uppercase;margin:10px 0 2px}.status{font-size:10px;color:#aaa;padding:8px 0 12px;border-bottom:1px dashed #666}#stories{counter-reset:article}.story{counter-increment:article;position:relative;padding:12px;margin:18px 0 22px;background:#0b0b0b;border:2px solid #888;box-shadow:4px 4px 0 #333}.story::before{content:"ARTICLE / " counter(article,decimal-leading-zero);display:block;color:#aaa;font-size:9px;letter-spacing:1px;padding:0 0 9px;margin:0 0 10px;border-bottom:1px dashed #666}.storymedia{display:block;width:100%;height:auto;max-height:360px;aspect-ratio:auto;object-fit:contain;object-position:center;background:#090909;border:2px solid #aaa;margin:0 0 12px;filter:none;-webkit-filter:none}.storygrid{display:block}.meta{display:flex;gap:7px;align-items:center;flex-wrap:wrap;color:#aaa;font-size:9px;letter-spacing:.6px;text-transform:uppercase}.dot{width:5px;height:5px;background:#eee;border-radius:0}.story h2{font:700 17px/1.35 "Courier New",monospace;letter-spacing:-.4px;margin:8px 0 7px;max-width:760px;text-transform:none}.story p{color:#bdbdbd;font-size:12px;line-height:1.5;margin:0 0 10px;max-width:760px}.storyfoot{display:flex;justify-content:space-between;align-items:center;gap:10px}.story a{color:#fff;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;font-size:10px;font-weight:900;letter-spacing:.35px;text-transform:uppercase}.save{padding:5px 7px;font-size:10px;border:1px solid #777;color:#eee;box-shadow:none}.empty{padding:30px 10px;text-align:left;color:#bbb;font:13px "Courier New",monospace;border-bottom:1px dashed #666}
+.panel{border:2px solid #777;padding:13px;margin:22px 0 0;background:#0d0d0d;box-shadow:4px 4px 0 #333}.panel h3{font:900 14px "Courier New",monospace;text-transform:uppercase;letter-spacing:.5px;margin:0 0 10px}.source{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed #555;font-size:12px}.source:last-child{border:0}.source small{display:block;color:#999;font-size:9px;text-transform:uppercase;letter-spacing:.7px}.source button{font-size:9px;padding:4px 7px}.note{font-size:10px;color:#999;line-height:1.5}.panel .search{display:block;width:100%;margin:8px 0;padding:10px}.foot{font-size:9px;color:#888;text-align:left;border-top:1px dashed #666;padding-top:14px;margin:28px 0 0;letter-spacing:.4px;text-transform:uppercase}
+@media(min-width:650px){header{padding-left:0;padding-right:0}.mast{padding:0 17px}main{padding-top:24px}.story{padding:19px 12px}.story h2{font-size:19px}}
+</style>
+</head>
+<body>
+<header><div class="mast"><div class="top"><div><div class="brand">THE <span>AUDIO</span> DESK_</div><div class="sub">[ AUDIO INDUSTRY NEWS TERMINAL ]</div></div><button class="primary" id="refresh">Refresh ↻</button></div><div class="edition">[ TOOLS ] [ TECHNOLOGY ] [ RECORDING ] [ POST ]</div></div></header>
+<main>
+<div class="tools"><input class="search" id="search" placeholder="Search the feed…" autocomplete="off"></div>
+<div class="toolbar" id="filters">
+<button class="active" data-filter="All">All</button><button data-filter="REAPER">REAPER / PRE-RELEASE</button><button data-filter="Post-production">Post-production</button><button data-filter="DAWs & plugins">DAWs & plugins</button><button data-filter="Sound design">Sound design</button><button data-filter="Hardware">Hardware</button><button data-filter="Production">Production</button><button data-filter="Saved">★ Saved</button>
+</div>
+<div class="stats"><span id="count">Waiting for feeds…</span><span id="updated">Not refreshed yet</span></div>
+<div id="status" class="status">Tap Refresh or pull down to fetch the latest headlines.</div>
+<section id="stories"></section>
+<section class="panel">
+<h3>Sources included</h3>
+<div id="sources"></div>
+<p class="note">Feeds are fetched through RSS2JSON. GitHub repository discovery uses GitHub's public API. Some forums and publishers restrict automated feeds, so this is a broad discovery feed rather than a guarantee of every post.</p>
+<p class="note">REAPER links: <a href="https://forum.cockos.com/forumdisplay.php?f=22" target="_blank" rel="noopener">Cockos Pre-Release forum</a> · <a href="https://github.com/ReaTeam/ReaScripts" target="_blank" rel="noopener">ReaTeam ReaScripts</a> · <a href="https://github.com/topics/reaper-scripts" target="_blank" rel="noopener">GitHub Reaper Scripts topic</a></p>
+</section>
+<section class="panel">
+<h3>Add an RSS feed</h3>
+<p class="note">Paste a publisher's RSS/Atom URL. It will be saved in this browser on this phone.</p>
+<input class="search" id="feedName" placeholder="Source name" style="margin-bottom:8px">
+<input class="search" id="feedUrl" placeholder="https://example.com/feed" style="margin-bottom:8px">
+<button class="primary" id="addFeed">＋ Add source</button>
+</section>
+<p class="foot">THE AUDIO DESK · Headlines remain the property of their publishers. Read full stories at source.</p>
+</main>
 <script>
-const sources={
-all:[
-['AUDIO NEWS','https://news.google.com/rss/search?q=audio+production+OR+music+technology+OR+audio+plugins&hl=en-US&gl=US&ceid=US:en'],
-['AUDIO SOFTWARE','https://news.google.com/rss/search?q=DAW+plugin+audio+software+release&hl=en-US&gl=US&ceid=US:en'],
-['SOUND DESIGN','https://news.google.com/rss/search?q=film+sound+design+audio+post+production&hl=en-US&gl=US&ceid=US:en']
-],
-reaper:[
-['COCKOS PRE-RELEASE','https://forum.cockos.com/external.php?type=RSS2&forumids=22'],
-['REAPER SCRIPTS','https://news.google.com/rss/search?q=REAPER+ReaScript+scripts+site%3Agithub.com+OR+site%3Aforum.cockos.com&hl=en-US&gl=US&ceid=US:en'],
-['REAPER GITHUB','https://news.google.com/rss/search?q=REAPER+scripts+GitHub+ReaPack&hl=en-US&gl=US&ceid=US:en']
-]};
-let tab='all';function setTab(t){tab=t;document.getElementById('allTab').classList.toggle('active',t==='all');document.getElementById('reaperTab').classList.toggle('active',t==='reaper');loadFeed()}
-function clean(s){let d=document.createElement('div');d.innerHTML=s||'';return d.textContent||d.innerText||''}
-function date(s){let d=new Date(s);return isNaN(d)?'RECENT':d.toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'}).toUpperCase()}
-async function get(url){let r=await fetch('https://api.rss2json.com/v1/api.json?rss_url='+encodeURIComponent(url));if(!r.ok)throw Error('Feed unavailable');return r.json()}
-async function loadFeed(){let el=document.getElementById('feed'),st=document.getElementById('status');el.innerHTML='<div class="status">SCANNING FREQUENCIES...</div>';st.textContent='SYNCING';let items=[];let list=sources[tab];let results=await Promise.allSettled(list.map(async s=>({source:s[0],data:await get(s[1])})));results.forEach(x=>{if(x.status==='fulfilled'&&x.value.data.items)x.value.data.items.forEach(i=>items.push({...i,source:x.value.source}))});items.sort((a,b)=>new Date(b.pubDate)-new Date(a.pubDate));let seen=new Set();items=items.filter(i=>{let k=i.link||i.title;if(seen.has(k))return false;seen.add(k);return true}).slice(0,45);if(!items.length){el.innerHTML='<div class="status">NO SIGNAL. CHECK CONNECTION AND RETRY.</div>';st.textContent='OFFLINE / EMPTY';return}st.textContent=items.length+' STORIES';el.innerHTML=items.map((i,n)=>{let img=i.thumbnail||((i.enclosure||{}).link)||'';let desc=clean(i.description).slice(0,260);return '<article class="story">'+(img?'<img loading="lazy" src="'+img.replace(/"/g,'&quot;')+'" onerror="this.style.display=\'none\'">':'')+'<div class="body"><div class="meta"><span class="tag">'+(i.source||'AUDIO')+'</span><span>'+date(i.pubDate)+'</span></div><h2>'+(n+1).toString().padStart(2,'0')+' / '+clean(i.title)+'</h2><p>'+desc+'</p><a href="'+i.link+'" target="_blank" rel="noopener">OPEN STORY ↗</a></div></article>'}).join('')}
-loadFeed();
-</script></body></html>
+const defaults = [
+{name:"KVR Audio — Top Stories",url:"https://www.kvraudio.com/rss/kvr_news_top.rss",cat:"DAWs & plugins"},
+{name:"KVR Audio — New Plugins",url:"https://www.kvraudio.com/rss/kvr_latestindb.rss",cat:"DAWs & plugins"},
+{name:"Sound On Sound",url:"https://www.soundonsound.com/latest_news.xml",cat:"Production"},
+{name:"The REAPER Blog",url:"https://reaper.blog/feed/",cat:"Post-production"},
+{name:"The Pro Audio Files",url:"https://theproaudiofiles.com/feed/",cat:"Production"},
+{name:"Attack Magazine",url:"https://attackmagazine.com/feed/",cat:"Production"},
+{name:"audioXpress",url:"https://audioxpress.com/rss",cat:"Hardware"},
+{name:"SonicScoop",url:"https://sonicscoop.com/feed/",cat:"Production"},
+{name:"Pro Sound Effects",url:"https://blog.prosoundeffects.com/rss.xml",cat:"Sound design"},
+{name:"SoundGirls",url:"https://soundgirls.org/feed/",cat:"Post-production"},
+{name:"Production Expert — Post Production",url:"https://www.production-expert.com/production-expert-1?format=rss",cat:"Post-production"},
+{name:"Google News — Audio post & film sound",url:"https://news.google.com/rss/search?q=audio+post+production+OR+film+sound+OR+dialogue+editing&hl=en-US&gl=US&ceid=US:en",cat:"Post-production"},
+{name:"Google News — AI audio tools",url:"https://news.google.com/rss/search?q=AI+audio+tools+OR+audio+plugin+OR+audio+software&hl=en-US&gl=US&ceid=US:en",cat:"Sound design"},
+{name:"Cockos — REAPER Pre-Release forum",url:"https://forum.cockos.com/external.php?type=RSS2&forumids=22",cat:"REAPER"},
+{name:"Cockos forum — REAPER scripts & development",url:"https://news.google.com/rss/search?q=site%3Aforum.cockos.com+REAPER+(script+OR+ReaScript+OR+pre-release)&hl=en-US&gl=US&ceid=US:en",cat:"REAPER"},
+{name:"GitHub — ReaTeam ReaScripts commits",url:"https://github.com/ReaTeam/ReaScripts/commits/master.atom",cat:"REAPER"},
+{name:"GitHub — X-Raym ReaScripts commits",url:"https://github.com/X-Raym/REAPER-ReaScripts/commits/master.atom",cat:"REAPER"},
+{name:"GitHub — Reapertips ReaScripts commits",url:"https://github.com/Reapertips/ReaScripts/commits/main.atom",cat:"REAPER"},
+{name:"GitHub — BirdBird ReaScript Testing commits",url:"https://github.com/Bird-Bird/ReaScript_Testing/commits/main.atom",cat:"REAPER"},
+{name:"GitHub — MPL ReaScripts commits",url:"https://github.com/MichaelPilyavskiy/ReaScripts/commits/master.atom",cat:"REAPER"},
+{name:"Google News — new REAPER scripts on GitHub",url:"https://news.google.com/rss/search?q=(REAPER+OR+ReaScript)+GitHub+(script+OR+ReaPack)&hl=en-US&gl=US&ceid=US:en",cat:"REAPER"}
+];
+const savedFeeds=JSON.parse(localStorage.getItem("ar_feeds")||"null")||[];
+let feeds=[...defaults,...savedFeeds.filter(saved=>!defaults.some(d=>d.url===saved.url))];
+let items=[],active="All",saved=JSON.parse(localStorage.getItem("ar_saved")||"[]");
+const $=id=>document.getElementById(id);
+const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function classify(item,feed){
+ if(feed.cat==="REAPER")return "REAPER";
+ const t=(item.title+" "+(item.description||"")).toLowerCase();
+ if(/dialogue|film sound|post.?production|reaper|pro tools|nuendo|atmos|surround|broadcast|foley|adr|sound editorial/.test(t))return "Post-production";
+ if(/foley|sound effect|field record|ambisonic|spatial audio|sound design|ai audio|stem separation/.test(t))return "Sound design";
+ if(/microphone|monitor|headphone|interface|preamp|converter|hardware|console|mixer|speaker/.test(t))return "Hardware";
+ if(/plugin|vst|au\b|aax|clap|daw|synth|sampler|audio software|firmware|update|release/.test(t))return "DAWs & plugins";
+ return feed.cat||"Production";
+}
+function cleanDesc(s){let d=document.createElement("div");d.innerHTML=s||"";return (d.textContent||"").replace(/\s+/g," ").trim().slice(0,210)}
+function safeImage(raw){if(!raw)return "";try{let u=new URL(raw,location.href);return (u.protocol==="https:"||u.protocol==="http:")?u.href:""}catch{return ""}}
+function extractImage(it){
+ // Prefer the publisher's full image embedded in article content over a small RSS thumbnail.
+ const candidates=[];
+ const doc=document.createElement("div");
+ doc.innerHTML=[it.content,it.content_encoded,it.description].filter(Boolean).join(" ");
+ for(const img of doc.querySelectorAll("img")){
+  const srcset=(img.getAttribute("srcset")||img.getAttribute("data-srcset")||"")
+    .split(",").map(x=>x.trim().split(/\\s+/)[0]).filter(Boolean);
+  const src=img.getAttribute("data-src")||img.getAttribute("src")||img.getAttribute("data-original");
+  candidates.push(...srcset);
+  if(src)candidates.push(src);
+ }
+ // RSS media/enclosure fields can contain a larger original image.
+ const media=it.enclosure?.link||it.enclosure?.url||it.media?.url||it.image||"";
+ if(media)candidates.push(media);
+ if(it.thumbnail)candidates.push(it.thumbnail);
+ for(const candidate of candidates){
+  const u=safeImage(candidate);
+  if(u)return u;
+ }
+ return "";
+}
+function render(){
+ let q=$("search").value.toLowerCase().trim();
+ let list=items.filter(x=>(active==="All"|| (active==="Saved"?saved.includes(x.key):x.cat===active)) && (!q||(x.title+" "+x.source+" "+x.desc).toLowerCase().includes(q)));
+ list.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
+ $("count").textContent=`${list.length} headlines · ${items.length} collected`;
+ $("stories").innerHTML=list.length?list.map(x=>`<article class="story">${x.image?`<img class="storymedia" src="${esc(x.image)}" alt="Image for ${esc(x.title)}" loading="lazy" onerror="this.remove()">`:""}<div class="meta"><span>${esc(x.source)}</span><span class="dot"></span><span>${esc(x.cat)}</span><span class="dot"></span><span>${x.date?new Date(x.date).toLocaleString():"Date unavailable"}</span></div><h2>${esc(x.title)}</h2><p>${esc(x.desc)}</p><div class="storyfoot"><a href="${esc(x.link)}" target="_blank" rel="noopener">Read at source ↗</a><button class="save" data-save="${esc(x.key)}">${saved.includes(x.key)?"★ Saved":"☆ Save"}</button></div></article>`).join(""):`<div class="empty">No headlines match this view. Try another category or refresh the feeds.</div>`;
+ document.querySelectorAll("[data-save]").forEach(b=>b.onclick=()=>{let k=b.dataset.save;saved=saved.includes(k)?saved.filter(v=>v!==k):[...saved,k];localStorage.setItem("ar_saved",JSON.stringify(saved));render()});
+}
+function renderSources(){
+ $("sources").innerHTML=feeds.map((f,i)=>`<div class="source"><div>${esc(f.name)}<small>${esc(f.cat)}</small></div><button class="save" data-remove="${i}">Remove</button></div>`).join("");
+ document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{feeds.splice(+b.dataset.remove,1);localStorage.setItem("ar_feeds",JSON.stringify(feeds));renderSources();loadFeeds()});
+}
+async function fetchFeed(feed){
+ const endpoint="https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(feed.url);
+ const r=await fetch(endpoint); if(!r.ok)throw Error("HTTP "+r.status);
+ const j=await r.json(); if(j.status!=="ok")throw Error(j.message||"Feed unavailable");
+ return (j.items||[]).map(it=>{
+  const link=it.link||it.guid||"#";
+  const title=it.title||"Untitled";
+  return {title,link,date:it.pubDate||"",desc:cleanDesc(it.description||it.content),image:extractImage(it),source:feed.name,cat:classify({title,description:it.description||it.content},feed),key:link};
+ });
+}
+async function fetchGithubReaperRepos(){
+ const queries=["reaper reascript","reaper-scripts","reaper reapack"];
+ const found=[];
+ for(const q of queries){
+  try{
+   const url="https://api.github.com/search/repositories?q="+encodeURIComponent(q)+"&sort=updated&order=desc&per_page=18";
+   const r=await fetch(url,{headers:{Accept:"application/vnd.github+json"}});
+   if(!r.ok)throw Error("GitHub API "+r.status);
+   const j=await r.json();
+   for(const repo of (j.items||[])){
+    const link=repo.html_url;
+    found.push({
+     title:repo.full_name+" — "+(repo.description||"REAPER script repository"),
+     link,date:repo.pushed_at||repo.updated_at||"",
+     desc:(repo.description||"REAPER-related repository")+
+       " · "+(repo.language||"Language not specified")+
+       " · ★ "+(repo.stargazers_count||0)+
+       " · Updated "+new Date(repo.pushed_at||repo.updated_at).toLocaleDateString(),
+     image:"",source:"GitHub repository discovery",cat:"REAPER",key:link
+    });
+   }
+  }catch(e){console.warn("GitHub search failed",q,e)}
+ }
+ const unique=new Map();
+ found.forEach(x=>{if(!unique.has(x.key))unique.set(x.key,x)});
+ return [...unique.values()];
+}
+async function loadFeeds(){
+ $("refresh").disabled=true;$("status").textContent=`Fetching ${feeds.length} sources…`;
+ let ok=0,failed=[];
+ const batches=[];for(let i=0;i<feeds.length;i+=4)batches.push(feeds.slice(i,i+4));
+ let all=[];
+ for(const batch of batches){
+  const results=await Promise.all(batch.map(async f=>{try{let x=await fetchFeed(f);ok++;return x}catch(e){failed.push(f.name);return []}}));
+  all.push(...results.flat());
+ }
+ let githubRepos=[];
+ try{githubRepos=await fetchGithubReaperRepos()}catch(e){console.warn(e)}
+ all.push(...githubRepos);
+ const seen=new Set();items=all.filter(x=>{if(seen.has(x.key))return false;seen.add(x.key);return true});
+ $("status").textContent=`Loaded ${ok}/${feeds.length} RSS sources and ${githubRepos.length} GitHub repositories.`+(failed.length?` Some feeds failed: ${failed.join(", ")}.`:"");
+ $("updated").textContent="Updated "+new Date().toLocaleTimeString();
+ $("refresh").disabled=false;render();
+ if(window.AudioDesk && typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();
+}
+document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{active=b.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===b));render()});
+$("search").addEventListener("input",render);
+$("refresh").onclick=loadFeeds;
+$("addFeed").onclick=()=>{let name=$("feedName").value.trim(),url=$("feedUrl").value.trim();if(!name||!/^https?:\/\//i.test(url)){alert("Enter a source name and a valid http(s) RSS URL.");return}feeds.push({name,url,cat:"Production"});localStorage.setItem("ar_feeds",JSON.stringify(feeds));$("feedName").value="";$("feedUrl").value="";renderSources();loadFeeds()};
+renderSources();loadFeeds();
+// Route all publisher/source links through the native in-app browser when running in Android.
+document.addEventListener("click",e=>{
+ const a=e.target.closest("a[href]"); if(!a)return;
+ const url=a.href; if(!/^https?:/i.test(url))return;
+ if(window.AudioDesk && typeof window.AudioDesk.openArticle==="function"){
+  e.preventDefault(); window.AudioDesk.openArticle(url);
+ }
+});
+</script>
+</body></html>
