@@ -20,6 +20,7 @@ android {
     kotlinOptions { jvmTarget = "17" }
 }
 dependencies {
-    implementation("androidx.core:core-ktx:1.15.0")\n    implementation("androidx.webkit:webkit:1.12.1")
+    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.webkit:webkit:1.12.1")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 }
