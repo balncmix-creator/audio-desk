@@ -9,10 +9,21 @@ android {
         applicationId = "com.balnc.audioddesk"
         minSdk = 23
         targetSdk = 35
-        versionCode = 8
-        versionName = "1.7"
+        versionCode = 9
+        versionName = "1.8"
     }
-    buildTypes { release { isMinifyEnabled = false } }
+    signingConfigs {
+        create("stableDebug") {
+            storeFile = file("audio-desk-debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+    buildTypes {
+        debug { signingConfig = signingConfigs.getByName("stableDebug") }
+        release { isMinifyEnabled = false }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
