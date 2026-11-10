@@ -55,15 +55,22 @@ header,main{position:relative;z-index:1}
 <main>
 <div class="tools"><input class="search" id="search" placeholder="Search the feed…" autocomplete="off"></div>
 <div class="toolbar" id="filters">
-<button class="active" data-filter="All">All</button><button data-filter="REAPER">REAPER / PRE-RELEASE</button><button data-filter="Post-production">Post-production</button><button data-filter="DAWs & plugins">DAWs & plugins</button><button data-filter="Sound design">Sound design</button><button data-filter="Hardware">Hardware</button><button data-filter="Production">Production</button><button data-filter="Videos">▶ VIDEOS</button><button data-filter="Saved">★ Saved</button>
+<button class="active" data-filter="All">All</button><button data-filter="REAPER">REAPER / PRE-RELEASE</button><button data-filter="Post-production">Post-production</button><button data-filter="DAWs & plugins">DAWs & plugins</button><button data-filter="Plugin releases">PLUGIN RELEASES</button><button data-filter="Sound design">Sound design</button><button data-filter="Hardware">Hardware</button><button data-filter="Production">Production</button><button data-filter="Videos">▶ VIDEOS</button><button data-filter="Saved">★ Saved</button>
 </div>
 <div class="stats"><span id="count">Waiting for feeds…</span><span id="updated">Not refreshed yet</span></div>
 <div id="status" class="status">Tap Refresh or pull down to fetch the latest headlines.</div>
 <section id="stories"></section>
 <section class="panel">
+<h3>Global developer directory</h3>
+<p class="note">Browse plugin makers worldwide. These are discovery indexes, not exhaustive official registries. Search the directory for a developer when you discover a new name.</p>
+<div class="source"><div>PopOff — 1,100+ developer brands<small>Large searchable developer index</small></div><a href="https://popoffmusic.com/developers" target="_blank" rel="noopener">OPEN ↗</a></div>
+<div class="source"><div>plugins.audio — Brands & developers<small>A–Z plugin developer catalogue</small></div><a href="https://plugins.audio/brands" target="_blank" rel="noopener">OPEN ↗</a></div>
+<div class="source"><div>KVR Audio — Developer database<small>Developer profiles, products and updates</small></div><a href="https://www.kvraudio.com/developers" target="_blank" rel="noopener">OPEN ↗</a></div>
+</section>
+<section class="panel">
 <h3>Sources included</h3>
 <div id="sources"></div>
-<p class="note">The Videos tab collects recent YouTube-related results via a live video-focused RSS search. Feeds are fetched through RSS2JSON. GitHub repository discovery uses GitHub's public API. Some forums and publishers restrict automated feeds, so this is a broad discovery feed rather than a guarantee of every post.</p>
+<p class="note">Plugin releases uses multiple global news searches in addition to KVR. It cannot guarantee every independent developer announcement, especially social-only posts. The Videos tab collects recent YouTube-related results via a live video-focused RSS search. Feeds are fetched through RSS2JSON. GitHub repository discovery uses GitHub's public API. Some forums and publishers restrict automated feeds, so this is a broad discovery feed rather than a guarantee of every post.</p>
 <p class="note">REAPER links: <a href="https://forum.cockos.com/forumdisplay.php?f=22" target="_blank" rel="noopener">Cockos Pre-Release forum</a> · <a href="https://github.com/ReaTeam/ReaScripts" target="_blank" rel="noopener">ReaTeam ReaScripts</a> · <a href="https://github.com/topics/reaper-scripts" target="_blank" rel="noopener">GitHub Reaper Scripts topic</a></p>
 </section>
 <section class="panel">
@@ -79,6 +86,11 @@ header,main{position:relative;z-index:1}
 const defaults = [
 {name:"KVR Audio — Top Stories",url:"https://www.kvraudio.com/rss/kvr_news_top.rss",cat:"DAWs & plugins"},
 {name:"KVR Audio — New Plugins",url:"https://www.kvraudio.com/rss/kvr_latestindb.rss",cat:"DAWs & plugins"},
+{name:"Global — New audio plugin releases",url:"https://news.google.com/rss/search?q=(new+audio+plugin+OR+VST+plugin+released+OR+AU+plugin+released+OR+AAX+plugin+released+OR+CLAP+plugin+released)&hl=en-US&gl=US&ceid=US:en",cat:"Plugin releases"},
+{name:"Global — Plugin developer announcements",url:"https://news.google.com/rss/search?q=(audio+plugin+developer+OR+plugin+manufacturer)+(launch+OR+release+OR+announces+OR+update)&hl=en-US&gl=US&ceid=US:en",cat:"Plugin releases"},
+{name:"Global — Audio software product launches",url:"https://news.google.com/rss/search?q=(audio+software+OR+sound+design+plugin+OR+mixing+plugin)+(new+OR+launches+OR+released)&hl=en-US&gl=US&ceid=US:en",cat:"Plugin releases"},
+{name:"HAL Audio — Company news",url:"https://news.google.com/rss/search?q=%22HAL+Audio%22+(plugin+OR+software+OR+release+OR+launch)&hl=en-US&gl=US&ceid=US:en",cat:"Plugin releases"},
+{name:"Audiofanzine — Plugin and software news",url:"https://news.google.com/rss/search?q=site%3Aaudiofanzine.com+(plugin+OR+plug-in)+news&hl=en-US&gl=US&ceid=US:en",cat:"Plugin releases"},
 {name:"Sound On Sound",url:"https://www.soundonsound.com/latest_news.xml",cat:"Production"},
 {name:"The REAPER Blog",url:"https://reaper.blog/feed/",cat:"Post-production"},
 {name:"The Pro Audio Files",url:"https://theproaudiofiles.com/feed/",cat:"Production"},
@@ -107,6 +119,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function classify(item,feed){
  if(feed.cat==="REAPER")return "REAPER";
+ if(feed.cat==="Plugin releases")return "Plugin releases";
  if(feed.cat==="Videos")return "Videos";
  const t=(item.title+" "+(item.description||"")).toLowerCase();
  if(/dialogue|film sound|post.?production|reaper|pro tools|nuendo|atmos|surround|broadcast|foley|adr|sound editorial/.test(t))return "Post-production";
