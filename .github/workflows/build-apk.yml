@@ -17,13 +17,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Restore stable APK signing key
-        env:
-          AUDIO_DESK_KEYSTORE_BASE64: ${{ secrets.AUDIO_DESK_KEYSTORE_BASE64 }}
-        run: |
-          test -n "$AUDIO_DESK_KEYSTORE_BASE64" || { echo "Missing AUDIO_DESK_KEYSTORE_BASE64 repository secret"; exit 1; }
-          echo "$AUDIO_DESK_KEYSTORE_BASE64" | base64 --decode > app/audio-desk-debug.keystore
-          test -s app/audio-desk-debug.keystore
+      - name: Verify stable signing key
+        run: test -s app/audio-desk-debug.keystore
       - name: Build APK
         run: gradle :app:assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
