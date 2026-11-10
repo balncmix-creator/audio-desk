@@ -34,6 +34,17 @@ header,main{position:relative;z-index:1}
 .storytitle:focus,.storytitle:hover{text-decoration:underline!important;text-decoration-style:dotted!important;text-underline-offset:5px}
 @media(prefers-reduced-motion:reduce){#arcade-bg *{animation:none!important}}
 @media(min-width:650px){header{padding-left:0;padding-right:0}.mast{padding:0 17px}main{padding-top:24px}.story{padding:19px 12px}.story h2{font-size:19px}}
+
+/* One-hand navigation dock: search and categories stay reachable at the bottom. */
+main{padding-bottom:190px}
+.bottom-dock{position:fixed;left:0;right:0;bottom:0;z-index:5;background:rgba(8,8,8,.97);border-top:2px solid #f4f4f4;padding:9px 12px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -5px 18px rgba(0,0,0,.65);backdrop-filter:blur(8px)}
+.dock-search{display:flex;align-items:center;gap:8px;max-width:900px;margin:0 auto 8px;border:2px solid #888;background:#101010;padding:0 9px}
+.dock-search-icon{font:20px/1 monospace;color:#eee}
+.dock-search .search{border:0;box-shadow:none;margin:0;padding:9px 2px;background:transparent;min-height:38px}
+.dock-search .search:focus{border:0}
+.bottom-dock .toolbar{max-width:900px;margin:0 auto;border:0;padding:0 0 3px;gap:6px}
+.bottom-dock .toolbar button{min-height:36px;padding:7px 10px;font-size:9px}
+@media(min-width:650px){.bottom-dock{padding-left:max(12px,calc((100vw - 900px)/2));padding-right:max(12px,calc((100vw - 900px)/2))}}
 </style>
 </head>
 <body>
@@ -53,10 +64,6 @@ header,main{position:relative;z-index:1}
 </div>
 <header><div class="mast"><div class="top"><div><div class="brand">THE <span>AUDIO</span> DESK_</div><div class="sub">[ AUDIO INDUSTRY NEWS TERMINAL ]</div></div><button class="primary" id="refresh">Refresh ↻</button></div><div class="edition">[ TOOLS ] [ TECHNOLOGY ] [ RECORDING ] [ POST ]</div></div></header>
 <main>
-<div class="tools"><input class="search" id="search" placeholder="Search the feed…" autocomplete="off"></div>
-<div class="toolbar" id="filters">
-<button class="active" data-filter="All">All</button><button data-filter="REAPER">REAPER / PRE-RELEASE</button><button data-filter="Post-production">Post-production</button><button data-filter="Post Production">POST PRODUCTION RADAR</button><button data-filter="DAWs & plugins">DAWs & plugins</button><button data-filter="Plugin releases">PLUGIN RELEASES</button><button data-filter="Sound design">Sound design</button><button data-filter="Hardware">Hardware</button><button data-filter="Production">Production</button><button data-filter="Videos">▶ VIDEOS</button><button data-filter="Saved">★ Saved</button>
-</div>
 <div class="stats"><span id="count">Waiting for feeds…</span><span id="updated">Not refreshed yet</span></div>
 <div id="status" class="status">Tap Refresh or pull down to fetch the latest headlines.</div>
 <section id="stories"></section>
@@ -82,6 +89,12 @@ header,main{position:relative;z-index:1}
 </section>
 <p class="foot">THE AUDIO DESK · Headlines remain the property of their publishers. Read full stories at source.</p>
 </main>
+<nav class="bottom-dock" aria-label="Feed navigation">
+  <div class="dock-search"><span class="dock-search-icon">⌕</span><input class="search" id="search" placeholder="Search all audio news…" autocomplete="off"></div>
+  <div class="toolbar" id="filters">
+    <button class="active" data-filter="All">All</button><button data-filter="REAPER">REAPER</button><button data-filter="Post-production">Post-production</button><button data-filter="Post Production">POST PRODUCTION</button><button data-filter="DAWs & plugins">DAWs & plugins</button><button data-filter="Plugin releases">PLUGIN RELEASES</button><button data-filter="Sound design">Sound design</button><button data-filter="Hardware">Hardware</button><button data-filter="Production">Production</button><button data-filter="Videos">▶ VIDEOS</button><button data-filter="Saved">★ Saved</button>
+  </div>
+</nav>
 <script>
 const defaults = [
 {name:"KVR Audio — Top Stories",url:"https://www.kvraudio.com/rss/kvr_news_top.rss",cat:"DAWs & plugins"},
