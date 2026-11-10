@@ -72,7 +72,8 @@ let items=JSON.parse(localStorage.getItem("ar_items")||"[]"),active="All",saved=
 const $=id=>document.getElementById(id);
 const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function classify(item,feed){
- if(feed.cat==="REAPER")return "REAPER";\n if(feed.cat==="Videos")return "Videos";
+ if(feed.cat==="REAPER")return "REAPER";
+ if(feed.cat==="Videos")return "Videos";
  const t=(item.title+" "+(item.description||"")).toLowerCase();
  if(/dialogue|film sound|post.?production|reaper|pro tools|nuendo|atmos|surround|broadcast|foley|adr|sound editorial/.test(t))return "Post-production";
  if(/foley|sound effect|field record|ambisonic|spatial audio|sound design|ai audio|stem separation/.test(t))return "Sound design";
@@ -156,17 +157,14 @@ async function fetchGithubReaperRepos(){
 async function loadFeeds(){
  $("refresh").disabled=true;$("status").textContent=`Fetching ${feeds.length} sources…`;
  let ok=0,failed=[];
- const batches=[];for(let i=0;i<feeds.length;i+=4)batches.push(feeds.slice(i,i+4));
- let all=[];
- for(const batch of batches){
-  const results=await Promise.all(batch.map(async f=>{try{let x=await fetchFeed(f);ok++;return x}catch(e){failed.push(f.name);return []}}));
-  all.push(...results.flat());
- }
+ const results=await Promise.all(feeds.map(async f=>{try{let x=await fetchFeed(f);ok++;return x}catch(e){failed.push(f.name);return []}}));
+ let all=results.flat();
  let githubRepos=[];
  try{githubRepos=await fetchGithubReaperRepos()}catch(e){console.warn(e)}
  all.push(...githubRepos);
  const seen=new Set();items=all.filter(x=>{if(seen.has(x.key))return false;seen.add(x.key);return true});
- $("status").textContent=`Loaded ${ok}/${feeds.length} RSS sources and ${githubRepos.length} GitHub repositories.`+(failed.length?` Some feeds failed: ${failed.join(", ")}.`:"");\n localStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)));
+ $("status").textContent=`Loaded ${ok}/${feeds.length} RSS sources and ${githubRepos.length} GitHub repositories.`+(failed.length?` Some feeds failed: ${failed.join(", ")}.`:"");
+ localStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)));
  $("updated").textContent="Updated "+new Date().toLocaleTimeString();
  $("refresh").disabled=false;render();
  if(window.AudioDesk && typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();
@@ -175,7 +173,9 @@ document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{active=b.da
 $("search").addEventListener("input",render);
 $("refresh").onclick=loadFeeds;
 $("addFeed").onclick=()=>{let name=$("feedName").value.trim(),url=$("feedUrl").value.trim();if(!name||!/^https?:\/\//i.test(url)){alert("Enter a source name and a valid http(s) RSS URL.");return}feeds.push({name,url,cat:"Production"});localStorage.setItem("ar_feeds",JSON.stringify(feeds));$("feedName").value="";$("feedUrl").value="";renderSources();loadFeeds()};
-renderSources();\nif(items.length){render();$("status").textContent="Showing saved headlines instantly · checking for updates…";$("updated").textContent="Cached feed";}\nloadFeeds();
+renderSources();
+if(items.length){render();$("status").textContent="Showing saved headlines instantly · checking for updates…";$("updated").textContent="Cached feed";}
+loadFeeds();
 // Route all publisher/source links through the native in-app browser when running in Android.
 document.addEventListener("click",e=>{
  const a=e.target.closest("a[href]"); if(!a)return;
