@@ -21,7 +21,7 @@ main{max-width:900px;margin:auto;padding:16px 16px 55px}.tools{display:flex;gap:
 <main>
 <div class="tools"><input class="search" id="search" placeholder="Search the feed…" autocomplete="off"></div>
 <div class="toolbar" id="filters">
-<button class="active" data-filter="All">All</button><button data-filter="REAPER">REAPER / PRE-RELEASE</button><button data-filter="Post-production">Post-production</button><button data-filter="DAWs & plugins">DAWs & plugins</button><button data-filter="Sound design">Sound design</button><button data-filter="Hardware">Hardware</button><button data-filter="Production">Production</button><button data-filter="Saved">★ Saved</button>
+<button class="active" data-filter="All">All</button><button data-filter="REAPER">REAPER / PRE-RELEASE</button><button data-filter="Post-production">Post-production</button><button data-filter="DAWs & plugins">DAWs & plugins</button><button data-filter="Sound design">Sound design</button><button data-filter="Hardware">Hardware</button><button data-filter="Production">Production</button><button data-filter="Videos">▶ VIDEOS</button><button data-filter="Saved">★ Saved</button>
 </div>
 <div class="stats"><span id="count">Waiting for feeds…</span><span id="updated">Not refreshed yet</span></div>
 <div id="status" class="status">Tap Refresh or pull down to fetch the latest headlines.</div>
@@ -29,7 +29,7 @@ main{max-width:900px;margin:auto;padding:16px 16px 55px}.tools{display:flex;gap:
 <section class="panel">
 <h3>Sources included</h3>
 <div id="sources"></div>
-<p class="note">Feeds are fetched through RSS2JSON. GitHub repository discovery uses GitHub's public API. Some forums and publishers restrict automated feeds, so this is a broad discovery feed rather than a guarantee of every post.</p>
+<p class="note">The Videos tab collects recent YouTube-related results via a live video-focused RSS search. Feeds are fetched through RSS2JSON. GitHub repository discovery uses GitHub's public API. Some forums and publishers restrict automated feeds, so this is a broad discovery feed rather than a guarantee of every post.</p>
 <p class="note">REAPER links: <a href="https://forum.cockos.com/forumdisplay.php?f=22" target="_blank" rel="noopener">Cockos Pre-Release forum</a> · <a href="https://github.com/ReaTeam/ReaScripts" target="_blank" rel="noopener">ReaTeam ReaScripts</a> · <a href="https://github.com/topics/reaper-scripts" target="_blank" rel="noopener">GitHub Reaper Scripts topic</a></p>
 </section>
 <section class="panel">
@@ -56,6 +56,7 @@ const defaults = [
 {name:"Production Expert — Post Production",url:"https://www.production-expert.com/production-expert-1?format=rss",cat:"Post-production"},
 {name:"Google News — Audio post & film sound",url:"https://news.google.com/rss/search?q=audio+post+production+OR+film+sound+OR+dialogue+editing&hl=en-US&gl=US&ceid=US:en",cat:"Post-production"},
 {name:"Google News — AI audio tools",url:"https://news.google.com/rss/search?q=AI+audio+tools+OR+audio+plugin+OR+audio+software&hl=en-US&gl=US&ceid=US:en",cat:"Sound design"},
+{name:"YouTube — Latest audio plugins, DAWs & sound design videos",url:"https://news.google.com/rss/search?q=site%3Ayoutube.com%2Fwatch+(audio+plugin+OR+VST+OR+AU+plugin+OR+DAW+OR+REAPER+OR+Pro+Tools+OR+Nuendo+OR+sound+design+OR+mixing+OR+mastering)&hl=en-US&gl=US&ceid=US:en",cat:"Videos"},
 {name:"Cockos — REAPER Pre-Release forum",url:"https://forum.cockos.com/external.php?type=RSS2&forumids=22",cat:"REAPER"},
 {name:"Cockos forum — REAPER scripts & development",url:"https://news.google.com/rss/search?q=site%3Aforum.cockos.com+REAPER+(script+OR+ReaScript+OR+pre-release)&hl=en-US&gl=US&ceid=US:en",cat:"REAPER"},
 {name:"GitHub — ReaTeam ReaScripts commits",url:"https://github.com/ReaTeam/ReaScripts/commits/master.atom",cat:"REAPER"},
@@ -67,11 +68,11 @@ const defaults = [
 ];
 const savedFeeds=JSON.parse(localStorage.getItem("ar_feeds")||"null")||[];
 let feeds=[...defaults,...savedFeeds.filter(saved=>!defaults.some(d=>d.url===saved.url))];
-let items=[],active="All",saved=JSON.parse(localStorage.getItem("ar_saved")||"[]");
+let items=JSON.parse(localStorage.getItem("ar_items")||"[]"),active="All",saved=JSON.parse(localStorage.getItem("ar_saved")||"[]");
 const $=id=>document.getElementById(id);
 const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function classify(item,feed){
- if(feed.cat==="REAPER")return "REAPER";
+ if(feed.cat==="REAPER")return "REAPER";\n if(feed.cat==="Videos")return "Videos";
  const t=(item.title+" "+(item.description||"")).toLowerCase();
  if(/dialogue|film sound|post.?production|reaper|pro tools|nuendo|atmos|surround|broadcast|foley|adr|sound editorial/.test(t))return "Post-production";
  if(/foley|sound effect|field record|ambisonic|spatial audio|sound design|ai audio|stem separation/.test(t))return "Sound design";
@@ -165,7 +166,7 @@ async function loadFeeds(){
  try{githubRepos=await fetchGithubReaperRepos()}catch(e){console.warn(e)}
  all.push(...githubRepos);
  const seen=new Set();items=all.filter(x=>{if(seen.has(x.key))return false;seen.add(x.key);return true});
- $("status").textContent=`Loaded ${ok}/${feeds.length} RSS sources and ${githubRepos.length} GitHub repositories.`+(failed.length?` Some feeds failed: ${failed.join(", ")}.`:"");
+ $("status").textContent=`Loaded ${ok}/${feeds.length} RSS sources and ${githubRepos.length} GitHub repositories.`+(failed.length?` Some feeds failed: ${failed.join(", ")}.`:"");\n localStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)));
  $("updated").textContent="Updated "+new Date().toLocaleTimeString();
  $("refresh").disabled=false;render();
  if(window.AudioDesk && typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();
@@ -174,7 +175,7 @@ document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{active=b.da
 $("search").addEventListener("input",render);
 $("refresh").onclick=loadFeeds;
 $("addFeed").onclick=()=>{let name=$("feedName").value.trim(),url=$("feedUrl").value.trim();if(!name||!/^https?:\/\//i.test(url)){alert("Enter a source name and a valid http(s) RSS URL.");return}feeds.push({name,url,cat:"Production"});localStorage.setItem("ar_feeds",JSON.stringify(feeds));$("feedName").value="";$("feedUrl").value="";renderSources();loadFeeds()};
-renderSources();loadFeeds();
+renderSources();\nif(items.length){render();$("status").textContent="Showing saved headlines instantly · checking for updates…";$("updated").textContent="Cached feed";}\nloadFeeds();
 // Route all publisher/source links through the native in-app browser when running in Android.
 document.addEventListener("click",e=>{
  const a=e.target.closest("a[href]"); if(!a)return;
