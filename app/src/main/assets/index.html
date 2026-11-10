@@ -1,1 +1,27 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Audio Desk</title><style>body{background:#080808;color:#fff;font:14px monospace;padding:24px}h1{font-size:24px}a{color:#fff}</style></head><body><h1>THE AUDIO DESK_</h1><p>Audio Desk Android shell is installed.</p><p>The full news-reader HTML still needs to be copied into this file before the APK build can be considered complete.</p><a href="https://github.com/balncmix-creator/audio-desk">Project repository</a></body></html>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#080808"><title>Audio Desk</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#080808;color:#f4f4f4;font:14px ui-monospace,SFMono-Regular,Consolas,monospace}header{padding:22px 18px 14px;border-bottom:2px solid #eee;background:#050505}h1{font-size:25px;letter-spacing:-2px;margin:0}h1 span{color:#888}header p{font-size:10px;letter-spacing:2px;color:#aaa;margin:8px 0 0}.tabs{display:flex;position:sticky;top:0;background:#080808;border-bottom:1px solid #555;z-index:3}.tabs button{flex:1;padding:14px 4px;background:#080808;color:#888;border:0;border-right:1px solid #333;font: bold 11px monospace}.tabs button.active{background:#eee;color:#080808}.toolbar{padding:12px 16px;display:flex;gap:8px;align-items:center;border-bottom:1px dashed #555}.toolbar button{background:#111;color:#eee;border:1px solid #888;padding:8px 12px;font:11px monospace}.toolbar small{color:#888;margin-left:auto}.feed{padding:14px;max-width:760px;margin:auto}.story{border:1px solid #777;margin:0 0 14px;background:#101010}.story img{width:100%;max-height:210px;object-fit:cover;display:block;background:#222}.story .body{padding:13px}.meta{font-size:10px;color:#aaa;display:flex;gap:8px;flex-wrap:wrap;text-transform:uppercase}.story h2{font-size:17px;line-height:1.35;margin:9px 0}.story p{color:#bbb;line-height:1.5;font:12px Arial,sans-serif}.story a{color:#fff;text-decoration:none;border-bottom:1px solid #aaa;font-size:11px}.tag{border:1px solid #777;padding:2px 5px}.status{color:#999;padding:20px;text-align:center}.pixel{font-size:10px;letter-spacing:2px;color:#888}.error{color:#ff7777}
+</style></head><body>
+<header><h1>AUDIO<span>_</span>DESK</h1><p>/// AUDIO INDUSTRY INTELLIGENCE TERMINAL</p></header>
+<nav class="tabs"><button id="allTab" class="active" onclick="setTab('all')">ALL AUDIO</button><button id="reaperTab" onclick="setTab('reaper')">REAPER_</button></nav>
+<div class="toolbar"><button onclick="loadFeed()">↻ REFRESH</button><small id="status">INITIALIZING FEED...</small></div><main class="feed" id="feed"><div class="status">LOADING SIGNAL...</div></main>
+<script>
+const sources={
+all:[
+['AUDIO NEWS','https://news.google.com/rss/search?q=audio+production+OR+music+technology+OR+audio+plugins&hl=en-US&gl=US&ceid=US:en'],
+['AUDIO SOFTWARE','https://news.google.com/rss/search?q=DAW+plugin+audio+software+release&hl=en-US&gl=US&ceid=US:en'],
+['SOUND DESIGN','https://news.google.com/rss/search?q=film+sound+design+audio+post+production&hl=en-US&gl=US&ceid=US:en']
+],
+reaper:[
+['COCKOS PRE-RELEASE','https://forum.cockos.com/external.php?type=RSS2&forumids=22'],
+['REAPER SCRIPTS','https://news.google.com/rss/search?q=REAPER+ReaScript+scripts+site%3Agithub.com+OR+site%3Aforum.cockos.com&hl=en-US&gl=US&ceid=US:en'],
+['REAPER GITHUB','https://news.google.com/rss/search?q=REAPER+scripts+GitHub+ReaPack&hl=en-US&gl=US&ceid=US:en']
+]};
+let tab='all';function setTab(t){tab=t;document.getElementById('allTab').classList.toggle('active',t==='all');document.getElementById('reaperTab').classList.toggle('active',t==='reaper');loadFeed()}
+function clean(s){let d=document.createElement('div');d.innerHTML=s||'';return d.textContent||d.innerText||''}
+function date(s){let d=new Date(s);return isNaN(d)?'RECENT':d.toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'}).toUpperCase()}
+async function get(url){let r=await fetch('https://api.rss2json.com/v1/api.json?rss_url='+encodeURIComponent(url));if(!r.ok)throw Error('Feed unavailable');return r.json()}
+async function loadFeed(){let el=document.getElementById('feed'),st=document.getElementById('status');el.innerHTML='<div class="status">SCANNING FREQUENCIES...</div>';st.textContent='SYNCING';let items=[];let list=sources[tab];let results=await Promise.allSettled(list.map(async s=>({source:s[0],data:await get(s[1])})));results.forEach(x=>{if(x.status==='fulfilled'&&x.value.data.items)x.value.data.items.forEach(i=>items.push({...i,source:x.value.source}))});items.sort((a,b)=>new Date(b.pubDate)-new Date(a.pubDate));let seen=new Set();items=items.filter(i=>{let k=i.link||i.title;if(seen.has(k))return false;seen.add(k);return true}).slice(0,45);if(!items.length){el.innerHTML='<div class="status">NO SIGNAL. CHECK CONNECTION AND RETRY.</div>';st.textContent='OFFLINE / EMPTY';return}st.textContent=items.length+' STORIES';el.innerHTML=items.map((i,n)=>{let img=i.thumbnail||((i.enclosure||{}).link)||'';let desc=clean(i.description).slice(0,260);return '<article class="story">'+(img?'<img loading="lazy" src="'+img.replace(/"/g,'&quot;')+'" onerror="this.style.display=\'none\'">':'')+'<div class="body"><div class="meta"><span class="tag">'+(i.source||'AUDIO')+'</span><span>'+date(i.pubDate)+'</span></div><h2>'+(n+1).toString().padStart(2,'0')+' / '+clean(i.title)+'</h2><p>'+desc+'</p><a href="'+i.link+'" target="_blank" rel="noopener">OPEN STORY ↗</a></div></article>'}).join('')}
+loadFeed();
+</script></body></html>
