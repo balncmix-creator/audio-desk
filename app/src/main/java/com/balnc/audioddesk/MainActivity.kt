@@ -14,6 +14,9 @@ import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.webkit.WebViewAssetLoader
 
@@ -37,6 +40,10 @@ class MainActivity : Activity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = Color.rgb(8, 8, 8)
+        window.navigationBarColor = Color.rgb(8, 8, 8)
+
         val loader = WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
             .build()
@@ -44,6 +51,16 @@ class MainActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.rgb(8, 8, 8))
+        }
+        // Android 15+ enforces edge-to-edge for target SDK 35. Apply the
+        // system-bar and cutout insets to the native root, not the WebView,
+        // so the HTML header starts below the status bar on every device.
+        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            val safe = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            view.setPadding(safe.left, safe.top, safe.right, safe.bottom)
+            insets
         }
 
         swipeRefresh = SwipeRefreshLayout(this).apply {
@@ -125,6 +142,7 @@ class MainActivity : Activity() {
         ))
 
         setContentView(root)
+        ViewCompat.requestApplyInsets(root)
         appWebView.loadUrl("https://appassets.androidplatform.net/assets/index.html")
     }
 
