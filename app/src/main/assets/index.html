@@ -55,7 +55,7 @@ header,main{position:relative;z-index:1}
 <main>
 <div class="tools"><input class="search" id="search" placeholder="Search the feed…" autocomplete="off"></div>
 <div class="toolbar" id="filters">
-<button class="active" data-filter="All">All</button><button data-filter="REAPER">REAPER / PRE-RELEASE</button><button data-filter="Post-production">Post-production</button><button data-filter="DAWs & plugins">DAWs & plugins</button><button data-filter="Plugin releases">PLUGIN RELEASES</button><button data-filter="Sound design">Sound design</button><button data-filter="Hardware">Hardware</button><button data-filter="Production">Production</button><button data-filter="Videos">▶ VIDEOS</button><button data-filter="Saved">★ Saved</button>
+<button class="active" data-filter="All">All</button><button data-filter="REAPER">REAPER / PRE-RELEASE</button><button data-filter="Post-production">Post-production</button><button data-filter="Post Production">POST PRODUCTION RADAR</button><button data-filter="DAWs & plugins">DAWs & plugins</button><button data-filter="Plugin releases">PLUGIN RELEASES</button><button data-filter="Sound design">Sound design</button><button data-filter="Hardware">Hardware</button><button data-filter="Production">Production</button><button data-filter="Videos">▶ VIDEOS</button><button data-filter="Saved">★ Saved</button>
 </div>
 <div class="stats"><span id="count">Waiting for feeds…</span><span id="updated">Not refreshed yet</span></div>
 <div id="status" class="status">Tap Refresh or pull down to fetch the latest headlines.</div>
@@ -70,7 +70,7 @@ header,main{position:relative;z-index:1}
 <section class="panel">
 <h3>Sources included</h3>
 <div id="sources"></div>
-<p class="note">Plugin releases uses multiple global news searches in addition to KVR. It cannot guarantee every independent developer announcement, especially social-only posts. The Videos tab collects recent YouTube-related results via a live video-focused RSS search. Feeds are fetched through RSS2JSON. GitHub repository discovery uses GitHub's public API. Some forums and publishers restrict automated feeds, so this is a broad discovery feed rather than a guarantee of every post.</p>
+<p class="note">POST PRODUCTION RADAR is a dedicated stream for film/TV audio post, dialogue editing, ADR, Foley, sound effects, Dolby Atmos, ADM/BWF, spatial audio, Ambisonics, surround plugins, post-production DAWs, restoration, loudness, QC and delivery. It uses multiple topic-specific news searches. Plugin releases uses multiple global news searches in addition to KVR. It cannot guarantee every independent developer announcement, especially social-only posts. The Videos tab collects recent YouTube-related results via a live video-focused RSS search. Feeds are fetched through RSS2JSON. GitHub repository discovery uses GitHub's public API. Some forums and publishers restrict automated feeds, so this is a broad discovery feed rather than a guarantee of every post.</p>
 <p class="note">REAPER links: <a href="https://forum.cockos.com/forumdisplay.php?f=22" target="_blank" rel="noopener">Cockos Pre-Release forum</a> · <a href="https://github.com/ReaTeam/ReaScripts" target="_blank" rel="noopener">ReaTeam ReaScripts</a> · <a href="https://github.com/topics/reaper-scripts" target="_blank" rel="noopener">GitHub Reaper Scripts topic</a></p>
 </section>
 <section class="panel">
@@ -101,6 +101,18 @@ const defaults = [
 {name:"SoundGirls",url:"https://soundgirls.org/feed/",cat:"Post-production"},
 {name:"Production Expert — Post Production",url:"https://www.production-expert.com/production-expert-1?format=rss",cat:"Post-production"},
 {name:"Google News — Audio post & film sound",url:"https://news.google.com/rss/search?q=audio+post+production+OR+film+sound+OR+dialogue+editing&hl=en-US&gl=US&ceid=US:en",cat:"Post-production"},
+{name:"POST RADAR — Film & TV audio post-production",url:"https://news.google.com/rss/search?q=(audio+post+production+OR+film+sound+post+production+OR+TV+audio+post+OR+film+mixing)&hl=en-US&gl=US&ceid=US:en",cat:"Post Production"},
+{name:"POST RADAR — Dialogue editing, ADR & dubbing",url:"https://news.google.com/rss/search?q=(dialogue+editing+OR+ADR+recording+OR+film+dubbing+OR+voice+over+post+production)&hl=en-US&gl=US&ceid=US:en",cat:"Post Production"},
+{name:"POST RADAR — Foley & sound effects",url:"https://news.google.com/rss/search?q=(foley+recording+OR+foley+artist+OR+film+sound+effects+OR+sound+editor)&hl=en-US&gl=US&ceid=US:en",cat:"Post Production"},
+{name:"POST RADAR — Dolby Atmos & immersive mixing",url:"https://news.google.com/rss/search?q=(Dolby+Atmos+post+production+OR+Atmos+mixing+OR+ADM+BWF+OR+Dolby+Atmos+renderer)&hl=en-US&gl=US&ceid=US:en",cat:"Post Production"},
+{name:"POST RADAR — Spatial audio & Ambisonics",url:"https://news.google.com/rss/search?q=(spatial+audio+post+production+OR+immersive+audio+mixing+OR+Ambisonics+plugin+OR+object+based+audio)&hl=en-US&gl=US&ceid=US:en",cat:"Post Production"},
+{name:"POST RADAR — Surround & immersive plugins",url:"https://news.google.com/rss/search?q=(surround+sound+plugin+OR+immersive+audio+plugin+OR+Dolby+Atmos+plugin+OR+multichannel+audio+plugin)&hl=en-US&gl=US&ceid=US:en",cat:"Post Production"},
+{name:"POST RADAR — Post-production DAWs & workflows",url:"https://news.google.com/rss/search?q=(Pro+Tools+OR+Nuendo+OR+Pyramix+OR+Sequoia+OR+DaVinci+Resolve+Fairlight)+(audio+post+OR+update+OR+release)&hl=en-US&gl=US&ceid=US:en",cat:"Post Production"},
+{name:"POST RADAR — Audio restoration, dialogue cleanup & AI",url:"https://news.google.com/rss/search?q=(dialogue+isolation+OR+audio+restoration+OR+production+sound+cleanup+OR+AI+dialogue+editing)&hl=en-US&gl=US&ceid=US:en",cat:"Post Production"},
+{name:"POST RADAR — Broadcast loudness, QC & delivery",url:"https://news.google.com/rss/search?q=(EBU+R128+OR+ATSC+A+85+OR+audio+QC+OR+broadcast+loudness+OR+ADM+delivery)&hl=en-US&gl=US&ceid=US:en",cat:"Post Production"},
+{name:"Production Expert — Dedicated post-production coverage",url:"https://www.production-expert.com/production-expert-1?format=rss",cat:"Post Production"},
+{name:"Dolby — Atmos & professional audio news",url:"https://news.google.com/rss/search?q=site%3Adolby.com+(Dolby+Atmos+OR+professional+audio+OR+post+production)&hl=en-US&gl=US&ceid=US:en",cat:"Post Production"},
+{name:"AudioXpress — Immersive and professional audio",url:"https://news.google.com/rss/search?q=site%3Aaudioxpress.com+(Dolby+Atmos+OR+spatial+audio+OR+immersive+audio)&hl=en-US&gl=US&ceid=US:en",cat:"Post Production"},
 {name:"Google News — AI audio tools",url:"https://news.google.com/rss/search?q=AI+audio+tools+OR+audio+plugin+OR+audio+software&hl=en-US&gl=US&ceid=US:en",cat:"Sound design"},
 {name:"YouTube — Latest audio plugins, DAWs & sound design videos",url:"https://news.google.com/rss/search?q=site%3Ayoutube.com%2Fwatch+(audio+plugin+OR+VST+OR+AU+plugin+OR+DAW+OR+REAPER+OR+Pro+Tools+OR+Nuendo+OR+sound+design+OR+mixing+OR+mastering)&hl=en-US&gl=US&ceid=US:en",cat:"Videos"},
 {name:"Cockos — REAPER Pre-Release forum",url:"https://forum.cockos.com/external.php?type=RSS2&forumids=22",cat:"REAPER"},
@@ -120,6 +132,7 @@ const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 function classify(item,feed){
  if(feed.cat==="REAPER")return "REAPER";
  if(feed.cat==="Plugin releases")return "Plugin releases";
+ if(feed.cat==="Post Production")return "Post Production";
  if(feed.cat==="Videos")return "Videos";
  const t=(item.title+" "+(item.description||"")).toLowerCase();
  if(/dialogue|film sound|post.?production|reaper|pro tools|nuendo|atmos|surround|broadcast|foley|adr|sound editorial/.test(t))return "Post-production";
