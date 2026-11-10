@@ -9,8 +9,8 @@ android {
         applicationId = "com.balnc.audioddesk"
         minSdk = 23
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
     }
     buildTypes { release { isMinifyEnabled = false } }
     compileOptions {
@@ -19,4 +19,7 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
 }
-dependencies { implementation("androidx.webkit:webkit:1.12.1") }
+dependencies {
+    implementation("androidx.webkit:webkit:1.12.1")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+}
