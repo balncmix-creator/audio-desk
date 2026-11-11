@@ -450,30 +450,39 @@ async function fetchFeedWithTimeout(feed,timeoutMs=9000){
 async function loadFeeds(){
  if($("refresh").disabled)return;
  $("refresh").disabled=true;
- $("status").textContent=`Updating ${feeds.length} RSS sources…`;
- let ok=0,failed=[];
- const results=await Promise.all(feeds.map(async f=>{
-  try{const x=await fetchFeedWithTimeout(f);ok++;return x}
-  catch(e){failed.push(f.name);return []}
- }));
- const all=results.flat();
- const seen=new Set();
- items=all.filter(x=>{const k=normalizeStoryUrl(x.link)||titleKey(x.title);if(seen.has(k))return false;seen.add(k);return true});
- localStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)));
- $("updated").textContent="RSS updated "+new Date().toLocaleTimeString();
- render();
- $("status").textContent=`Loaded ${ok}/${feeds.length} RSS sources.`+(failed.length?` ${failed.length} timed out or failed.`:"")+" GitHub discovery is updating in the background.";
- $("refresh").disabled=false;
- if(window.AudioDesk && typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();
- // GitHub discovery is deliberately non-blocking: it must never hold up the news refresh.
- fetchGithubReaperRepos().then(repos=>{
-  const merged=[...items,...repos],unique=new Map();
-  merged.forEach(x=>{const k=normalizeStoryUrl(x.link)||titleKey(x.title);if(!unique.has(k))unique.set(k,x)});
-  items=[...unique.values()].sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
-  localStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)));
+ let ok=0,done=0,failed=[];
+ $("status").textContent=`Refreshing ${feeds.length} sources…`;
+ try{
+  const results=await Promise.all(feeds.map(async f=>{
+   try{const x=await fetchFeedWithTimeout(f,6000);ok++;return x}
+   catch(e){failed.push(f.name);return []}
+   finally{
+    done++;
+    $("status").textContent=`Refreshing feeds… ${done}/${feeds.length} checked · ${ok} loaded`;
+   }
+  }));
+  const all=results.flat();
+  const seen=new Set();
+  items=all.filter(x=>{const k=normalizeStoryUrl(x.link)||titleKey(x.title);if(seen.has(k))return false;seen.add(k);return true});
+  try{localStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)))}catch(e){console.warn("Could not cache headlines",e)}
+  $("updated").textContent="RSS updated "+new Date().toLocaleTimeString();
   render();
-  $("status").textContent+=` GitHub: ${repos.length} repositories added.`;
- }).catch(e=>console.warn("Background GitHub discovery failed",e));
+  $("status").textContent=`Loaded ${ok}/${feeds.length} RSS sources.`+(failed.length?` ${failed.length} timed out or failed.`:"")+" GitHub discovery is updating in the background.";
+  if(window.AudioDesk && typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();
+  // GitHub discovery stays in the background and never delays the RSS refresh.
+  fetchGithubReaperRepos().then(repos=>{
+   const merged=[...items,...repos],unique=new Map();
+   merged.forEach(x=>{const k=normalizeStoryUrl(x.link)||titleKey(x.title);if(!unique.has(k))unique.set(k,x)});
+   items=[...unique.values()].sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
+   try{localStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)))}catch(e){console.warn("Could not cache GitHub results",e)}
+   render();
+   $("status").textContent+=` GitHub: ${repos.length} repositories added.`;
+  }).catch(e=>console.warn("Background GitHub discovery failed",e));
+ }catch(e){
+  $("status").textContent="Refresh failed: "+String(e.message||e);
+ }finally{
+  $("refresh").disabled=false;
+ }
 }
 document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{setView("news");active=b.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===b));render()});
 $("search").addEventListener("input",()=>{if(activeView==="news")render();else if(activeView==="torrents")renderTorrentMonitor();else renderResourceDirectory()});
