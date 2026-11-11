@@ -44,7 +44,7 @@ header,main{position:relative;z-index:1}
 @media(max-width:390px){.search-options{gap:5px}.search-options select{min-width:88px}.search-options label{padding:5px 4px}}
 /* One-hand navigation dock: search and categories stay reachable at the bottom. */
 main{padding-bottom:190px}
-.bottom-dock{position:fixed;left:0;right:0;bottom:0;z-index:5;background:rgba(8,8,8,.97);border-top:2px solid #f4f4f4;padding:9px 12px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -5px 18px rgba(0,0,0,.65);backdrop-filter:blur(8px)}
+.bottom-dock{position:fixed;left:0;right:0;bottom:0;z-index:5;background:rgba(8,8,8,.97);border-top:2px solid #f4f4f4;padding:9px 12px 10px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 -5px 18px rgba(0,0,0,.65);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .dock-search{display:flex;align-items:center;gap:8px;max-width:900px;margin:0 auto 8px;border:2px solid #888;background:#101010;padding:0 9px}
 .dock-search-icon{font:20px/1 monospace;color:#eee}
 .dock-search .search{border:0;box-shadow:none;margin:0;padding:9px 2px;background:transparent;min-height:38px}
@@ -199,7 +199,7 @@ let items=readStore("ar_items",[]),active="All",saved=readStore("ar_saved",[]);
 const $=id=>document.getElementById(id);
 function readStore(key,fallback){try{const raw=localStorage.getItem(key);return raw===null?fallback:JSON.parse(raw)}catch(e){console.warn("Storage recovery:",key,e);return fallback}}
 window.onerror=function(message,source,line,col,error){const status=$("status");if(status)status.textContent="App script error: "+String(message)+" (line "+line+"). Tap Refresh to retry.";console.error("Audio Desk boot error",message,source,line,col,error);return false};
-window.addEventListener("unhandledrejection",e=>{const status=$("status");if(status)status.textContent="App request error: "+String(e.reason?.message||e.reason||"Unknown error")+". Tap Refresh to retry.";console.error("Audio Desk promise error",e.reason)});
+window.addEventListener("unhandledrejection",e=>{const status=$("status");if(status)status.textContent="App request error: "+String((e.reason&&e.reason.message)||e.reason||"Unknown error")+". Tap Refresh to retry.";console.error("Audio Desk promise error",e.reason)});
 const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function classify(item,feed){
  if(feed.cat==="REAPER")return "REAPER";
@@ -229,7 +229,7 @@ function extractImage(it){
   if(src)candidates.push(src);
  }
  // RSS media/enclosure fields can contain a larger original image.
- const media=it.enclosure?.link||it.enclosure?.url||it.media?.url||it.image||"";
+ const media=(it.enclosure&&it.enclosure.link)||(it.enclosure&&it.enclosure.url)||(it.media&&it.media.url)||it.image||"";
  if(media)candidates.push(media);
  if(it.thumbnail)candidates.push(it.thumbnail);
  for(const candidate of candidates){
@@ -270,7 +270,7 @@ function torrentWindowTerm(period){
  return period==="1d"?"when:1d":period==="7d"?"when:7d":period==="30d"?"when:30d":period==="365d"?"when:1y":"";
 }
 async function loadTorrentMonitor(){
- const period=$("torrentPeriod")?.value||"7d";
+ const period=($("torrentPeriod")&&$("torrentPeriod").value)||"7d";
  const windowTerm=torrentWindowTerm(period);
  $("resourceList").innerHTML='<div class="status">Scanning audio release radar across multiple indexed sources…</div>';
  $("refreshTorrent").disabled=true;
@@ -338,7 +338,7 @@ function renderResourceDirectory(){
  const categories=[...new Set(unique.map(x=>x.category))].sort();
  const select=$("resourceCategory");
  const current=select.value||"All";
- if(select.options.length!==categories.length+1||categories.some((v,i)=>select.options[i+1]?.value!==v)){
+ if(select.options.length!==categories.length+1||categories.some((v,i)=>!select.options[i+1]||select.options[i+1].value!==v)){
   select.innerHTML='<option value="All">ALL CATEGORIES</option>'+categories.map(x=>'<option value="'+esc(x)+'">'+esc(x.toUpperCase())+'</option>').join("");
   select.value=categories.includes(current)?current:"All";
  }
@@ -395,14 +395,14 @@ function imageAccentHue(img){
 }
 function applyImageAccent(img){
  const hue=imageAccentHue(img);
- if(hue!==null)img.closest(".story")?.style.setProperty("--glass-hue",String(Math.round(hue)));
+ if(hue!==null){const card=img.closest(".story");if(card)card.style.setProperty("--glass-hue",String(Math.round(hue)));}
 }
 function render(){
  let q=$("search").value.toLowerCase().trim();
  let list=items.filter(x=>(active==="All"|| (active==="Saved"?saved.includes(x.key):x.cat===active)) && (!q||(x.title+" "+x.source+" "+x.desc).toLowerCase().includes(q)));
  list.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
  $("count").textContent=`${list.length} headlines · ${items.length} collected`;
- $("stories").innerHTML=list.length?list.map(x=>{const hue=({"REAPER":178,"Post-production":190,"Post Production":190,"DAWs & plugins":168,"Plugin releases":174,"Sound design":196,"Hardware":184,"Production":162,"Torrent Monitor":188})[x.cat]||180;return `<article class="story" style="--glass-hue:${hue}">${x.image?`<img class="storymedia" crossorigin="anonymous" src="${esc(x.image)}" alt="Image for ${esc(x.title)}" loading="lazy" onload="applyImageAccent(this)" onerror="this.remove()">`:""}<div class="meta"><span>${esc(x.source)}</span><span class="dot"></span><span>${esc(x.cat)}</span><span class="dot"></span><span>${x.date?new Date(x.date).toLocaleString():"Date unavailable"}</span></div><h2><a class="storytitle" href="${esc(x.link)}" target="_blank" rel="noopener">${esc(x.title)}</a></h2><p>${esc(x.desc)}</p><div class="storyfoot"><span class="note">OPEN STORY ↗</span><button class="save" data-save="${esc(x.key)}">${saved.includes(x.key)?"★ Saved":"☆ Save"}</button></div></article>`}).join(""):`<div class="empty">No headlines match this view. Try another category or refresh the feeds.</div>`;
+ $("stories").innerHTML=list.length?list.map(x=>{const hue=({"REAPER":178,"Post-production":190,"Post Production":190,"DAWs & plugins":168,"Plugin releases":174,"Sound design":196,"Hardware":184,"Production":162,"Torrent Monitor":188})[x.cat]||180;return `<article class="story" style="--glass-hue:${hue}">${x.image?`<img class="storymedia" src="${esc(x.image)}" alt="Image for ${esc(x.title)}" loading="lazy" onload="applyImageAccent(this)" onerror="this.remove()">`:""}<div class="meta"><span>${esc(x.source)}</span><span class="dot"></span><span>${esc(x.cat)}</span><span class="dot"></span><span>${x.date?new Date(x.date).toLocaleString():"Date unavailable"}</span></div><h2><a class="storytitle" href="${esc(x.link)}" target="_blank" rel="noopener">${esc(x.title)}</a></h2><p>${esc(x.desc)}</p><div class="storyfoot"><span class="note">OPEN STORY ↗</span><button class="save" data-save="${esc(x.key)}">${saved.includes(x.key)?"★ Saved":"☆ Save"}</button></div></article>`}).join(""):`<div class="empty">No headlines match this view. Try another category or refresh the feeds.</div>`;
  document.querySelectorAll("#stories .storymedia").forEach(img=>{if(img.complete)applyImageAccent(img)});
  document.querySelectorAll("[data-save]").forEach(b=>b.onclick=()=>{let k=b.dataset.save;saved=saved.includes(k)?saved.filter(v=>v!==k):[...saved,k];localStorage.setItem("ar_saved",JSON.stringify(saved));render()});
 }
