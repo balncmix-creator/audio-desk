@@ -128,13 +128,18 @@ main{padding-bottom:190px}
   </div>
   <div id="searchStatus" class="search-status">Search Google News + Bing News together. Results are merged and duplicates removed.</div>
   <div class="toolbar" id="filters">
-    <button class="active" data-filter="All">All</button><button data-filter="REAPER">REAPER</button><button data-filter="Post-production">Post-production</button><button data-filter="Post Production">POST PRODUCTION</button><button data-filter="DAWs & plugins">DAWs & plugins</button><button data-filter="Plugin releases">PLUGIN RELEASES</button><button data-filter="Sound design">Sound design</button><button data-filter="Hardware">Hardware</button><button data-filter="Production">Production</button><button data-filter="Videos">▶ VIDEOS</button><button data-filter="Saved">★ Saved</button><button data-view="torrents">AUDIO TORRENTS</button><button data-view="samples">SAMPLE PACKS</button>
+    <button class="active" data-filter="All">All</button><button data-filter="REAPER">REAPER</button><button data-filter="Post-production">Post-production</button><button data-filter="Post Production">POST PRODUCTION</button><button data-filter="DAWs & plugins">DAWs & plugins</button><button data-filter="Plugin releases">PLUGIN RELEASES</button><button data-filter="Sound design">Sound design</button><button data-filter="Hardware">Hardware</button><button data-filter="Production">Production</button><button data-filter="Torrent Monitor">TORRENT MONITOR</button><button data-filter="Videos">▶ VIDEOS</button><button data-filter="Saved">★ Saved</button><button data-view="torrents">TORRENT MONITOR</button><button data-view="samples">SAMPLE PACKS</button>
   </div>
 </nav>
 <script>
 const defaults = [
 {name:"KVR Audio — Top Stories",url:"https://www.kvraudio.com/rss/kvr_news_top.rss",cat:"DAWs & plugins"},
 {name:"KVR Audio — New Plugins",url:"https://www.kvraudio.com/rss/kvr_latestindb.rss",cat:"DAWs & plugins"},
+{"name":"TORRENT RADAR — AudioZ","url":"https://news.google.com/rss/search?q=site%3Aaudioz.download+(VST+OR+VST3+OR+AU+OR+AAX+OR+plugin+OR+Kontakt+OR+sound+library)&hl=en-US&gl=US&ceid=US:en","cat":"Torrent Monitor"},
+{"name":"TORRENT RADAR — RuTracker","url":"https://news.google.com/rss/search?q=site%3Arutracker.org+(audio+plugin+OR+VST+OR+Kontakt+OR+DAW+OR+sound+library)&hl=en-US&gl=US&ceid=US:en","cat":"Torrent Monitor"},
+{"name":"TORRENT RADAR — 1337x","url":"https://news.google.com/rss/search?q=site%3A1337x.to+(audio+plugin+OR+VST+OR+Kontakt+OR+DAW)&hl=en-US&gl=US&ceid=US:en","cat":"Torrent Monitor"},
+{"name":"TORRENT RADAR — TorrentGalaxy","url":"https://news.google.com/rss/search?q=site%3Atorrentgalaxy.to+(audio+plugin+OR+VST+OR+Kontakt+OR+DAW)&hl=en-US&gl=US&ceid=US:en","cat":"Torrent Monitor"},
+{"name":"TORRENT RADAR — Global audio warez","url":"https://news.google.com/rss/search?q=(audio+plugin+OR+VST3+OR+Kontakt+library)+(torrent+OR+warez+OR+crack+OR+keygen+OR+release)&hl=en-US&gl=US&ceid=US:en","cat":"Torrent Monitor"},
 {name:"Global — New audio plugin releases",url:"https://news.google.com/rss/search?q=(new+audio+plugin+OR+VST+plugin+released+OR+AU+plugin+released+OR+AAX+plugin+released+OR+CLAP+plugin+released)&hl=en-US&gl=US&ceid=US:en",cat:"Plugin releases"},
 {name:"Global — Plugin developer announcements",url:"https://news.google.com/rss/search?q=(audio+plugin+developer+OR+plugin+manufacturer)+(launch+OR+release+OR+announces+OR+update)&hl=en-US&gl=US&ceid=US:en",cat:"Plugin releases"},
 {name:"Global — Audio software product launches",url:"https://news.google.com/rss/search?q=(audio+software+OR+sound+design+plugin+OR+mixing+plugin)+(new+OR+launches+OR+released)&hl=en-US&gl=US&ceid=US:en",cat:"Plugin releases"},
@@ -216,9 +221,7 @@ function extractImage(it){
 }
 
 const torrentResources = [
- {name:"Internet Archive",url:"https://archive.org/",category:"Public-domain & community audio",access:"Free",desc:"A large digital library. Some audio records expose BitTorrent downloads; check each item's rights statement and download options."},
- {name:"etree.org",url:"https://etree.org/",category:"Artist-authorized live recordings",access:"Free",desc:"Community archive for live concert recordings shared under participating artists' taping and trading policies. Not every artist or recording is available."},
- {name:"Academic Torrents",url:"https://academictorrents.com/",category:"Research audio datasets",access:"Free",desc:"Research dataset distribution using BitTorrent. Audio-related speech, music and sound datasets may be available; follow each dataset's license and research terms."}
+ {name:"Torrent Monitor",url:"https://audioz.download/",category:"Discovery",access:"Info",desc:"Search indexed mentions of audio plugins, DAWs and sample libraries across selected torrent and warez domains. Results are leads only; verify product identity, version and date."}
 ];
 const sampleResources = [
  {name:"Freesound",url:"https://freesound.org/",category:"Foley & sound effects",access:"Free",desc:"Community sound library with per-file Creative Commons licenses. Check attribution and commercial-use conditions for each sound."},
@@ -241,6 +244,28 @@ const sampleResources = [
 ];
 let activeView="news";
 function normalizeResourceUrl(raw){try{const u=new URL(raw);return u.hostname.toLowerCase().replace(/^www\./,"")}catch{return String(raw).toLowerCase().trim()}}
+
+let torrentMonitorItems=[];
+async function loadTorrentMonitor(){
+ $("resourceList").innerHTML='<div class="status">Checking indexed torrent-site mentions…</div>';
+ const queries=[
+  '(site:audioz.download OR site:rutracker.org OR site:1337x.to OR site:torrentgalaxy.to OR site:plugintorrent.com) (audio plugin OR VST OR VST3 OR AU OR AAX OR Kontakt OR sound library) (torrent OR release OR crack OR keygen OR warez) when:30d',
+  '(audio plugin OR VST3 OR Kontakt) (torrent OR crack OR keygen OR warez) when:30d'
+ ];
+ const results=await Promise.all(queries.map((query,n)=>{
+  const url="https://news.google.com/rss/search?q="+encodeURIComponent(query)+"&hl=en-US&gl=US&ceid=US:en";
+  return fetchFeed({name:n?"Global audio warez mentions":"Torrent-site indexed mentions",url,cat:"Torrent Monitor"}).catch(()=>[]);
+ }));
+ const seen=new Set();
+ torrentMonitorItems=results.flat().filter(x=>{const k=normalizeStoryUrl(x.link)||titleKey(x.title);if(seen.has(k))return false;seen.add(k);return true;}).sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
+ renderTorrentMonitor();
+}
+function renderTorrentMonitor(){
+ const q=($("search").value||"").toLowerCase().trim();
+ const rows=torrentMonitorItems.filter(x=>(x.title+" "+x.desc+" "+x.source).toLowerCase().includes(q));
+ $("resourceCount").textContent=rows.length+" indexed mentions · last 30 days · duplicates removed";
+ $("resourceList").innerHTML=rows.length?rows.map(x=>'<div class="resource-card"><div class="resource-title">'+esc(x.title)+'</div><div class="resource-meta">'+esc(x.source)+' · '+(x.date?new Date(x.date).toLocaleDateString():"Date unavailable")+'</div><p class="resource-desc">'+esc(x.desc)+'</p><a href="'+esc(x.link)+'" target="_blank" rel="noopener">OPEN RESULT ↗</a></div>').join(""):'<div class="empty">No indexed mentions match. This does not prove a plugin is absent from torrent sites.</div>';
+}
 function renderResourceDirectory(){
  const data=activeView==="torrents"?torrentResources:sampleResources;
  const q=($("search").value||"").toLowerCase().trim();
@@ -255,9 +280,9 @@ function renderResourceDirectory(){
   select.innerHTML='<option value="All">ALL CATEGORIES</option>'+categories.map(x=>'<option value="'+esc(x)+'">'+esc(x.toUpperCase())+'</option>').join("");
   select.value=categories.includes(current)?current:"All";
  }
- $("resourceHeading").textContent=activeView==="torrents"?"Audio torrent & BitTorrent sources":"Sample pack directory";
+ $("resourceHeading").textContent=activeView==="torrents"?"Audio Torrent Monitor":"Sample pack directory";
  $("resourceIntro").textContent=activeView==="torrents"
-  ?"A deduplicated directory of audio-relevant sources that explicitly provide or authorize BitTorrent distribution. This is not a catalogue of unauthorized plugin, sample or music releases. Sites that primarily index infringing uploads are intentionally not linked."
+  ?"Track indexed mentions of audio plugins, DAWs and sample libraries on torrent/warez sites. Results are monitoring leads only, not download links. Coverage depends on search-engine indexing and is not exhaustive."
   :"A separate directory for sample packs, loops, one-shots, instruments, Foley and sound libraries. Free/paid labels are indicative; verify the current terms on the source site.";
  $("resourceCount").textContent=list.length+" sources · "+unique.length+" unique domains";
  $("resourceList").innerHTML=list.length?list.map(x=>'<div class="resource-card"><div class="resource-title">'+esc(x.name)+'</div><div class="resource-meta">'+esc(x.category)+' · '+esc(x.access)+'</div><p class="resource-desc">'+esc(x.desc)+'</p><a href="'+esc(x.url)+'" target="_blank" rel="noopener">VISIT SOURCE ↗</a></div>').join(""):'<div class="empty">No resources match this search or filter.</div>';
@@ -272,7 +297,7 @@ function setView(view){
  document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
  document.querySelectorAll("[data-filter]").forEach(b=>b.classList.toggle("active",news&&b.dataset.filter===active));
  $("search").placeholder=news?"Search all audio news…":view==="torrents"?"Search torrent sources…":"Search sample packs…";
- if(!news)renderResourceDirectory();
+ if(!news){if(view==="torrents")loadTorrentMonitor();else renderResourceDirectory();}
 }
 
 function render(){
@@ -400,9 +425,9 @@ async function loadFeeds(){
  if(window.AudioDesk && typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();
 }
 document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{setView("news");active=b.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===b));render()});
-$("search").addEventListener("input",()=>{render();if(activeView!=="news")renderResourceDirectory()});
-$("resourceCategory").addEventListener("change",renderResourceDirectory);
-$("resourceAccess").addEventListener("change",renderResourceDirectory);
+$("search").addEventListener("input",()=>{if(activeView==="news")render();else if(activeView==="torrents")renderTorrentMonitor();else renderResourceDirectory()});
+$("resourceCategory").addEventListener("change",()=>{if(activeView==="torrents")renderTorrentMonitor();else renderResourceDirectory()});
+$("resourceAccess").addEventListener("change",()=>{if(activeView==="torrents")renderTorrentMonitor();else renderResourceDirectory()});
 document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
 $("webSearch").onclick=runWebSearch;
 $("search").addEventListener("keydown",e=>{if(e.key==="Enter")runWebSearch()});
