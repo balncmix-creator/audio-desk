@@ -355,9 +355,9 @@ async function fetchFeed(feed){
  });
 }
 function normalizeStoryUrl(raw){
- try{const u=new URL(raw);u.hash="";["utm_source","utm_medium","utm_campaign","utm_term","utm_content","ocid","fbclid","gclid"].forEach(k=>u.searchParams.delete(k));return u.hostname.replace(/^www\\./,"")+u.pathname.replace(/\\/$/,"")+u.search}catch{return String(raw||"").trim().toLowerCase()}
+ try{const u=new URL(raw);u.hash="";["utm_source","utm_medium","utm_campaign","utm_term","utm_content","ocid","fbclid","gclid"].forEach(k=>u.searchParams.delete(k));return u.hostname.replace(/^www\./,"")+u.pathname.replace(/\/$/,"")+u.search}catch{return String(raw||"").trim().toLowerCase()}
 }
-function titleKey(s){return String(s||"").toLowerCase().replace(/&amp;/g,"and").replace(/[^a-z0-9]+/g," ").trim().replace(/\\s+/g," ")}
+function titleKey(s){return String(s||"").toLowerCase().replace(/&amp;/g,"and").replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," ")}
 function timeQuery(period){
  return period==="1h"?"when:1h":period==="1d"?"when:1d":period==="7d"?"when:7d":period==="30d"?"when:30d":period==="365d"?"when:1y":"";
 }
