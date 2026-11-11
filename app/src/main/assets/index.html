@@ -318,6 +318,8 @@ function setView(view){
  activeView=view;
  const news=view==="news";
  $("resourceHub").hidden=news;
+ $("watchlistTools").hidden=view!=="torrents";
+ $("resourceCategory").parentElement.hidden=view==="torrents";
  $("stats").hidden=!news;
  $("status").hidden=!news;
  document.querySelectorAll("main > section").forEach(el=>el.hidden=!news);
@@ -456,6 +458,8 @@ $("search").addEventListener("input",()=>{if(activeView==="news")render();else i
 $("resourceCategory").addEventListener("change",()=>{if(activeView==="torrents")renderTorrentMonitor();else renderResourceDirectory()});
 $("resourceAccess").addEventListener("change",()=>{if(activeView==="torrents")renderTorrentMonitor();else renderResourceDirectory()});
 document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
+$("scanWatchlist").onclick=scanPluginWatchlist;
+$("pluginWatchlist").value=localStorage.getItem("ar_plugin_watchlist")||"";
 $("scanWatchlist").onclick=scanPluginWatchlist;
 $("pluginWatchlist").value=localStorage.getItem("ar_plugin_watchlist")||"";
 $("webSearch").onclick=runWebSearch;
