@@ -215,7 +215,7 @@ function extractImage(it){
  doc.innerHTML=[it.content,it.content_encoded,it.description].filter(Boolean).join(" ");
  for(const img of doc.querySelectorAll("img")){
   const srcset=(img.getAttribute("srcset")||img.getAttribute("data-srcset")||"")
-    .split(",").map(x=>x.trim().split(/\\s+/)[0]).filter(Boolean);
+    .split(",").map(x=>x.trim().split(/\s+/)[0]).filter(Boolean);
   const src=img.getAttribute("data-src")||img.getAttribute("src")||img.getAttribute("data-original");
   candidates.push(...srcset);
   if(src)candidates.push(src);
