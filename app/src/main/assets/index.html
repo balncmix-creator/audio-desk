@@ -258,7 +258,7 @@ let watchlistItems=[];
 async function loadTorrentMonitor(){
  $("resourceList").innerHTML='<div class="status">Checking indexed torrent-site mentions…</div>';
  const queries=[
-  '(site:audioz.download OR site:rutracker.org OR site:1337x.to OR site:torrentgalaxy.to OR site:plugintorrent.com) (audio plugin OR VST OR VST3 OR AU OR AAX OR Kontakt OR sound library) (torrent OR release OR crack OR keygen OR warez) when:30d',
+  '(site:audioz.download OR site:rutracker.org OR site:1337x.to OR site:torrentgalaxy.to OR site:plugintorrent.com OR site:thepiratebay.org OR site:limetorrents.lol OR site:torrentfunk.com OR site:bitsearch.to OR site:solidtorrents.to) (audio plugin OR VST OR VST3 OR AU OR AAX OR Kontakt OR sound library) (torrent OR release OR crack OR keygen OR warez) when:30d',
   '(audio plugin OR VST3 OR Kontakt) (torrent OR crack OR keygen OR warez) when:30d'
  ];
  const results=await Promise.all(queries.map((query,n)=>{
