@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
 import android.view.View
 import android.webkit.JavascriptInterface
@@ -26,6 +28,8 @@ class MainActivity : Activity() {
     private lateinit var swipeRefresh: SwipeRefreshLayout
     private lateinit var browserPanel: LinearLayout
     private lateinit var browserAddress: TextView
+    private val refreshHandler = Handler(Looper.getMainLooper())
+    private val refreshFailsafe = Runnable { swipeRefresh.isRefreshing = false }
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun configure(webView: WebView) {
@@ -85,7 +89,13 @@ class MainActivity : Activity() {
         }
         swipeRefresh.addView(appWebView)
         swipeRefresh.setOnRefreshListener {
-            appWebView.evaluateJavascript("if(typeof loadFeeds==='function'){loadFeeds();}", null)
+            refreshHandler.removeCallbacks(refreshFailsafe)
+            // Prevent a lost WebView callback from leaving the native spinner running.
+            refreshHandler.postDelayed(refreshFailsafe, 15000L)
+            appWebView.evaluateJavascript(
+                "if(typeof loadFeeds==='function'){loadFeeds();}else if(window.AudioDesk&&AudioDesk.refreshFinished){AudioDesk.refreshFinished();}",
+                null
+            )
         }
         root.addView(swipeRefresh, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
@@ -148,7 +158,12 @@ class MainActivity : Activity() {
 
     private inner class AppBridge {
         @JavascriptInterface fun openArticle(url: String) { runOnUiThread { openInBrowser(url) } }
-        @JavascriptInterface fun refreshFinished() { runOnUiThread { swipeRefresh.isRefreshing = false } }
+        @JavascriptInterface fun refreshFinished() {
+            runOnUiThread {
+                refreshHandler.removeCallbacks(refreshFailsafe)
+                swipeRefresh.isRefreshing = false
+            }
+        }
     }
 
     private fun openInBrowser(url: String) {
