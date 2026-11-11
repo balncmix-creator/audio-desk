@@ -73,8 +73,9 @@ main{padding-bottom:190px}
 </div>
 <header><div class="mast"><div class="top"><div><div class="brand">THE <span>AUDIO</span> DESK_</div><div class="sub">[ AUDIO INDUSTRY NEWS TERMINAL ]</div></div><button class="primary" id="refresh">Refresh ↻</button></div><div class="edition">[ TOOLS ] [ TECHNOLOGY ] [ RECORDING ] [ POST ]</div></div></header>
 <main>
-<div class="stats"><span id="count">Waiting for feeds…</span><span id="updated">Not refreshed yet</span></div>
-<div id="status" class="status">Tap Refresh or pull down to fetch the latest headlines.</div>\n<div id="resourceHub" hidden>
+<div class="stats" id="stats"><span id="count">Waiting for feeds…</span><span id="updated">Not refreshed yet</span></div>
+<div id="status" class="status">Tap Refresh or pull down to fetch the latest headlines.</div>
+<div id="resourceHub" hidden>
   <div class="panel">
     <h3 id="resourceHeading">Audio resource directory</h3>
     <p class="note" id="resourceIntro"></p>
@@ -273,7 +274,8 @@ function setView(view){
  $("search").placeholder=news?"Search all audio news…":view==="torrents"?"Search torrent sources…":"Search sample packs…";
  if(!news)renderResourceDirectory();
 }
-\nfunction render(){
+
+function render(){
  let q=$("search").value.toLowerCase().trim();
  let list=items.filter(x=>(active==="All"|| (active==="Saved"?saved.includes(x.key):x.cat===active)) && (!q||(x.title+" "+x.source+" "+x.desc).toLowerCase().includes(q)));
  list.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
@@ -397,8 +399,11 @@ async function loadFeeds(){
  $("refresh").disabled=false;render();
  if(window.AudioDesk && typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();
 }
-document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{active=b.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===b));render()});
-$("search").addEventListener("input",()=>{render();if(activeView!=="news")renderResourceDirectory()});\n$("resourceCategory").addEventListener("change",renderResourceDirectory);\n$("resourceAccess").addEventListener("change",renderResourceDirectory);\ndocument.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
+document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{setView("news");active=b.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===b));render()});
+$("search").addEventListener("input",()=>{render();if(activeView!=="news")renderResourceDirectory()});
+$("resourceCategory").addEventListener("change",renderResourceDirectory);
+$("resourceAccess").addEventListener("change",renderResourceDirectory);
+document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
 $("webSearch").onclick=runWebSearch;
 $("search").addEventListener("keydown",e=>{if(e.key==="Enter")runWebSearch()});
 $("refresh").onclick=loadFeeds;
