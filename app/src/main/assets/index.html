@@ -448,7 +448,7 @@ async function fetchFeedWithTimeout(feed,timeoutMs=9000){
  }finally{if(timer)clearTimeout(timer)}
 }
 async function loadFeeds(){
- if($("refresh").disabled)return;
+ if($("refresh").disabled){if(window.AudioDesk&&typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();return;}
  $("refresh").disabled=true;
  let ok=0,done=0,failed=[];
  $("status").textContent=`Refreshing ${feeds.length} sources…`;
