@@ -185,10 +185,13 @@ const defaults = [
 {name:"GitHub — MPL ReaScripts commits",url:"https://github.com/MichaelPilyavskiy/ReaScripts/commits/master.atom",cat:"REAPER"},
 {name:"Google News — new REAPER scripts on GitHub",url:"https://news.google.com/rss/search?q=(REAPER+OR+ReaScript)+GitHub+(script+OR+ReaPack)&hl=en-US&gl=US&ceid=US:en",cat:"REAPER"}
 ];
-const savedFeeds=JSON.parse(localStorage.getItem("ar_feeds")||"null")||[];
+const savedFeeds=readStore("ar_feeds",[])||[];
 let feeds=[...defaults,...savedFeeds.filter(saved=>!defaults.some(d=>d.url===saved.url))];
-let items=JSON.parse(localStorage.getItem("ar_items")||"[]"),active="All",saved=JSON.parse(localStorage.getItem("ar_saved")||"[]");
+let items=readStore("ar_items",[]),active="All",saved=readStore("ar_saved",[]);
 const $=id=>document.getElementById(id);
+function readStore(key,fallback){try{const raw=localStorage.getItem(key);return raw===null?fallback:JSON.parse(raw)}catch(e){console.warn("Storage recovery:",key,e);return fallback}}
+window.onerror=function(message,source,line,col,error){const status=$("status");if(status)status.textContent="App script error: "+String(message)+" (line "+line+"). Tap Refresh to retry.";console.error("Audio Desk boot error",message,source,line,col,error);return false};
+window.addEventListener("unhandledrejection",e=>{const status=$("status");if(status)status.textContent="App request error: "+String(e.reason?.message||e.reason||"Unknown error")+". Tap Refresh to retry.";console.error("Audio Desk promise error",e.reason)});
 const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function classify(item,feed){
  if(feed.cat==="REAPER")return "REAPER";
@@ -482,6 +485,7 @@ async function loadFeeds(){
   $("status").textContent="Refresh failed: "+String(e.message||e);
  }finally{
   $("refresh").disabled=false;
+  if(window.AudioDesk && typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();
  }
 }
 document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{setView("news");active=b.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===b));render()});
