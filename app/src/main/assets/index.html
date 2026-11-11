@@ -186,6 +186,7 @@ const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 function classify(item,feed){
  if(feed.cat==="REAPER")return "REAPER";
  if(feed.cat==="Plugin releases")return "Plugin releases";
+ if(feed.cat==="Torrent Monitor")return "Torrent Monitor";
  if(feed.cat==="Post Production")return "Post Production";
  if(feed.cat==="Videos")return "Videos";
  const t=(item.title+" "+(item.description||"")).toLowerCase();
@@ -281,6 +282,7 @@ function renderResourceDirectory(){
   select.value=categories.includes(current)?current:"All";
  }
  $("resourceHeading").textContent=activeView==="torrents"?"Audio Torrent Monitor":"Sample pack directory";
+ $("resourceCategory").parentElement.hidden=activeView==="torrents";
  $("resourceIntro").textContent=activeView==="torrents"
   ?"Track indexed mentions of audio plugins, DAWs and sample libraries on torrent/warez sites. Results are monitoring leads only, not download links. Coverage depends on search-engine indexing and is not exhaustive."
   :"A separate directory for sample packs, loops, one-shots, instruments, Foley and sound libraries. Free/paid labels are indicative; verify the current terms on the source site.";
