@@ -35,6 +35,13 @@ header,main{position:relative;z-index:1}
 @media(prefers-reduced-motion:reduce){#arcade-bg *{animation:none!important}}
 @media(min-width:650px){header{padding-left:0;padding-right:0}.mast{padding:0 17px}main{padding-top:24px}.story{padding:19px 12px}.story h2{font-size:19px}}
 
+.search-options{display:flex;align-items:center;gap:7px;max-width:900px;margin:0 auto 6px;overflow-x:auto;white-space:nowrap;padding:2px 0 5px;font-size:9px;color:#ddd}
+.search-options select{background:#111;color:#fff;border:1px solid #777;padding:7px 5px;font-size:9px;min-width:102px}
+.search-options label{display:flex;align-items:center;gap:3px;border:1px solid #555;padding:5px 6px}
+.search-options input{accent-color:#fff;margin:0}
+.search-options button{font-size:9px;padding:7px 8px;flex:0 0 auto}
+.search-status{max-width:900px;margin:0 auto;color:#aaa;font-size:9px;line-height:1.4;padding:0 0 5px}
+@media(max-width:390px){.search-options{gap:5px}.search-options select{min-width:88px}.search-options label{padding:5px 4px}}
 /* One-hand navigation dock: search and categories stay reachable at the bottom. */
 main{padding-bottom:190px}
 .bottom-dock{position:fixed;left:0;right:0;bottom:0;z-index:5;background:rgba(8,8,8,.97);border-top:2px solid #f4f4f4;padding:9px 12px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -5px 18px rgba(0,0,0,.65);backdrop-filter:blur(8px)}
@@ -91,6 +98,15 @@ main{padding-bottom:190px}
 </main>
 <nav class="bottom-dock" aria-label="Feed navigation">
   <div class="dock-search"><span class="dock-search-icon">⌕</span><input class="search" id="search" placeholder="Search all audio news…" autocomplete="off"></div>
+  <div class="search-options">
+    <select id="searchPeriod" aria-label="Search time range">
+      <option value="1h">LAST HOUR</option><option value="1d" selected>LAST 24 HOURS</option><option value="7d">LAST WEEK</option><option value="30d">LAST MONTH</option><option value="365d">LAST YEAR</option><option value="any">ANY TIME</option>
+    </select>
+    <label><input type="checkbox" id="engineGoogle" checked> GOOGLE</label>
+    <label><input type="checkbox" id="engineBing" checked> BING</label>
+    <button class="primary" id="webSearch">SEARCH WEB ↗</button>
+  </div>
+  <div id="searchStatus" class="search-status">Search Google News + Bing News together. Results are merged and duplicates removed.</div>
   <div class="toolbar" id="filters">
     <button class="active" data-filter="All">All</button><button data-filter="REAPER">REAPER</button><button data-filter="Post-production">Post-production</button><button data-filter="Post Production">POST PRODUCTION</button><button data-filter="DAWs & plugins">DAWs & plugins</button><button data-filter="Plugin releases">PLUGIN RELEASES</button><button data-filter="Sound design">Sound design</button><button data-filter="Hardware">Hardware</button><button data-filter="Production">Production</button><button data-filter="Videos">▶ VIDEOS</button><button data-filter="Saved">★ Saved</button>
   </div>
@@ -200,6 +216,66 @@ async function fetchFeed(feed){
   return {title,link,date:it.pubDate||"",desc:cleanDesc(it.description||it.content),image:extractImage(it),source:feed.name,cat:classify({title,description:it.description||it.content},feed),key:link};
  });
 }
+function normalizeStoryUrl(raw){
+ try{const u=new URL(raw);u.hash="";["utm_source","utm_medium","utm_campaign","utm_term","utm_content","ocid","fbclid","gclid"].forEach(k=>u.searchParams.delete(k));return u.hostname.replace(/^www\\./,"")+u.pathname.replace(/\\/$/,"")+u.search}catch{return String(raw||"").trim().toLowerCase()}
+}
+function titleKey(s){return String(s||"").toLowerCase().replace(/&amp;/g,"and").replace(/[^a-z0-9]+/g," ").trim().replace(/\\s+/g," ")}
+function timeQuery(period){
+ return period==="1h"?"when:1h":period==="1d"?"when:1d":period==="7d"?"when:7d":period==="30d"?"when:30d":period==="365d"?"when:1y":"";
+}
+function audioSearchQuery(raw){
+ const q=raw.trim();
+ const audioContext="(audio OR music OR sound OR mixing OR mastering OR plugin OR DAW OR REAPER OR Pro Tools OR Nuendo OR post-production OR sound design OR Dolby Atmos OR audio AI)";
+ return q ? "(" + q + ") " + audioContext : "(audio engineering OR mixing OR mastering OR audio plugins OR VST OR DAW OR REAPER OR Pro Tools OR Nuendo OR film audio post-production OR sound design OR Dolby Atmos OR AI audio plugin)";
+}
+async function fetchSearchEngine(engine,query,period){
+ const windowTerm=timeQuery(period);
+ let url="";
+ if(engine==="Google"){
+  const q=encodeURIComponent(query+(windowTerm?" "+windowTerm:""));
+  url="https://news.google.com/rss/search?q="+q+"&hl=en-US&gl=US&ceid=US:en";
+ }else{
+  const q=encodeURIComponent(query+(windowTerm?" "+windowTerm:""));
+  url="https://www.bing.com/news/search?q="+q+"&format=rss&setmkt=en-US";
+ }
+ const result=await fetchFeed({name:engine+" News Search",url,cat:"Production"});
+ return result.map(x=>({...x,source:engine+" News",cat:classify({title:x.title,description:x.desc},{cat:"Production"}),key:normalizeStoryUrl(x.link)}));
+}
+async function runWebSearch(){
+ const q=$("search").value.trim();
+ const period=$("searchPeriod").value;
+ const engines=[];
+ if($("engineGoogle").checked)engines.push("Google");
+ if($("engineBing").checked)engines.push("Bing");
+ if(!engines.length){$("searchStatus").textContent="Select at least one search engine.";return}
+ $("webSearch").disabled=true;
+ $("searchStatus").textContent="Searching "+engines.join(" + ")+"…";
+ const query=audioSearchQuery(q);
+ const settled=await Promise.all(engines.map(async engine=>{try{return {engine,items:await fetchSearchEngine(engine,query,period),error:""}}catch(e){return {engine,items:[],error:String(e.message||e)}}}));
+ const combined=settled.flatMap(x=>x.items);
+ const byUrl=new Map(),byTitle=new Map();
+ for(const item of combined){
+  const u=normalizeStoryUrl(item.link),t=titleKey(item.title);
+  const existing=byUrl.get(u)||byTitle.get(t);
+  if(existing){
+   if((item.desc||"").length>(existing.desc||"").length)Object.assign(existing,item,{source:existing.source+" + "+item.source});
+   else if(!existing.source.includes(item.source))existing.source+=" + "+item.source;
+  }else{byUrl.set(u,item);byTitle.set(t,item)}
+ }
+ const unique=[...byUrl.values()].sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
+ // Keep the ordinary feed cache intact; search results are shown in the same story list.
+ const searchKeys=new Set(unique.map(x=>x.key));
+ items=[...unique,...items.filter(x=>!searchKeys.has(normalizeStoryUrl(x.link))&&!searchKeys.has(x.key))];
+ active="All";
+ document.querySelectorAll("[data-filter]").forEach(b=>b.classList.toggle("active",b.dataset.filter==="All"));
+ render();
+ const total=settled.reduce((n,x)=>n+x.items.length,0);
+ const errors=settled.filter(x=>x.error).map(x=>x.engine+": "+x.error);
+ $("searchStatus").textContent=unique.length+" unique results from "+engines.join(" + ")+". "+(total-unique.length)+" duplicates removed."+(errors.length?" Some engines failed: "+errors.join("; "):"");
+ $("count").textContent=unique.length+" search results · "+items.length+" headlines available";
+ $("updated").textContent="Search "+new Date().toLocaleTimeString();
+ $("webSearch").disabled=false;
+}
 async function fetchGithubReaperRepos(){
  const queries=["reaper reascript","reaper-scripts","reaper reapack"];
  const found=[];
@@ -244,6 +320,8 @@ async function loadFeeds(){
 }
 document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{active=b.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===b));render()});
 $("search").addEventListener("input",render);
+$("webSearch").onclick=runWebSearch;
+$("search").addEventListener("keydown",e=>{if(e.key==="Enter")runWebSearch()});
 $("refresh").onclick=loadFeeds;
 $("addFeed").onclick=()=>{let name=$("feedName").value.trim(),url=$("feedUrl").value.trim();if(!name||!/^https?:\/\//i.test(url)){alert("Enter a source name and a valid http(s) RSS URL.");return}feeds.push({name,url,cat:"Production"});localStorage.setItem("ar_feeds",JSON.stringify(feeds));$("feedName").value="";$("feedUrl").value="";renderSources();loadFeeds()};
 renderSources();
