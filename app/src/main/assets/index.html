@@ -368,12 +368,42 @@ function setView(view){
  if(!news){if(view==="torrents")loadTorrentMonitor();else renderResourceDirectory();}
 }
 
+function imageAccentHue(img){
+ try{
+  if(!img.complete||!img.naturalWidth)return null;
+  const canvas=document.createElement("canvas");
+  canvas.width=32;canvas.height=32;
+  const ctx=canvas.getContext("2d",{willReadFrequently:true});
+  ctx.drawImage(img,0,0,32,32);
+  const data=ctx.getImageData(0,0,32,32).data;
+  let sx=0,sy=0,ss=0,count=0;
+  for(let i=0;i<data.length;i+=4){
+   const a=data[i+3]/255;if(a<.6)continue;
+   const r=data[i]/255,g=data[i+1]/255,b=data[i+2]/255;
+   const max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;
+   const sat=max===0?0:d/max;
+   if(sat<.22||max<.16)continue;
+   let h=0;
+   if(d){if(max===r)h=((g-b)/d)%6;else if(max===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60;if(h<0)h+=360;}
+   const w=sat*max*a;
+   sx+=Math.cos(h*Math.PI/180)*w;sy+=Math.sin(h*Math.PI/180)*w;ss+=w;count++;
+  }
+  if(!count||!ss)return null;
+  let hue=Math.atan2(sy,sx)*180/Math.PI;
+  return (hue+360)%360;
+ }catch(e){return null}
+}
+function applyImageAccent(img){
+ const hue=imageAccentHue(img);
+ if(hue!==null)img.closest(".story")?.style.setProperty("--glass-hue",String(Math.round(hue)));
+}
 function render(){
  let q=$("search").value.toLowerCase().trim();
  let list=items.filter(x=>(active==="All"|| (active==="Saved"?saved.includes(x.key):x.cat===active)) && (!q||(x.title+" "+x.source+" "+x.desc).toLowerCase().includes(q)));
  list.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
  $("count").textContent=`${list.length} headlines · ${items.length} collected`;
- $("stories").innerHTML=list.length?list.map(x=>{const hue=({"REAPER":178,"Post-production":190,"Post Production":190,"DAWs & plugins":168,"Plugin releases":174,"Sound design":196,"Hardware":184,"Production":162,"Torrent Monitor":188})[x.cat]||((([...String(x.source||x.title||"")].reduce((n,ch)=>n+ch.charCodeAt(0),0)%31)+164));return `<article class="story" style="--glass-hue:${hue}">${x.image?`<img class="storymedia" src="${esc(x.image)}" alt="Image for ${esc(x.title)}" loading="lazy" onerror="this.remove()">`:""}<div class="meta"><span>${esc(x.source)}</span><span class="dot"></span><span>${esc(x.cat)}</span><span class="dot"></span><span>${x.date?new Date(x.date).toLocaleString():"Date unavailable"}</span></div><h2><a class="storytitle" href="${esc(x.link)}" target="_blank" rel="noopener">${esc(x.title)}</a></h2><p>${esc(x.desc)}</p><div class="storyfoot"><span class="note">OPEN STORY ↗</span><button class="save" data-save="${esc(x.key)}">${saved.includes(x.key)?"★ Saved":"☆ Save"}</button></div></article>`}).join(""):`<div class="empty">No headlines match this view. Try another category or refresh the feeds.</div>`;
+ $("stories").innerHTML=list.length?list.map(x=>{const hue=({"REAPER":178,"Post-production":190,"Post Production":190,"DAWs & plugins":168,"Plugin releases":174,"Sound design":196,"Hardware":184,"Production":162,"Torrent Monitor":188})[x.cat]||180;return `<article class="story" style="--glass-hue:${hue}">${x.image?`<img class="storymedia" crossorigin="anonymous" src="${esc(x.image)}" alt="Image for ${esc(x.title)}" loading="lazy" onload="applyImageAccent(this)" onerror="this.remove()">`:""}<div class="meta"><span>${esc(x.source)}</span><span class="dot"></span><span>${esc(x.cat)}</span><span class="dot"></span><span>${x.date?new Date(x.date).toLocaleString():"Date unavailable"}</span></div><h2><a class="storytitle" href="${esc(x.link)}" target="_blank" rel="noopener">${esc(x.title)}</a></h2><p>${esc(x.desc)}</p><div class="storyfoot"><span class="note">OPEN STORY ↗</span><button class="save" data-save="${esc(x.key)}">${saved.includes(x.key)?"★ Saved":"☆ Save"}</button></div></article>`}).join(""):`<div class="empty">No headlines match this view. Try another category or refresh the feeds.</div>`;
+ document.querySelectorAll("#stories .storymedia").forEach(img=>{if(img.complete)applyImageAccent(img)});
  document.querySelectorAll("[data-save]").forEach(b=>b.onclick=()=>{let k=b.dataset.save;saved=saved.includes(k)?saved.filter(v=>v!==k):[...saved,k];localStorage.setItem("ar_saved",JSON.stringify(saved));render()});
 }
 function renderSources(){
