@@ -52,6 +52,8 @@ main{padding-bottom:190px}
 .bottom-dock .toolbar{max-width:900px;margin:0 auto;border:0;padding:0 0 3px;gap:6px}
 .bottom-dock .toolbar button{min-height:36px;padding:7px 10px;font-size:9px}
 @media(min-width:650px){.bottom-dock{padding-left:max(12px,calc((100vw - 900px)/2));padding-right:max(12px,calc((100vw - 900px)/2))}}
+
+#resourceHub[hidden]{display:none!important}.resource-card{padding:12px 0;border-bottom:1px dashed #555}.resource-card:last-child{border:0}.resource-title{font-size:12px;font-weight:700;color:#fff}.resource-meta{font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:.6px;margin:4px 0}.resource-desc{font-size:11px;color:#bbb;line-height:1.55;margin:5px 0 8px}.resource-card a{display:inline-block;margin-top:3px}.resource-badge{display:inline-block;border:1px solid #666;padding:2px 5px;margin-right:5px;font-size:8px;color:#ddd}
 </style>
 </head>
 <body>
@@ -72,7 +74,24 @@ main{padding-bottom:190px}
 <header><div class="mast"><div class="top"><div><div class="brand">THE <span>AUDIO</span> DESK_</div><div class="sub">[ AUDIO INDUSTRY NEWS TERMINAL ]</div></div><button class="primary" id="refresh">Refresh ↻</button></div><div class="edition">[ TOOLS ] [ TECHNOLOGY ] [ RECORDING ] [ POST ]</div></div></header>
 <main>
 <div class="stats"><span id="count">Waiting for feeds…</span><span id="updated">Not refreshed yet</span></div>
-<div id="status" class="status">Tap Refresh or pull down to fetch the latest headlines.</div>
+<div id="status" class="status">Tap Refresh or pull down to fetch the latest headlines.</div>\n<div id="resourceHub" hidden>
+  <div class="panel">
+    <h3 id="resourceHeading">Audio resource directory</h3>
+    <p class="note" id="resourceIntro"></p>
+    <div class="tools" style="margin:12px 0 8px">
+      <select id="resourceCategory" class="search" aria-label="Filter resource category" style="max-width:48%;flex:1">
+        <option value="All">ALL CATEGORIES</option>
+      </select>
+      <select id="resourceAccess" class="search" aria-label="Filter access type" style="max-width:48%;flex:1">
+        <option value="All">ALL ACCESS</option><option value="Free">FREE</option><option value="Paid">PAID</option><option value="Free / paid">FREE / PAID</option>
+      </select>
+    </div>
+    <div id="resourceCount" class="status"></div>
+    <div id="resourceList"></div>
+  </div>
+  <p class="foot">THE AUDIO DESK · Resource listings are for discovery. Check each publisher's current terms, licensing and redistribution permissions before downloading or using material.</p>
+</div>
+
 <section id="stories"></section>
 <section class="panel">
 <h3>Global developer directory</h3>
@@ -108,7 +127,7 @@ main{padding-bottom:190px}
   </div>
   <div id="searchStatus" class="search-status">Search Google News + Bing News together. Results are merged and duplicates removed.</div>
   <div class="toolbar" id="filters">
-    <button class="active" data-filter="All">All</button><button data-filter="REAPER">REAPER</button><button data-filter="Post-production">Post-production</button><button data-filter="Post Production">POST PRODUCTION</button><button data-filter="DAWs & plugins">DAWs & plugins</button><button data-filter="Plugin releases">PLUGIN RELEASES</button><button data-filter="Sound design">Sound design</button><button data-filter="Hardware">Hardware</button><button data-filter="Production">Production</button><button data-filter="Videos">▶ VIDEOS</button><button data-filter="Saved">★ Saved</button>
+    <button class="active" data-filter="All">All</button><button data-filter="REAPER">REAPER</button><button data-filter="Post-production">Post-production</button><button data-filter="Post Production">POST PRODUCTION</button><button data-filter="DAWs & plugins">DAWs & plugins</button><button data-filter="Plugin releases">PLUGIN RELEASES</button><button data-filter="Sound design">Sound design</button><button data-filter="Hardware">Hardware</button><button data-filter="Production">Production</button><button data-filter="Videos">▶ VIDEOS</button><button data-filter="Saved">★ Saved</button><button data-view="torrents">AUDIO TORRENTS</button><button data-view="samples">SAMPLE PACKS</button>
   </div>
 </nav>
 <script>
@@ -194,7 +213,67 @@ function extractImage(it){
  }
  return "";
 }
-function render(){
+
+const torrentResources = [
+ {name:"Internet Archive",url:"https://archive.org/",category:"Public-domain & community audio",access:"Free",desc:"A large digital library. Some audio records expose BitTorrent downloads; check each item's rights statement and download options."},
+ {name:"etree.org",url:"https://etree.org/",category:"Artist-authorized live recordings",access:"Free",desc:"Community archive for live concert recordings shared under participating artists' taping and trading policies. Not every artist or recording is available."},
+ {name:"Academic Torrents",url:"https://academictorrents.com/",category:"Research audio datasets",access:"Free",desc:"Research dataset distribution using BitTorrent. Audio-related speech, music and sound datasets may be available; follow each dataset's license and research terms."}
+];
+const sampleResources = [
+ {name:"Freesound",url:"https://freesound.org/",category:"Foley & sound effects",access:"Free",desc:"Community sound library with per-file Creative Commons licenses. Check attribution and commercial-use conditions for each sound."},
+ {name:"Looperman",url:"https://www.looperman.com/",category:"Loops & samples",access:"Free",desc:"Community-uploaded loops, acapellas and samples. Review uploader terms and usage restrictions."},
+ {name:"BandLab Sounds",url:"https://www.bandlab.com/sounds",category:"Loops & one-shots",access:"Free",desc:"Discover loops, one-shots and sounds within BandLab's licensing and account terms."},
+ {name:"MusicRadar SampleRadar",url:"https://www.musicradar.com/news/tech/sampleradar-free-sample-downloads-217833",category:"Free sample packs",access:"Free",desc:"A long-running collection of free sample packs covering electronic, acoustic and cinematic material."},
+ {name:"Cymatics",url:"https://cymatics.fm/",category:"Producer packs",access:"Free / paid",desc:"Free downloads and commercial sample-pack releases across electronic and urban genres."},
+ {name:"Ghosthack",url:"https://www.ghosthack.de/",category:"Producer packs",access:"Free / paid",desc:"Freebies and paid packs for electronic production, sound design and cinematic work."},
+ {name:"SampleFocus",url:"https://samplefocus.com/",category:"Loops & one-shots",access:"Free / paid",desc:"Searchable community sample library with free and paid access options."},
+ {name:"Pianobook",url:"https://www.pianobook.co.uk/",category:"Kontakt & instruments",access:"Free",desc:"Community-made sampled instruments and libraries. Check each instrument's specific license and required sampler."},
+ {name:"Sonniss — GDC Game Audio Bundles",url:"https://sonniss.com/gameaudiogdc",category:"Sound effects & field recordings",access:"Free",desc:"Annual game-audio sound-effects bundles. Read the current bundle license before commercial use."},
+ {name:"Bedroom Producers Blog",url:"https://bedroomproducersblog.com/",category:"Free sample packs & plugins",access:"Free / paid",desc:"Production news and curated free sample-pack discoveries; follow through to the original creator for terms."},
+ {name:"Producer Loops",url:"https://www.producerloops.com/",category:"Commercial sample packs",access:"Paid",desc:"Commercial sample libraries, construction kits and genre-specific packs."},
+ {name:"Loopmasters",url:"https://www.loopmasters.com/",category:"Commercial sample packs",access:"Paid",desc:"Large sample-pack catalogue covering electronic music, instruments and sound design."},
+ {name:"Splice Sounds",url:"https://splice.com/sounds",category:"Subscription sample library",access:"Paid",desc:"Subscription-based sample and preset library. Review current plan and license terms."},
+ {name:"Loopcloud",url:"https://www.loopcloud.com/",category:"Subscription sample library",access:"Paid",desc:"Sample discovery and subscription library with integrated workflow tools."},
+ {name:"Samplephonics",url:"https://www.samplephonics.com/",category:"Commercial sample packs",access:"Paid",desc:"Sample packs, loops and sound libraries across electronic and acoustic styles."},
+ {name:"99Sounds",url:"https://99sounds.org/",category:"Free sound libraries",access:"Free",desc:"Free sound libraries and sound-design collections. Check the license attached to each release."},
+ {name:"Bedroom Producers Blog — Free sample packs",url:"https://bedroomproducersblog.com/category/free-sample-packs/",category:"Free sample packs",access:"Free",desc:"A focused feed of free sample-pack announcements and creator links."}
+];
+let activeView="news";
+function normalizeResourceUrl(raw){try{const u=new URL(raw);return u.hostname.toLowerCase().replace(/^www\\./,"")}catch{return String(raw).toLowerCase().trim()}}
+function renderResourceDirectory(){
+ const data=activeView==="torrents"?torrentResources:sampleResources;
+ const q=($("search").value||"").toLowerCase().trim();
+ const category=$("resourceCategory").value||"All";
+ const access=$("resourceAccess").value||"All";
+ const unique=[...new Map(data.map(x=>[normalizeResourceUrl(x.url),x])).values()];
+ const list=unique.filter(x=>(category==="All"||x.category===category)&&(access==="All"||x.access===access)&&(!q||(x.name+" "+x.category+" "+x.desc).toLowerCase().includes(q)));
+ const categories=[...new Set(unique.map(x=>x.category))].sort();
+ const select=$("resourceCategory");
+ const current=select.value||"All";
+ if(select.options.length!==categories.length+1||categories.some((v,i)=>select.options[i+1]?.value!==v)){
+  select.innerHTML='<option value="All">ALL CATEGORIES</option>'+categories.map(x=>'<option value="'+esc(x)+'">'+esc(x.toUpperCase())+'</option>').join("");
+  select.value=categories.includes(current)?current:"All";
+ }
+ $("resourceHeading").textContent=activeView==="torrents"?"Audio torrent & BitTorrent sources":"Sample pack directory";
+ $("resourceIntro").textContent=activeView==="torrents"
+  ?"A deduplicated directory of audio-relevant sources that explicitly provide or authorize BitTorrent distribution. This is not a catalogue of unauthorized plugin, sample or music releases. Sites that primarily index infringing uploads are intentionally not linked."
+  :"A separate directory for sample packs, loops, one-shots, instruments, Foley and sound libraries. Free/paid labels are indicative; verify the current terms on the source site.";
+ $("resourceCount").textContent=list.length+" sources · "+unique.length+" unique domains";
+ $("resourceList").innerHTML=list.length?list.map(x=>'<div class="resource-card"><div class="resource-title">'+esc(x.name)+'</div><div class="resource-meta">'+esc(x.category)+' · '+esc(x.access)+'</div><p class="resource-desc">'+esc(x.desc)+'</p><a href="'+esc(x.url)+'" target="_blank" rel="noopener">VISIT SOURCE ↗</a></div>').join(""):'<div class="empty">No resources match this search or filter.</div>';
+}
+function setView(view){
+ activeView=view;
+ const news=view==="news";
+ $("resourceHub").hidden=news;
+ $("stats").hidden=!news;
+ $("status").hidden=!news;
+ document.querySelectorAll("main > section").forEach(el=>el.hidden=!news);
+ document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
+ document.querySelectorAll("[data-filter]").forEach(b=>b.classList.toggle("active",news&&b.dataset.filter===active));
+ $("search").placeholder=news?"Search all audio news…":view==="torrents"?"Search torrent sources…":"Search sample packs…";
+ if(!news)renderResourceDirectory();
+}
+\nfunction render(){
  let q=$("search").value.toLowerCase().trim();
  let list=items.filter(x=>(active==="All"|| (active==="Saved"?saved.includes(x.key):x.cat===active)) && (!q||(x.title+" "+x.source+" "+x.desc).toLowerCase().includes(q)));
  list.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
@@ -319,7 +398,7 @@ async function loadFeeds(){
  if(window.AudioDesk && typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();
 }
 document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{active=b.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===b));render()});
-$("search").addEventListener("input",render);
+$("search").addEventListener("input",()=>{render();if(activeView!=="news")renderResourceDirectory()});\n$("resourceCategory").addEventListener("change",renderResourceDirectory);\n$("resourceAccess").addEventListener("change",renderResourceDirectory);\ndocument.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
 $("webSearch").onclick=runWebSearch;
 $("search").addEventListener("keydown",e=>{if(e.key==="Enter")runWebSearch()});
 $("refresh").onclick=loadFeeds;
