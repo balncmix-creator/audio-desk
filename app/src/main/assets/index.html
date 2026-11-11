@@ -79,6 +79,13 @@ main{padding-bottom:190px}
   <div class="panel">
     <h3 id="resourceHeading">Audio resource directory</h3>
     <p class="note" id="resourceIntro"></p>
+    <div id="watchlistTools" hidden style="margin:12px 0;padding:10px;border:1px dashed #666">
+      <div class="resource-title">MY PURCHASED PLUGINS — WATCHLIST</div>
+      <p class="resource-desc">Enter plugin or developer names separated by commas. Search results are leads only; they do not prove a listing is genuine.</p>
+      <textarea id="pluginWatchlist" class="search" rows="3" placeholder="FabFilter Pro-Q 4, Soundtoys 5, Kontakt 8…"></textarea>
+      <button class="primary" id="scanWatchlist" style="margin-top:8px">SCAN WATCHLIST</button>
+      <div class="note" id="watchlistStatus" style="margin-top:8px">Saved only on this device.</div>
+    </div>
     <div class="tools" style="margin:12px 0 8px">
       <select id="resourceCategory" class="search" aria-label="Filter resource category" style="max-width:48%;flex:1">
         <option value="All">ALL CATEGORIES</option>
@@ -247,6 +254,7 @@ let activeView="news";
 function normalizeResourceUrl(raw){try{const u=new URL(raw);return u.hostname.toLowerCase().replace(/^www\./,"")}catch{return String(raw).toLowerCase().trim()}}
 
 let torrentMonitorItems=[];
+let watchlistItems=[];
 async function loadTorrentMonitor(){
  $("resourceList").innerHTML='<div class="status">Checking indexed torrent-site mentions…</div>';
  const queries=[
@@ -261,11 +269,27 @@ async function loadTorrentMonitor(){
  torrentMonitorItems=results.flat().filter(x=>{const k=normalizeStoryUrl(x.link)||titleKey(x.title);if(seen.has(k))return false;seen.add(k);return true;}).sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
  renderTorrentMonitor();
 }
+async function scanPluginWatchlist(){
+ const names=$("pluginWatchlist").value.split(",").map(x=>x.trim()).filter(Boolean).slice(0,12);
+ localStorage.setItem("ar_plugin_watchlist",names.join(","));
+ $("watchlistStatus").textContent=names.length?"Scanning "+names.length+" names…":"Add at least one plugin or developer name.";
+ if(!names.length)return;
+ $("scanWatchlist").disabled=true;
+ const settled=await Promise.all(names.map(async name=>{
+  const query='"'+name.replace(/"/g,"")+'" (torrent OR crack OR keygen OR warez OR release) when:1y';
+  const url="https://news.google.com/rss/search?q="+encodeURIComponent(query)+"&hl=en-US&gl=US&ceid=US:en";
+  try{return (await fetchFeed({name:"Watchlist · "+name,url,cat:"Torrent Monitor"})).map(x=>({...x,watchName:name}));}catch{return []}
+ }));
+ const seen=new Set();
+ watchlistItems=settled.flat().filter(x=>{const k=normalizeStoryUrl(x.link)||titleKey(x.title);if(seen.has(k))return false;seen.add(k);return true;}).sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
+ $("watchlistStatus").textContent=watchlistItems.length+" indexed mentions found.";
+ $("scanWatchlist").disabled=false;
+}
 function renderTorrentMonitor(){
  const q=($("search").value||"").toLowerCase().trim();
- const rows=torrentMonitorItems.filter(x=>(x.title+" "+x.desc+" "+x.source).toLowerCase().includes(q));
- $("resourceCount").textContent=rows.length+" indexed mentions · last 30 days · duplicates removed";
- $("resourceList").innerHTML=rows.length?rows.map(x=>'<div class="resource-card"><div class="resource-title">'+esc(x.title)+'</div><div class="resource-meta">'+esc(x.source)+' · '+(x.date?new Date(x.date).toLocaleDateString():"Date unavailable")+'</div><p class="resource-desc">'+esc(x.desc)+'</p><a href="'+esc(x.link)+'" target="_blank" rel="noopener">OPEN RESULT ↗</a></div>').join(""):'<div class="empty">No indexed mentions match. This does not prove a plugin is absent from torrent sites.</div>';
+ const rows=[...torrentMonitorItems,...watchlistItems].filter(x=>(x.title+" "+x.desc+" "+x.source+" "+(x.watchName||"")).toLowerCase().includes(q));
+ $("resourceCount").textContent=rows.length+" indexed mentions · duplicates removed";
+ $("resourceList").innerHTML=rows.length?rows.map(x=>'<div class="resource-card"><div class="resource-title">'+esc(x.title)+'</div><div class="resource-meta">'+esc(x.source)+(x.watchName?" · WATCHLIST: "+esc(x.watchName):"")+' · '+(x.date?new Date(x.date).toLocaleDateString():"Date unavailable")+'</div><p class="resource-desc">'+esc(x.desc)+'</p><a href="'+esc(x.link)+'" target="_blank" rel="noopener">OPEN RESULT ↗</a></div>').join(""):'<div class="empty">No indexed mentions match. This does not prove a plugin is absent from torrent sites.</div>';
 }
 function renderResourceDirectory(){
  const data=activeView==="torrents"?torrentResources:sampleResources;
@@ -282,6 +306,7 @@ function renderResourceDirectory(){
   select.value=categories.includes(current)?current:"All";
  }
  $("resourceHeading").textContent=activeView==="torrents"?"Audio Torrent Monitor":"Sample pack directory";
+ $("watchlistTools").hidden=activeView!=="torrents";
  $("resourceCategory").parentElement.hidden=activeView==="torrents";
  $("resourceIntro").textContent=activeView==="torrents"
   ?"Track indexed mentions of audio plugins, DAWs and sample libraries on torrent/warez sites. Results are monitoring leads only, not download links. Coverage depends on search-engine indexing and is not exhaustive."
@@ -431,6 +456,8 @@ $("search").addEventListener("input",()=>{if(activeView==="news")render();else i
 $("resourceCategory").addEventListener("change",()=>{if(activeView==="torrents")renderTorrentMonitor();else renderResourceDirectory()});
 $("resourceAccess").addEventListener("change",()=>{if(activeView==="torrents")renderTorrentMonitor();else renderResourceDirectory()});
 document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
+$("scanWatchlist").onclick=scanPluginWatchlist;
+$("pluginWatchlist").value=localStorage.getItem("ar_plugin_watchlist")||"";
 $("webSearch").onclick=runWebSearch;
 $("search").addEventListener("keydown",e=>{if(e.key==="Enter")runWebSearch()});
 $("refresh").onclick=loadFeeds;
