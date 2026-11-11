@@ -240,7 +240,7 @@ const sampleResources = [
  {name:"Bedroom Producers Blog — Free sample packs",url:"https://bedroomproducersblog.com/category/free-sample-packs/",category:"Free sample packs",access:"Free",desc:"A focused feed of free sample-pack announcements and creator links."}
 ];
 let activeView="news";
-function normalizeResourceUrl(raw){try{const u=new URL(raw);return u.hostname.toLowerCase().replace(/^www\\./,"")}catch{return String(raw).toLowerCase().trim()}}
+function normalizeResourceUrl(raw){try{const u=new URL(raw);return u.hostname.toLowerCase().replace(/^www\./,"")}catch{return String(raw).toLowerCase().trim()}}
 function renderResourceDirectory(){
  const data=activeView==="torrents"?torrentResources:sampleResources;
  const q=($("search").value||"").toLowerCase().trim();
