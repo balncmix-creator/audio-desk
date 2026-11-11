@@ -438,20 +438,42 @@ async function fetchGithubReaperRepos(){
  found.forEach(x=>{if(!unique.has(x.key))unique.set(x.key,x)});
  return [...unique.values()];
 }
+async function fetchFeedWithTimeout(feed,timeoutMs=9000){
+ let timer;
+ try{
+  return await Promise.race([
+   fetchFeed(feed),
+   new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error("Timed out after "+Math.round(timeoutMs/1000)+"s")),timeoutMs)})
+  ]);
+ }finally{if(timer)clearTimeout(timer)}
+}
 async function loadFeeds(){
- $("refresh").disabled=true;$("status").textContent=`Fetching ${feeds.length} sources…`;
+ if($("refresh").disabled)return;
+ $("refresh").disabled=true;
+ $("status").textContent=`Updating ${feeds.length} RSS sources…`;
  let ok=0,failed=[];
- const results=await Promise.all(feeds.map(async f=>{try{let x=await fetchFeed(f);ok++;return x}catch(e){failed.push(f.name);return []}}));
- let all=results.flat();
- let githubRepos=[];
- try{githubRepos=await fetchGithubReaperRepos()}catch(e){console.warn(e)}
- all.push(...githubRepos);
- const seen=new Set();items=all.filter(x=>{if(seen.has(x.key))return false;seen.add(x.key);return true});
- $("status").textContent=`Loaded ${ok}/${feeds.length} RSS sources and ${githubRepos.length} GitHub repositories.`+(failed.length?` Some feeds failed: ${failed.join(", ")}.`:"");
+ const results=await Promise.all(feeds.map(async f=>{
+  try{const x=await fetchFeedWithTimeout(f);ok++;return x}
+  catch(e){failed.push(f.name);return []}
+ }));
+ const all=results.flat();
+ const seen=new Set();
+ items=all.filter(x=>{const k=normalizeStoryUrl(x.link)||titleKey(x.title);if(seen.has(k))return false;seen.add(k);return true});
  localStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)));
- $("updated").textContent="Updated "+new Date().toLocaleTimeString();
- $("refresh").disabled=false;render();
+ $("updated").textContent="RSS updated "+new Date().toLocaleTimeString();
+ render();
+ $("status").textContent=`Loaded ${ok}/${feeds.length} RSS sources.`+(failed.length?` ${failed.length} timed out or failed.`:"")+" GitHub discovery is updating in the background.";
+ $("refresh").disabled=false;
  if(window.AudioDesk && typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();
+ // GitHub discovery is deliberately non-blocking: it must never hold up the news refresh.
+ fetchGithubReaperRepos().then(repos=>{
+  const merged=[...items,...repos],unique=new Map();
+  merged.forEach(x=>{const k=normalizeStoryUrl(x.link)||titleKey(x.title);if(!unique.has(k))unique.set(k,x)});
+  items=[...unique.values()].sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
+  localStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)));
+  render();
+  $("status").textContent+=` GitHub: ${repos.length} repositories added.`;
+ }).catch(e=>console.warn("Background GitHub discovery failed",e));
 }
 document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{setView("news");active=b.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===b));render()});
 $("search").addEventListener("input",()=>{if(activeView==="news")render();else if(activeView==="torrents")renderTorrentMonitor();else renderResourceDirectory()});
