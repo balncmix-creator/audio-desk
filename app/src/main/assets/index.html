@@ -194,9 +194,21 @@ const defaults = [
 {name:"Google News — new REAPER scripts on GitHub",url:"https://news.google.com/rss/search?q=(REAPER+OR+ReaScript)+GitHub+(script+OR+ReaPack)&hl=en-US&gl=US&ceid=US:en",cat:"REAPER"}
 ];
 const savedFeeds=readStore("ar_feeds",[])||[];
-let feeds=[...defaults,...savedFeeds.filter(saved=>!defaults.some(d=>d.url===saved.url))];
+const removedFeeds=new Set(readStore("ar_removed_feeds",[])||[]);
+let feeds=[...defaults,...savedFeeds.filter(saved=>!defaults.some(d=>d.url===saved.url))].filter(f=>!removedFeeds.has(f.url));
 let items=readStore("ar_items",[]),active="All",saved=readStore("ar_saved",[]);
+let savedItems=readStore("ar_saved_items",[])||[];
 const $=id=>document.getElementById(id);
+function rememberSaved(){
+ const records=new Map([...savedItems,...items].filter(x=>saved.includes(x.key)).map(x=>[x.key,x]));
+ savedItems=[...records.values()];
+ try{
+  localStorage.setItem("ar_saved_items",JSON.stringify(savedItems));
+  localStorage.setItem("ar_saved",JSON.stringify(saved));
+ }catch(e){console.warn("Could not save bookmarks",e)}
+}
+// Migrate bookmarks while their article details are still in the old cache.
+rememberSaved();
 function readStore(key,fallback){try{const raw=localStorage.getItem(key);return raw===null?fallback:JSON.parse(raw)}catch(e){console.warn("Storage recovery:",key,e);return fallback}}
 window.onerror=function(message,source,line,col,error){const status=$("status");if(status)status.textContent="App script error: "+String(message)+" (line "+line+"). Tap Refresh to retry.";console.error("Audio Desk boot error",message,source,line,col,error);return false};
 window.addEventListener("unhandledrejection",e=>{const status=$("status");if(status)status.textContent="App request error: "+String((e.reason&&e.reason.message)||e.reason||"Unknown error")+". Tap Refresh to retry.";console.error("Audio Desk promise error",e.reason)});
@@ -266,10 +278,12 @@ function normalizeResourceUrl(raw){try{const u=new URL(raw);return u.hostname.to
 
 let torrentMonitorItems=[];
 let watchlistItems=[];
+let radarRequest=0;
 function torrentWindowTerm(period){
  return period==="1d"?"when:1d":period==="7d"?"when:7d":period==="30d"?"when:30d":period==="365d"?"when:1y":"";
 }
 async function loadTorrentMonitor(){
+ const request=++radarRequest;
  const period=($("torrentPeriod")&&$("torrentPeriod").value)||"7d";
  const windowTerm=torrentWindowTerm(period);
  $("resourceList").innerHTML='<div class="status">Scanning audio release radar across multiple indexed sources…</div>';
@@ -288,11 +302,12 @@ async function loadTorrentMonitor(){
   const googleUrl="https://news.google.com/rss/search?q="+encodeURIComponent(query)+"&hl=en-US&gl=US&ceid=US:en";
   const bingUrl="https://www.bing.com/news/search?q="+encodeURIComponent(query)+"&format=rss&setmkt=en-US";
   const sources=await Promise.all([
-   fetchFeed({name:"Google News · "+["Torrent domains","Plugin releases","Kontakt & sample libraries","DAWs & audio software","Mixing & instruments","Sound libraries"][i],url:googleUrl,cat:"Torrent Monitor"}).catch(()=>[]),
-   fetchFeed({name:"Bing News · "+["Torrent domains","Plugin releases","Kontakt & sample libraries","DAWs & audio software","Mixing & instruments","Sound libraries"][i],url:bingUrl,cat:"Torrent Monitor"}).catch(()=>[])
+   fetchFeedWithTimeout({name:"Google News · "+["Torrent domains","Plugin releases","Kontakt & sample libraries","DAWs & audio software","Mixing & instruments","Sound libraries"][i],url:googleUrl,cat:"Torrent Monitor"}).catch(()=>[]),
+   fetchFeedWithTimeout({name:"Bing News · "+["Torrent domains","Plugin releases","Kontakt & sample libraries","DAWs & audio software","Mixing & instruments","Sound libraries"][i],url:bingUrl,cat:"Torrent Monitor"}).catch(()=>[])
   ]);
   return sources.flat();
  }));
+ if(request!==radarRequest)return;
  const seen=new Set();
  const cutoff=period==="1d"?Date.now()-86400000:period==="7d"?Date.now()-7*86400000:period==="30d"?Date.now()-30*86400000:period==="365d"?Date.now()-365*86400000:0;
  torrentMonitorItems=settled.flat().filter(x=>{
@@ -303,28 +318,29 @@ async function loadTorrentMonitor(){
   seen.add(k);return true;
  }).sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
  $("refreshTorrent").disabled=false;
- renderTorrentMonitor();
- $("resourceCount").textContent=torrentMonitorItems.length+" indexed mentions · "+queries.length+" query groups · duplicates removed";
+ if(activeView==="torrents")renderTorrentMonitor();
 }
 async function scanPluginWatchlist(){
  const names=$("pluginWatchlist").value.split(",").map(x=>x.trim()).filter(Boolean).slice(0,12);
  localStorage.setItem("ar_plugin_watchlist",names.join(","));
  $("watchlistStatus").textContent=names.length?"Scanning "+names.length+" names…":"Add at least one plugin or developer name.";
- if(!names.length)return;
+ if(!names.length){watchlistItems=[];if(activeView==="torrents")renderTorrentMonitor();return;}
  $("scanWatchlist").disabled=true;
  const settled=await Promise.all(names.map(async name=>{
   const query='"'+name.replace(/"/g,"")+'" (torrent OR crack OR keygen OR warez OR release) when:1y';
   const url="https://news.google.com/rss/search?q="+encodeURIComponent(query)+"&hl=en-US&gl=US&ceid=US:en";
-  try{return (await fetchFeed({name:"Watchlist · "+name,url,cat:"Torrent Monitor"})).map(x=>({...x,watchName:name}));}catch{return []}
+  try{return (await fetchFeedWithTimeout({name:"Watchlist · "+name,url,cat:"Torrent Monitor"})).map(x=>({...x,watchName:name}));}catch{return []}
  }));
  const seen=new Set();
  watchlistItems=settled.flat().filter(x=>{const k=normalizeStoryUrl(x.link)||titleKey(x.title);if(seen.has(k))return false;seen.add(k);return true;}).sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
  $("watchlistStatus").textContent=watchlistItems.length+" indexed mentions found.";
  $("scanWatchlist").disabled=false;
+ if(activeView==="torrents")renderTorrentMonitor();
 }
 function renderTorrentMonitor(){
  const q=($("search").value||"").toLowerCase().trim();
- const rows=[...torrentMonitorItems,...watchlistItems].filter(x=>(x.title+" "+x.desc+" "+x.source+" "+(x.watchName||"")).toLowerCase().includes(q));
+ const unique=new Map([...torrentMonitorItems,...watchlistItems].map(x=>[normalizeStoryUrl(x.link)||titleKey(x.title),x]));
+ const rows=[...unique.values()].filter(x=>(x.title+" "+x.desc+" "+x.source+" "+(x.watchName||"")).toLowerCase().includes(q));
  $("resourceCount").textContent=rows.length+" indexed mentions · duplicates removed";
  $("resourceList").innerHTML=rows.length?rows.map(x=>'<div class="resource-card"><div class="resource-title">'+esc(x.title)+'</div><div class="resource-meta">'+esc(x.source)+(x.watchName?" · WATCHLIST: "+esc(x.watchName):"")+' · '+(x.date?new Date(x.date).toLocaleDateString():"Date unavailable")+'</div><p class="resource-desc">'+esc(x.desc)+'</p><a href="'+esc(x.link)+'" target="_blank" rel="noopener">OPEN RESULT ↗</a></div>').join(""):'<div class="empty">No indexed mentions match. This does not prove a plugin is absent from torrent sites.</div>';
 }
@@ -399,16 +415,17 @@ function applyImageAccent(img){
 }
 function render(){
  let q=$("search").value.toLowerCase().trim();
- let list=items.filter(x=>(active==="All"|| (active==="Saved"?saved.includes(x.key):x.cat===active)) && (!q||(x.title+" "+x.source+" "+x.desc).toLowerCase().includes(q)));
+ const available=active==="Saved"?[...new Map([...savedItems,...items].map(x=>[x.key,x])).values()]:items;
+ let list=available.filter(x=>(active==="All"|| (active==="Saved"?saved.includes(x.key):x.cat===active)) && (!q||(x.title+" "+x.source+" "+x.desc).toLowerCase().includes(q)));
  list.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
  $("count").textContent=`${list.length} headlines · ${items.length} collected`;
  $("stories").innerHTML=list.length?list.map(x=>{const hue=({"REAPER":178,"Post-production":190,"Post Production":190,"DAWs & plugins":168,"Plugin releases":174,"Sound design":196,"Hardware":184,"Production":162,"Torrent Monitor":188})[x.cat]||180;return `<article class="story" style="--glass-hue:${hue}">${x.image?`<img class="storymedia" src="${esc(x.image)}" alt="Image for ${esc(x.title)}" loading="lazy" onload="applyImageAccent(this)" onerror="this.remove()">`:""}<div class="meta"><span>${esc(x.source)}</span><span class="dot"></span><span>${esc(x.cat)}</span><span class="dot"></span><span>${x.date?new Date(x.date).toLocaleString():"Date unavailable"}</span></div><h2><a class="storytitle" href="${esc(x.link)}" target="_blank" rel="noopener">${esc(x.title)}</a></h2><p>${esc(x.desc)}</p><div class="storyfoot"><span class="note">OPEN STORY ↗</span><button class="save" data-save="${esc(x.key)}">${saved.includes(x.key)?"★ Saved":"☆ Save"}</button></div></article>`}).join(""):`<div class="empty">No headlines match this view. Try another category or refresh the feeds.</div>`;
  document.querySelectorAll("#stories .storymedia").forEach(img=>{if(img.complete)applyImageAccent(img)});
- document.querySelectorAll("[data-save]").forEach(b=>b.onclick=()=>{let k=b.dataset.save;saved=saved.includes(k)?saved.filter(v=>v!==k):[...saved,k];localStorage.setItem("ar_saved",JSON.stringify(saved));render()});
+ document.querySelectorAll("[data-save]").forEach(b=>b.onclick=()=>{let k=b.dataset.save;saved=saved.includes(k)?saved.filter(v=>v!==k):[...saved,k];rememberSaved();render()});
 }
 function renderSources(){
  $("sources").innerHTML=feeds.map((f,i)=>`<div class="source"><div>${esc(f.name)}<small>${esc(f.cat)}</small></div><button class="save" data-remove="${i}">Remove</button></div>`).join("");
- document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{feeds.splice(+b.dataset.remove,1);localStorage.setItem("ar_feeds",JSON.stringify(feeds));renderSources();loadFeeds()});
+ document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{const removed=feeds.splice(+b.dataset.remove,1)[0];removedFeeds.add(removed.url);localStorage.setItem("ar_removed_feeds",JSON.stringify([...removedFeeds]));localStorage.setItem("ar_feeds",JSON.stringify(feeds));renderSources();loadFeeds()});
 }
 async function fetchFeed(feed){
  const endpoint="https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(feed.url);
@@ -530,13 +547,15 @@ async function loadFeeds(){
     $("status").textContent=`Refreshing feeds… ${done}/${feeds.length} checked · ${ok} loaded`;
    }
   }));
-  const all=results.flat();
+  // Keep cached stories for unavailable sources, including a fully offline launch.
+  const retained=ok===0?items:items.filter(x=>failed.includes(x.source));
+  const all=[...results.flat(),...retained];
   const seen=new Set();
   items=all.filter(x=>{const k=normalizeStoryUrl(x.link)||titleKey(x.title);if(seen.has(k))return false;seen.add(k);return true});
   try{localStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)))}catch(e){console.warn("Could not cache headlines",e)}
-  $("updated").textContent="RSS updated "+new Date().toLocaleTimeString();
+  if(ok>0)$("updated").textContent="RSS updated "+new Date().toLocaleTimeString();
   render();
-  $("status").textContent=`Loaded ${ok}/${feeds.length} RSS sources.`+(failed.length?` ${failed.length} timed out or failed.`:"")+" GitHub discovery is updating in the background.";
+  $("status").textContent=`Loaded ${ok}/${feeds.length} RSS sources.`+(failed.length?` ${failed.length} timed out or failed; cached headlines kept.`:"")+" GitHub discovery is updating in the background.";
   if(window.AudioDesk && typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();
   // GitHub discovery stays in the background and never delays the RSS refresh.
   fetchGithubReaperRepos().then(repos=>{
@@ -561,12 +580,12 @@ $("resourceAccess").addEventListener("change",()=>{if(activeView==="torrents")re
 document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
 $("scanWatchlist").onclick=scanPluginWatchlist;
 $("pluginWatchlist").value=localStorage.getItem("ar_plugin_watchlist")||"";
-$("scanWatchlist").onclick=scanPluginWatchlist;
-$("pluginWatchlist").value=localStorage.getItem("ar_plugin_watchlist")||"";
+$("refreshTorrent").onclick=loadTorrentMonitor;
+$("torrentPeriod").addEventListener("change",loadTorrentMonitor);
 $("webSearch").onclick=runWebSearch;
 $("search").addEventListener("keydown",e=>{if(e.key==="Enter")runWebSearch()});
 $("refresh").onclick=loadFeeds;
-$("addFeed").onclick=()=>{let name=$("feedName").value.trim(),url=$("feedUrl").value.trim();if(!name||!/^https?:\/\//i.test(url)){alert("Enter a source name and a valid http(s) RSS URL.");return}feeds.push({name,url,cat:"Production"});localStorage.setItem("ar_feeds",JSON.stringify(feeds));$("feedName").value="";$("feedUrl").value="";renderSources();loadFeeds()};
+$("addFeed").onclick=()=>{let name=$("feedName").value.trim(),url=$("feedUrl").value.trim();if(!name||!/^https?:\/\//i.test(url)){alert("Enter a source name and a valid http(s) RSS URL.");return}removedFeeds.delete(url);localStorage.setItem("ar_removed_feeds",JSON.stringify([...removedFeeds]));if(!feeds.some(f=>f.url===url))feeds.push({name,url,cat:"Production"});localStorage.setItem("ar_feeds",JSON.stringify(feeds));$("feedName").value="";$("feedUrl").value="";renderSources();loadFeeds()};
 renderSources();
 // Always show the first filter from its left edge on launch.
 $("filters").scrollLeft=0;
