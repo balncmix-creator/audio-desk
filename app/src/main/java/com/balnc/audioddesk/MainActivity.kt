@@ -32,7 +32,7 @@ class MainActivity : Activity() {
     private lateinit var browserAddress: TextView
     private val refreshHandler = Handler(Looper.getMainLooper())
     private val refreshFailsafe = Runnable { swipeRefresh.isRefreshing = false }
-    private val imageAccents = ImageAccentSampler()
+    private lateinit var imageAccents: ImageAccentSampler
     private var destroyed = false
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -74,6 +74,7 @@ class MainActivity : Activity() {
         swipeRefresh = DeskRefreshLayout(this)
         appWebView = WebView(this)
         configure(appWebView)
+        imageAccents = ImageAccentSampler(appWebView.settings.userAgentString)
         appWebView.addJavascriptInterface(AppBridge(), "AudioDesk")
         appWebView.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?) =
@@ -220,7 +221,7 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         destroyed = true
-        imageAccents.close()
+        if (::imageAccents.isInitialized) imageAccents.close()
         refreshHandler.removeCallbacks(refreshFailsafe)
         if (::browserWebView.isInitialized) browserWebView.destroy()
         if (::appWebView.isInitialized) appWebView.destroy()

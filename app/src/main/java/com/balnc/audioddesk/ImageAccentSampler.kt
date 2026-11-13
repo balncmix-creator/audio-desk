@@ -15,7 +15,7 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 
 /** Samples public publisher images off the UI thread without requiring canvas CORS. */
-class ImageAccentSampler {
+class ImageAccentSampler(private val userAgent: String) {
     private val cache = LruCache<String, Int>(64)
     private val executor = ThreadPoolExecutor(2, 2, 30, TimeUnit.SECONDS, ArrayBlockingQueue<Runnable>(16), ThreadPoolExecutor.DiscardPolicy())
 
@@ -46,6 +46,7 @@ class ImageAccentSampler {
                 connection.readTimeout = 3000
                 connection.instanceFollowRedirects = false
                 connection.setRequestProperty("Accept", "image/*")
+                connection.setRequestProperty("User-Agent", userAgent)
                 val status = connection.responseCode
                 if (status in listOf(301, 302, 303, 307, 308)) {
                     url = URL(url, connection.getHeaderField("Location") ?: return null)
