@@ -1,6 +1,12 @@
 # audio-desk
 8-bit audio industry news reader and REAPER discovery hub
 
+## Version 1.15
+
+- Keep neutral grey cards by default; image cards receive a subtle sampled colour tint.
+- Sample publisher images natively when browser canvas access is restricted.
+- Keep monochrome, missing and unreadable images neutral, without hiding valid thumbnails.
+
 ## Version 1.14
 
 - Use the isometric desk and correctly projected waveform as the launcher icon.
@@ -32,7 +38,7 @@ including network failures. They do not replace Android device testing.
 
 GitHub Actions builds an installable debug APK and an unsigned Play review bundle
 on pushes to `main`. Download the `Audio-Desk-APK` artifact from the successful
-build. Version 1.14 uses version code 15 and targets Android 16 / API 36.
+build. Version 1.15 uses version code 16 and targets Android 16 / API 36.
 
 Release builds generate a separate asset bundle with torrent/warez discovery UI,
 feed definitions and code removed. The ordinary debug APK retains its existing

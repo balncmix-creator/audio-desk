@@ -22,6 +22,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.webkit.WebViewAssetLoader
+import org.json.JSONObject
 
 class MainActivity : Activity() {
     private lateinit var appWebView: WebView
@@ -31,6 +32,8 @@ class MainActivity : Activity() {
     private lateinit var browserAddress: TextView
     private val refreshHandler = Handler(Looper.getMainLooper())
     private val refreshFailsafe = Runnable { swipeRefresh.isRefreshing = false }
+    private val imageAccents = ImageAccentSampler()
+    private var destroyed = false
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun configure(webView: WebView) {
@@ -161,6 +164,17 @@ class MainActivity : Activity() {
     }
 
     private inner class AppBridge {
+        @JavascriptInterface fun sampleImageAccent(url: String, requestId: String) {
+            if (requestId.length > 32 || requestId.isEmpty() || !requestId.all { it.isDigit() }) return
+            imageAccents.sample(url) { color ->
+                runOnUiThread {
+                    if (!destroyed) {
+                        val rgb = color?.let { "[${Color.red(it)},${Color.green(it)},${Color.blue(it)}]" } ?: "null"
+                        appWebView.evaluateJavascript("window.receiveImageAccent&&window.receiveImageAccent(${JSONObject.quote(requestId)},$rgb)", null)
+                    }
+                }
+            }
+        }
         @JavascriptInterface fun openArticle(url: String) { runOnUiThread { openInBrowser(url) } }
         @JavascriptInterface fun refreshStarted() {
             runOnUiThread {
@@ -205,6 +219,8 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        destroyed = true
+        imageAccents.close()
         refreshHandler.removeCallbacks(refreshFailsafe)
         if (::browserWebView.isInitialized) browserWebView.destroy()
         if (::appWebView.isInitialized) appWebView.destroy()
