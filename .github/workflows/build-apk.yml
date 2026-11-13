@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
 permissions:
-  contents: read
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -42,3 +42,18 @@ jobs:
           name: Audio-Desk-Play-UNSIGNED-review-only
           path: app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
+      - name: Publish directly downloadable test APK
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts)
+          test -n "$VERSION"
+          TAG="v$VERSION"
+          APK="Audio-Desk-$TAG.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$APK"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" --clobber
+          else
+            gh release create "$TAG" "$APK" --title "Audio Desk $TAG (test APK)" --notes "Direct installable Android debug APK. This is a test build, not a Play Store release. Build commit: ${GITHUB_SHA}" --prerelease
+          fi
