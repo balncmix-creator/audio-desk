@@ -21,13 +21,12 @@ import android.window.OnBackInvokedDispatcher
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.webkit.WebViewAssetLoader
 
 class MainActivity : Activity() {
     private lateinit var appWebView: WebView
     private lateinit var browserWebView: WebView
-    private lateinit var swipeRefresh: SwipeRefreshLayout
+    private lateinit var swipeRefresh: DeskRefreshLayout
     private lateinit var browserPanel: LinearLayout
     private lateinit var browserAddress: TextView
     private val refreshHandler = Handler(Looper.getMainLooper())
@@ -69,10 +68,7 @@ class MainActivity : Activity() {
             insets
         }
 
-        swipeRefresh = SwipeRefreshLayout(this).apply {
-            setColorSchemeColors(Color.BLACK, Color.DKGRAY)
-            setProgressBackgroundColorSchemeColor(Color.WHITE)
-        }
+        swipeRefresh = DeskRefreshLayout(this)
         appWebView = WebView(this)
         configure(appWebView)
         appWebView.addJavascriptInterface(AppBridge(), "AudioDesk")
@@ -89,7 +85,7 @@ class MainActivity : Activity() {
                 return false
             }
         }
-        swipeRefresh.addView(appWebView)
+        swipeRefresh.setContent(appWebView)
         swipeRefresh.setOnRefreshListener {
             refreshHandler.removeCallbacks(refreshFailsafe)
             // Prevent a lost WebView callback from leaving the native spinner running.
@@ -166,6 +162,13 @@ class MainActivity : Activity() {
 
     private inner class AppBridge {
         @JavascriptInterface fun openArticle(url: String) { runOnUiThread { openInBrowser(url) } }
+        @JavascriptInterface fun refreshStarted() {
+            runOnUiThread {
+                swipeRefresh.isRefreshing = true
+                refreshHandler.removeCallbacks(refreshFailsafe)
+                refreshHandler.postDelayed(refreshFailsafe, 15000L)
+            }
+        }
         @JavascriptInterface fun refreshFinished() {
             runOnUiThread {
                 refreshHandler.removeCallbacks(refreshFailsafe)

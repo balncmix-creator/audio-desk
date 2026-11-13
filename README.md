@@ -1,6 +1,14 @@
 # audio-desk
 8-bit audio industry news reader and REAPER discovery hub
 
+## Version 1.14
+
+- Use the isometric desk and correctly projected waveform as the launcher icon.
+- Reveal the same desk during pull-to-refresh; only the waveform oscillates.
+- Stop motion after refresh, on timeout, while hidden, or when animations are disabled.
+- Share canonical logo geometry between launcher, native loader and preview.
+- Cover pull thresholds, cancellation, scroll and horizontal gestures with Android unit tests.
+
 ## Version 1.13
 
 - Replace teal article cards and image-derived tints with subtle grey panels.
@@ -24,7 +32,7 @@ including network failures. They do not replace Android device testing.
 
 GitHub Actions builds an installable debug APK and an unsigned Play review bundle
 on pushes to `main`. Download the `Audio-Desk-APK` artifact from the successful
-build. Version 1.13 uses version code 14 and targets Android 16 / API 36.
+build. Version 1.14 uses version code 15 and targets Android 16 / API 36.
 
 Release builds generate a separate asset bundle with torrent/warez discovery UI,
 feed definitions and code removed. The ordinary debug APK retains its existing

@@ -506,6 +506,7 @@ async function fetchFeedWithTimeout(feed,timeoutMs=9000){
 async function loadFeeds(){
  if($("refresh").disabled){if(window.AudioDesk&&typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();return;}
  $("refresh").disabled=true;
+ if(window.AudioDesk && typeof window.AudioDesk.refreshStarted==="function")window.AudioDesk.refreshStarted();
  let ok=0,done=0,failed=[];
  $("status").textContent=`Refreshing ${feeds.length} sources…`;
  try{
@@ -526,7 +527,6 @@ async function loadFeeds(){
   if(ok>0)$("updated").textContent="RSS updated "+new Date().toLocaleTimeString();
   render();
   $("status").textContent=`Loaded ${ok}/${feeds.length} RSS sources.`+(failed.length?` ${failed.length} timed out or failed; cached headlines kept.`:"")+" GitHub discovery is updating in the background.";
-  if(window.AudioDesk && typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();
   // GitHub discovery stays in the background and never delays the RSS refresh.
   fetchGithubReaperRepos().then(repos=>{
    const merged=[...items,...repos],unique=new Map();

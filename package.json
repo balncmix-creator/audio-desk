@@ -2,7 +2,7 @@
   "name": "audio-desk-checks",
   "private": true,
   "scripts": {
-    "test": "node tests/app.cjs && node scripts/prepare-play.cjs && node tests/play.cjs",
+    "test": "node scripts/generate-brand.cjs --check && node tests/app.cjs && node scripts/prepare-play.cjs && node tests/play.cjs",
     "prepare:play": "node scripts/prepare-play.cjs"
   },
   "devDependencies": {

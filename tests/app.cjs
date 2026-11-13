@@ -6,6 +6,10 @@ const assert=require('node:assert/strict');
  const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,args:['--no-sandbox']});
  try {
  const page=await browser.newPage({viewport:{width:393,height:852}});
+ await page.addInitScript(()=>{
+  window.refreshEvents=[];
+  window.AudioDesk={refreshStarted(){window.refreshEvents.push('started')},refreshFinished(){window.refreshEvents.push('finished')}};
+ });
  let offline=false,requests=0,watch=false;
  await page.route('**/*',async route=>{
   const url=route.request().url();
@@ -24,12 +28,14 @@ const assert=require('node:assert/strict');
  await page.waitForFunction(()=>!document.getElementById('refresh').disabled);
  await page.waitForTimeout(100);
  assert.deepEqual(errors,[],'app must start without script errors');
+ assert.deepEqual(await page.evaluate(()=>window.refreshEvents),['started','finished'],'native indicator needs balanced start/finish callbacks');
  await page.locator('[data-save]').click();
  offline=true;
  await page.locator('#refresh').click();
  await page.waitForFunction(()=>!document.getElementById('refresh').disabled);
  await page.waitForTimeout(100);
  assert.deepEqual(await page.evaluate(()=>({cached:JSON.parse(localStorage.ar_items).length,savedKeys:JSON.parse(localStorage.ar_saved).length,visible:document.querySelectorAll('.story').length})),{cached:1,savedKeys:1,visible:1},'offline refresh must preserve cached headlines and bookmarks');
+ assert.deepEqual(await page.evaluate(()=>window.refreshEvents),['started','finished','started','finished'],'failed requests must stop the native loading animation');
  offline=false;
  const before=await page.locator('#sources .source').count();
  await page.locator('[data-remove="0"]').click();
