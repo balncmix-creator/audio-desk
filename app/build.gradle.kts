@@ -44,6 +44,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
+    // Each edition has exactly one index.html; generated asset priority must
+    // never determine whether the restricted discovery feature is packaged.
+    sourceSets.getByName("main").assets.setSrcDirs(emptyList<String>())
+    sourceSets.getByName("debug").assets.srcDir("src/main/assets")
 }
 
 abstract class PreparePlayAssets : DefaultTask() {

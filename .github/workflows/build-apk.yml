@@ -30,6 +30,8 @@ jobs:
         run: test -s app/audio-desk-debug.keystore
       - name: Build APK
         run: gradle :app:assembleDebug :app:bundleRelease --stacktrace
+      - name: Verify packaged editions
+        run: python scripts/verify-artifacts.py --apk app/build/outputs/apk/debug/app-debug.apk --bundle app/build/outputs/bundle/release/app-release.aab
       - uses: actions/upload-artifact@v4
         with:
           name: Audio-Desk-APK

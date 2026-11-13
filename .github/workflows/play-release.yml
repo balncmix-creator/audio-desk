@@ -44,6 +44,8 @@ jobs:
           test -n "$AUDIO_DESK_RELEASE_KEY_PASSWORD"
           gradle :app:bundleRelease --stacktrace
           jarsigner -verify app/build/outputs/bundle/release/app-release.aab
+      - name: Verify packaged store edition
+        run: python scripts/verify-artifacts.py --bundle app/build/outputs/bundle/release/app-release.aab
       - uses: actions/upload-artifact@v4
         with:
           name: Audio-Desk-Play-SIGNED
