@@ -165,7 +165,7 @@ main{padding-bottom:190px}
   </div>
   <div id="searchStatus" class="search-status">Search Google News + Bing News together. Results are merged and duplicates removed.</div>
   <div class="toolbar" id="filters">
-    <button class="active" data-filter="All">All</button><button data-filter="REAPER">REAPER</button><button data-filter="Post-production">Post-production</button><button data-filter="Post Production">POST PRODUCTION</button><button data-filter="DAWs & plugins">DAWs & plugins</button><button data-filter="Plugin releases">PLUGIN RELEASES</button><button data-filter="Sound design">Sound design</button><button data-filter="Hardware">Hardware</button><button data-filter="Production">Production</button><button data-filter="Torrent Monitor">TORRENT MONITOR</button><button data-filter="Videos">▶ VIDEOS</button><button data-filter="Saved">★ Saved</button><button data-view="torrents">TORRENT MONITOR</button><button data-view="samples">SAMPLE PACKS</button>
+    <button class="active" data-filter="All">All</button><button data-filter="REAPER">REAPER</button><button data-filter="Post-production">Post-production</button><button data-filter="Post Production">POST PRODUCTION</button><button data-filter="Sample packs">SAMPLE PACK NEWS</button><button data-filter="DAWs & plugins">DAWs & plugins</button><button data-filter="Plugin releases">PLUGIN RELEASES</button><button data-filter="Sound design">Sound design</button><button data-filter="Hardware">Hardware</button><button data-filter="Production">Production</button><button data-filter="Torrent Monitor">TORRENT MONITOR</button><button data-filter="Videos">▶ VIDEOS</button><button data-filter="Saved">★ Saved</button><button data-view="torrents">TORRENT MONITOR</button><button data-view="samples">SAMPLE PACKS</button>
   </div>
 </nav>
 <script>
@@ -235,18 +235,40 @@ function readStore(key,fallback){try{const raw=localStorage.getItem(key);return 
 window.onerror=function(message,source,line,col,error){const status=$("status");if(status)status.textContent="App script error: "+String(message)+" (line "+line+"). Tap Refresh to retry.";console.error("Audio Desk boot error",message,source,line,col,error);return false};
 window.addEventListener("unhandledrejection",e=>{const status=$("status");if(status)status.textContent="App request error: "+String((e.reason&&e.reason.message)||e.reason||"Unknown error")+". Tap Refresh to retry.";console.error("Audio Desk promise error",e.reason)});
 const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+// Classify the article itself, not just the category assigned to its publisher's RSS feed.
+// Sample packs are content, not DAWs, plug-ins or software updates.
+function isSamplePack(item){
+ const title=String(item.title||"");
+ const description=String(item.description||item.desc||"");
+ const text=(title+" "+description).toLowerCase();
+ return /\b(?:sample[\s-]*(?:packs?|libraries?|collections?|bundles?)|sampled[\s-]+(?:instruments?|libraries?)|sound[\s-]*(?:packs?|libraries?|banks?)|loop[\s-]*(?:packs?|libraries?|kits?)|one[\s-]*shots?|construction[\s-]*kits?|kontakt[\s-]*(?:libraries?|instruments?)|sfz[\s-]*(?:libraries?|instruments?)|midi[\s-]*(?:packs?|kits?)|preset[\s-]*(?:packs?|banks?)|royalty[\s-]*free[\s-]+samples?|drum[\s-]*sample[\s-]*(?:packs?|kits?)|audio[\s-]+loops?)\b/i.test(text);
+}
 function classify(item,feed){
  if(feed.cat==="REAPER")return "REAPER";
- if(feed.cat==="Plugin releases")return "Plugin releases";
  if(feed.cat==="Torrent Monitor")return "Torrent Monitor";
- if(feed.cat==="Post Production")return "Post Production";
  if(feed.cat==="Videos")return "Videos";
+ if(isSamplePack(item))return "Sample packs";
+ if(feed.cat==="Plugin releases")return "Plugin releases";
+ if(feed.cat==="Post Production")return "Post Production";
  const t=(item.title+" "+(item.description||"")).toLowerCase();
  if(/dialogue|film sound|post.?production|reaper|pro tools|nuendo|atmos|surround|broadcast|foley|adr|sound editorial/.test(t))return "Post-production";
  if(/foley|sound effect|field record|ambisonic|spatial audio|sound design|ai audio|stem separation/.test(t))return "Sound design";
  if(/microphone|monitor|headphone|interface|preamp|converter|hardware|console|mixer|speaker/.test(t))return "Hardware";
- if(/plugin|vst|au\b|aax|clap|daw|synth|sampler|audio software|firmware|update|release/.test(t))return "DAWs & plugins";
+ if(/plugin|vst|au\b|aax|clap|daw|synth|sampler|audio software|firmware/.test(t))return "DAWs & plugins";
  return feed.cat||"Production";
+}
+// Repair categories in older on-device caches and bookmarks, including offline startup.
+let correctedCategories=false;
+for(const story of [...items,...savedItems]){
+ if(story&&isSamplePack(story)&&story.cat!=="Sample packs"){
+  story.cat="Sample packs";correctedCategories=true;
+ }
+}
+if(correctedCategories){
+ try{
+  localStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)));
+  localStorage.setItem("ar_saved_items",JSON.stringify(savedItems));
+ }catch(e){console.warn("Could not update stored article categories",e)}
 }
 function cleanDesc(s){let d=document.createElement("div");d.innerHTML=s||"";return (d.textContent||"").replace(/\s+/g," ").trim().slice(0,210)}
 function safeImage(raw){if(!raw)return "";try{let u=new URL(raw,location.href);return (u.protocol==="https:"||u.protocol==="http:")?u.href:""}catch{return ""}}

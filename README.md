@@ -1,6 +1,14 @@
 # audio-desk
 8-bit audio industry news reader and REAPER discovery hub
 
+## Version 1.17
+
+- Route sample packs, sound libraries, construction kits and other sample products to a dedicated **Sample Pack News** filter, never to DAWs & plugins.
+- Keep the existing sample-pack source directory separate from the news feed.
+- Migrate locally cached and bookmarked article categories, even when offline.
+- Exclude generic "release" and "update" words from DAW/plugin detection to avoid misleading classifications.
+- Add browser regression tests for sample headlines, plugin articles, cached category migration, and saved news.
+
 ## Version 1.16
 
 - Restore consistent physical thickness to the front edge of the isometric desk launcher and refresh logo.
@@ -44,7 +52,7 @@ including network failures. They do not replace Android device testing.
 
 GitHub Actions builds an installable debug APK and an unsigned Play review bundle
 on pushes to `main`. Download the `Audio-Desk-APK` artifact from the successful
-build. Version 1.16 uses version code 17 and targets Android 16 / API 36.
+build. Version 1.17 uses version code 18 and targets Android 16 / API 36.
 
 Release builds generate a separate asset bundle with torrent/warez discovery UI,
 feed definitions and code removed. The ordinary debug APK retains its existing
