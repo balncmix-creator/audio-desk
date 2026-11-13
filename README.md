@@ -1,5 +1,55 @@
-# audio-desk
-8-bit audio industry news reader and REAPER discovery hub
+# Audio Desk
+
+**A retro-styled Android news desk for people who make sound.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
+
+[**Download Audio Desk v1.21 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v1.21/Audio-Desk-v1.21.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+
+> **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
+
+## Screenshots
+
+| Latest headlines | Post Production | Offline mode |
+|:--:|:--:|:--:|
+| ![Audio Desk news reader showing audio news cards](docs/screenshots/news-feed.png) | ![The single Post Production news category](docs/screenshots/post-production.png) | ![Audio Desk offline screen with broken-down desk illustration](docs/screenshots/offline.png) |
+
+*Genuine captures of the app's HTML interface at a phone-sized viewport, rendered in Chromium. The headlines and thumbnail artwork are **illustrative demo content**, not live news; Android system chrome and fonts may differ.*
+
+## What can Audio Desk do?
+
+- **Audio industry headlines:** Browse REAPER, **Post Production**, DAWs & plug-ins, plug-in releases, Sample Pack News, Sound Design, Hardware, Production and Videos.
+- **Film/TV post-production radar:** Discover coverage of dialogue editorial, ADR, Foley, Atmos, immersive mixing, restoration, broadcast delivery and related tools in one unified category.
+- **Subtle image color accents:** Dark grey article cards remain neutral without an image and receive a restrained color tint when an article has an image.
+- **Offline reading:** Previously fetched and saved stories stay visible without a connection; the familiar desk becomes a broken-down offline illustration.
+- **Customizable sources and bookmarks:** Add or remove RSS feeds and save stories for later.
+- **Discovery tools:** Search news sources and explore relevant REAPER and audio-software developments.
+
+## Install on Android
+
+1. Open the [v1.21 APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v1.21/Audio-Desk-v1.21.apk) on your Android phone. **This is an APK, not a ZIP.**
+2. Open the downloaded file and, if Android asks, allow installations from the browser or file manager you used.
+3. Launch **Audio Desk**. Network access is used to refresh headlines, while saved items remain locally available.
+
+Requires Android 6.0 (API 23) or later. The app currently targets Android 16 (API 36).
+
+## Developing
+
+The Android app is in `app/`; the WebView interface is `app/src/main/assets/index.html`. Automated browser tests cover news filters, bookmarks, cached/offline behavior, image accents and the Play review variant.
+
+```bash
+npm ci
+npx playwright install chromium
+npm test
+node scripts/capture-readme-screenshots.cjs
+```
+
+The last command captures the app's interface into `docs/screenshots/` with labeled fictional example content. Tests and browser screenshots are not substitutes for physical-device testing.
+
+## Changelog
+
+### Version 1.21
+- Merge the duplicate Post-production and POST PRODUCTION filters into **one** Post Production feed; normalize sources and migrate cached and saved article categories.
+- Remove the repeated Production Expert RSS source.
+- Add visitor-focused documentation and reproducible real-UI screenshots.
 
 ## Version 1.20
 
@@ -74,7 +124,7 @@ including network failures. They do not replace Android device testing.
 
 GitHub Actions builds an installable debug APK and an unsigned Play review bundle
 on pushes to `main`. Download the `Audio-Desk-APK` artifact from the successful
-build. Version 1.20 uses version code 21 and targets Android 16 / API 36.
+build. Version 1.21 uses version code 22 and targets Android 16 / API 36.
 
 Release builds generate a separate asset bundle with torrent/warez discovery UI,
 feed definitions and code removed. The ordinary debug APK retains its existing

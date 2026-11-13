@@ -15,11 +15,14 @@ const assert=require('node:assert/strict');
      date:'2026-11-13',source:'KVR Audio — New Plugins',cat:'DAWs & plugins',image:''},
     {title:'New synthesizer plug-in released',link:'https://example.com/plugin',key:'plugin',
      desc:'New VST instrument with improved audio synthesis',date:'2026-11-12',
-     source:'KVR Audio — New Plugins',cat:'DAWs & plugins',image:''}
+     source:'KVR Audio — New Plugins',cat:'DAWs & plugins',image:''},
+    {title:'Film dialogue editing tips',link:'https://example.com/post',key:'post',
+     desc:'Dialogue and foley workflow',date:'2026-11-11',
+     source:'Production Expert',cat:'Post-production',image:''}
    ];
    localStorage.setItem('ar_items',JSON.stringify(cached));
-   localStorage.setItem('ar_saved',JSON.stringify(['kit']));
-   localStorage.setItem('ar_saved_items',JSON.stringify([cached[0]]));
+   localStorage.setItem('ar_saved',JSON.stringify(['kit','post']));
+   localStorage.setItem('ar_saved_items',JSON.stringify([cached[0],cached[2]]));
   });
   await page.route('**/*',route=>{
    const url=route.request().url();
@@ -44,8 +47,14 @@ const assert=require('node:assert/strict');
    items:JSON.parse(localStorage.getItem('ar_items')).map(x=>x.cat),
    saved:JSON.parse(localStorage.getItem('ar_saved_items')).map(x=>x.cat)
   }));
-  assert.deepEqual(stored.items,['Sample packs','DAWs & plugins'],'existing offline cache must be migrated');
-  assert.deepEqual(stored.saved,['Sample packs'],'bookmarked article category must be migrated');
+  assert.deepEqual(stored.items,['Sample packs','DAWs & plugins','Post Production'],'existing offline cache must be migrated');
+  assert.deepEqual(stored.saved,['Sample packs','Post Production'],'bookmarked article category must be migrated');
+  assert.equal(await page.locator('[data-filter="Post Production"]').count(),1,'only one post-production filter must exist');
+  assert.equal(await page.locator('[data-filter="Post-production"]').count(),0,'legacy duplicate must be removed');
+  assert.equal(await page.evaluate(()=>classify({title:'Dialogue editing and ADR',description:'Film sound'}, {cat:'Post-production'})),'Post Production');
+  await page.locator('[data-filter="Post Production"]').click();
+  assert.equal(await page.locator('.story').count(),1,'old cached post story should be shown in merged filter');
+  assert.match(await page.locator('.story').innerText(),/dialogue/i);
   await page.locator('[data-filter="Sample packs"]').click();
   assert.equal(await page.locator('.story').count(),1);
   assert.match(await page.locator('.story').innerText(),/SUBVERSELAB/);
@@ -53,9 +62,10 @@ const assert=require('node:assert/strict');
   assert.equal(await page.locator('.story').count(),1);
   assert.match(await page.locator('.story').innerText(),/synthesizer/);
   await page.locator('[data-filter="Saved"]').click();
-  assert.equal(await page.locator('.story').count(),1);
-  assert.match(await page.locator('.story').innerText(),/Sample packs/i);
+  assert.equal(await page.locator('.story').count(),2);
+  assert.match(await page.locator('#stories').innerText(),/Sample packs/i);
+  assert.match(await page.locator('#stories').innerText(),/Post Production/i);
   assert.deepEqual(errors,[]);
-  console.log('PASS: sample pack news classification, normal DAW/plugin articles, offline cache and saved stories');
+  console.log('PASS: unified post-production filter/category, legacy cache/bookmarks, sample packs, DAW articles');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exit(1)});
