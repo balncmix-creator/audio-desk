@@ -1,6 +1,10 @@
 # audio-desk
 8-bit audio industry news reader and REAPER discovery hub
 
+## Version 1.13
+
+- Replace teal article cards and image-derived tints with subtle grey panels.
+
 ## Version 1.12
 
 - Keep cached headlines when feed requests fail or the device is offline.
@@ -20,7 +24,7 @@ including network failures. They do not replace Android device testing.
 
 GitHub Actions builds an installable debug APK and an unsigned Play review bundle
 on pushes to `main`. Download the `Audio-Desk-APK` artifact from the successful
-build. Version 1.12 uses version code 13 and targets Android 16 / API 36.
+build. Version 1.13 uses version code 14 and targets Android 16 / API 36.
 
 Release builds generate a separate asset bundle with torrent/warez discovery UI,
 feed definitions and code removed. The ordinary debug APK retains its existing

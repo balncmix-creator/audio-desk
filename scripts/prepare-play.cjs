@@ -25,7 +25,6 @@ replace(/^.*\$\("resourceCategory"\).parentElement.hidden=.*\n/gm, '');
 replace(/\$\("resourceIntro"\).textContent=activeView==="torrents"[\s\S]*?:"(A separate directory[^"\n]*)";/, '$("resourceIntro").textContent="$1";');
 replace(/view==="torrents"\?"Search torrent sources…":/, '');
 replace(/if\(!news\)\{if\(view==="torrents"\)loadTorrentMonitor\(\);else renderResourceDirectory\(\);\}/, 'if(!news)renderResourceDirectory();');
-replace(/,"Torrent Monitor":188/, '');
 replace(/else if\(activeView==="torrents"\)renderTorrentMonitor\(\);/g, '');
 replace(/if\(activeView==="torrents"\)renderTorrentMonitor\(\);else /g, '');
 replace(/^.*\$\("(?:scanWatchlist|pluginWatchlist|refreshTorrent|torrentPeriod)"\).*\n/gm, '');
