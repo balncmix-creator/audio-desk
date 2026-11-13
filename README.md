@@ -1,6 +1,14 @@
 # audio-desk
 8-bit audio industry news reader and REAPER discovery hub
 
+## Version 1.20
+
+- Replace the Android launcher artwork in both legacy and adaptive icon slots with the approved polished Audio Desk artwork.
+- Use the identical metallic desk image for native pull-to-refresh branding and as the in-app masthead fallback.
+- Maintain the existing genuine 3D rotating desk for the active masthead, now with graduated metallic face shading.
+- Package the shared image in both debug and Play review asset editions and test its presence.
+- Preserve the offline illustration, sample categories and image-tinted article cards.
+
 ## Version 1.19
 
 - Replace the flat SVG Y-axis flip in the masthead with a true three-dimensional rotating desk.
@@ -66,7 +74,7 @@ including network failures. They do not replace Android device testing.
 
 GitHub Actions builds an installable debug APK and an unsigned Play review bundle
 on pushes to `main`. Download the `Audio-Desk-APK` artifact from the successful
-build. Version 1.19 uses version code 20 and targets Android 16 / API 36.
+build. Version 1.20 uses version code 21 and targets Android 16 / API 36.
 
 Release builds generate a separate asset bundle with torrent/warez discovery UI,
 feed definitions and code removed. The ordinary debug APK retains its existing

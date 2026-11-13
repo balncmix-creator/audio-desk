@@ -36,4 +36,5 @@ if (/torrent|warez|audioz|rutracker|1337x|keygen|crack/i.test(html)) {
 const out = process.argv[2] ? path.resolve(process.argv[2]) : path.join(root, 'app/build/generated/playAssets');
 fs.mkdirSync(out, { recursive: true });
 fs.writeFileSync(path.join(out, 'index.html'), html);
+fs.copyFileSync(path.join(root, 'app/src/main/assets/desk-premium.webp'), path.join(out, 'desk-premium.webp'));
 console.log('Prepared Play assets at ' + out + ': news, saved articles and licensed sample directory');

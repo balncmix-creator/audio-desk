@@ -10,6 +10,7 @@ const assert=require('node:assert/strict');
   await page.route('**/*',route=>{
    const url=route.request().url();
    if(url==='https://appassets.androidplatform.net/assets/index.html')return route.fulfill({contentType:'text/html',body:fs.readFileSync(path.join(__dirname,'../app/src/main/assets/index.html'),'utf8')});
+   if(url.endsWith('/assets/desk-premium.webp'))return route.fulfill({contentType:'image/webp',body:fs.readFileSync(path.join(__dirname,'../app/src/main/assets/desk-premium.webp'))});
    if(url.includes('api.rss2json.com'))return route.fulfill({json:{status:'ok',items:[]}});
    if(url.includes('api.github.com'))return route.fulfill({json:{items:[]}});
    return route.abort();
@@ -17,6 +18,9 @@ const assert=require('node:assert/strict');
   await page.goto('https://appassets.androidplatform.net/assets/index.html');
   const icon=page.locator('#animatedDeskLogo');
   assert.equal(await icon.count(),1,'a single rotating desk sits next to the title');
+  const artwork=page.locator('.header-desk-art');
+  assert.equal(await artwork.count(),1,'premium reference image is used in header');
+  assert.ok(await artwork.evaluate(img=>img.complete&&img.naturalWidth>0),'premium header art loads');
   assert.equal(await page.locator('.brand-line .brand').innerText(),'THE AUDIO DESK_');
   assert.equal(await icon.getAttribute('width'),'256');
   assert.equal(await icon.getAttribute('height'),'256');

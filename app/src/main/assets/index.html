@@ -63,8 +63,10 @@ main{padding-bottom:190px}
 
 /* Rigid, fixed-size 3D desk: the tabletop and legs rotate in space, never scale. */
 .brand-line{display:flex;align-items:center;gap:7px;min-width:0}
-.header-desk-holder{display:block;width:56px;height:56px;flex:0 0 56px}
-.header-desk-icon{display:block;width:100%;height:100%}
+.header-desk-holder{display:block;position:relative;width:56px;height:56px;flex:0 0 56px}
+.header-desk-art{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.header-desk-holder.is-rendered .header-desk-art{opacity:0}
+.header-desk-icon{display:block;position:relative;width:100%;height:100%}
 @media(max-width:600px){.brand{font-size:12px;letter-spacing:-.8px;line-height:1.5}.top{gap:8px}.header-desk-holder{width:46px;height:46px;flex-basis:46px}.sub{font-size:8px;letter-spacing:.55px}.top #refresh{padding:7px 6px;font-size:9px;box-shadow:2px 2px 0 #555}}
 @media(max-width:360px){.brand{font-size:10px}.header-desk-holder{width:40px;height:40px;flex-basis:40px}}
 
@@ -85,7 +87,7 @@ main{padding-bottom:190px}
 <g fill="none" stroke="#fff" stroke-width="3" shape-rendering="crispEdges" opacity=".7"><path d="M18 710h8v-12h8v24h8v-18h8v12h8v-6h8"/><path d="M310 720h8v-24h8v40h8v-30h8v18h8"/></g>
 </svg>
 </div>
-<header><div class="mast"><div class="top"><div><div class="brand-line"><div class="brand">THE <span>AUDIO</span> DESK_</div><span class="header-desk-holder" aria-hidden="true"><canvas id="animatedDeskLogo" class="header-desk-icon" width="256" height="256" role="img" aria-label="Audio Desk rotating in 3D"></canvas></span></div><div class="sub">[ AUDIO INDUSTRY NEWS TERMINAL ]</div></div><button class="primary" id="refresh">Refresh ↻</button></div><div class="edition">[ TOOLS ] [ TECHNOLOGY ] [ RECORDING ] [ POST ]</div></div></header>
+<header><div class="mast"><div class="top"><div><div class="brand-line"><div class="brand">THE <span>AUDIO</span> DESK_</div><span class="header-desk-holder" aria-hidden="true"><img class="header-desk-art" src="desk-premium.webp" alt="" decoding="async"><canvas id="animatedDeskLogo" class="header-desk-icon" width="256" height="256" role="img" aria-label="Audio Desk rotating in 3D"></canvas></span></div><div class="sub">[ AUDIO INDUSTRY NEWS TERMINAL ]</div></div><button class="primary" id="refresh">Refresh ↻</button></div><div class="edition">[ TOOLS ] [ TECHNOLOGY ] [ RECORDING ] [ POST ]</div></div></header>
 <main>
 <div class="stats" id="stats"><span id="count">Waiting for feeds…</span><span id="updated">Not refreshed yet</span></div>
 <div id="status" class="status">Tap Refresh or pull down to fetch the latest headlines.</div>
@@ -746,7 +748,23 @@ document.addEventListener("click",e=>{
    visible.push({f,pts,depth:pts.reduce((s,p)=>s+p[2],0)/pts.length});
   }
   visible.sort((a,b)=>a.depth-b.depth);
-  for(const q of visible){faceShape(q.pts);ctx.fillStyle=q.f.shade;ctx.fill();}
+  for(const q of visible){
+   faceShape(q.pts);
+   const pts=q.pts,ys=pts.map(p=>p[1]);
+   const gradient=ctx.createLinearGradient(pts[0][0],Math.min(...ys),pts[2][0],Math.max(...ys)+.01);
+   if(q.f.top){
+    gradient.addColorStop(0,"#ffffff");
+    gradient.addColorStop(.65,"#f7f7f7");
+    gradient.addColorStop(1,"#dedede");
+   }else{
+    const shade=q.f.shade;
+    gradient.addColorStop(0,shade);
+    gradient.addColorStop(.52,shade);
+    gradient.addColorStop(1,shade==="#999999"?"#5d5d62":"#b0b0b3");
+   }
+   ctx.fillStyle=gradient;ctx.fill();
+   if(q.f.top){ctx.strokeStyle="rgba(255,255,255,.8)";ctx.lineWidth=.7;ctx.stroke();}
+  }
  }
  function draw(spin){
   // Retina resolution stays fixed across every rotation.
@@ -760,9 +778,10 @@ document.addEventListener("click",e=>{
    [-.32,.05],[-.23,.05],[-.15,-.28],[-.07,-.28],[0,.15],[.09,.15],
    [.17,-.24],[.25,-.24],[.33,.04],[.42,.04],[.49,-.12],[.56,-.12],[.69,0]];
   const vertices=shape.map(p=>project([p[0],.472,p[1]],spin));
-  ctx.lineJoin="round";ctx.lineCap="round";ctx.strokeStyle="#080808";ctx.lineWidth=2.8;
+  ctx.lineJoin="round";ctx.lineCap="round";ctx.strokeStyle="#080808";ctx.lineWidth=3.4;
   ctx.beginPath();vertices.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke();
   canvas.dataset.rotationAngle=String(spin);
+  canvas.parentElement.classList.add("is-rendered");
  }
  function tick(time){
   frameId=0;

@@ -2,27 +2,22 @@ package com.balnc.audioddesk
 
 import android.animation.ValueAnimator
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Matrix
 import android.graphics.Paint
+import android.graphics.RectF
 import android.os.Build
 import android.view.View
 import android.view.animation.LinearInterpolator
-import androidx.core.graphics.PathParser
 import kotlin.math.PI
 import kotlin.math.min
 import kotlin.math.sin
 
-/** The desk never moves: only the local audio amplitude oscillates before projection. */
+/** Uses the premium Audio Desk artwork for the native refresh indicator. */
 class DeskLogoView(context: Context) : View(context) {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val top = PathParser.createPathFromPathData(DeskLogoPaths.TOP)!!
-    private val side = PathParser.createPathFromPathData(DeskLogoPaths.SIDE)!!
-    private val front = PathParser.createPathFromPathData(DeskLogoPaths.FRONT)!!
-    private val legs = PathParser.createPathFromPathData(DeskLogoPaths.LEGS)!!
-    private val wave = PathParser.createPathFromPathData(DeskLogoPaths.WAVE)!!
-    private val projection = Matrix().apply { setValues(DeskLogoPaths.PROJECTION) }
+    private val artwork = BitmapFactory.decodeResource(resources, R.drawable.audio_desk_premium)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+    private val target = RectF(0f, 0f, 128f, 128f)
     private var amplitude = 1f
     private var refreshing = false
     private var oscillator: ValueAnimator? = null
@@ -48,7 +43,7 @@ class DeskLogoView(context: Context) : View(context) {
                 interpolator = LinearInterpolator()
                 addUpdateListener {
                     val phase = it.animatedValue as Float
-                    amplitude = .68f + .24f * sin(phase) + .08f * sin(3f * phase)
+                    amplitude = .82f + .14f * sin(phase) + .04f * sin(3f * phase)
                     invalidate()
                 }
                 start()
@@ -63,18 +58,9 @@ class DeskLogoView(context: Context) : View(context) {
         canvas.save()
         canvas.translate((width - 128f * scale) / 2f, (height - 128f * scale) / 2f)
         canvas.scale(scale, scale)
-        paint.color = Color.rgb(153, 153, 153)
-        canvas.drawPath(side, paint)
-        paint.color = Color.WHITE
-        canvas.drawPath(legs, paint)
-        paint.color = Color.rgb(198, 198, 198)
-        canvas.drawPath(front, paint)
-        paint.color = Color.WHITE
-        canvas.drawPath(top, paint)
-        canvas.concat(projection)
-        canvas.scale(1f, amplitude)
-        paint.color = Color.BLACK
-        canvas.drawPath(wave, paint)
+        // Only subtle light intensity varies; dimensions and proportions never change.
+        paint.alpha = (247 + 8 * amplitude).toInt().coerceIn(0, 255)
+        canvas.drawBitmap(artwork, null, target, paint)
         canvas.restore()
     }
 
