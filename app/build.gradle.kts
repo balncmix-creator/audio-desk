@@ -1,3 +1,6 @@
+import org.gradle.process.ExecOperations
+import javax.inject.Inject
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -41,17 +44,32 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    sourceSets.getByName("release").assets.srcDir(layout.buildDirectory.dir("generated/playAssets"))
 }
 
-val preparePlayAssets by tasks.registering(Exec::class) {
-    inputs.files("src/main/assets/index.html", "../scripts/prepare-play.cjs")
-    outputs.dir(layout.buildDirectory.dir("generated/playAssets"))
-    workingDir = rootProject.projectDir
-    commandLine("node", "scripts/prepare-play.cjs")
+abstract class PreparePlayAssets : DefaultTask() {
+    @get:InputFile abstract val sourceHtml: RegularFileProperty
+    @get:InputFile abstract val generatorScript: RegularFileProperty
+    @get:OutputDirectory abstract val outputDirectory: DirectoryProperty
+    @get:Inject abstract val execOperations: ExecOperations
+
+    @TaskAction
+    fun generate() {
+        execOperations.exec {
+            commandLine("node", generatorScript.get().asFile.absolutePath)
+        }
+    }
 }
-tasks.configureEach {
-    if (name == "mergeReleaseAssets") dependsOn(preparePlayAssets)
+
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        val prepare = tasks.register<PreparePlayAssets>("preparePlayAssets") {
+            sourceHtml.set(layout.projectDirectory.file("src/main/assets/index.html"))
+            generatorScript.set(rootProject.layout.projectDirectory.file("scripts/prepare-play.cjs"))
+            outputDirectory.set(layout.buildDirectory.dir("generated/playAssets"))
+        }
+        // Let AGP track the producer for every asset consumer, including lint.
+        variant.sources.assets?.addGeneratedSourceDirectory(prepare, PreparePlayAssets::outputDirectory)
+    }
 }
 dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
