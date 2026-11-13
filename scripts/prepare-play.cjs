@@ -33,7 +33,8 @@ replace(/^.*\$\("(?:scanWatchlist|pluginWatchlist|refreshTorrent|torrentPeriod)"
 if (/torrent|warez|audioz|rutracker|1337x|keygen|crack/i.test(html)) {
   throw new Error('Restricted discovery feature remains in Play assets');
 }
-const out = path.join(root, 'app/build/generated/playAssets');
+// AGP assigns its own generated-source directory when wiring the task.
+const out = process.argv[2] ? path.resolve(process.argv[2]) : path.join(root, 'app/build/generated/playAssets');
 fs.mkdirSync(out, { recursive: true });
 fs.writeFileSync(path.join(out, 'index.html'), html);
-console.log('Prepared Play assets: news, saved articles and licensed sample directory');
+console.log('Prepared Play assets at ' + out + ': news, saved articles and licensed sample directory');

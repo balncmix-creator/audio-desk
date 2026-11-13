@@ -59,7 +59,7 @@ abstract class PreparePlayAssets : DefaultTask() {
     @TaskAction
     fun generate() {
         execOperations.exec {
-            commandLine("node", generatorScript.get().asFile.absolutePath)
+            commandLine("node", generatorScript.get().asFile.absolutePath, outputDirectory.get().asFile.absolutePath)
         }
     }
 }
