@@ -1,6 +1,13 @@
 # audio-desk
 8-bit audio industry news reader and REAPER discovery hub
 
+## Version 1.19
+
+- Replace the flat SVG Y-axis flip in the masthead with a true three-dimensional rotating desk.
+- Model a tabletop with thickness, multiple sides and four legs; keep a fixed orthographic rendering scale and a waveform on the tabletop.
+- Rotate around the vertical axis only: no floating, stretching, shrinking or waveform-pulsing animation.
+- Pause animation when the app is hidden and honor reduced-motion accessibility settings.
+
 ## Version 1.18
 
 - Add the animated isometric Audio Desk icon beside the app title in the masthead.
@@ -59,7 +66,7 @@ including network failures. They do not replace Android device testing.
 
 GitHub Actions builds an installable debug APK and an unsigned Play review bundle
 on pushes to `main`. Download the `Audio-Desk-APK` artifact from the successful
-build. Version 1.18 uses version code 19 and targets Android 16 / API 36.
+build. Version 1.19 uses version code 20 and targets Android 16 / API 36.
 
 Release builds generate a separate asset bundle with torrent/warez discovery UI,
 feed definitions and code removed. The ordinary debug APK retains its existing
