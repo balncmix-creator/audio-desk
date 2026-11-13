@@ -1,6 +1,13 @@
 # audio-desk
 8-bit audio industry news reader and REAPER discovery hub
 
+## Version 1.18
+
+- Add the animated isometric Audio Desk icon beside the app title in the masthead.
+- Use the same canonical tabletop, apron, sides, legs and projected waveform as the launcher icon.
+- Animate slow rotation, gentle floating motion and waveform pulsing; disable animation when reduced-motion is requested.
+- Keep the existing headline categories, grey/image-based accent cards, and offline broken-desk state.
+
 ## Version 1.17
 
 - Route sample packs, sound libraries, construction kits and other sample products to a dedicated **Sample Pack News** filter, never to DAWs & plugins.
@@ -52,7 +59,7 @@ including network failures. They do not replace Android device testing.
 
 GitHub Actions builds an installable debug APK and an unsigned Play review bundle
 on pushes to `main`. Download the `Audio-Desk-APK` artifact from the successful
-build. Version 1.17 uses version code 18 and targets Android 16 / API 36.
+build. Version 1.18 uses version code 19 and targets Android 16 / API 36.
 
 Release builds generate a separate asset bundle with torrent/warez discovery UI,
 feed definitions and code removed. The ordinary debug APK retains its existing
