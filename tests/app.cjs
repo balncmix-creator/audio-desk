@@ -35,6 +35,8 @@ const assert=require('node:assert/strict');
  await page.waitForFunction(()=>!document.getElementById('refresh').disabled);
  await page.waitForTimeout(100);
  assert.deepEqual(await page.evaluate(()=>({cached:JSON.parse(localStorage.ar_items).length,savedKeys:JSON.parse(localStorage.ar_saved).length,visible:document.querySelectorAll('.story').length})),{cached:1,savedKeys:1,visible:1},'offline refresh must preserve cached headlines and bookmarks');
+ assert.equal(await page.locator('#offlineNotice').isVisible(),true,'broken desk should appear when every source is unreachable');
+ assert.equal(await page.locator('#offlineNotice svg[aria-label="Broken-down Audio Desk icon"]').count(),1);
  assert.deepEqual(await page.evaluate(()=>window.refreshEvents),['started','finished','started','finished'],'failed requests must stop the native loading animation');
  offline=false;
  const before=await page.locator('#sources .source').count();
@@ -44,6 +46,7 @@ const assert=require('node:assert/strict');
  await page.reload();
  await page.waitForFunction(()=>!document.getElementById('refresh').disabled);
  assert.equal(afterRemove,before-1,'source should be removed immediately');
+ assert.equal(await page.locator('#offlineNotice').isVisible(),false,'offline desk should disappear after a successful refresh');
  assert.equal(await page.locator('#sources .source').count(),afterRemove,'source should stay removed after restart');
  // A successful refresh can replace the entire feed; bookmarks must still exist.
  watch=true;

@@ -19,6 +19,7 @@ class DeskLogoView(context: Context) : View(context) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val top = PathParser.createPathFromPathData(DeskLogoPaths.TOP)!!
     private val side = PathParser.createPathFromPathData(DeskLogoPaths.SIDE)!!
+    private val front = PathParser.createPathFromPathData(DeskLogoPaths.FRONT)!!
     private val legs = PathParser.createPathFromPathData(DeskLogoPaths.LEGS)!!
     private val wave = PathParser.createPathFromPathData(DeskLogoPaths.WAVE)!!
     private val projection = Matrix().apply { setValues(DeskLogoPaths.PROJECTION) }
@@ -66,6 +67,9 @@ class DeskLogoView(context: Context) : View(context) {
         canvas.drawPath(side, paint)
         paint.color = Color.WHITE
         canvas.drawPath(legs, paint)
+        paint.color = Color.rgb(198, 198, 198)
+        canvas.drawPath(front, paint)
+        paint.color = Color.WHITE
         canvas.drawPath(top, paint)
         canvas.concat(projection)
         canvas.scale(1f, amplitude)

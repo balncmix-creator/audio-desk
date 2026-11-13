@@ -13,6 +13,7 @@ function project(source) {
 const wave = project(logo.wave);
 const mark = `<path android:fillColor="#999999" android:pathData="${logo.side}"/>
     <path android:fillColor="#FFFFFF" android:pathData="${logo.legs}"/>
+    <path android:fillColor="#C6C6C6" android:pathData="${logo.front}"/>
     <path android:fillColor="#FFFFFF" android:fillType="evenOdd" android:pathData="${logo.top} ${wave}"/>`;
 const files = {
   'app/src/main/res/drawable/ic_launcher.xml': `<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="128dp" android:height="128dp" android:viewportWidth="128" android:viewportHeight="128">
@@ -30,6 +31,7 @@ package com.balnc.audioddesk
 internal object DeskLogoPaths {
     const val TOP = "${logo.top}"
     const val SIDE = "${logo.side}"
+    const val FRONT = "${logo.front}"
     const val LEGS = "${logo.legs}"
     const val WAVE = "${logo.wave}"
     val PROJECTION = floatArrayOf(${[a,c,e,b,d,f,0,0,1].map(n=>`${n}f`).join(', ')})

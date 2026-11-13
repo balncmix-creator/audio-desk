@@ -54,6 +54,12 @@ main{padding-bottom:190px}
 @media(min-width:650px){.bottom-dock{padding-left:max(12px,calc((100vw - 900px)/2));padding-right:max(12px,calc((100vw - 900px)/2))}}
 
 #resourceHub[hidden]{display:none!important}.resource-card{padding:12px 0;border-bottom:1px dashed #555}.resource-card:last-child{border:0}.resource-title{font-size:12px;font-weight:700;color:#fff}.resource-meta{font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:.6px;margin:4px 0}.resource-desc{font-size:11px;color:#bbb;line-height:1.55;margin:5px 0 8px}.resource-card a{display:inline-block;margin-top:3px}.resource-badge{display:inline-block;border:1px solid #666;padding:2px 5px;margin-right:5px;font-size:8px;color:#ddd}
+
+.offline-notice{display:flex;gap:12px;align-items:center;background:#171717;border:1px dashed #666;padding:12px;margin:12px 0 18px;color:#e8e8e8}
+.offline-notice[hidden]{display:none}
+.offline-notice .offline-desk{width:94px;height:94px;flex:0 0 94px}
+.offline-notice strong{display:block;font-size:11px;letter-spacing:1px}
+.offline-notice p{margin:6px 0 0;color:#aaa;font-size:10px;line-height:1.6}
 </style>
 </head>
 <body>
@@ -75,6 +81,22 @@ main{padding-bottom:190px}
 <main>
 <div class="stats" id="stats"><span id="count">Waiting for feeds…</span><span id="updated">Not refreshed yet</span></div>
 <div id="status" class="status">Tap Refresh or pull down to fetch the latest headlines.</div>
+<div id="offlineNotice" class="offline-notice" hidden role="status" aria-label="Offline: broken Audio Desk">
+ <svg class="offline-desk" viewBox="0 0 128 128" role="img" aria-label="Broken-down Audio Desk icon" xmlns="http://www.w3.org/2000/svg">
+  <g fill="#fff">
+   <path d="M19 63 L43 37 Q45 35 48 35 H62 L55 47 L59 54 L52 66 H20 Q17 66 19 63 Z"/>
+   <path d="M63 37 H110 Q114 35 112 38 L87 64 H66 L69 53 L61 48 Z" transform="translate(5 7) rotate(9 87 64)"/>
+  </g>
+  <path d="M19 65 H52 L50 73 H22 L18 70 Z" fill="#c6c6c6"/>
+  <path d="M69 68 H89 L91 77 H67 Z" fill="#c6c6c6" transform="rotate(9 82 70)"/>
+  <path d="M89 69 L117 43 V52 L93 78 Z" fill="#999" transform="translate(5 7) rotate(9 87 64)"/>
+  <path d="M23 74 H31 L29 94 L23 96 Z" fill="#fff" transform="rotate(-11 27 74)"/>
+  <path d="M81 79 H89 L97 95 L91 99 Z" fill="#fff" transform="rotate(12 85 79)"/>
+  <path d="M44 49 H51 L47 55 H53 L50 60" fill="none" stroke="#080808" stroke-width="2.5" stroke-linecap="square"/>
+  <path d="M58 48 L63 55 L59 61 M56 78 L61 86 M53 85 L58 89" stroke="#aaa" stroke-width="2" fill="none"/>
+ </svg>
+ <div><strong>DESK DISCONNECTED</strong><p>No connection or news feeds reachable. Cached stories and saved articles stay available. Tap Refresh to retry.</p></div>
+</div>
 <div id="resourceHub" hidden>
   <div class="panel">
     <h3 id="resourceHeading">Audio resource directory</h3>
@@ -377,6 +399,7 @@ function setView(view){
  $("resourceCategory").parentElement.hidden=view==="torrents";
  $("stats").hidden=!news;
  $("status").hidden=!news;
+ $("offlineNotice").hidden=!news||$("offlineNotice").dataset.offline!=="true";
  document.querySelectorAll("main > section").forEach(el=>el.hidden=!news);
  document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
  document.querySelectorAll("[data-filter]").forEach(b=>b.classList.toggle("active",news&&b.dataset.filter===active));
@@ -569,6 +592,11 @@ async function fetchFeedWithTimeout(feed,timeoutMs=9000){
   ]);
  }finally{if(timer)clearTimeout(timer)}
 }
+function setOfflineNotice(offline){
+ const notice=$("offlineNotice");
+ notice.dataset.offline=offline?"true":"false";
+ notice.hidden=!offline||activeView!=="news";
+}
 async function loadFeeds(){
  if($("refresh").disabled){if(window.AudioDesk&&typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();return;}
  $("refresh").disabled=true;
@@ -592,7 +620,9 @@ async function loadFeeds(){
   try{localStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)))}catch(e){console.warn("Could not cache headlines",e)}
   if(ok>0)$("updated").textContent="RSS updated "+new Date().toLocaleTimeString();
   render();
-  $("status").textContent=`Loaded ${ok}/${feeds.length} RSS sources.`+(failed.length?` ${failed.length} timed out or failed; cached headlines kept.`:"")+" GitHub discovery is updating in the background.";
+  const unreachable=!navigator.onLine||(feeds.length>0&&ok===0&&failed.length===feeds.length);
+  setOfflineNotice(unreachable);
+  $("status").textContent=unreachable?"Connection unavailable. Showing cached headlines; retry when online.":`Loaded ${ok}/${feeds.length} RSS sources.`+(failed.length?` ${failed.length} timed out or failed; cached headlines kept.`:"")+" GitHub discovery is updating in the background.";
   // GitHub discovery stays in the background and never delays the RSS refresh.
   fetchGithubReaperRepos().then(repos=>{
    const merged=[...items,...repos],unique=new Map();
@@ -603,6 +633,7 @@ async function loadFeeds(){
    $("status").textContent+=` GitHub: ${repos.length} repositories added.`;
   }).catch(e=>console.warn("Background GitHub discovery failed",e));
  }catch(e){
+  setOfflineNotice(!navigator.onLine);
   $("status").textContent="Refresh failed: "+String(e.message||e);
  }finally{
   $("refresh").disabled=false;
@@ -623,6 +654,9 @@ $("search").addEventListener("keydown",e=>{if(e.key==="Enter")runWebSearch()});
 $("refresh").onclick=loadFeeds;
 $("addFeed").onclick=()=>{let name=$("feedName").value.trim(),url=$("feedUrl").value.trim();if(!name||!/^https?:\/\//i.test(url)){alert("Enter a source name and a valid http(s) RSS URL.");return}removedFeeds.delete(url);localStorage.setItem("ar_removed_feeds",JSON.stringify([...removedFeeds]));if(!feeds.some(f=>f.url===url))feeds.push({name,url,cat:"Production"});localStorage.setItem("ar_feeds",JSON.stringify(feeds));$("feedName").value="";$("feedUrl").value="";renderSources();loadFeeds()};
 renderSources();
+setOfflineNotice(!navigator.onLine);
+window.addEventListener("offline",()=>{setOfflineNotice(true);$("status").textContent="No internet connection. Cached headlines remain available.";});
+window.addEventListener("online",()=>{setOfflineNotice(false);if(!$("refresh").disabled)loadFeeds();});
 // Always show the first filter from its left edge on launch.
 $("filters").scrollLeft=0;
 if(items.length){render();$("status").textContent="Showing saved headlines instantly · checking for updates…";$("updated").textContent="Cached feed";}
