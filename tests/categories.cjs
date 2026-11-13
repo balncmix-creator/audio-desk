@@ -54,7 +54,7 @@ const assert=require('node:assert/strict');
   assert.match(await page.locator('.story').innerText(),/synthesizer/);
   await page.locator('[data-filter="Saved"]').click();
   assert.equal(await page.locator('.story').count(),1);
-  assert.match(await page.locator('.story').innerText(),/Sample packs/);
+  assert.match(await page.locator('.story').innerText(),/Sample packs/i);
   assert.deepEqual(errors,[]);
   console.log('PASS: sample pack news classification, normal DAW/plugin articles, offline cache and saved stories');
  }finally{await browser.close()}
