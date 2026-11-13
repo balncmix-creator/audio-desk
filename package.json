@@ -2,7 +2,8 @@
   "name": "audio-desk-checks",
   "private": true,
   "scripts": {
-    "test": "node tests/app.cjs"
+    "test": "node tests/app.cjs && node scripts/prepare-play.cjs && node tests/play.cjs",
+    "prepare:play": "node scripts/prepare-play.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

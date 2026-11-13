@@ -13,16 +13,24 @@
 
 Run `npm install`, `npx playwright install chromium`, then `npm test`.
 To use an existing Chromium installation, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`.
-The checks run the bundled page at a phone-sized viewport with mocked feed responses,
+The checks run both editions at a phone-sized viewport with mocked feed responses,
 including network failures. They do not replace Android device testing.
 
 ## APK builds and signing
 
-GitHub Actions builds an installable debug APK on pushes to `main`. Download the
-`Audio-Desk-APK` artifact from the successful build. Version 1.12 uses version code 13.
+GitHub Actions builds an installable debug APK and an unsigned Play review bundle
+on pushes to `main`. Download the `Audio-Desk-APK` artifact from the successful
+build. Version 1.12 uses version code 13 and targets Android 16 / API 36.
+
+Release builds generate a separate asset bundle with torrent/warez discovery UI,
+feed definitions and code removed. The ordinary debug APK retains its existing
+feature set. `npm run prepare:play` regenerates the store page; do not edit it.
 
 The existing debug certificate is retained so this update can install over older
 Audio Desk builds. Its key is public and must not be used for trusted production
 distribution. A production signing key must be generated privately and stored
 outside this repository. Switching certificates for existing installations requires
 a planned migration; simply deleting the public key does not revoke it.
+
+See [Play Store preparation](play-store/README.md) for private signing and the
+remaining developer-account requirements. No Play upload is performed by CI.

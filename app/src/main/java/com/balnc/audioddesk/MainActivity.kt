@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
@@ -16,6 +17,7 @@ import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.window.OnBackInvokedDispatcher
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -154,6 +156,12 @@ class MainActivity : Activity() {
         setContentView(root)
         ViewCompat.requestApplyInsets(root)
         appWebView.loadUrl("https://appassets.androidplatform.net/assets/index.html")
+        // Android 16 no longer dispatches onBackPressed for apps targeting API 36.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            onBackInvokedDispatcher.registerOnBackInvokedCallback(
+                OnBackInvokedDispatcher.PRIORITY_DEFAULT
+            ) { handleBack() }
+        }
     }
 
     private inner class AppBridge {
@@ -182,14 +190,19 @@ class MainActivity : Activity() {
 
     @Deprecated("Deprecated in Android API")
     override fun onBackPressed() {
+        handleBack()
+    }
+
+    private fun handleBack() {
         if (::browserPanel.isInitialized && browserPanel.visibility == View.VISIBLE) {
             if (browserWebView.canGoBack()) browserWebView.goBack() else closeBrowser()
         } else if (::appWebView.isInitialized && appWebView.canGoBack()) {
             appWebView.goBack()
-        } else super.onBackPressed()
+        } else finish()
     }
 
     override fun onDestroy() {
+        refreshHandler.removeCallbacks(refreshFailsafe)
         if (::browserWebView.isInitialized) browserWebView.destroy()
         if (::appWebView.isInitialized) appWebView.destroy()
         super.onDestroy()
