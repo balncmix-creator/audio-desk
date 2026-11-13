@@ -42,6 +42,7 @@ const assert=require('node:assert/strict');
   });
   await page.goto('https://appassets.androidplatform.net/assets/index.html');
   await page.waitForFunction(()=>!document.getElementById('refresh').disabled);
+  await page.waitForFunction(()=>document.getElementById('status').textContent.includes('GitHub: 0 repositories added.'));
   for(let i=0;i<articles.length;i++)await page.locator('.story').nth(i).scrollIntoViewIfNeeded();
   await page.waitForFunction(()=>[...document.querySelectorAll('.story')].find(x=>x.textContent.includes('Blue image'))?.style.getPropertyValue('--story-surface'));
   await page.waitForTimeout(350);
