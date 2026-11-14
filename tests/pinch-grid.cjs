@@ -90,7 +90,7 @@ const assert=require('node:assert/strict');
   assert.equal(await page.locator('#gridDetailBody .sample-demo-button').count(),1);
   await page.locator('#gridDetailClose').click();
 
-  // Existing horizontal swipe navigation remains available after a pinch.
+  // Removing news category swipe should not interfere with pinch density.
   await page.locator('[data-card-density="1"]').click();
   await page.locator('[data-filter="All"]').click();
   await page.evaluate(()=>{
@@ -103,7 +103,7 @@ const assert=require('node:assert/strict');
    dispatch('touchstart',325,315);dispatch('touchmove',205,315);dispatch('touchmove',40,315);dispatch('touchend',40,315);
   });
   await page.waitForFunction(()=>!tabAnimationBusy&&document.getElementById('tabSwipePreview').hidden);
-  assert.equal(await page.evaluate(()=>active),'REAPER');
+  assert.equal(await page.evaluate(()=>active),'All','horizontal news swipe stays disabled after pinching');
   assert.deepEqual(errors,[],'no JavaScript errors on pinch, modal, reload or swipe');
   console.log('PASS: inward pinch 1→3→5, outward spread 5→3→1, column geometry, no tab conflicts, detail/save, persistence, sample pack grid, button alternative');
  }finally{await browser.close()}
