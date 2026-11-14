@@ -12,10 +12,12 @@ const assert=require('node:assert/strict');
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{
    window.previewLookups=[];
+   window.playCalls=[];
+   HTMLMediaElement.prototype.play=function(){window.playCalls.push(this.src);return Promise.resolve()};
    window.AudioDesk={
     refreshStarted(){},refreshFinished(){},
-    lookupSampleDemo(url,id){
-     window.previewLookups.push(url);
+    lookupSampleDemo(url,title,id){
+     window.previewLookups.push({url,title});
      let result=null;
      if(url.includes('publisher-preview'))result={kind:'audio',url:'https://publisher.example/demo-native.mp3'};
      if(url.includes('soundcloud-preview'))result={kind:'external',url:'https://soundcloud.com/label/sample-pack-demo'};
@@ -63,7 +65,8 @@ const assert=require('node:assert/strict');
   await native.locator('.sample-demo-button').click();
   await native.locator('audio').waitFor();
   assert.match(await native.locator('audio').getAttribute('src'),/demo-native\.mp3/);
-  assert.equal(await native.locator('audio').getAttribute('preload'),'none');
+  assert.equal(await native.locator('audio').getAttribute('preload'),'auto');
+  assert.ok((await page.evaluate(()=>window.playCalls)).some(x=>x.includes('demo-native.mp3')),'one tap must start playback');
   const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('ar_sample_demo_urls')));
   assert.match(stored['https://publisher.example/publisher-preview'].url,/demo-native\.mp3/,'publisher demo persists locally');
 
@@ -82,6 +85,8 @@ const assert=require('node:assert/strict');
   const newsArticle=page.locator('.story').filter({hasText:'New orchestral sample library'});
   await newsArticle.locator('.sample-demo-button').click();
   assert.equal(await newsArticle.locator('audio').count(),1,'cached demo works in the news view');
+  const lookups=await page.evaluate(()=>window.previewLookups);
+  assert.ok(lookups.some(x=>x.title.includes('New orchestral sample library')),'native search must receive exact pack title');
   assert.deepEqual(errors,[]);
   console.log('PASS: real RSS audio, publisher lookup, SoundCloud external fallback, no fabricated audio, cached news & directory preview');
  }finally{await browser.close()}

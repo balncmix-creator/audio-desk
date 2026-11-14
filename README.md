@@ -2,7 +2,7 @@
 
 **A retro-styled Android news desk for people who make sound.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk v1.24 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v1.23/Audio-Desk-v1.23.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk v1.25 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v1.23/Audio-Desk-v1.23.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
 
@@ -22,13 +22,14 @@
 - **Film/TV post-production radar:** Discover coverage of dialogue editorial, ADR, Foley, Atmos, immersive mixing, restoration, broadcast delivery and related tools in one unified category.
 - **Subtle image color accents:** Dark grey article cards remain neutral without an image and receive a restrained color tint when an article has an image.
 - **Offline reading:** Previously fetched and saved stories stay visible without a connection; the familiar desk becomes a broken-down offline illustration.
-- **Sample pack auditions:** Listen to real publisher audio previews for sample-pack releases when available, or open their original demo player.
+- **One-tap sample pack previews:** Automatically search the original announcement and matching product pages, then play a genuine audio demo when accessible.
+- **Live release radar:** Incrementally checks worldwide sample-pack and plug-in news every two minutes while open, subject to publisher and indexing delays.
 - **Customizable sources and bookmarks:** Add or remove RSS feeds and save stories for later.
 - **Discovery tools:** Search news sources and explore relevant REAPER and audio-software developments.
 
 ## Install on Android
 
-1. Open the [v1.22 APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v1.23/Audio-Desk-v1.23.apk) on your Android phone. **This is an APK, not a ZIP.**
+1. Open the [v1.25 APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v1.23/Audio-Desk-v1.23.apk) on your Android phone. **This is an APK, not a ZIP.**
 2. Open the downloaded file and, if Android asks, allow installations from the browser or file manager you used.
 3. Launch **Audio Desk**. Network access is used to refresh headlines, while saved items remain locally available.
 
@@ -48,6 +49,13 @@ node scripts/capture-readme-screenshots.cjs
 The last command captures the app's interface into `docs/screenshots/` with labeled fictional example content. Tests and browser screenshots are not substitutes for physical-device testing.
 
 ## Changelog
+
+### Version 1.25
+- One-tap sample-pack audition: the preview button searches matching web product pages if the source article lacks audio, checks publisher-hosted demos, and starts a directly playable stream automatically.
+- Supports original SoundCloud and YouTube preview embeds when supplied; a platform may still block autoplay or require its own player controls.
+- Two-minute incremental global release radar while the app is open, covering new sample packs, cinematic/game libraries, plug-in releases and independent developers; rotates Google News regions and deduplicates headlines.
+- Shows a relevant verified product link or exact-title web search when a publisher does not expose an audio stream. Worldwide one-second completeness is not technically guaranteed.
+
 
 ### Version 1.24
 - **Sample pack audition:** The Sample Packs directory now lists recent sample-pack news, with a per-pack **Find Demo** button. The Sample Pack News filter also offers audition controls.
@@ -142,7 +150,7 @@ including network failures. They do not replace Android device testing.
 
 GitHub Actions builds an installable debug APK and an unsigned Play review bundle
 on pushes to `main`. Download the `Audio-Desk-APK` artifact from the successful
-build. Version 1.24 uses version code 25 and targets Android 16 / API 36.
+build. Version 1.25 uses version code 26 and targets Android 16 / API 36.
 
 Release builds generate a separate asset bundle with torrent/warez discovery UI,
 feed definitions and code removed. The ordinary debug APK retains its existing

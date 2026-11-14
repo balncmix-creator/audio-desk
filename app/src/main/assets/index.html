@@ -99,7 +99,7 @@ main{padding-bottom:190px}
 <g fill="none" stroke="#fff" stroke-width="3" shape-rendering="crispEdges" opacity=".7"><path d="M18 710h8v-12h8v24h8v-18h8v12h8v-6h8"/><path d="M310 720h8v-24h8v40h8v-30h8v18h8"/></g>
 </svg>
 </div>
-<header><div class="mast"><div class="top"><div><div class="brand-line"><div class="brand">THE <span>AUDIO</span> DESK_</div><span class="header-desk-holder" aria-hidden="true"><img class="header-desk-art" src="desk-premium.webp" alt="" decoding="async"><canvas id="animatedDeskLogo" class="header-desk-icon" width="256" height="256" role="img" aria-label="Audio Desk rotating in 3D"></canvas></span></div><div class="sub">[ AUDIO INDUSTRY NEWS TERMINAL ]</div></div><button class="primary" id="refresh">Refresh ↻</button></div><div class="edition">[ TOOLS ] [ TECHNOLOGY ] [ RECORDING ] [ POST ]</div></div></header>
+<header><div class="mast"><div class="top"><div><div class="brand-line"><div class="brand">THE <span>AUDIO</span> DESK_</div><span class="header-desk-holder" aria-hidden="true"><img class="header-desk-art" src="desk-premium.webp" alt="" decoding="async"><canvas id="animatedDeskLogo" class="header-desk-icon" width="256" height="256" role="img" aria-label="Audio Desk rotating in 3D"></canvas></span></div><div class="sub">[ AUDIO INDUSTRY NEWS TERMINAL ]</div><div class="sub" id="liveRadarStatus" aria-live="polite">GLOBAL RELEASE RADAR · CHECKS EVERY 2 MIN WHILE OPEN</div></div><button class="primary" id="refresh">Refresh ↻</button></div><div class="edition">[ TOOLS ] [ TECHNOLOGY ] [ RECORDING ] [ POST ]</div></div></header>
 <main>
 <div class="stats" id="stats"><span id="count">Waiting for feeds…</span><span id="updated">Not refreshed yet</span></div>
 <div id="status" class="status">Tap Refresh or pull down to fetch the latest headlines.</div>
@@ -545,7 +545,7 @@ function safeDemoURL(raw){
  }catch{return ""}
 }
 function normalizeSampleDemo(raw){
- if(!raw||typeof raw!=="object"||!["audio","external"].includes(raw.kind))return null;
+ if(!raw||typeof raw!=="object"||!["audio","external","page"].includes(raw.kind))return null;
  const url=safeDemoURL(raw.url);
  return url?{kind:raw.kind,url}:null;
 }
@@ -572,39 +572,72 @@ function extractFeedSampleDemo(it){
 }
 function sampleDemoMarkup(story){
  return '<div class="sample-demo-panel">'+
-  '<button type="button" class="primary sample-demo-button" data-demo-key="'+esc(story.key||story.link)+'">▶ FIND DEMO</button>'+
+  '<button type="button" class="primary sample-demo-button" data-demo-key="'+esc(story.key||story.link)+'">▶ PLAY DEMO</button>'+
   '<div class="sample-demo-output" aria-live="polite"></div></div>';
 }
 function pauseSampleDemos(){
  for(const player of document.querySelectorAll(".sample-demo-output audio"))player.pause();
 }
+function embedOfficialPreview(record){
+ try{
+  const u=new URL(record.url),host=u.hostname.replace(/^www\./,"");
+  if(host==="soundcloud.com"){
+   const target="https://w.soundcloud.com/player/?url="+encodeURIComponent(u.href)+
+    "&auto_play=true&hide_related=true&show_comments=false&show_user=false&show_reposts=false";
+   return '<iframe title="Publisher SoundCloud sample preview" loading="lazy" allow="autoplay" referrerpolicy="strict-origin-when-cross-origin" style="width:100%;height:140px;border:0" src="'+esc(target)+'"></iframe>';
+  }
+  if(host==="youtube.com"&&u.pathname==="/watch"){
+   const id=u.searchParams.get("v");
+   if(id&&/^[\w-]{6,20}$/.test(id))
+    return '<iframe title="Publisher YouTube sample preview" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" style="width:100%;aspect-ratio:16/9;border:0" src="https://www.youtube-nocookie.com/embed/'+esc(id)+'?autoplay=1"></iframe>';
+  }
+ }catch(e){}
+ return "";
+}
 function showSampleDemo(key,record){
  for(const btn of document.querySelectorAll("[data-demo-key]")){
   if(btn.dataset.demoKey!==key)continue;
-  const panel=btn.closest(".sample-demo-panel");
-  if(!panel)continue;
+  const panel=btn.closest(".sample-demo-panel");if(!panel)continue;
   const output=panel.querySelector(".sample-demo-output");
   const story=[...items,...savedItems].find(x=>(x.key||x.link)===key);
   const openLink=story&&safeDemoURL(story.link)||"";
   btn.disabled=false;
   if(record&&record.kind==="audio"){
-   btn.textContent="♫ DEMO FOUND";
-   output.innerHTML='<div>ORIGINAL PUBLISHER PREVIEW · TAP PLAY</div>'+
-     '<audio controls preload="none" src="'+esc(record.url)+'" aria-label="Sample pack audio preview"></audio>'+
-     '<div class="sample-demo-note">One preview plays at a time. Audio streams from the publisher; no files are downloaded by Audio Desk.</div>';
+   btn.textContent="♫ REPLAY PREVIEW";
+   output.innerHTML='<div>OFFICIAL SAMPLE DEMO · AUTOMATIC PLAYBACK</div>'+
+     '<audio controls preload="auto" src="'+esc(record.url)+'" aria-label="Sample pack audio preview"></audio>'+
+     '<div class="sample-demo-note">Publisher preview only · One player at a time</div>';
    const player=output.querySelector("audio");
    player.addEventListener("play",()=>{
     for(const other of document.querySelectorAll(".sample-demo-output audio"))if(other!==player)other.pause();
    });
-   player.addEventListener("error",()=>{output.querySelector(".sample-demo-note").textContent="This preview cannot play in your browser. Open the publisher page to listen there.";});
+   player.addEventListener("error",()=>{
+    const note=output.querySelector(".sample-demo-note");
+    if(note)note.textContent="Publisher audio is unavailable or restricted. Open the pack page to listen.";
+   });
+   // The initial tap authorizes this asynchronous lookup; Android's app WebView
+   // allows playback after the result is returned without requiring a second tap.
+   player.play().catch(()=>{
+    const note=output.querySelector(".sample-demo-note");
+    if(note)note.textContent="The publisher or player blocked automatic playback. Press Play here or open the official page.";
+   });
   }else if(record&&record.kind==="external"){
-   btn.textContent="♫ EXTERNAL DEMO";
-   output.innerHTML='<div>Publisher hosts this preview on an external audio/video player.</div>'+
-     '<a href="'+esc(record.url)+'" target="_blank" rel="noopener">▶ LISTEN ON PUBLISHER ↗</a>';
+   btn.textContent="♫ OPEN PREVIEW";
+   const embed=embedOfficialPreview(record);
+   output.innerHTML=(embed||'<div>Official player could not be embedded on this device.</div>')+
+     '<a href="'+esc(record.url)+'" target="_blank" rel="noopener">OPEN OFFICIAL DEMO PLAYER ↗</a>'+
+     '<div class="sample-demo-note">The audio platform may require its own play control.</div>';
+   // The official embed requests autoplay but publisher/player restrictions win.
+  }else if(record&&record.kind==="page"){
+   btn.textContent="VIEW MATCHED PACK";
+   output.innerHTML='<div>Matching product page found; no accessible inline stream.</div>'+
+     '<a href="'+esc(record.url)+'" target="_blank" rel="noopener">OPEN MATCHED PRODUCT PAGE ↗</a>';
   }else{
-   btn.textContent="NO INLINE DEMO";
-   output.innerHTML='<div>The publisher did not expose a playable preview for this article.</div>'+
-     (openLink?'<a href="'+esc(openLink)+'" target="_blank" rel="noopener">OPEN PACK TO LISTEN ↗</a>':"");
+   btn.textContent="SEARCH AGAIN";
+   const query=story?encodeURIComponent(story.title+' sample pack audio demo preview'):"";
+   output.innerHTML='<div>No verified playable demo was found. Some publishers hide streams behind private players.</div>'+
+     (query?'<a href="https://www.google.com/search?q='+esc(query)+'" target="_blank" rel="noopener">SEARCH THIS PACK ON THE WEB ↗</a>':"")+
+     (openLink?'<div><a href="'+esc(openLink)+'" target="_blank" rel="noopener">OPEN ORIGINAL PACK ↗</a></div>':"");
   }
  }
 }
@@ -619,23 +652,25 @@ function receiveSampleDemo(id,result){
   if(keys.length>80)for(const key of keys.slice(0,keys.length-80))delete sampleDemoCache[key];
   try{localStorage.setItem("ar_sample_demo_urls",JSON.stringify(sampleDemoCache))}catch(e){}
  }
+ pauseSampleDemos();
  showSampleDemo(pending.key,demo);
 }
 function requestSampleDemo(key,btn){
  if([...pendingSampleDemos.values()].some(x=>x.key===key))return;
+ pauseSampleDemos();
  const story=[...items,...savedItems].find(x=>(x.key||x.link)===key);
  if(!story)return;
  const found=normalizeSampleDemo(sampleDemoCache[key]||story.demo);
- if(found){showSampleDemo(key,found);return}
+ if(found){pauseSampleDemos();showSampleDemo(key,found);return}
  if(!window.AudioDesk||typeof window.AudioDesk.lookupSampleDemo!=="function"){
   showSampleDemo(key,null);return;
  }
  const id=String(++nextSampleDemoId);
  btn.disabled=true;
- btn.textContent="SEARCHING PUBLISHER…";
- const timer=setTimeout(()=>receiveSampleDemo(id,null),12000);
+ btn.textContent="SEARCHING THE WEB FOR YOUR PACK…";
+ const timer=setTimeout(()=>receiveSampleDemo(id,null),45000);
  pendingSampleDemos.set(id,{key,timer});
- try{window.AudioDesk.lookupSampleDemo(story.link,id)}
+ try{window.AudioDesk.lookupSampleDemo(story.link,story.title,id)}
  catch(e){receiveSampleDemo(id,null)}
 }
 function wireSampleDemoButtons(root){
@@ -985,6 +1020,68 @@ function setOfflineNotice(offline){
  notice.dataset.offline=offline?"true":"false";
  notice.hidden=!offline||activeView!=="news";
 }
+// Low-bandwidth release radar: targeted, incremental refresh while the app is in use.
+// News can only arrive after an indexed publisher/feed publishes it.
+const LIVE_RADAR_INTERVAL=120000;
+let liveRadarBusy=false,liveRadarCycle=0,liveRadarLast=0;
+const livePublisherFeeds=[
+ {name:"LIVE RADAR — Rekkerd",url:"https://rekkerd.org/feed/",cat:"Plugin releases"},
+ {name:"LIVE RADAR — KVR Plugin Database",url:"https://www.kvraudio.com/rss/kvr_latestindb.rss",cat:"Plugin releases"},
+ {name:"LIVE RADAR — Bedroom Producers Blog",url:"https://bedroomproducersblog.com/feed/",cat:"Plugin releases"},
+ {name:"LIVE RADAR — A Sound Effect",url:"https://www.asoundeffect.com/feed/",cat:"Sample packs"}
+];
+const liveQueries=[
+ {cat:"Sample packs",label:"WORLDWIDE SAMPLE PACK RELEASES",
+  q:'("sample pack" OR "sample library" OR "Kontakt library" OR "sound effects library") (released OR launches OR announces OR new) when:1d'},
+ {cat:"Sample packs",label:"CINEMATIC & GAME AUDIO LIBRARIES",
+  q:'("cinematic samples" OR "game audio library" OR "foley sound effects" OR "preset pack" OR "construction kit") (new OR release) when:1d'},
+ {cat:"Plugin releases",label:"GLOBAL AUDIO PLUGIN RELEASES",
+  q:'("VST3 plugin" OR "AU plugin" OR "CLAP plugin" OR "audio effect" OR "virtual instrument") (released OR launches OR update) when:1d'},
+ {cat:"Plugin releases",label:"INDEPENDENT PLUGIN DEVELOPERS",
+  q:'(site:kvraudio.com OR site:rekkerd.org OR site:bedroomproducersblog.com OR site:gearspace.com) (plugin OR synthesizer OR effect) (new OR released) when:1d'}
+];
+function globalRadarFeed(spec,region){
+ return {name:"LIVE RADAR — "+spec.label,url:"https://news.google.com/rss/search?q="+encodeURIComponent(spec.q)+
+  "&hl=en-US&gl="+region+"&ceid="+region+":en",cat:spec.cat};
+}
+async function refreshLiveRadar(force=false){
+ if(liveRadarBusy||!navigator.onLine||document.visibilityState==="hidden")return;
+ if(!force&&Date.now()-liveRadarLast<LIVE_RADAR_INTERVAL)return;
+ liveRadarBusy=true;liveRadarLast=Date.now();
+ const region=["US","GB","IN","AU"][liveRadarCycle++%4];
+ const status=$("liveRadarStatus");
+ if(status)status.textContent="GLOBAL RELEASE RADAR · CHECKING NEW SAMPLE PACKS & PLUGINS…";
+ try{
+  const nextPublisher=livePublisherFeeds[(liveRadarCycle-1)%livePublisherFeeds.length];
+  const selected=[...liveQueries.map(spec=>globalRadarFeed(spec,region)),nextPublisher];
+  const settled=await Promise.all(selected.map(async feed=>{
+   try{return await fetchFeedWithTimeout(feed,6000)}catch(e){return null}
+  }));
+  const incoming=settled.filter(Array.isArray).flat();
+  let added=0;
+  if(incoming.length){
+   const byUrl=new Set(items.map(x=>normalizeStoryUrl(x.link)));
+   const byTitle=new Set(items.map(x=>titleKey(x.title)));
+   for(const story of incoming){
+    if(story.cat!=="Sample packs"&&story.cat!=="Plugin releases")continue;
+    const key=normalizeStoryUrl(story.link),title=titleKey(story.title);
+    if(byUrl.has(key)||byTitle.has(title))continue;
+    byUrl.add(key);byTitle.add(title);items.push(story);added++;
+   }
+   if(added){
+    items.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
+    items=items.slice(0,500);
+    try{localStorage.setItem("ar_items",JSON.stringify(items))}catch(e){}
+    if(activeView==="news")render();
+    if(activeView==="samples")renderSamplePackReleases();
+   }
+  }
+  if(status)status.textContent="GLOBAL RELEASE RADAR · "+(added?added+" NEW · ":"")+
+   "CHECKED "+new Date().toLocaleTimeString()+" · NEXT CHECK ~2 MIN";
+ }finally{
+  liveRadarBusy=false;
+ }
+}
 async function loadFeeds(){
  if($("refresh").disabled){if(window.AudioDesk&&typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();return;}
  $("refresh").disabled=true;
@@ -1001,7 +1098,7 @@ async function loadFeeds(){
    }
   }));
   // Keep cached stories for unavailable sources, including a fully offline launch.
-  const retained=ok===0?items:items.filter(x=>failed.includes(x.source));
+  const retained=ok===0?items:items.filter(x=>failed.includes(x.source)||x.source.startsWith("LIVE RADAR — "));
   const all=[...results.flat(),...retained];
   const seen=new Set();
   items=all.filter(x=>{const k=normalizeStoryUrl(x.link)||titleKey(x.title);if(seen.has(k))return false;seen.add(k);return true});
@@ -1045,12 +1142,15 @@ $("addFeed").onclick=()=>{let name=$("feedName").value.trim(),url=$("feedUrl").v
 renderSources();
 setOfflineNotice(!navigator.onLine);
 window.addEventListener("offline",()=>{setOfflineNotice(true);$("status").textContent="No internet connection. Cached headlines remain available.";});
-window.addEventListener("online",()=>{setOfflineNotice(false);if(!$("refresh").disabled)loadFeeds();discoverPublisherFeeds();});
+window.addEventListener("online",()=>{setOfflineNotice(false);if(!$("refresh").disabled)loadFeeds();discoverPublisherFeeds();refreshLiveRadar(true);});
 // Always show the first filter from its left edge on launch.
 $("filters").scrollLeft=0;
 if(items.length){render();$("status").textContent="Showing saved headlines instantly · checking for updates…";$("updated").textContent="Cached feed";}
 loadFeeds();
 setTimeout(()=>discoverPublisherFeeds(),800);
+setTimeout(()=>refreshLiveRadar(true),9500);
+setInterval(()=>refreshLiveRadar(),LIVE_RADAR_INTERVAL);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&navigator.onLine)refreshLiveRadar()});
 // Route all publisher/source links through the native in-app browser when running in Android.
 document.addEventListener("click",e=>{
  const a=e.target.closest("a[href]"); if(!a)return;

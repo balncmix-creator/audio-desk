@@ -78,6 +78,9 @@ class MainActivity : Activity() {
         swipeRefresh = DeskRefreshLayout(this)
         appWebView = WebView(this)
         configure(appWebView)
+        // Only the explicitly tapped sample-preview control starts asynchronous playback.
+        // Native lookup returns after the original click, so WebView gesture gating must be disabled.
+        appWebView.settings.mediaPlaybackRequiresUserGesture = false
         imageAccents = ImageAccentSampler(appWebView.settings.userAgentString)
         articleImages = ArticleImageFinder(appWebView.settings.userAgentString)
         feedDiscovery = PublisherFeedDiscovery(appWebView.settings.userAgentString)
@@ -172,9 +175,9 @@ class MainActivity : Activity() {
     }
 
     private inner class AppBridge {
-        @JavascriptInterface fun lookupSampleDemo(url: String, requestId: String) {
+        @JavascriptInterface fun lookupSampleDemo(url: String, title: String, requestId: String) {
             if (requestId.length !in 1..32 || !requestId.all { it.isDigit() }) return
-            sampleDemos.find(url) { result ->
+            sampleDemos.find(url, title) { result ->
                 runOnUiThread {
                     if (!destroyed) {
                         val record = result?.let {
