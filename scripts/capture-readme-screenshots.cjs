@@ -59,6 +59,7 @@ const assert=require('node:assert/strict');
    document.getElementById('status').textContent='DEMONSTRATION HEADLINES · NOT LIVE NEWS';
    document.getElementById('updated').textContent='UI Preview';
   });
+  await page.evaluate(()=>setLauncherPage('events',false));
   await page.waitForFunction(()=>[...document.querySelectorAll('.storymedia')].every(img=>img.complete&&img.naturalWidth>0));
   await page.waitForFunction(()=>!!document.querySelector('.story[style*="--story-surface"]'));
   await page.screenshot({path:path.join(output,'news-feed.png')});
@@ -105,7 +106,8 @@ const assert=require('node:assert/strict');
    ];
    const examples=records.map((r,i)=>({
     label:r[0],pkg:'example.preview.app'+i,activity:'example.preview.Launcher',
-    icon:icon(r[1],r[2],r[3])
+    icon:icon(r[1],r[2],r[3]),
+    uses:Math.max(0,16-i*2)
    }));
    window.receiveLauncherApps(examples,examples.slice(1,5).map((a,i)=>({
     ...a,opened:Date.now()-i*120000
@@ -113,10 +115,14 @@ const assert=require('node:assert/strict');
    document.getElementById('launcherClock').textContent='11:20';
    document.getElementById('launcherDate').textContent='SAT, 14 NOV';
   });
+  await page.locator('[data-home-nav="home"]').click();
+  assert.equal(await page.locator('#launcherFavorites .launcher-app').count(),8);
+  await page.screenshot({path:path.join(output,'launcher-home.png')});
   await page.locator('[data-home-nav="apps"]').click();
   assert.equal(await page.locator('#launcherAppsGrid .launcher-app').count(),12);
   await page.screenshot({path:path.join(output,'launcher-applications.png')});
-  await page.locator('[data-home-nav="recents"]').click();
+  await page.locator('[data-home-nav="home"]').click();
+  await page.locator('#launcherShowRecents').click();
   await page.screenshot({path:path.join(output,'launcher-open-apps.png')});
   assert.deepEqual(errors,[],'the screenshot version of the app must render without script errors');
   console.log('Captured Audio Desk news and launcher UI screenshots with explicitly labeled demo content');

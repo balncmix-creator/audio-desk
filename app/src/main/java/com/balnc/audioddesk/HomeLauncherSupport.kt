@@ -74,6 +74,9 @@ internal class HomeLauncherSupport(private val activity: Activity) {
     private fun App.toJson(): JSONObject = JSONObject()
         .put("pkg", pkg).put("activity", activityName)
         .put("label", label).put("icon", icon)
+        // These counts cover app launches through Audio Desk only.
+        // Android deliberately restricts global app-usage history without permission.
+        .put("uses", prefs.getInt("count:" + pkg + "/" + activityName, 0))
 
     private fun recents(apps: List<App>): JSONArray {
         val available = apps.associateBy { it.pkg + "/" + it.activityName }
@@ -116,7 +119,10 @@ internal class HomeLauncherSupport(private val activity: Activity) {
             if (next.length() >= 16) break
             next.put(item)
         }
-        prefs.edit().putString("recent", next.toString()).apply()
+        val countKey = "count:" + pkg + "/" + activityName
+        val nextCount = (prefs.getInt(countKey, 0) + 1).coerceAtMost(1_000_000)
+        prefs.edit().putString("recent", next.toString())
+            .putInt(countKey, nextCount).apply()
     }
 
     fun isDefaultHome(): Boolean {

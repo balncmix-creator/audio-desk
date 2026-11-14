@@ -1,28 +1,32 @@
 # Audio Desk Launcher
 
-**A swipe-first Android Home launcher for people who make sound, inspired by the Nokia N9 MeeGo interface without replacing Audio Desk's original retro design.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
+**A one-handed Android Home launcher for people who make sound, inspired by minimalist Niagara-style app access and Nokia N9 swipe navigation, without replacing Audio Desk's original retro design.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk Launcher v2.0 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v2.0/Audio-Desk-Launcher-v2.0.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk Launcher v2.1 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v2.1/Audio-Desk-Launcher-v2.1.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
 
-## MeeGo-style launcher
+## One-handed home launcher
 
-Audio Desk now has three horizontally navigable spaces with the **same monochrome pixel styling and existing article cards**:
+The **default screen is now Home**, not the news feed. It keeps the original square-edged black-and-grey Audio Desk styling, pixel typography, and animated desk identity. The interface uses three horizontal spaces:
 
-- **Events:** Your existing Audio Desk headlines, REAPER and post-production news, sample packs, bookmarks, smart accents and audio previews.
-- **Applications:** Shows the actual launchable apps installed on your phone, with real app icons, local search and one-tap launching.
-- **Open Apps:** Displays apps you have opened *from Audio Desk Launcher* and lets you reopen them. **These are not live Android running-task previews**; ordinary Android third-party launchers cannot obtain other apps' protected task snapshots.
+- **Swipe left-to-right → AUDIO NEWS:** all original Audio Desk stories, filters, REAPER and post-production headlines, bookmarks, sample previews, and pinch-grid options.
+- **HOME (center):** a big clock and a single vertical list of your most-opened apps, with one-tap launching. Star any app from the alphabetized list to pin it at the top.
+- **Swipe right-to-left → ALL APPS:** every app visible to Android's launcher, in an alphabetical vertical list with quick A–Z navigation along the right edge and search.
 
-Swipe from the left or right edge to move between launcher spaces, or tap the **EVENTS · APPS · OPEN APPS** bar. Inside Events, your existing content swipe tabs still work. News and launcher screens use the original black/grey square-edged UI.
+The list becomes personalized as you open apps from Audio Desk. **Usage counts are local to Audio Desk launches**, not Android's restricted global usage history. New installations initially show suggested apps until local launch counts develop. Favorite pins are stored locally.
 
-The app **does not replace your Home screen automatically**. To enable it, open **Applications → Set Home**, then approve Audio Desk in Android's default Home selection. You can always restore your previous launcher in **Android Settings → Apps → Default apps → Home app**. Your Audio Desk feed/bookmark data stays in the existing app installation.
+The **Recently Opened** section is still accessible directly from Home. It shows apps opened through Audio Desk, not privileged Android running-task screenshots. The separate navigation strip is also available as a touch and accessibility fallback.
+
+**To make Audio Desk your real Home:** install the APK, open Home and choose **SET HOME**, then select Audio Desk in Android's default Home chooser. The app cannot silently replace your previous launcher. You can revert via **Android Settings → Apps → Default apps → Home app**. Existing cached news and bookmarks remain in the same installed package.
 
 ## Screenshots
 
-| Applications | Recent apps launched from Audio Desk |
+| Home · Most opened | A–Z app list |
 |:--:|:--:|
-| ![Actual Audio Desk launcher Applications UI with demonstration app list](docs/screenshots/launcher-applications.png) | ![Actual Audio Desk launcher recent app tiles with demonstration history](docs/screenshots/launcher-open-apps.png) |
+| ![Audio Desk one-handed Home with frequently used apps](docs/screenshots/launcher-home.png) | ![Audio Desk vertical alphabetical application list and index](docs/screenshots/launcher-applications.png) |
+
+![Recent apps launched from Audio Desk shown on Home](docs/screenshots/launcher-open-apps.png)
 
 *Screenshots are captured from the actual app's HTML/CSS using a browser test harness, with clearly illustrative installed-app icons and labels. The APK reads your device's actual apps, not these examples. Device system bars may differ.*
 
@@ -52,7 +56,7 @@ The app **does not replace your Home screen automatically**. To enable it, open 
 
 ## Install on Android
 
-1. Open the [v2.0 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v2.0/Audio-Desk-Launcher-v2.0.apk) on your Android phone. **This is an APK, not a ZIP.**
+1. Open the [v2.1 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v2.1/Audio-Desk-Launcher-v2.1.apk) on your Android phone. **This is an APK, not a ZIP.**
 2. Open the downloaded file and, if Android asks, allow installations from the browser or file manager you used.
 3. Launch **Audio Desk Launcher**. Tap **Applications → Set Home** if you want it to become your default Android launcher. Your existing Audio Desk bookmarks and cached feeds remain available.
 
@@ -72,6 +76,14 @@ node scripts/capture-readme-screenshots.cjs
 The last command captures the app's interface into `docs/screenshots/` with labeled fictional example content. Tests and browser screenshots are not substitutes for physical-device testing.
 
 ## Changelog
+
+### Version 2.1 — One-handed Audio Desk Home
+- Home is now the startup screen, with your most-opened apps automatically ranked from locally recorded launches.
+- Pin or unpin favorites using a star; suggested apps fill empty slots on fresh installations.
+- Swipe **left** from Home for a vertical alphabetical app list with A–Z edge scrubber and app search; swipe **right** for the original Audio Desk news feed.
+- Preserve the recent-launch drawer, app launch bridge, native Home selection, and existing audio-news experience.
+- Retain the original monochrome pixel style and MeeGo-inspired depth/blur transitions. No Niagara trademarks or assets are reproduced.
+
 
 ### Version 2.0 — Audio Desk Launcher
 - Register as an optional selectable Android HOME app, preserving the existing package and user data.
