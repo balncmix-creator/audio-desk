@@ -27,6 +27,7 @@ const assert=require('node:assert/strict');
   });
   const articles=[['plain','No image',null],['blue','Blue image','blue'],['amber','Amber image','amber'],['mono','Monochrome image','mono'],['broken','Broken image','broken']];
   await page.route('**/*',route=>{
+  const localAsset = require('./serve-assets.cjs')(route); if(localAsset)return localAsset;
    const url=route.request().url();
    if(url==='https://appassets.androidplatform.net/assets/index.html')return route.fulfill({contentType:'text/html',body:fs.readFileSync(path.join(__dirname,'../app/src/main/assets/index.html'),'utf8')});
    if(url.includes('api.rss2json.com'))return route.fulfill({json:{status:'ok',items:articles.map(([key,title,img],i)=>({title,link:'https://example.com/'+key,pubDate:new Date(Date.now()-i*1000).toISOString(),description:'Test article',thumbnail:img?'https://publisher.example/'+img+'.png':''}))}});

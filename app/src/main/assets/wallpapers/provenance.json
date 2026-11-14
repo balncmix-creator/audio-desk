@@ -1,0 +1,290 @@
+[
+  {
+    "id": "moonlit-city",
+    "origin": "generated-replacement",
+    "sourceName": "moonlit-city.png",
+    "sourceSha256": "f3e1822c79a4d9981f17d993ef1234718f4bc74cff51e211654e81278499fefd",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "7f177e87fb0a18fdffd3a202bc64f85dea3fbe0b43ff0a247d71e65208b8efee",
+    "thumbnailSha256": "b71cfda4ae11b7b0b065be3af169a776088b145e628f3065e8937ce78dc1a73d",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.9,
+      0.5
+    ]
+  },
+  {
+    "id": "rainy-neon",
+    "origin": "generated-replacement",
+    "sourceName": "rainy-neon.png",
+    "sourceSha256": "615c736ee947b2b1c4d67ade3b595b4a11fab715517d8a2e1f9be35c878fb262",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "bd91ae218343573ec2868b251cc3b2f98fe789bbc5a8e0db073f831706612e9e",
+    "thumbnailSha256": "71995b854e685ad4506486feb59197f1bc63b8dc969f946606875b809f854a7f",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  },
+  {
+    "id": "northern-lights",
+    "origin": "generated-replacement",
+    "sourceName": "northern-lights.png",
+    "sourceSha256": "9894700fe42ca98774da7e2e310d8d24cb3194644f2aa0b407e555230cb3ecbe",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "cafb7a106937a5c83e58c11e5388f172af19ec4b3a9eadbc05dd4530df0130a5",
+    "thumbnailSha256": "4a50c415faae334b009bbf2fc8c510a6caffc54778a32f9eecfc503999a0a23c",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  },
+  {
+    "id": "purple-planet",
+    "origin": "generated-replacement",
+    "sourceName": "purple-planet.png",
+    "sourceSha256": "1cca141ab1e8245f804fb9117ae640cf06cbd96894fec5664302033867482eba",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "93e75f7ccdfb6b4afae951944107739ad284f3127739ae2bfaa62c10e49380b3",
+    "thumbnailSha256": "b971a56aa5cb46e9a602b4e80a51c11187d35e4f00cb1cdbe9de9d7f399a49e5",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.6,
+      0.5
+    ]
+  },
+  {
+    "id": "midnight-studio",
+    "origin": "generated-replacement",
+    "sourceName": "midnight-studio.png",
+    "sourceSha256": "24c5d8d076f5efe603a6243870dba65d65eb26351b77deca46eb1d0f7393f64c",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "16da69a5efa9c644e7d2d9135af2c38d3f51f7d75b2675818a49e9bee18cef50",
+    "thumbnailSha256": "8e236c594d9edfa2d74150e24225dc9462e6467f7ea4e5d95e07e5fdc3d40742",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  },
+  {
+    "id": "cyberpunk-rooftops",
+    "origin": "generated-replacement",
+    "sourceName": "cyberpunk-rooftops.png",
+    "sourceSha256": "14dfc4c50705c5c25b84e1e0ddb62ecb446f83c7c58d3cf5cb1e9b8d9a86005e",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "9421f1777c6c2edc72e11657de10f947b0cdc1364a89e09f4ab8b9aca19f1499",
+    "thumbnailSha256": "c2821988a1973d4743016853f00ecbd511daa3b916de4c4044b947dbfdbce814",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  },
+  {
+    "id": "cyberpunk-alley",
+    "origin": "generated-replacement",
+    "sourceName": "cyberpunk-alley.png",
+    "sourceSha256": "b3815fe061c801d4135e1e2450fb2cfa0edde5d4f98db3536be1f3d5c190010e",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "8e7c2bbfa9416a16054bfea76939c9cb7f09c9bbfa97efc880049cac72f515cd",
+    "thumbnailSha256": "e39deecbc16b3b44129790bcd468b33c327a24c863c243c7ebddd8395373550b",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  },
+  {
+    "id": "brutalist-concrete",
+    "origin": "generated-replacement",
+    "sourceName": "brutalist-concrete.png",
+    "sourceSha256": "86e4478fcd935eb7d25cdf8b842fc960e4694ef3fa8bd5bab872ce4dabdab383",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "93f593e2a48c6a6d842590bce35a24731f3bef18440c1f6aa935033806a65618",
+    "thumbnailSha256": "043677077b651b0436d4cb68acbb72333cee78d1108c9938e52d194e40d36e2d",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  },
+  {
+    "id": "brutalist-monolith",
+    "origin": "generated-replacement",
+    "sourceName": "brutalist-monolith.png",
+    "sourceSha256": "23d5aec81ff2d4ab1835836e61d4ebeb80d70117f3c4645b321cedffb9bbee9d",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "2429fde9e76fd35085d52eaca7c6da9f3dcbe8660e4d37bf33fb19cb127506c1",
+    "thumbnailSha256": "bb1ee080b008d8eb12f2cea14e26defe49b8b8c86f5d1df4582d06a987493343",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  },
+  {
+    "id": "brutalist-tower",
+    "origin": "generated-replacement",
+    "sourceName": "brutalist-tower.png",
+    "sourceSha256": "dda3d9f46b5fb448b66703f3d86583b77e8737d25c61defbfc017385d18a5fad",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "9ed55ff02ed919e374cc326e9042d89d44f5f2453d2148da0ebb201ad997ec49",
+    "thumbnailSha256": "045daf3ce4606871d7fc9fd500a80c2cfafe069ba27c5aac2cad49a380cf11aa",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  },
+  {
+    "id": "brutalist-stairs",
+    "origin": "generated-replacement",
+    "sourceName": "brutalist-stairs.png",
+    "sourceSha256": "ff9306d4f4249571dff2a3b4aa59e525a96ef6a013122a6889b33a9713681722",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "e96ed61e91718abf8588b5e98edcb293e81f8c48f0c9af360f171ce4dbaa6485",
+    "thumbnailSha256": "79397f07d2bd221d49948a38e6c8b5bc85649015378c547c43e391e2ca6782c0",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  },
+  {
+    "id": "brutalist-courtyard",
+    "origin": "generated-replacement",
+    "sourceName": "brutalist-courtyard.png",
+    "sourceSha256": "ff1edbe42fa72727f0d3ac38df38e8a8ace9b393882465162709027d70f40024",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "d89d2680a80b3583b44ad33299e7e5d96a46232f0465fa9869c49144988ac2a0",
+    "thumbnailSha256": "0f42793e580ff3fd1c9a21596b25511f20772236ea4e72daf99299ab48c6a9c7",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  },
+  {
+    "id": "brutalist-red",
+    "origin": "generated-replacement",
+    "sourceName": "brutalist-red.png",
+    "sourceSha256": "9ab25c422651ce2d0ed1868c5610c1aaa627fdf4cf4a0644caf205767e9c0a92",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "07d7ac98f383fbf4ed60a7cab38af4c99c775e35298ae10023f2b6cbbcb1dd03",
+    "thumbnailSha256": "27163855df298a093d75e782861bca0cb771ef1d1363f0ce352a717d46c71df2",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  },
+  {
+    "id": "minimal-lunar",
+    "origin": "generated-replacement",
+    "sourceName": "minimal-lunar.png",
+    "sourceSha256": "deba3c5203b2a325b4ea45fdf8ca6db2a939bedf87adf3df34df0c1474ea7eaf",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "17ff8fa877b71dc5ecb1d7e88b043f214d838b29aec99f9a44184b85d43a0599",
+    "thumbnailSha256": "b0bc057c62efbb4ae60e29539d7153b8fd9fa0c9dc14774f3d34dc8cd17fb1a9",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      1.0,
+      0.5
+    ]
+  },
+  {
+    "id": "crt-terminal",
+    "origin": "generated-replacement",
+    "sourceName": "crt-terminal.png",
+    "sourceSha256": "938f225d0cf45aedaa22cce15e52fbd6956a2a618d9ecdf5bb670641d1f4c34e",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "509194a83e168bc6d6a777de2a4c784973b43ed1450d3fa612a9d4de5f84d489",
+    "thumbnailSha256": "36b773ec9bc95afa2b63f4be10dfb71ab2b7abab075fe1ba46bd1c609ee4e1d8",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.7,
+      0.5
+    ]
+  },
+  {
+    "id": "arcade-afterhours",
+    "origin": "generated-replacement",
+    "sourceName": "arcade-afterhours.png",
+    "sourceSha256": "8efc9046de952e56ee44757c8af2ab19468854b3d0653a3c8920f2eb4893b844",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "17d5269e3af7590ce857686e2fd3734642f8cdc707fe2fef03f0d30cca72c85d",
+    "thumbnailSha256": "49a411fd9a222de8cc3e58781de2c15add6d62acd317b303d7443c5d34279422",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.75,
+      0.5
+    ]
+  }
+]
