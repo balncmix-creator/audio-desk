@@ -1,7 +1,7 @@
 /* Full-resolution wallpapers are decoded only when selected. Gallery uses small files. */
 const CLOCK_DESIGNS=["Minimal","Arcade Pixel","Bold Mono","Thin","8-Bit Block","Shadow","Heavy","Underlined","Neon Pixel","Framed"];
 const loadPersonalInt=(key,fallback,max)=>{const raw=localStorage.getItem(key);const n=raw===null?NaN:Number(raw);return Number.isInteger(n)&&n>=0&&n<=max?n:fallback};
-let selectedWallpaper=loadPersonalInt("ar_wallpaper_v1",0,9);
+let selectedWallpaper=loadPersonalInt("ar_wallpaper_v1",0,WALLPAPERS.length-1);
 let clockDesign=loadPersonalInt("ar_clock_style_v1",0,9);
 let clockSize=loadPersonalInt("ar_clock_size_v1",66,110);
 if(clockSize<48)clockSize=66;

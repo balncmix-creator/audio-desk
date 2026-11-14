@@ -8,17 +8,23 @@ const assets=path.resolve(__dirname,'../app/src/main/assets');
 const catalog=Array.from(vm.runInNewContext(fs.readFileSync(path.join(assets,'wallpapers/catalog.js'),'utf8')+';WALLPAPERS'));
 const sha=data=>crypto.createHash('sha256').update(data).digest('hex');
 (async()=>{
- assert.equal(catalog.length,10);
+ assert.equal(catalog.length,16);
+ assert.equal(catalog.filter(w=>w.id.startsWith('brutalist-')).length,6);
+ assert.equal(catalog.every(w=>w.light===false),true,'bundled collection follows the dark retro preference');
+ assert.equal(catalog.some(w=>/pastel|tropical|floating-islands|retro-music|sunset-highway/.test(w.id)),false,'removed cute wallpapers stay out of the gallery');
+ const bundled=fs.readdirSync(path.join(assets,'wallpapers')).filter(name=>name.endsWith('.webp')).sort();
+ assert.deepEqual(bundled,catalog.map(w=>w.id+'.webp').sort(),'unselected artwork must not remain bundled');
  const missing=catalog.flatMap(w=>[w.src,w.thumb]).filter(p=>!fs.existsSync(path.join(assets,p)));
  assert.deepEqual(missing,[],'Original wallpaper files are unavailable. Import approved original portraits; do not upscale the v2.4 sprite.');
  const provenance=JSON.parse(fs.readFileSync(path.join(assets,'wallpapers/provenance.json')));
- assert.equal(provenance.length,10);
- assert.equal(new Set(provenance.map(p=>p.sourceSha256)).size,10,'ten different originals');
+ assert.equal(provenance.length,catalog.length);
+ assert.equal(new Set(provenance.map(p=>p.sourceSha256)).size,catalog.length,'different originals');
  const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH});
  try{
   const page=await browser.newPage();let total=0;
   for(const wallpaper of catalog){
    const record=provenance.find(p=>p.id===wallpaper.id);assert.ok(record);
+   assert.equal(record.cropAnchor[0],Number.parseFloat(wallpaper.position)/100,'gallery and full image use the same reviewed focal crop');
    const generated=record.origin==='generated-replacement';
    const minimum=generated?[1024,1536]:[1080,1920];
    assert.ok(record.sourceWidth>=minimum[0]&&record.sourceHeight>=minimum[1]&&record.sourceWidth<record.sourceHeight);
@@ -42,9 +48,9 @@ const sha=data=>crypto.createHash('sha256').update(data).digest('hex');
    const thumbSize=await page.evaluate(async data=>{const image=new Image();image.src='data:image/webp;base64,'+data;await image.decode();return [image.naturalWidth,image.naturalHeight]},thumb.toString('base64'));
    assert.deepEqual(thumbSize,[180,400]);
   }
-  assert.ok(total<=16000000,'compressed pack stays within low-end storage budget');
+  assert.ok(total<=catalog.length*1600000,'compressed pack stays within the per-wallpaper storage budget');
   const html=fs.readFileSync(path.join(assets,'index.html'),'utf8');
   assert.doesNotMatch(html,/WALLPAPER_SPRITE|background-size:500%|data:image\/webp;base64/);
-  console.log('PASS: 10 high-resolution original WebP portraits, provenance, decode, fidelity and size budgets; separate thumbnails');
+  console.log('PASS: 16 native-resolution lossless WebP portraits, six brutalist designs, dark-only selection, provenance, fidelity and size budgets; separate thumbnails; rejected cute assets excluded');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exit(1)});

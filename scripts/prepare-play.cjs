@@ -40,6 +40,10 @@ fs.mkdirSync(out, { recursive: true });
 fs.writeFileSync(path.join(out, 'index.html'), html);
 fs.copyFileSync(path.join(root, 'app/src/main/assets/desk-premium.webp'), path.join(out, 'desk-premium.webp'));
 for (const name of ['wallpapers', 'fonts', 'pixel-icons', 'personalization.css', 'personalization.js']) {
+  // Remove stale generated files when the user removes a wallpaper from the pack.
+  const target = path.resolve(out, name);
+  if (path.dirname(target) !== out) throw new Error('Asset output escaped its directory');
+  if (fs.existsSync(target)) fs.rmSync(target, {recursive: true, force: true});
   fs.cpSync(path.join(root, 'app/src/main/assets', name), path.join(out, name), {recursive: true});
 }
 console.log('Prepared Play assets at ' + out + ': news, saved articles and licensed sample directory');

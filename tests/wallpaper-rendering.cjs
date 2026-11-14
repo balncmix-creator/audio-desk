@@ -27,7 +27,7 @@ const assets=path.join(__dirname,'../app/src/main/assets');
   await page.waitForFunction(()=>document.querySelector('#wallpaperImage')?.complete);
   for(const size of [{width:360,height:640},{width:393,height:852},{width:360,height:800}]){
    await page.setViewportSize(size);
-   for(let i=0;i<10;i++){
+   for(let i=0;i<16;i++){
     await page.evaluate(i=>{selectedWallpaper=i;customWallpaperSelected=false;return applyWallpaper()},i);
     const result=await page.locator('#wallpaperImage').evaluate(image=>{
      const box=image.getBoundingClientRect();return {width:image.naturalWidth,height:image.naturalHeight,
@@ -37,7 +37,7 @@ const assets=path.join(__dirname,'../app/src/main/assets');
     assert.equal(result.top,0);assert.equal(result.left,0);assert.equal(result.right,size.width);assert.equal(result.bottom,size.height);
     assert.equal(result.fit,'cover');
     const color=await page.locator('#launcherClock').evaluate(e=>getComputedStyle(e).color);
-    assert.equal(color,i>=5?'rgb(16, 21, 27)':'rgb(243, 243, 243)','clock contrast follows wallpaper palette');
+    assert.equal(color,'rgb(243, 243, 243)','white clock stays legible across the dark-only collection');
     if(process.env.WALLPAPER_QA_DIR&&size.width===393){
      fs.mkdirSync(process.env.WALLPAPER_QA_DIR,{recursive:true});
      await page.emulateMedia({reducedMotion:'reduce'});
@@ -46,13 +46,13 @@ const assets=path.join(__dirname,'../app/src/main/assets');
    }
   }
   await page.evaluate(()=>openWallpaperPicker());
-  const thumbnails=page.locator('.wallpaper-thumb');assert.equal(await thumbnails.count(),10);
-  for(let i=0;i<10;i++){
+  const thumbnails=page.locator('.wallpaper-thumb');assert.equal(await thumbnails.count(),16);
+  for(let i=0;i<16;i++){
    await thumbnails.nth(i).scrollIntoViewIfNeeded();
    await thumbnails.nth(i).evaluate(image=>image.decode());
    assert.equal(await thumbnails.nth(i).evaluate(image=>image.naturalWidth),180);
   }
   assert.deepEqual(errors,[]);
-  console.log('PASS: all 10 actual wallpaper assets fill 16:9, 20:9 and tall phone viewports, preserve native resolution, render appropriate text contrast and have decodable independent thumbnails');
+  console.log('PASS: all 16 actual wallpaper assets fill 16:9, 20:9 and tall phone viewports, preserve native resolution, render appropriate text contrast and have decodable independent thumbnails');
  }finally{await browser.close()}
 })().catch(error=>{console.error(error);process.exit(1)});

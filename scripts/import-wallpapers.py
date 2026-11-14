@@ -16,8 +16,12 @@ from PIL import Image, ImageChops, ImageOps, ImageStat
 
 ROOT = Path(__file__).resolve().parent.parent
 IDS = ['moonlit-city', 'rainy-neon', 'northern-lights', 'purple-planet',
-       'midnight-studio', 'pastel-sunrise', 'tropical-beach', 'sunset-highway',
-       'floating-islands', 'retro-music']
+       'midnight-studio', 'cyberpunk-rooftops', 'cyberpunk-alley',
+       'brutalist-concrete', 'brutalist-monolith', 'brutalist-tower',
+       'brutalist-stairs', 'brutalist-courtyard', 'brutalist-red',
+       'minimal-lunar', 'crt-terminal', 'arcade-afterhours']
+POSITIONS = {'moonlit-city': .90, 'purple-planet': .60, 'minimal-lunar': 1.0,
+             'crt-terminal': .70, 'arcade-afterhours': .75}
 
 
 def psnr(a, b):
@@ -70,24 +74,25 @@ def main():
             fidelity = psnr(image, decoded)
             if fidelity < 38 or target.stat().st_size > 2500_000:
                 parser.error(f'{source.name}: cannot meet quality/size budget (PSNR {fidelity:.1f} dB)')
-            # Same crop anchor as object-position:35% center; no distortion.
-            thumb = ImageOps.fit(image, (180, 400), Image.Resampling.LANCZOS, centering=(.35, .5))
+            # Match each portrait's reviewed phone crop; no distortion.
+            anchor = POSITIONS.get(name, .35)
+            thumb = ImageOps.fit(image, (180, 400), Image.Resampling.LANCZOS, centering=(anchor, .5))
             thumb_path = staged / 'thumbs' / f'{name}.webp'
             thumb.save(thumb_path, 'WEBP', quality=88, method=6)
             records.append(dict(id=name, origin='generated-replacement' if args.generated else 'recovered-original',
                                 sourceName=source.name, sourceSha256=sha(source),
                                 sourceWidth=w, sourceHeight=h, width=image.width, height=image.height,
                                 sha256=sha(target), thumbnailSha256=sha(thumb_path),
-                                encoding=quality, psnr=round(fidelity, 2), cropAnchor=[.35, .5]))
-        if sum(p.stat().st_size for p in staged.glob('*.webp')) > 16_000_000:
-            parser.error('Pack exceeds the 16 MB compressed wallpaper budget')
+                                encoding=quality, psnr=round(fidelity, 2), cropAnchor=[anchor, .5]))
+        if sum(p.stat().st_size for p in staged.glob('*.webp')) > len(IDS) * 1600_000:
+            parser.error('Pack exceeds the average 1.6 MB per wallpaper compression budget')
         import shutil
         for name in IDS:
             shutil.copy2(staged / f'{name}.webp', out / f'{name}.webp')
             (out / 'thumbs').mkdir(exist_ok=True)
             shutil.copy2(staged / 'thumbs' / f'{name}.webp', out / 'thumbs' / f'{name}.webp')
-        (out / 'provenance.json').write_text(json.dumps(records, indent=2) + '\n', encoding='utf-8')
-    print('Imported 10 original portraits and 10 thumbnails; no atlas, no upscaling.')
+        (out / 'provenance.json').write_text(json.dumps(records, indent=2) + '\n', encoding='utf-8', newline='\n')
+    print(f'Imported {len(IDS)} original portraits and {len(IDS)} thumbnails; no atlas, no upscaling.')
 
 
 if __name__ == '__main__':

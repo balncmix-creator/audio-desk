@@ -28,6 +28,11 @@ for archive_path, asset, source, store in [
         required += [str(p.relative_to(assets)).replace('\\', '/') for p in (assets / 'fonts').glob('*')]
         for record in provenance:
             required += [f"wallpapers/{record['id']}.webp", f"wallpapers/thumbs/{record['id']}.webp"]
+        expected_wallpapers = {name for name in required if name.startswith('wallpapers/') and name.endswith('.webp')}
+        actual_wallpapers = {name[len(prefix):] for name in archive.namelist()
+                             if name.startswith(prefix + 'wallpapers/') and name.endswith('.webp')}
+        if actual_wallpapers != expected_wallpapers:
+            raise SystemExit('Unexpected or missing wallpaper files packaged in ' + str(archive_path))
         for relative in required:
             if archive.read(prefix + relative) != (assets / relative).read_bytes():
                 raise SystemExit(f'Wrong or missing packaged personalization asset: {relative}')
