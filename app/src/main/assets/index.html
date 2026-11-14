@@ -1267,6 +1267,8 @@ function finishTabSwipe(target,direction){
 function cancelTabSwipe(){
  if(tabAnimationBusy)return;
  if(swipeReducedMotion.matches){clearTabSwipe();return}
+ // Hold navigation until the bounce-back animation has fully settled.
+ tabAnimationBusy=true;
  swipeMain.style.transition="transform 190ms ease-out,filter 190ms ease-out,opacity 190ms ease-out";
  swipeMain.style.transform="translate3d(0,0,0) scale(1)";
  swipeMain.style.filter="blur(0px)";swipeMain.style.opacity="1";
