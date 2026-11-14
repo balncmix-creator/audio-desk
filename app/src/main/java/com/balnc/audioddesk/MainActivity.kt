@@ -38,6 +38,8 @@ class MainActivity : Activity() {
     private lateinit var sampleDemos: SampleDemoFinder
     private lateinit var launcherSupport: HomeLauncherSupport
     private var destroyed = false
+    private var statusInsetDp = 24
+    private var bottomInsetDp = 0
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun configure(webView: WebView) {
@@ -54,7 +56,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        window.statusBarColor = Color.rgb(8, 8, 8)
+        window.statusBarColor = Color.TRANSPARENT
         window.navigationBarColor = Color.rgb(8, 8, 8)
 
         val loader = WebViewAssetLoader.Builder()
@@ -72,7 +74,12 @@ class MainActivity : Activity() {
             val safe = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
             )
-            view.setPadding(safe.left, safe.top, safe.right, safe.bottom)
+            // Let the wallpaper draw behind the Android status bar.
+            view.setPadding(safe.left, 0, safe.right, 0)
+            val density = resources.displayMetrics.density
+            statusInsetDp = (safe.top / density).toInt()
+            bottomInsetDp = (safe.bottom / density).toInt()
+            if (::appWebView.isInitialized) applyWebInsets()
             insets
         }
 
@@ -93,6 +100,9 @@ class MainActivity : Activity() {
         launcherSupport = HomeLauncherSupport(this)
         appWebView.addJavascriptInterface(AppBridge(), "AudioDesk")
         appWebView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                applyWebInsets()
+            }
             override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?) =
                 request?.url?.let { loader.shouldInterceptRequest(it) }
 
@@ -180,6 +190,14 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun applyWebInsets() {
+        if (destroyed || !::appWebView.isInitialized) return
+        appWebView.evaluateJavascript(
+            "document.documentElement.style.setProperty('--status-top','" + statusInsetDp + "px');" +
+            "document.documentElement.style.setProperty('--system-bottom','" + bottomInsetDp + "px')", null
+        )
+    }
+
     private fun sendLauncherApps() {
         if (!::launcherSupport.isInitialized || destroyed) return
         launcherSupport.load { apps, recents ->
@@ -196,6 +214,14 @@ class MainActivity : Activity() {
     }
 
     private inner class AppBridge {
+        @JavascriptInterface fun setWallpaperTone(light: Boolean) {
+            runOnUiThread {
+                if (!destroyed) {
+                    WindowCompat.getInsetsController(window, window.decorView)
+                        .isAppearanceLightStatusBars = light
+                }
+            }
+        }
         @JavascriptInterface fun requestSearchKeyboard() {
             runOnUiThread {
                 if (!destroyed && ::appWebView.isInitialized) {
