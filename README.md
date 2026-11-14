@@ -2,7 +2,7 @@
 
 **A one-handed Android Home launcher for people who make sound, inspired by minimalist Niagara-style app access and Nokia N9 swipe navigation, without replacing Audio Desk's original retro design.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk Launcher v2.3 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v2.3/Audio-Desk-Launcher-v2.3.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk Launcher v2.4 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v2.4/Audio-Desk-Launcher-v2.4.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
 
@@ -56,7 +56,7 @@ The list becomes personalized as you open apps from Audio Desk. **Swipe up on Ho
 
 ## Install on Android
 
-1. Open the [v2.3 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v2.3/Audio-Desk-Launcher-v2.3.apk) on your Android phone. **This is an APK, not a ZIP.**
+1. Open the [v2.4 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v2.4/Audio-Desk-Launcher-v2.4.apk) on your Android phone. **This is an APK, not a ZIP.**
 2. Open the downloaded file and, if Android asks, allow installations from the browser or file manager you used.
 3. Launch **Audio Desk Launcher**. Tap the **bottom-right settings icon → Set Home** if you want it to become your default Android launcher. Your existing Audio Desk bookmarks and cached feeds remain available.
 
@@ -76,6 +76,14 @@ node scripts/capture-readme-screenshots.cjs
 The last command captures the app's interface into `docs/screenshots/` with labeled fictional example content. Tests and browser screenshots are not substitutes for physical-device testing.
 
 ## Changelog
+
+### Version 2.4 — Pixel Wallpapers & Clock Customization
+- Includes 10 offline pixel wallpapers (five dark, five colorful), packed into a lightweight atlas for low-cost Android phones.
+- Five optional animated wallpaper effects (rain, aurora, stars, studio LEDs, ocean); reduced-motion respected.
+- Long-press empty Home space for customization; choose Wallpapers from the menu. Long-press the clock to open 10 clock designs and the clock size control.
+- Adds a fast transform-only swipe-up animation to All Apps search, still opening the keyboard automatically.
+- Draws the wallpaper beneath the transparent Android status bar while keeping clock and icons below the system icons; status-bar icon contrast adapts for light wallpapers.
+- Wallpaper and clock preferences are saved locally on the device.
 
 ### Version 2.3 — Minimal Home
 - Redesign the launcher Home around the supplied clean reference: a large legible clock/date, eight well-spaced app rows, and lots of breathing room.
