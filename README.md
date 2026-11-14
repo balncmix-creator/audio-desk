@@ -2,9 +2,17 @@
 
 **A one-handed Android Home launcher for people who make sound, inspired by minimalist Niagara-style app access and Nokia N9 swipe navigation, without replacing Audio Desk's original retro design.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk Launcher v2.4 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v2.4/Audio-Desk-Launcher-v2.4.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk Launcher v2.5 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v2.5/Audio-Desk-Launcher-v2.5.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
+
+## v2.5 personalization
+
+The launcher now includes **16 dark retro 8-bit wallpapers**, with **six brutalist designs**, cyberpunk cityscapes, minimal lunar, CRT and arcade artwork. Each portrait preserves its complete native **1024 × 1536** pixels in lossless WebP. The gallery uses separate thumbnails and only the selected full-size wallpaper loads.
+
+**Long-press an empty area of Home** to choose a bundled wallpaper, import your own photo and adjust its crop, or select an animated effect. **Long-press the clock** to choose a design and size; the chooser previews now match the Home clock and work offline. Pages, menus, clock changes and wallpaper changes have short transitions. Animation respects reduced-motion settings and pauses when Home is hidden.
+
+The wallpaper fills the screen behind the Android status bar. Custom photos and their crop settings remain on the phone. See [v2.5 artwork and validation details](docs/v2.5-status.md).
 
 ## One-handed home launcher
 
@@ -56,7 +64,7 @@ The list becomes personalized as you open apps from Audio Desk. **Swipe up on Ho
 
 ## Install on Android
 
-1. Open the [v2.4 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v2.4/Audio-Desk-Launcher-v2.4.apk) on your Android phone. **This is an APK, not a ZIP.**
+1. Open the [v2.5 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v2.5/Audio-Desk-Launcher-v2.5.apk) on your Android phone. **This is an APK, not a ZIP.**
 2. Open the downloaded file and, if Android asks, allow installations from the browser or file manager you used.
 3. Launch **Audio Desk Launcher**. Tap the **bottom-right settings icon → Set Home** if you want it to become your default Android launcher. Your existing Audio Desk bookmarks and cached feeds remain available.
 
