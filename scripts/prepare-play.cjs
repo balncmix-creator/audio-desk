@@ -28,6 +28,8 @@ replace(/if\(!news\)\{if\(view==="torrents"\)loadTorrentMonitor\(\);else renderR
 replace(/else if\(activeView==="torrents"\)renderTorrentMonitor\(\);/g, '');
 replace(/if\(activeView==="torrents"\)renderTorrentMonitor\(\);else /g, '');
 replace(/^.*\$\("(?:scanWatchlist|pluginWatchlist|refreshTorrent|torrentPeriod)"\).*\n/gm, '');
+// The Play edition has no restricted monitor tab. Keep pinch-grid controls available.
+replace(/^.*\$\("densityBar"\)\.hidden=view==="torrents";\n/gm, '');
 
 if (/torrent|warez|audioz|rutracker|1337x|keygen|crack/i.test(html)) {
   throw new Error('Restricted discovery feature remains in Play assets');
