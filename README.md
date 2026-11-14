@@ -2,7 +2,7 @@
 
 **A retro-styled Android news desk for people who make sound.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk v1.26 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v1.26/Audio-Desk-v1.26.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk v1.27 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v1.27/Audio-Desk-v1.27.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
 
@@ -29,7 +29,7 @@
 
 ## Install on Android
 
-1. Open the [v1.26 APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v1.26/Audio-Desk-v1.26.apk) on your Android phone. **This is an APK, not a ZIP.**
+1. Open the [v1.27 APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v1.27/Audio-Desk-v1.27.apk) on your Android phone. **This is an APK, not a ZIP.**
 2. Open the downloaded file and, if Android asks, allow installations from the browser or file manager you used.
 3. Launch **Audio Desk**. Network access is used to refresh headlines, while saved items remain locally available.
 
@@ -49,6 +49,12 @@ node scripts/capture-readme-screenshots.cjs
 The last command captures the app's interface into `docs/screenshots/` with labeled fictional example content. Tests and browser screenshots are not substitutes for physical-device testing.
 
 ## Changelog
+
+### Version 1.27
+- Replace the static/pulsing native pull-to-refresh desk icon with a genuine, continuously rotating 3D desk matching the 3D model in the app header.
+- The tabletop, front/side faces, four legs and waveform turn together in orthographic space; pulling starts the rotation and it stops when refreshing finishes.
+- Respect Android reduced-animation settings and avoid stretching or flattening the logo.
+
 
 ### Version 1.26
 - Swipe horizontally across the story and resource content to switch between adjacent tabs, while keeping vertical scrolling and the horizontally scrollable bottom tab strip intact.
