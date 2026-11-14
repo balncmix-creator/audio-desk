@@ -36,6 +36,7 @@ class MainActivity : Activity() {
     private lateinit var articleImages: ArticleImageFinder
     private lateinit var feedDiscovery: PublisherFeedDiscovery
     private lateinit var sampleDemos: SampleDemoFinder
+    private lateinit var launcherSupport: HomeLauncherSupport
     private var destroyed = false
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -89,6 +90,7 @@ class MainActivity : Activity() {
         articleImages = ArticleImageFinder(appWebView.settings.userAgentString)
         feedDiscovery = PublisherFeedDiscovery(appWebView.settings.userAgentString)
         sampleDemos = SampleDemoFinder(appWebView.settings.userAgentString)
+        launcherSupport = HomeLauncherSupport(this)
         appWebView.addJavascriptInterface(AppBridge(), "AudioDesk")
         appWebView.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?) =
@@ -178,7 +180,40 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun sendLauncherApps() {
+        if (!::launcherSupport.isInitialized || destroyed) return
+        launcherSupport.load { apps, recents ->
+            runOnUiThread {
+                if (!destroyed && ::appWebView.isInitialized) {
+                    val home = launcherSupport.isDefaultHome()
+                    appWebView.evaluateJavascript(
+                        "window.receiveLauncherApps&&window.receiveLauncherApps(" +
+                            apps.toString() + "," + recents.toString() + "," + home + ")", null
+                    )
+                }
+            }
+        }
+    }
+
     private inner class AppBridge {
+        @JavascriptInterface fun requestLauncherApps() {
+            runOnUiThread { sendLauncherApps() }
+        }
+        @JavascriptInterface fun launchExternalApp(pkg: String, activityName: String) {
+            runOnUiThread {
+                if (!destroyed) {
+                    val opened = launcherSupport.launch(pkg, activityName)
+                    appWebView.evaluateJavascript(
+                        "window.launcherLaunchResult&&window.launcherLaunchResult(" + opened + ")", null
+                    )
+                }
+            }
+        }
+        @JavascriptInterface fun requestDefaultLauncher() {
+            runOnUiThread { if (!destroyed) launcherSupport.requestDefaultHome() }
+        }
+        @JavascriptInterface fun isDefaultLauncher(): Boolean =
+            !destroyed && ::launcherSupport.isInitialized && launcherSupport.isDefaultHome()
         @JavascriptInterface fun lookupSampleDemo(url: String, title: String, requestId: String) {
             if (requestId.length !in 1..32 || !requestId.all { it.isDigit() }) return
             sampleDemos.find(url, title) { result ->
@@ -246,6 +281,21 @@ class MainActivity : Activity() {
         }
     }
 
+    override fun onNewIntent(intent: android.content.Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (::appWebView.isInitialized && intent?.hasCategory(android.content.Intent.CATEGORY_HOME) == true) {
+            appWebView.evaluateJavascript("window.launcherGoHome&&window.launcherGoHome()", null)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh installed apps after returning from another app or installing a package.
+        if (::appWebView.isInitialized && ::launcherSupport.isInitialized)
+            appWebView.evaluateJavascript("window.launcherOnResume&&window.launcherOnResume()", null)
+    }
+
     private fun openInBrowser(url: String) {
         if (!url.startsWith("https://") && !url.startsWith("http://")) return
         swipeRefresh.visibility = View.GONE
@@ -270,7 +320,10 @@ class MainActivity : Activity() {
             if (browserWebView.canGoBack()) browserWebView.goBack() else closeBrowser()
         } else if (::appWebView.isInitialized && appWebView.canGoBack()) {
             appWebView.goBack()
-        } else finish()
+        } else if (::appWebView.isInitialized) {
+            // A selected Home app must not silently exit on Back.
+            appWebView.evaluateJavascript("window.launcherBack&&window.launcherBack()", null)
+        }
     }
 
     override fun onDestroy() {
@@ -279,6 +332,7 @@ class MainActivity : Activity() {
         if (::articleImages.isInitialized) articleImages.close()
         if (::feedDiscovery.isInitialized) feedDiscovery.close()
         if (::sampleDemos.isInitialized) sampleDemos.close()
+        if (::launcherSupport.isInitialized) launcherSupport.close()
         refreshHandler.removeCallbacks(refreshFailsafe)
         if (::browserWebView.isInitialized) browserWebView.destroy()
         if (::appWebView.isInitialized) appWebView.destroy()

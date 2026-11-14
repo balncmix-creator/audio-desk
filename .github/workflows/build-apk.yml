@@ -52,12 +52,12 @@ jobs:
           VERSION=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts)
           test -n "$VERSION"
           TAG="v$VERSION"
-          APK="Audio-Desk-$TAG.apk"
+          APK="Audio-Desk-Launcher-$TAG.apk"
           cp app/build/outputs/apk/debug/app-debug.apk "$APK"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$APK" --clobber
           else
-            gh release create "$TAG" "$APK" --title "Audio Desk $TAG (test APK)" --notes "Direct installable Android debug APK. This is a test build, not a Play Store release. Build commit: ${GITHUB_SHA}" --prerelease
+            gh release create "$TAG" "$APK" --title "Audio Desk Launcher $TAG (test APK)" --notes "MeeGo-inspired Android HOME launcher with real installed-app grid and Audio Desk news. Select as default Home in Android Settings. RECENTS is launcher activity history, not privileged Android task snapshots. Direct installable debug APK; not a Play Store release. Build commit: ${GITHUB_SHA}" --prerelease
           fi
 
       - name: Save screenshot images to the README gallery

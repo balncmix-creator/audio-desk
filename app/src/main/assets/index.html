@@ -167,9 +167,78 @@ body[data-card-columns="5"] #sampleReleases .sample-release-card:focus-visible{
 #gridDetailBody .detail-meta{font-size:9px;color:#aaa}
 #gridDetailBody .detail-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
 #gridDetailBody a{color:#fff;font-size:11px}
+
+/* AUDIO DESK HOME — MeeGo-inspired three-plane launcher, original pixel theme. */
+#launcherNavigation{position:sticky;top:0;z-index:9;background:rgba(8,8,8,.98);
+ border-bottom:1px solid #777;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.launcher-nav-inner{display:flex;max-width:900px;margin:auto;padding:6px 13px;gap:5px}
+.launcher-nav-inner button{flex:1;min-width:0;box-shadow:none;border:1px solid #555;
+ color:#aaa;font-size:9px;padding:7px 3px;letter-spacing:.3px}
+.launcher-nav-inner button.active{background:#f4f4f4;color:#080808;border-color:#fff}
+#launcherShell{max-width:900px;margin:0 auto;padding:16px 16px 75px;position:relative;z-index:2}
+#launcherShell[hidden],.launcher-page[hidden]{display:none!important}
+body:not([data-home-page="events"]) header,
+body:not([data-home-page="events"]) main#swipeMain,
+body:not([data-home-page="events"]) nav.bottom-dock,
+body:not([data-home-page="events"]) #tabSwipePreview{display:none!important}
+body[data-home-page="events"] #launcherShell{display:none!important}
+.launcher-titlebar{display:flex;align-items:center;justify-content:space-between;
+ gap:9px;margin:0 0 13px;padding:0 0 11px;border-bottom:2px solid #eee}
+.launcher-titlebar strong{font:400 12px/1.7 "Press Start 2P",monospace}
+.launcher-titlebar .launcher-label{font-size:9px;color:#999}
+.launcher-clock{display:flex;justify-content:space-between;align-items:flex-end;
+ padding:15px 0 17px;border-bottom:1px dashed #555}
+.launcher-clock .clock{font:400 37px/1 "Silkscreen",monospace;color:#eee}
+.launcher-clock .clock-date{font-size:10px;color:#aaa;text-transform:uppercase}
+.launcher-brand{display:flex;align-items:center;gap:9px;font-size:10px}
+.launcher-brand img{width:37px;height:37px;object-fit:contain}
+.launcher-search{width:100%;min-height:44px;border:1px solid #888;box-shadow:none;margin:17px 0 11px}
+.launcher-summary{display:flex;justify-content:space-between;align-items:center;
+ color:#aaa;font-size:9px;margin-bottom:13px;gap:12px}
+.launcher-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 8px}
+.launcher-app{display:flex;flex-direction:column;align-items:center;gap:6px;
+ min-width:0;padding:9px 3px 8px;min-height:95px;background:#131313;border:1px solid #3b3b3b;
+ box-shadow:none;color:#eee;text-transform:none;text-align:center;transition:border-color .2s ease,background .2s ease}
+.launcher-app:active,.launcher-app:focus-visible{border-color:#fff;background:#242424}
+.launcher-app img{width:48px;height:48px;object-fit:contain;image-rendering:auto}
+.launcher-fallback{display:grid;place-items:center;width:48px;height:48px;
+ font-size:18px;background:#252525;border:1px solid #666}
+.launcher-app .app-name{font:400 9px/1.35 "Silkscreen",monospace;word-break:break-word;
+ overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;max-width:100%}
+.launcher-empty{padding:21px 11px;border:1px dashed #666;background:#151515;
+ font-size:10px;line-height:1.7;color:#aaa}
+.launcher-setup{border:1px solid #555;padding:14px 12px;margin:22px 0 10px;
+ background:#161616;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.launcher-setup strong{font-size:11px;display:block}
+.launcher-setup p{color:#aaa;font-size:9px;line-height:1.6;margin:5px 0 0}
+.launcher-setup button{flex:0 0 auto;font-size:9px;padding:8px 6px}
+.launcher-recent-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.launcher-recent-card{min-width:0;padding:13px;background:#171717;border:1px solid #555;box-shadow:none}
+.launcher-recent-top{display:flex;gap:10px;align-items:center;border-bottom:1px dashed #555;padding-bottom:12px}
+.launcher-recent-top img,.launcher-recent-top .launcher-fallback{width:46px;height:46px;flex:0 0 46px}
+.launcher-recent-name{font-size:11px;line-height:1.5;word-break:break-word}
+.launcher-recent-time{font-size:8px;color:#aaa;margin-top:5px}
+.launcher-recent-card .launcher-resume{width:100%;box-shadow:none;font-size:9px;padding:8px 4px;margin-top:12px}
+.launcher-foot{margin:26px 0 8px;border-top:1px dashed #555;padding-top:12px;font-size:9px;color:#888;line-height:1.6}
+.launcher-dots{text-align:center;margin:24px 0 6px;font-size:18px;letter-spacing:9px;color:#666}
+.launcher-dots span.active{color:#fff}
+.launcher-enter{animation:launcher-arrive .3s cubic-bezier(.16,1,.3,1) both}
+@keyframes launcher-arrive{from{opacity:.2;filter:blur(4px);transform:translate3d(14%,0,0) scale(.96)}
+ to{opacity:1;filter:blur(0);transform:translate3d(0,0,0) scale(1)}}
+#launcherSwipeGhost[hidden]{display:none!important}
+#launcherSwipeGhost{position:fixed;top:43px;left:0;right:0;bottom:0;z-index:1;
+ pointer-events:none;background:linear-gradient(145deg,#171717,#090909);
+ border-top:1px solid #777;overflow:hidden;will-change:transform,opacity}
+#launcherSwipeGhost .ghost-inner{padding:55px 24px;max-width:900px;margin:auto}
+#launcherSwipeGhost strong{font:400 19px/1.7 "Press Start 2P",monospace}
+#launcherSwipeGhost p{font-size:11px;color:#aaa;margin-top:20px}
+@media(max-width:370px){.launcher-grid{gap:7px 5px}.launcher-app{min-height:85px;padding:8px 2px}
+ .launcher-app img,.launcher-fallback{width:43px;height:43px}}
+@media(prefers-reduced-motion:reduce){.launcher-enter{animation:none!important}
+ #launcherSwipeGhost{filter:none!important}}
 </style>
 </head>
-<body>
+<body data-home-page="events">
 <div id="arcade-bg" aria-hidden="true">
 <svg viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
 <defs><pattern id="pixelgrid" width="16" height="16" patternUnits="userSpaceOnUse"><path d="M16 0H0V16" fill="none" stroke="#fff" stroke-opacity=".12" stroke-width=".5"/></pattern></defs>
@@ -185,6 +254,13 @@ body[data-card-columns="5"] #sampleReleases .sample-release-card:focus-visible{
 </svg>
 </div>
 <header><div class="mast"><div class="top"><div><div class="brand-line"><div class="brand">THE <span>AUDIO</span> DESK_</div><span class="header-desk-holder" aria-hidden="true"><img class="header-desk-art" src="desk-premium.webp" alt="" decoding="async"><canvas id="animatedDeskLogo" class="header-desk-icon" width="256" height="256" role="img" aria-label="Audio Desk rotating in 3D"></canvas></span></div><div class="sub">[ AUDIO INDUSTRY NEWS TERMINAL ]</div><div class="sub" id="liveRadarStatus" aria-live="polite">GLOBAL RELEASE RADAR · CHECKS EVERY 2 MIN WHILE OPEN</div></div><button class="primary" id="refresh">Refresh ↻</button></div><div class="edition">[ TOOLS ] [ TECHNOLOGY ] [ RECORDING ] [ POST ]</div></div></header>
+<nav id="launcherNavigation" aria-label="Audio Desk Home navigation">
+ <div class="launcher-nav-inner">
+  <button type="button" data-home-nav="events" class="active" aria-current="page">◉ EVENTS</button>
+  <button type="button" data-home-nav="apps">▦ APPS</button>
+  <button type="button" data-home-nav="recents">▣ OPEN APPS</button>
+ </div>
+</nav>
 <main id="swipeMain">
 <div class="stats" id="stats"><span id="count">Waiting for feeds…</span><span id="updated">Not refreshed yet</span></div>
 <div id="densityBar" aria-label="Article layout">
@@ -275,6 +351,41 @@ body[data-card-columns="5"] #sampleReleases .sample-release-card:focus-visible{
 </section>
 <p class="foot">THE AUDIO DESK · Headlines remain the property of their publishers. Read full stories at source.</p>
 </main>
+<div id="launcherShell" hidden>
+ <section class="launcher-page" id="launcherAppsPage" aria-label="Applications">
+  <div class="launcher-titlebar"><strong>[ APPLICATIONS ]</strong>
+   <span class="launcher-brand"><img src="desk-premium.webp" alt=""> AUDIO DESK_OS</span></div>
+  <div class="launcher-clock"><div class="clock" id="launcherClock">--:--</div>
+   <div class="clock-date" id="launcherDate"></div></div>
+  <input id="launcherAppSearch" class="search launcher-search" type="search"
+   placeholder="SEARCH INSTALLED APPS…" autocomplete="off" aria-label="Search installed apps">
+  <div class="launcher-summary"><span id="launcherAppCount">CHECKING INSTALLED APPS…</span>
+   <span>SWIPE FROM EDGE TO SWITCH</span></div>
+  <div id="launcherAppsGrid" class="launcher-grid"></div>
+  <div id="launcherAppsEmpty" class="launcher-empty" hidden>No apps found.</div>
+  <div id="launcherHomeSetup" class="launcher-setup">
+   <div><strong>SET AS HOME</strong><p id="launcherHomeStatus">Choose Audio Desk as your default Home app in Android Settings.</p></div>
+   <button class="primary" type="button" id="launcherMakeDefault">SET HOME ↗</button>
+  </div>
+  <div class="launcher-foot">THE AUDIO DESK // SWIPE-FIRST ANDROID HOME. Your existing news, sample demos and bookmarks are unchanged.</div>
+  <div class="launcher-dots">● <span class="active">●</span> ●</div>
+ </section>
+ <section class="launcher-page" id="launcherRecentsPage" aria-label="Recently opened applications" hidden>
+  <div class="launcher-titlebar"><strong>[ OPEN APPS ]</strong><span class="launcher-label">REOPEN YOUR WORKSPACE</span></div>
+  <p class="note">APPS RECENTLY LAUNCHED FROM AUDIO DESK. Android controls the actual running tasks and live previews.</p>
+  <div class="launcher-summary" style="margin-top:18px"><span id="launcherRecentCount">0 RECENT APPS</span>
+   <button type="button" id="launcherRecentRefresh">REFRESH ↻</button></div>
+  <div class="launcher-recent-grid" id="launcherRecentGrid"></div>
+  <div class="launcher-empty" id="launcherRecentEmpty">NO RECENTLY LAUNCHED APPS YET. OPEN SOMETHING FROM APPLICATIONS TO START YOUR LIST.</div>
+  <div class="launcher-foot">Opening an app returns to its normal Android task. This screen cannot close or capture other apps' protected task previews.</div>
+  <div class="launcher-dots">● ● <span class="active">●</span></div>
+ </section>
+</div>
+<div id="launcherSwipeGhost" aria-hidden="true" hidden>
+ <div class="ghost-inner"><div class="sub">[ AUDIO DESK // SWIPE ]</div>
+  <strong id="launcherSwipeName">APPLICATIONS</strong><p id="launcherSwipeDescription">YOUR HOME WORKSPACE</p>
+ </div>
+</div>
 <div id="gridDetail" role="dialog" aria-modal="true" aria-label="Article details" hidden>
  <div id="gridDetailCard"><button id="gridDetailClose" type="button" aria-label="Close details">× CLOSE</button>
  <div id="gridDetailBody"></div></div>
@@ -1532,6 +1643,216 @@ swipeMain.addEventListener("touchend",e=>{
  }else cancelTabSwipe();
 },{passive:true});
 swipeMain.addEventListener("touchcancel",()=>{if(!pinchBlocksSwipe&&!tabAnimationBusy){tabGesture=null;cancelTabSwipe()}},{passive:true});
+
+
+/* MeeGo-style Home planes: EVENTS preserves the original Audio Desk news UI,
+   APPLICATIONS uses real installed Android apps, OPEN APPS lists local launches. */
+const launcherPages=["events","apps","recents"];
+let launcherPage="events", launcherApps=[], launcherRecents=[], launcherNativeLoaded=false;
+let launcherLastRequest=0, launcherEventScroll=0, launcherGesture=null, launcherHomeIsDefault=false;
+const launcherGhost=$("launcherSwipeGhost");
+function homePanel(page){
+ return page==="events"?$("swipeMain"):page==="apps"?$("launcherAppsPage"):$("launcherRecentsPage");
+}
+function formatLauncherClock(){
+ const now=new Date();
+ $("launcherClock").textContent=now.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",hour12:false});
+ $("launcherDate").textContent=now.toLocaleDateString([], {weekday:"short",month:"short",day:"numeric"});
+}
+formatLauncherClock();
+setInterval(formatLauncherClock,60000);
+function launcherIcon(app){
+ const src=typeof app.icon==="string"&&/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(app.icon)?app.icon:"";
+ return src?'<img src="'+src+'" alt="" decoding="async">':
+  '<span class="launcher-fallback" aria-hidden="true">'+esc((app.label||"?").slice(0,1).toUpperCase())+'</span>';
+}
+function launchAppButton(app,cls){
+ return '<button class="'+cls+'" type="button" data-launch-pkg="'+esc(app.pkg)+
+ '" data-launch-activity="'+esc(app.activity)+'" aria-label="Open '+esc(app.label)+'">'+
+ launcherIcon(app)+'<span class="app-name">'+esc(app.label)+'</span></button>';
+}
+function renderLauncherApps(){
+ const query=$("launcherAppSearch").value.toLowerCase().trim();
+ const list=launcherApps.filter(app=>!query||app.label.toLowerCase().includes(query)||
+  app.pkg.toLowerCase().includes(query));
+ $("launcherAppCount").textContent=list.length+" APPLICATIONS";
+ $("launcherAppsGrid").innerHTML=list.map(app=>launchAppButton(app,"launcher-app")).join("");
+ $("launcherAppsEmpty").hidden=!!list.length;
+ $("launcherAppsEmpty").textContent=!launcherNativeLoaded
+  ?"OPEN AUDIO DESK ON ANDROID TO ACCESS INSTALLED APPS."
+  :launcherApps.length?"NO APPLICATIONS MATCH YOUR SEARCH.":"NO LAUNCHABLE APPLICATIONS FOUND ON THIS DEVICE.";
+}
+function renderLauncherRecents(){
+ $("launcherRecentCount").textContent=launcherRecents.length+" RECENT APPS";
+ $("launcherRecentGrid").innerHTML=launcherRecents.map(app=>{
+  const date=Number(app.opened)>0?new Date(Number(app.opened)).toLocaleString():"RECENTLY OPENED";
+  return '<article class="launcher-recent-card"><div class="launcher-recent-top">'+launcherIcon(app)+
+   '<div><div class="launcher-recent-name">'+esc(app.label)+'</div>'+
+   '<div class="launcher-recent-time">'+esc(date)+'</div></div></div>'+
+   '<button type="button" class="launcher-resume" data-launch-pkg="'+esc(app.pkg)+
+   '" data-launch-activity="'+esc(app.activity)+'">↗ REOPEN APP</button></article>';
+ }).join("");
+ $("launcherRecentEmpty").hidden=launcherRecents.length>0;
+}
+function updateHomeRole(isDefault){
+ launcherHomeIsDefault=!!isDefault;
+ $("launcherHomeStatus").textContent=isDefault
+  ?"AUDIO DESK IS YOUR CURRENT HOME LAUNCHER."
+  :"CHOOSE AUDIO DESK AS YOUR DEFAULT HOME APP IN ANDROID SETTINGS.";
+ $("launcherMakeDefault").hidden=!!isDefault;
+}
+window.receiveLauncherApps=function(apps,recents,isDefault){
+ if(!Array.isArray(apps)||!Array.isArray(recents))return;
+ // Only data received directly from the Android package manager is rendered.
+ launcherApps=apps.filter(a=>a&&typeof a.pkg==="string"&&typeof a.activity==="string"&&
+  typeof a.label==="string").slice(0,400);
+ launcherRecents=recents.filter(a=>a&&typeof a.pkg==="string"&&typeof a.activity==="string"&&
+  typeof a.label==="string").slice(0,16);
+ launcherNativeLoaded=true;
+ renderLauncherApps();renderLauncherRecents();updateHomeRole(isDefault);
+};
+function requestLauncherApps(force=false){
+ if(!window.AudioDesk||typeof window.AudioDesk.requestLauncherApps!=="function"){
+  renderLauncherApps();return;
+ }
+ if(!force&&Date.now()-launcherLastRequest<3000)return;
+ launcherLastRequest=Date.now();
+ try{window.AudioDesk.requestLauncherApps()}catch(e){$("launcherAppCount").textContent="APP LIST UNAVAILABLE"}
+}
+window.launcherOnResume=function(){
+ requestLauncherApps(true);
+};
+window.launcherLaunchResult=function(opened){
+ if(!opened){
+  $("launcherAppCount").textContent="COULD NOT OPEN THAT APP · TRY AGAIN";
+ }else{
+  requestLauncherApps(true);
+ }
+};
+function setLauncherPage(page,animate=true){
+ if(!launcherPages.includes(page))return;
+ if(page===launcherPage&&$("launcherShell").hidden===(page==="events"))return;
+ const previous=launcherPage;
+ if(previous==="events")launcherEventScroll=window.scrollY;
+ launcherPage=page;
+ document.body.dataset.homePage=page;
+ $("launcherShell").hidden=page==="events";
+ $("launcherAppsPage").hidden=page!=="apps";
+ $("launcherRecentsPage").hidden=page!=="recents";
+ for(const button of document.querySelectorAll("[data-home-nav]")){
+  const selected=button.dataset.homeNav===page;
+  button.classList.toggle("active",selected);
+  if(selected)button.setAttribute("aria-current","page");
+  else button.removeAttribute("aria-current");
+ }
+ if(page==="apps")renderLauncherApps();
+ if(page==="recents")renderLauncherRecents();
+ if(page!=="events"){
+  formatLauncherClock();
+  requestLauncherApps();
+  window.scrollTo(0,0);
+ }else{
+  window.scrollTo(0,launcherEventScroll);
+ }
+ if(animate&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+  const panel=homePanel(page);
+  panel.classList.remove("launcher-enter");
+  void panel.offsetWidth;
+  panel.classList.add("launcher-enter");
+  setTimeout(()=>panel.classList.remove("launcher-enter"),370);
+ }
+}
+window.launcherGoHome=function(){setLauncherPage("events",true)};
+window.launcherBack=function(){
+ if(!$("gridDetail").hidden){closeGridDetails();return}
+ if(launcherPage!=="events"){setLauncherPage("events");return}
+ if(activeView!=="news"){setView("news");render();return}
+ if(active!=="All"){active="All";setView("news");render();}
+};
+document.querySelectorAll("[data-home-nav]").forEach(b=>b.onclick=()=>setLauncherPage(b.dataset.homeNav));
+$("launcherAppSearch").addEventListener("input",renderLauncherApps);
+$("launcherMakeDefault").onclick=()=>{
+ if(window.AudioDesk&&typeof window.AudioDesk.requestDefaultLauncher==="function")
+  window.AudioDesk.requestDefaultLauncher();
+ else $("launcherHomeStatus").textContent="DEFAULT HOME CAN ONLY BE CHANGED ON ANDROID.";
+};
+$("launcherRecentRefresh").onclick=()=>requestLauncherApps(true);
+$("launcherShell").addEventListener("click",event=>{
+ const button=event.target.closest("button[data-launch-pkg]");
+ if(!button)return;
+ if(window.AudioDesk&&typeof window.AudioDesk.launchExternalApp==="function"){
+  window.AudioDesk.launchExternalApp(button.dataset.launchPkg,button.dataset.launchActivity);
+ }else $("launcherAppCount").textContent="LAUNCHING APPS REQUIRES THE ANDROID HOME APK";
+});
+renderLauncherApps();renderLauncherRecents();
+function resetLauncherGesture(){
+ for(const node of [document.querySelector("header"),$("swipeMain"),$("launcherShell")]){
+  if(!node)continue;
+  for(const key of ["transform","filter","opacity","transition","will-change"])
+   node.style.removeProperty(key);
+ }
+ launcherGhost.hidden=true;
+ launcherGhost.style.removeProperty("transform");
+ launcherGhost.style.removeProperty("opacity");
+ launcherGesture=null;
+}
+function gesturePanels(){
+ return launcherPage==="events"?[document.querySelector("header"),$("swipeMain")]:[$("launcherShell")];
+}
+function renderLauncherDrag(dx,target){
+ const p=Math.min(1,Math.abs(dx)/Math.max(200,window.innerWidth*.8));
+ for(const node of gesturePanels()){
+  node.style.transition="none";
+  node.style.willChange="transform,opacity,filter";
+  node.style.transform="translate3d("+(dx*.08)+"px,0,0) scale("+(1-p*.10)+")";
+  node.style.opacity=String(1-p*.65);
+  if(!window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+   node.style.filter="blur("+(p*5).toFixed(2)+"px)";
+ }
+ launcherGhost.hidden=false;
+ $("launcherSwipeName").textContent=target==="events"?"EVENTS":target==="apps"?"APPLICATIONS":"OPEN APPS";
+ $("launcherSwipeDescription").textContent=target==="events"?"AUDIO INDUSTRY NEWS":
+  target==="apps"?"ALL YOUR INSTALLED APPLICATIONS":"RECENTLY LAUNCHED APPS";
+ launcherGhost.style.opacity=String(.2+p*.75);
+ launcherGhost.style.transform="translate3d("+(-Math.sign(dx)*Math.max(0,1-p)*28)+"%,0,0) scale("+(.96+p*.04)+")";
+}
+document.addEventListener("touchstart",e=>{
+ if(e.touches.length!==1||tabAnimationBusy||pinchBlocksSwipe)return;
+ const t=e.touches[0],x=t.clientX;
+ const edge=x<34||x>window.innerWidth-34;
+ if(launcherPage==="events"&&!edge)return; // Keep current news category swipes.
+ if(e.target.closest("input,textarea,select,audio,video,iframe,[contenteditable]"))return;
+ launcherGesture={x,y:t.clientY,lastX:x,locked:false,edge};
+},{capture:true,passive:true});
+document.addEventListener("touchmove",e=>{
+ const g=launcherGesture;
+ if(!g||e.touches.length!==1)return;
+ const t=e.touches[0],dx=t.clientX-g.x,dy=t.clientY-g.y;
+ if(!g.locked){
+  if(Math.abs(dy)>Math.abs(dx)*1.4&&Math.abs(dy)>14){launcherGesture=null;return}
+  if(Math.abs(dx)<19||Math.abs(dx)<Math.abs(dy)*1.4)return;
+  const idx=launcherPages.indexOf(launcherPage),target=idx-Math.sign(dx);
+  if(target<0||target>=launcherPages.length){launcherGesture=null;return}
+  g.locked=true;g.target=launcherPages[target];
+  if(typeof clearTabSwipe==="function")clearTabSwipe();
+ }
+ if(e.cancelable)e.preventDefault();
+ e.stopImmediatePropagation();
+ g.lastX=t.clientX;
+ renderLauncherDrag(dx,g.target);
+},{capture:true,passive:false});
+document.addEventListener("touchend",e=>{
+ const g=launcherGesture;if(!g)return;
+ if(!g.locked){launcherGesture=null;return}
+ e.stopImmediatePropagation();
+ const dx=(e.changedTouches[0]?.clientX??g.lastX)-g.x;
+ const next=g.target,passed=Math.abs(dx)>Math.max(75,window.innerWidth*.19);
+ resetLauncherGesture();
+ if(passed)setLauncherPage(next,true);
+},{capture:true,passive:true});
+document.addEventListener("touchcancel",()=>{if(launcherGesture)resetLauncherGesture()},{capture:true,passive:true});
+// Initial page is always Events, retaining all existing Audio Desk content.
+document.body.dataset.homePage="events";
 
 document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{setView("news");active=b.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===b));render()});
 $("search").addEventListener("input",()=>{if(activeView==="news")render();else if(activeView==="torrents")renderTorrentMonitor();else renderResourceDirectory()});

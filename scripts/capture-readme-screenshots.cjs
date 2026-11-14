@@ -81,7 +81,44 @@ const assert=require('node:assert/strict');
   await page.locator('[data-view="samples"]').click();
   assert.equal(await page.locator('#sampleReleases .sample-demo-button').count(),1);
   await page.screenshot({path:path.join(output,'sample-packs.png')});
+  // Launcher screenshots: actual HTML/CSS, demonstration apps supplied by the
+  // screenshot harness because the CI browser has no Android PackageManager.
+  await page.evaluate(()=>{
+   function icon(letter,a,b){
+    const canvas=document.createElement('canvas');canvas.width=76;canvas.height=76;
+    const ctx=canvas.getContext('2d');
+    const gradient=ctx.createLinearGradient(0,0,76,76);
+    gradient.addColorStop(0,a);gradient.addColorStop(1,b);
+    ctx.fillStyle=gradient;ctx.fillRect(0,0,76,76);
+    ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=2;ctx.strokeRect(4,4,68,68);
+    ctx.fillStyle='#fff';ctx.font='bold 34px monospace';ctx.textAlign='center';
+    ctx.fillText(letter,38,51);
+    return canvas.toDataURL('image/png');
+   }
+   const records=[
+    ['Audio Desk','A','#3b3b3b','#111'],['REAPER Remote','R','#365f48','#121e18'],
+    ['Files','F','#5c472b','#1d1611'],['Browser','B','#254d6e','#0d1826'],
+    ['Recorder','●','#6c343b','#251416'],['Music','♫','#5b355f','#1b1221'],
+    ['Sample Libraries','S','#4c435f','#171321'],['Plugins','P','#48555c','#101d22'],
+    ['Settings','⚙','#444b55','#191b22'],['Camera','C','#4b4942','#191813'],
+    ['Messages','M','#2c5a50','#152b26'],['Clock','T','#555','#1a1a1a']
+   ];
+   const examples=records.map((r,i)=>({
+    label:r[0],pkg:'example.preview.app'+i,activity:'example.preview.Launcher',
+    icon:icon(r[1],r[2],r[3])
+   }));
+   window.receiveLauncherApps(examples,examples.slice(1,5).map((a,i)=>({
+    ...a,opened:Date.now()-i*120000
+   })),false);
+   document.getElementById('launcherClock').textContent='11:20';
+   document.getElementById('launcherDate').textContent='SAT, 14 NOV';
+  });
+  await page.locator('[data-home-nav="apps"]').click();
+  assert.equal(await page.locator('#launcherAppsGrid .launcher-app').count(),12);
+  await page.screenshot({path:path.join(output,'launcher-applications.png')});
+  await page.locator('[data-home-nav="recents"]').click();
+  await page.screenshot({path:path.join(output,'launcher-open-apps.png')});
   assert.deepEqual(errors,[],'the screenshot version of the app must render without script errors');
-  console.log('Captured 4 actual Audio Desk browser UI screenshots with demo headlines');
+  console.log('Captured Audio Desk news and launcher UI screenshots with explicitly labeled demo content');
  }finally{await browser.close()}
 })().catch(err=>{console.error(err);process.exit(1)});
