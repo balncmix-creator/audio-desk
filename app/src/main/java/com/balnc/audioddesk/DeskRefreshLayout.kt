@@ -68,6 +68,11 @@ class DeskRefreshLayout(context: Context) : FrameLayout(context) {
 
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
         if (!isEnabled || isRefreshing) return false
+        // Two-finger card-grid pinches belong to the WebView, never pull-to-refresh.
+        if (event.pointerCount > 1 || event.actionMasked == MotionEvent.ACTION_POINTER_DOWN) {
+            eligible = false
+            return false
+        }
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 startX = event.x
