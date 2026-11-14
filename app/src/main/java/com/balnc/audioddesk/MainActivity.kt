@@ -196,6 +196,40 @@ class MainActivity : Activity() {
     }
 
     private inner class AppBridge {
+        @JavascriptInterface fun requestSearchKeyboard() {
+            runOnUiThread {
+                if (!destroyed && ::appWebView.isInitialized) {
+                    appWebView.requestFocus()
+                    val manager = getSystemService(android.content.Context.INPUT_METHOD_SERVICE)
+                        as android.view.inputmethod.InputMethodManager
+                    manager.showSoftInput(appWebView, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+                }
+            }
+        }
+        @JavascriptInterface fun getAppShortcuts(pkg: String, activityName: String) {
+            if (!::launcherSupport.isInitialized || destroyed) return
+            launcherSupport.shortcuts(pkg, activityName) { list ->
+                runOnUiThread {
+                    if (!destroyed && ::appWebView.isInitialized)
+                        appWebView.evaluateJavascript(
+                            "window.receiveAppShortcuts&&window.receiveAppShortcuts(" +
+                                JSONObject.quote(pkg) + "," +
+                                JSONObject.quote(activityName) + "," +
+                                list.toString() + ")", null
+                        )
+                }
+            }
+        }
+        @JavascriptInterface fun launchAppShortcut(pkg: String, activityName: String, id: String) {
+            runOnUiThread {
+                if (!destroyed && ::launcherSupport.isInitialized) {
+                    val ok = launcherSupport.launchShortcut(pkg, activityName, id)
+                    appWebView.evaluateJavascript(
+                        "window.launcherLaunchResult&&window.launcherLaunchResult(" + ok + ")", null
+                    )
+                }
+            }
+        }
         @JavascriptInterface fun requestLauncherApps() {
             runOnUiThread { sendLauncherApps() }
         }

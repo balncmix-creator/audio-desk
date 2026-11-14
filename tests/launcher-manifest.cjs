@@ -10,4 +10,11 @@ assert.doesNotMatch(xml,/android.permission.PACKAGE_USAGE_STATS/,'no intrusive u
 const bridge=fs.readFileSync('app/src/main/java/com/balnc/audioddesk/MainActivity.kt','utf8');
 for(const symbol of ['requestLauncherApps','launchExternalApp','requestDefaultLauncher','launcherOnResume'])
  assert.ok(bridge.includes(symbol),'missing bridge '+symbol);
-console.log('PASS: HOME intent, selectable default, launchable-app visibility without privileged permissions');
+const native=fs.readFileSync('app/src/main/java/com/balnc/audioddesk/HomeLauncherSupport.kt','utf8');
+assert.match(native,/getShortcuts\(/,'app shortcuts use LauncherApps');
+assert.match(native,/hasShortcutHostPermission/,'shortcut access checks host permission');
+assert.match(native,/startShortcut\(/,'shortcuts launch through official Android API');
+assert.doesNotMatch(native,/makeIcon\(resolve\.loadIcon\(pm\)\)/,'no eager icon bitmap decode');
+const license=fs.readFileSync('app/src/main/assets/pixel-icons/LICENSE.txt','utf8');
+assert.match(license,/MIT License/);
+console.log('PASS: Android HOME, published app shortcuts with permission checks, lightweight installed-app icons and MIT-licensed pixel artwork');

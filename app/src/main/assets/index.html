@@ -294,6 +294,19 @@ body[data-home-page="apps"] #launcherAppSearch{min-height:46px;margin:5px 0 12px
  .n-app-row .launcher-app .app-name{font-size:12px}
  body[data-home-page="apps"] #launcherAppsPage{padding-right:23px}
 }
+.pixel-icon{width:42px;height:42px;flex:0 0 42px;background:#1a1a1a;border:1px solid #666;display:grid;place-items:center;image-rendering:pixelated}
+.pixel-icon img{width:29px!important;height:29px!important;flex:none!important;filter:invert(1);image-rendering:pixelated}
+.pixel-letter{font:700 17px/1 "Silkscreen",monospace;color:#eee}
+body.low-power .launcher-enter{animation:none!important}
+body.low-power #launcherNavigation,body.low-power #gridDetail{backdrop-filter:none!important}
+body.low-power #launcherSwipeGhost,body.low-power #tabSwipePreview{filter:none!important}
+#launcherShortcutMenu[hidden]{display:none!important}
+#launcherShortcutMenu{position:fixed;inset:0;z-index:45;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.8)}
+#launcherShortcutPanel{width:min(100%,520px);max-height:70dvh;overflow:auto;background:#151515;border:1px solid #888;padding:17px}
+#launcherShortcutTitle{font-size:12px;margin-bottom:12px}
+#launcherShortcutActions{display:flex;flex-direction:column;gap:8px}
+#launcherShortcutActions button{font-size:11px;box-shadow:none;text-align:left;padding:11px}
+#launcherShortcutNote{color:#aaa;font-size:9px;line-height:1.6}
 </style>
 </head>
 <body data-home-page="home">
@@ -450,6 +463,11 @@ body[data-home-page="apps"] #launcherAppSearch{min-height:46px;margin:5px 0 12px
 </div>
 <nav id="launcherAlphaIndex" aria-label="Alphabetical app index" hidden></nav>
 <div id="launcherAlphaBubble" role="status" aria-live="off" hidden>A</div>
+<div id="launcherShortcutMenu" role="dialog" aria-modal="true" aria-label="App actions" hidden>
+ <div id="launcherShortcutPanel"><div id="launcherShortcutTitle"></div>
+ <div id="launcherShortcutActions"></div><p id="launcherShortcutNote"></p>
+ <button id="launcherShortcutClose" type="button">× CLOSE</button></div>
+</div>
 <div id="launcherSwipeGhost" aria-hidden="true" hidden>
  <div class="ghost-inner"><div class="sub">[ AUDIO DESK // SWIPE ]</div>
   <strong id="launcherSwipeName">APPLICATIONS</strong><p id="launcherSwipeDescription">YOUR HOME WORKSPACE</p>
@@ -1672,51 +1690,15 @@ function endPinch(e){
 swipeMain.addEventListener("touchend",endPinch,{capture:true,passive:true});
 swipeMain.addEventListener("touchcancel",endPinch,{capture:true,passive:true});
 
-swipeMain.addEventListener("touchstart",e=>{
- if(pinchBlocksSwipe||tabAnimationBusy||e.touches.length!==1)return;
- const interactive=e.target.closest("input,textarea,select,button,a,audio,video,iframe,[contenteditable],.sample-demo-panel,[data-no-swipe]");
- if(interactive)return;
- const t=e.touches[0];
- tabGesture={x:t.clientX,y:t.clientY,lastX:t.clientX,start:performance.now(),
-  locked:false,vertical:false,target:-1,direction:0};
-},{passive:true});
-swipeMain.addEventListener("touchmove",e=>{
- if(pinchBlocksSwipe)return;
- const g=tabGesture;if(!g||g.vertical||e.touches.length!==1||tabAnimationBusy)return;
- const touch=e.touches[0],dx=touch.clientX-g.x,dy=touch.clientY-g.y;
- if(!g.locked){
-  if(Math.abs(dy)>14&&Math.abs(dy)>Math.abs(dx)*1.2){g.vertical=true;return}
-  if(Math.abs(dx)<16||Math.abs(dx)<Math.abs(dy)*1.35)return;
-  g.locked=true;
- }
- if(e.cancelable)e.preventDefault();
- g.direction=Math.sign(dx)||g.direction;
- g.lastX=touch.clientX;
- cancelAnimationFrame(tabFrame);
- tabFrame=requestAnimationFrame(()=>setTabSwipeProgress(dx));
-},{passive:false});
-swipeMain.addEventListener("touchend",e=>{
- if(pinchBlocksSwipe)return;
- const g=tabGesture;if(!g||tabAnimationBusy)return;
- cancelAnimationFrame(tabFrame);tabFrame=0;tabGesture=null;
- if(!g.locked){clearTabSwipe();return}
- const touch=e.changedTouches[0],dx=(touch?.clientX??g.lastX)-g.x;
- const direction=Math.sign(dx)||g.direction;
- const candidate=currentTabIndex()-direction;
- const speed=Math.abs(dx)/Math.max(40,performance.now()-g.start);
- const enough=Math.abs(dx)>Math.max(70,window.innerWidth*.20) ||
-  (Math.abs(dx)>42&&speed>.65);
- if(enough&&candidate>=0&&candidate<tabButtons().length){
-  tabGesture=g;
-  finishTabSwipe(candidate,direction);
- }else cancelTabSwipe();
-},{passive:true});
-swipeMain.addEventListener("touchcancel",()=>{if(!pinchBlocksSwipe&&!tabAnimationBusy){tabGesture=null;cancelTabSwipe()}},{passive:true});
-
+// Horizontal swipe navigation within News is disabled; select news categories using the bottom tab buttons.
 
 /* MeeGo-style Home planes: EVENTS preserves the original Audio Desk news UI,
    APPLICATIONS uses real installed Android apps, OPEN APPS lists local launches. */
 const launcherPages=["events","home","apps"];
+const LOW_POWER_DEVICE=(navigator.deviceMemory&&navigator.deviceMemory<=2)||
+ (navigator.hardwareConcurrency&&navigator.hardwareConcurrency<=4)||
+ window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+if(LOW_POWER_DEVICE)document.body.classList.add("low-power");
 let launcherPage="home", launcherApps=[], launcherRecents=[], launcherNativeLoaded=false;
 let launcherLastRequest=0, launcherEventScroll=0, launcherGesture=null, launcherHomeIsDefault=false;
 const launcherGhost=$("launcherSwipeGhost");
@@ -1730,10 +1712,24 @@ function formatLauncherClock(){
 }
 formatLauncherClock();
 setInterval(formatLauncherClock,60000);
+const pixelCategories=[
+ [/camera|photo|instagram/,"camera"],[/music|spotify|audio|sound|player/,"music"],
+ [/gpay|google pay|phonepe|paytm|wallet|upi|bank|payment/,"credit-card"],
+ [/qr|scanner/,"qr-code"],[/files|file manager|storage/,"folder"],
+ [/settings|config|preferences/,"settings-cog"],[/browser|chrome|firefox|internet/,"globe"],
+ [/dial|phone|contacts|calls/,"phone"],[/whatsapp|message|sms|telegram|signal|chat/,"message"],
+ [/clock|alarm|timer/,"clock"],[/email|gmail|mail|outlook/,"mail"],
+ [/maps|navigation|location|uber|ola/,"map"],[/game|gaming/,"gamepad"],
+ [/youtube|video|vlc|netflix/,"video"],[/terminal|termux|shell/,"terminal"],
+ [/calendar|agenda/,"calendar"],[/shopping|amazon|flipkart|store/,"shopping-bag"],
+ [/gallery|pictures|photos/,"image"],[/tool|calculator/,"tools"],[/search/,"search"],
+ [/download/,"download"],[/radio|podcast/,"radio"]];
 function launcherIcon(app){
- const src=typeof app.icon==="string"&&/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(app.icon)?app.icon:"";
- return src?'<img src="'+src+'" alt="" decoding="async">':
-  '<span class="launcher-fallback" aria-hidden="true">'+esc((app.label||"?").slice(0,1).toUpperCase())+'</span>';
+ const all=(app.label+" "+app.pkg).toLowerCase();
+ const match=pixelCategories.find(([re])=>re.test(all));
+ const face=match?'<img src="pixel-icons/'+match[1]+'.svg" alt="" decoding="async" loading="lazy">':
+  '<span class="pixel-letter">'+esc((app.label||"?").charAt(0).toUpperCase())+'</span>';
+ return '<span class="pixel-icon" aria-hidden="true">'+face+'</span>';
 }
 function launchAppButton(app,cls){
  return '<button class="'+cls+'" type="button" data-launch-pkg="'+esc(app.pkg)+
@@ -1779,7 +1775,7 @@ function setLauncherPin(pkg,activity){
  launcherPins=launcherPins.includes(key)?launcherPins.filter(x=>x!==key):[...launcherPins,key];
  launcherPins=launcherPins.slice(-18);
  try{localStorage.setItem(launcherPinsKey,JSON.stringify(launcherPins))}catch(e){}
- renderLauncherHome();renderLauncherApps();
+ renderLauncherHome();if(launcherPage==="apps")renderLauncherApps();
 }
 function appLetter(app){
  const letter=(app.label.trim().charAt(0)||"#").toLocaleUpperCase();
@@ -1879,18 +1875,18 @@ window.receiveLauncherApps=function(apps,recents,isDefault){
   typeof a.label==="string").slice(0,16);
  launcherNativeLoaded=true;
  renderLauncherAlphabet();
- renderLauncherHome();renderLauncherApps();renderLauncherRecents();updateHomeRole(isDefault);
+ renderLauncherHome();if(launcherPage==="apps")renderLauncherApps();renderLauncherRecents();updateHomeRole(isDefault);
 };
 function requestLauncherApps(force=false){
  if(!window.AudioDesk||typeof window.AudioDesk.requestLauncherApps!=="function"){
   renderLauncherApps();return;
  }
- if(!force&&Date.now()-launcherLastRequest<3000)return;
+ if(!force&&Date.now()-launcherLastRequest<15000)return;
  launcherLastRequest=Date.now();
  try{window.AudioDesk.requestLauncherApps()}catch(e){$("launcherAppCount").textContent="APP LIST UNAVAILABLE"}
 }
 window.launcherOnResume=function(){
- requestLauncherApps(true);
+ requestLauncherApps(false);
 };
 window.launcherLaunchResult=function(opened){
  if(!opened){
@@ -1926,7 +1922,8 @@ function setLauncherPage(page,animate=true){
  }else{
   window.scrollTo(0,launcherEventScroll);
  }
- if(animate&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+ window.dispatchEvent(new Event("launcher-page-changed"));
+ if(animate&&!LOW_POWER_DEVICE){
   const panel=homePanel(page);
   panel.classList.remove("launcher-enter");
   void panel.offsetWidth;
@@ -1936,6 +1933,7 @@ function setLauncherPage(page,animate=true){
 }
 window.launcherGoHome=function(){setLauncherPage("home",true)};
 window.launcherBack=function(){
+ if(!$("launcherShortcutMenu").hidden){closeAppShortcuts();return}
  if(!$("gridDetail").hidden){closeGridDetails();return}
  if(launcherPage!=="home"){setLauncherPage("home");return}
  if(activeView!=="news"){setView("news");render();return}
@@ -1969,6 +1967,92 @@ $("launcherShell").addEventListener("click",event=>{
  }else $("launcherAppCount").textContent="LAUNCHING APPS REQUIRES THE ANDROID HOME APK";
 });
 renderLauncherHome();renderLauncherApps();renderLauncherRecents();
+/* Swipe UP on Home opens app search and Android keyboard automatically. */
+let upStart=null;
+function openLauncherSearch(){
+ setLauncherPage("apps",false);
+ const search=$("launcherAppSearch");
+ search.value="";renderLauncherApps();
+ search.focus();
+ if(window.AudioDesk&&typeof window.AudioDesk.requestSearchKeyboard==="function")
+  window.AudioDesk.requestSearchKeyboard();
+}
+$("launcherHomePage").addEventListener("touchstart",e=>{
+ if(e.touches.length!==1||e.target.closest("button,input,textarea"))return;
+ const t=e.touches[0];upStart={x:t.clientX,y:t.clientY};
+},{passive:true});
+$("launcherHomePage").addEventListener("touchend",e=>{
+ const origin=upStart;upStart=null;
+ if(!origin||!e.changedTouches.length||launcherPage!=="home")return;
+ const t=e.changedTouches[0],dx=t.clientX-origin.x,dy=t.clientY-origin.y;
+ if(dy< -75&&Math.abs(dy)>Math.abs(dx)*1.4)openLauncherSearch();
+},{passive:true});
+$("launcherHomePage").addEventListener("touchcancel",()=>upStart=null,{passive:true});
+
+/* Swipe sideways directly on an app icon for its published shortcuts. */
+let selectedApp=null,iconSwipe=null,blockAppClickUntil=0;
+function closeAppShortcuts(){selectedApp=null;$("launcherShortcutMenu").hidden=true}
+$("launcherShortcutClose").onclick=closeAppShortcuts;
+$("launcherShortcutMenu").onclick=e=>{
+ if(e.target===$("launcherShortcutMenu"))closeAppShortcuts();
+};
+function showAppShortcuts(pkg,activity){
+ const app=launcherApps.find(a=>a.pkg===pkg&&a.activity===activity);
+ if(!app)return;
+ selectedApp=app;
+ $("launcherShortcutMenu").hidden=false;
+ $("launcherShortcutTitle").textContent=app.label.toUpperCase()+" · QUICK ACTIONS";
+ const pinned=launcherPins.includes(launcherAppKey(app));
+ $("launcherShortcutActions").innerHTML=
+  '<button type="button" data-quick-open="1">↗ OPEN APP</button>'+
+  '<button type="button" data-quick-pin="1">'+(pinned?"★ UNPIN FROM HOME":"☆ PIN TO HOME")+'</button>';
+ $("launcherShortcutNote").textContent="CHECKING ANDROID FOR PUBLISHED APP SHORTCUTS…";
+ if(window.AudioDesk?.getAppShortcuts)window.AudioDesk.getAppShortcuts(pkg,activity);
+ else $("launcherShortcutNote").textContent="SHORTCUTS REQUIRE THE INSTALLED ANDROID HOME LAUNCHER.";
+}
+window.receiveAppShortcuts=function(pkg,activity,shortcuts){
+ if(!selectedApp||selectedApp.pkg!==pkg||selectedApp.activity!==activity)return;
+ const root=$("launcherShortcutActions");
+ for(const item of Array.isArray(shortcuts)?shortcuts.slice(0,10):[]){
+  if(!item||typeof item.id!=="string"||typeof item.label!=="string")continue;
+  const button=document.createElement("button");button.type="button";
+  button.textContent="↗ "+item.label;button.dataset.appShortcutId=item.id;root.appendChild(button);
+ }
+ $("launcherShortcutNote").textContent=root.querySelector("[data-app-shortcut-id]")?
+  "These actions are provided by the installed application.":
+  "No published shortcuts are accessible. Some apps or Android versions don't expose them.";
+};
+$("launcherShortcutActions").addEventListener("click",e=>{
+ const btn=e.target.closest("button"),app=selectedApp;if(!btn||!app)return;
+ if(btn.dataset.quickPin){setLauncherPin(app.pkg,app.activity)}
+ else if(btn.dataset.quickOpen){
+  window.AudioDesk?.launchExternalApp?.(app.pkg,app.activity);
+ }else if(btn.hasAttribute("data-app-shortcut-id")){
+  window.AudioDesk?.launchAppShortcut?.(app.pkg,app.activity,btn.dataset.appShortcutId);
+ }
+ closeAppShortcuts();
+});
+$("launcherShell").addEventListener("touchstart",e=>{
+ if(e.touches.length!==1)return;
+ const icon=e.target.closest(".launcher-app");if(!icon)return;
+ const t=e.touches[0];
+ iconSwipe={x:t.clientX,y:t.clientY,pkg:icon.dataset.launchPkg,activity:icon.dataset.launchActivity};
+},{passive:true});
+$("launcherShell").addEventListener("touchend",e=>{
+ const start=iconSwipe;iconSwipe=null;
+ if(!start||!e.changedTouches.length)return;
+ const t=e.changedTouches[0],dx=t.clientX-start.x,dy=t.clientY-start.y;
+ if(Math.abs(dx)>44&&Math.abs(dx)>Math.abs(dy)*1.35){
+  blockAppClickUntil=Date.now()+600;
+  showAppShortcuts(start.pkg,start.activity);
+ }
+},{passive:true});
+$("launcherShell").addEventListener("click",e=>{
+ if(Date.now()<blockAppClickUntil&&e.target.closest(".launcher-app")){
+  e.preventDefault();e.stopImmediatePropagation();blockAppClickUntil=0;
+ }
+},{capture:true});
+
 requestLauncherApps(true);
 function resetLauncherGesture(){
  for(const node of [document.querySelector("header"),$("swipeMain"),$("launcherShell")]){
@@ -1991,8 +2075,7 @@ function renderLauncherDrag(dx,target){
   node.style.willChange="transform,opacity,filter";
   node.style.transform="translate3d("+(dx*.08)+"px,0,0) scale("+(1-p*.10)+")";
   node.style.opacity=String(1-p*.65);
-  if(!window.matchMedia("(prefers-reduced-motion: reduce)").matches)
-   node.style.filter="blur("+(p*5).toFixed(2)+"px)";
+  if(!LOW_POWER_DEVICE)node.style.filter="blur("+(p*3).toFixed(2)+"px)";
  }
  launcherGhost.hidden=false;
  $("launcherSwipeName").textContent=target==="events"?"AUDIO NEWS":target==="apps"?"ALL APPS":"HOME";
@@ -2006,7 +2089,7 @@ document.addEventListener("touchstart",e=>{
  const t=e.touches[0],x=t.clientX;
  const edge=x<34||x>window.innerWidth-34;
  if(launcherPage==="events"&&!edge)return; // Keep existing news category swipes.
- if(e.target.closest("#launcherAlphaIndex,input,textarea,select,audio,video,iframe,[contenteditable]"))return;
+ if(e.target.closest("#launcherAlphaIndex,.launcher-app,input,textarea,select,audio,video,iframe,[contenteditable]"))return;
  launcherGesture={x,y:t.clientY,lastX:x,locked:false,edge};
 },{capture:true,passive:true});
 document.addEventListener("touchmove",e=>{
@@ -2157,19 +2240,20 @@ document.addEventListener("click",e=>{
  }
  function tick(time){
   frameId=0;
-  if(document.hidden||reduced.matches)return;
+  if(document.hidden||reduced.matches||document.body.dataset.homePage!=="events"||LOW_POWER_DEVICE)return;
   if(previous)angle=(angle+Math.min(48,time-previous)*PI2/periodMs)%PI2;
   previous=time;draw(angle);
   frameId=window.requestAnimationFrame(tick);
  }
  function sync(){
-  if(document.hidden||reduced.matches){
+  if(document.hidden||reduced.matches||document.body.dataset.homePage!=="events"||LOW_POWER_DEVICE){
    if(frameId)window.cancelAnimationFrame(frameId);
    frameId=0;previous=0;draw(angle);
   }else if(!frameId){previous=0;frameId=window.requestAnimationFrame(tick);}
  }
  draw(angle);
  document.addEventListener("visibilitychange",sync);
+ window.addEventListener("launcher-page-changed",sync);
  if(reduced.addEventListener)reduced.addEventListener("change",sync);
  else if(reduced.addListener)reduced.addListener(sync);
  sync();

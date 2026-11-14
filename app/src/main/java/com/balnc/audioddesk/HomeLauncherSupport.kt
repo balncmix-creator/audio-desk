@@ -6,6 +6,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ResolveInfo
+import android.content.pm.LauncherApps
+import android.os.Process
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
@@ -26,6 +28,7 @@ internal class HomeLauncherSupport(private val activity: Activity) {
     private val prefs = activity.getSharedPreferences("audio_desk_home", Context.MODE_PRIVATE)
     private val executor = Executors.newSingleThreadExecutor()
     @Volatile private var knownApps: List<App> = emptyList()
+    @Volatile private var lastScanAt = 0L
 
     @Suppress("DEPRECATION")
     private fun query(): List<App> {
@@ -43,8 +46,9 @@ internal class HomeLauncherSupport(private val activity: Activity) {
             if (!used.add(pkg + "/" + cls)) continue
             val name = try { resolve.loadLabel(pm)?.toString().orEmpty().ifBlank { pkg } }
                 catch (_: Exception) { pkg }
-            val icon = try { makeIcon(resolve.loadIcon(pm)) } catch (_: Exception) { "" }
-            result.add(App(pkg, cls, name.take(100), icon))
+            // No eager per-app bitmap decoding or PNG→Base64 marshaling.
+            // All launcher icons use local 24x24 MIT pixel artwork.
+            result.add(App(pkg, cls, name.take(100), ""))
         }
         return result.sortedBy { it.label.lowercase() }
     }
@@ -63,7 +67,10 @@ internal class HomeLauncherSupport(private val activity: Activity) {
 
     fun load(callback: (JSONArray, JSONArray) -> Unit) {
         executor.execute {
-            val apps = try { query() } catch (_: Exception) { emptyList() }
+            val apps = if (knownApps.isNotEmpty() &&
+                System.currentTimeMillis() - lastScanAt < 120_000L) knownApps
+                else try { query().also { lastScanAt = System.currentTimeMillis() } }
+                    catch (_: Exception) { knownApps }
             knownApps = apps
             val all = JSONArray()
             for (app in apps) all.put(app.toJson())
@@ -123,6 +130,52 @@ internal class HomeLauncherSupport(private val activity: Activity) {
         val nextCount = (prefs.getInt(countKey, 0) + 1).coerceAtMost(1_000_000)
         prefs.edit().putString("recent", next.toString())
             .putInt(countKey, nextCount).apply()
+    }
+
+
+    /** Fetch app-defined launcher shortcuts; never manufacture GPay/UPI actions. */
+    fun shortcuts(pkg: String, activityName: String, callback: (JSONArray) -> Unit) {
+        if (pkg.length !in 1..255 || activityName.length !in 1..300 ||
+            knownApps.none { it.pkg == pkg && it.activityName == activityName }) {
+            callback(JSONArray()); return
+        }
+        executor.execute {
+            val result = JSONArray()
+            if (Build.VERSION.SDK_INT >= 25 && isDefaultHome()) {
+                try {
+                    val service = activity.getSystemService(LauncherApps::class.java)
+                    if (service != null && service.hasShortcutHostPermission()) {
+                        val query = LauncherApps.ShortcutQuery()
+                            .setPackage(pkg)
+                            .setQueryFlags(
+                                LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC or
+                                    LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST or
+                                    LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED
+                            )
+                        val shortcuts = service.getShortcuts(query, Process.myUserHandle()).orEmpty()
+                        for (item in shortcuts.take(12)) {
+                            if (!item.isEnabled) continue
+                            result.put(JSONObject().put("id", item.id)
+                                .put("label", item.shortLabel?.toString().orEmpty().take(90)))
+                        }
+                    }
+                } catch (_: Exception) { /* Permission or work-profile restrictions */ }
+            }
+            callback(result)
+        }
+    }
+
+    fun launchShortcut(pkg: String, activityName: String, shortcutId: String): Boolean {
+        if (Build.VERSION.SDK_INT < 25 || shortcutId.length !in 1..200 ||
+            knownApps.none { it.pkg == pkg && it.activityName == activityName } ||
+            !isDefaultHome()) return false
+        return try {
+            val service = activity.getSystemService(LauncherApps::class.java)
+            if (service?.hasShortcutHostPermission() != true) return false
+            service.startShortcut(pkg, shortcutId, null, null, Process.myUserHandle())
+            recordLaunch(pkg, activityName)
+            true
+        } catch (_: Exception) { false }
     }
 
     fun isDefaultHome(): Boolean {
