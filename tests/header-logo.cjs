@@ -32,7 +32,12 @@ const assert=require('node:assert/strict');
   assert.ok(first.opaque,'rendered 3D desk is visible');
   await page.waitForTimeout(230);
   const second=await icon.evaluate(el=>+el.dataset.rotationAngle);
-  assert.ok(second>first.angle && second-first.angle<.6,'3D model rotates at a slow steady rate');
+  const lowPower=await page.evaluate(()=>LOW_POWER_DEVICE);
+  if(lowPower){
+   assert.equal(second,first.angle,'3D animation pauses on low-resource devices');
+  }else{
+   assert.ok(second>first.angle && second-first.angle<.6,'3D model rotates only while News is visible on capable devices');
+  }
   assert.equal(await icon.evaluate(el=>getComputedStyle(el).transform),'none','no CSS transform squeezes the canvas');
   const fixed=await icon.boundingBox();
   await page.waitForTimeout(400);
