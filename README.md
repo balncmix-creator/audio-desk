@@ -2,7 +2,7 @@
 
 **A retro-styled Android news desk for people who make sound.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk v1.27 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v1.27/Audio-Desk-v1.27.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk v1.28 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v1.28/Audio-Desk-v1.28.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
 
@@ -11,6 +11,10 @@
 | Latest headlines | Post Production | Offline mode |
 |:--:|:--:|:--:|
 | ![Audio Desk news reader showing audio news cards](docs/screenshots/news-feed.png) | ![The single Post Production news category](docs/screenshots/post-production.png) | ![Audio Desk offline screen with broken-down desk illustration](docs/screenshots/offline.png) |
+
+**Pinch-to-grid views:** three cards and five cards across. The screenshots use illustrative headlines.
+
+![Audio Desk with three news cards across each row](docs/screenshots/grid-three.png) ![Audio Desk with five news cards across each row](docs/screenshots/grid-five.png)
 
 **Sample pack audition screen:** ![Audio Desk sample pack release cards with Find Demo control](docs/screenshots/sample-packs.png)
 
@@ -29,7 +33,7 @@
 
 ## Install on Android
 
-1. Open the [v1.27 APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v1.27/Audio-Desk-v1.27.apk) on your Android phone. **This is an APK, not a ZIP.**
+1. Open the [v1.28 APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v1.28/Audio-Desk-v1.28.apk) on your Android phone. **This is an APK, not a ZIP.**
 2. Open the downloaded file and, if Android asks, allow installations from the browser or file manager you used.
 3. Launch **Audio Desk**. Network access is used to refresh headlines, while saved items remain locally available.
 
@@ -49,6 +53,14 @@ node scripts/capture-readme-screenshots.cjs
 The last command captures the app's interface into `docs/screenshots/` with labeled fictional example content. Tests and browser screenshots are not substitutes for physical-device testing.
 
 ## Changelog
+
+### Version 1.28
+- Two-finger pinch outward switches story cards from 1 to 3 across a row, then 5 across on another pinch; pinch inward reverses 5 → 3 → 1.
+- Animate the tile rearrangement; compact thumbnails retain subtle image-derived accents and the default single-card layout remains unchanged.
+- Tap a compact story to open a readable details sheet with the original article, Save and sample-pack demo controls.
+- Apply density to recent sample-pack releases too, remember the choice after restart, and offer visible 1 / 3 / 5 buttons as an accessible alternative.
+- Preserve vertical scrolling, one-finger horizontal tab swipes and pull-to-refresh.
+
 
 ### Version 1.27
 - Replace the static/pulsing native pull-to-refresh desk icon with a genuine, continuously rotating 3D desk matching the 3D model in the app header.
