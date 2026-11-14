@@ -2,7 +2,7 @@
 
 **A retro-styled Android news desk for people who make sound.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk v1.21 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v1.21/Audio-Desk-v1.21.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk v1.22 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v1.21/Audio-Desk-v1.21.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
 
@@ -25,7 +25,7 @@
 
 ## Install on Android
 
-1. Open the [v1.21 APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v1.21/Audio-Desk-v1.21.apk) on your Android phone. **This is an APK, not a ZIP.**
+1. Open the [v1.22 APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v1.21/Audio-Desk-v1.21.apk) on your Android phone. **This is an APK, not a ZIP.**
 2. Open the downloaded file and, if Android asks, allow installations from the browser or file manager you used.
 3. Launch **Audio Desk**. Network access is used to refresh headlines, while saved items remain locally available.
 
@@ -124,7 +124,7 @@ including network failures. They do not replace Android device testing.
 
 GitHub Actions builds an installable debug APK and an unsigned Play review bundle
 on pushes to `main`. Download the `Audio-Desk-APK` artifact from the successful
-build. Version 1.21 uses version code 22 and targets Android 16 / API 36.
+build. Version 1.22 uses version code 23 and targets Android 16 / API 36.
 
 Release builds generate a separate asset bundle with torrent/warez discovery UI,
 feed definitions and code removed. The ordinary debug APK retains its existing

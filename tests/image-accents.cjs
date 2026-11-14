@@ -11,8 +11,8 @@ const assert=require('node:assert/strict');
   const fixtures=await page.evaluate(()=>{
    const data={};
    for(const [name,color] of Object.entries({blue:'#235fd2',amber:'#e69628',mono:'#888'})){
-    const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;
-    const ctx=canvas.getContext('2d');ctx.fillStyle=color;ctx.fillRect(0,0,64,64);
+    const canvas=document.createElement('canvas');canvas.width=640;canvas.height=360;
+    const ctx=canvas.getContext('2d');ctx.fillStyle=color;ctx.fillRect(0,0,640,360);
     data[name]=canvas.toDataURL('image/png').split(',')[1];
    }
    return data;
