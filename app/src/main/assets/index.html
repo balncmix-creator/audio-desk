@@ -307,6 +307,118 @@ body.low-power #launcherSwipeGhost,body.low-power #tabSwipePreview{filter:none!i
 #launcherShortcutActions{display:flex;flex-direction:column;gap:8px}
 #launcherShortcutActions button{font-size:11px;box-shadow:none;text-align:left;padding:11px}
 #launcherShortcutNote{color:#aaa;font-size:9px;line-height:1.6}
+
+/* Minimal Home: calm clock and app list, reference-inspired spacing; retained dark Audio Desk identity. */
+body[data-home-page="home"]{background:#0b0b0b}
+body[data-home-page="home"] #launcherNavigation{display:none!important}
+body[data-home-page="home"] #launcherShell{
+ max-width:none;margin:0;padding:0;min-height:100dvh;overflow:visible;background:#0b0b0b}
+body[data-home-page="home"] #launcherHomePage{
+ position:relative;box-sizing:border-box;margin:0 auto;
+ max-width:600px;min-height:100dvh;
+ padding:clamp(55px,9.1dvh,92px) clamp(36px,11.5vw,62px) 105px;
+}
+body[data-home-page="home"] .launcher-clock{
+ display:block;border:0;margin:0;padding:0 0 27px;
+}
+body[data-home-page="home"] .launcher-clock .clock{
+ font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+ font-size:clamp(53px,14vw,66px);font-weight:450;line-height:1.09;
+ letter-spacing:-3px;color:#f3f3f3;font-variant-numeric:tabular-nums;
+}
+body[data-home-page="home"] .launcher-clock .clock-date{
+ font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+ font-size:14px;font-weight:500;line-height:1.5;
+ letter-spacing:0;color:#bbb;text-transform:none;margin-top:4px;
+}
+body[data-home-page="home"] #launcherFavorites{
+ display:flex;flex-direction:column;gap:0;margin:0;
+}
+body[data-home-page="home"] #launcherFavorites .n-app-row{
+ display:flex;align-items:center;min-height:52px;gap:0;
+ border:0;background:transparent;padding:0;margin:0;
+}
+body[data-home-page="home"] #launcherFavorites .launcher-app{
+ display:flex;align-items:center;justify-content:flex-start;
+ flex-direction:row;gap:21px;min-height:52px;width:100%;
+ padding:3px 1px;background:transparent;border:0;box-shadow:none;
+ color:#efefef;text-align:left;touch-action:pan-y;
+}
+body[data-home-page="home"] #launcherFavorites .launcher-app .app-name{
+ font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+ font-size:16px;line-height:1.35;font-weight:500;
+ letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+ display:block;-webkit-line-clamp:unset;
+}
+body[data-home-page="home"] #launcherFavorites .pixel-icon{
+ display:grid;place-items:center;width:34px;height:34px;flex:0 0 34px;
+ border:0;background:transparent;box-shadow:none;image-rendering:pixelated;
+}
+body[data-home-page="home"] #launcherFavorites .pixel-icon img{
+ width:27px!important;height:27px!important;filter:invert(.9);image-rendering:pixelated;
+}
+body[data-home-page="home"] #launcherFavorites .pixel-letter{
+ font:700 19px/1 "Silkscreen",monospace;color:#dedede;
+}
+body[data-home-page="home"] #launcherFavorites .n-star{display:none!important}
+body[data-home-page="home"] #launcherFavorites .launcher-app:active{
+ background:rgba(255,255,255,.04);border-radius:6px;
+}
+body[data-home-page="home"] #launcherFavoritesEmpty{
+ font:400 12px/1.6 system-ui,sans-serif;color:#999;padding:15px 0;
+}
+body[data-home-page="home"] .launcher-dots{
+ position:absolute;left:50%;bottom:24px;transform:translateX(-50%);
+ margin:0;padding:0;font-size:11px;letter-spacing:5px;color:#525252;
+ white-space:nowrap;pointer-events:none;
+}
+body[data-home-page="home"] .launcher-dots .active{color:#c9c9c9}
+.launcher-settings-fab{
+ position:fixed;bottom:max(24px,env(safe-area-inset-bottom));right:24px;
+ width:49px;height:49px;display:grid;place-items:center;
+ border-radius:50%;border:1px solid #565656;background:#242424;
+ color:#e5e5e5;box-shadow:0 3px 10px rgba(0,0,0,.32);z-index:16;
+ padding:0;touch-action:manipulation;
+}
+.launcher-settings-fab img{
+ width:23px;height:23px;filter:invert(.85);image-rendering:pixelated;
+}
+#launcherHomeOptions[hidden]{display:none!important}
+#launcherHomeOptions{
+ position:fixed;inset:0;z-index:35;display:flex;justify-content:center;align-items:flex-end;
+ background:rgba(0,0,0,.73);padding:0;
+}
+#launcherOptionsSheet{
+ box-sizing:border-box;width:min(100%,560px);
+ max-height:80dvh;overflow-y:auto;overscroll-behavior:contain;
+ padding:21px 20px max(24px,env(safe-area-inset-bottom));
+ background:#181818;border:1px solid #484848;
+ border-bottom:0;box-shadow:0 -8px 30px rgba(0,0,0,.3);
+}
+.launcher-options-heading{
+ display:flex;align-items:center;justify-content:space-between;
+ font:400 12px/1.5 "Silkscreen",monospace;color:#eee;
+ margin-bottom:16px;
+}
+#launcherOptionsClose{
+ box-shadow:none;background:transparent;border:1px solid #555;
+ min-width:37px;min-height:36px;font-size:19px;
+}
+#launcherOptionsSheet .launcher-options-action{
+ display:block;box-shadow:none;width:100%;
+ margin:10px 0;padding:13px 12px;
+ border:1px solid #4c4c4c;background:#171717;
+ font-size:11px;text-align:left;
+}
+#launcherOptionsSheet .n-home-shortcuts{margin:0 0 9px}
+#launcherOptionsSheet .launcher-setup{margin:15px 0;gap:10px}
+#launcherOptionsSheet .launcher-setup button{min-width:85px}
+@media(max-height:680px){
+ body[data-home-page="home"] #launcherHomePage{padding-top:44px;padding-bottom:76px}
+ body[data-home-page="home"] #launcherFavorites .n-app-row,
+ body[data-home-page="home"] #launcherFavorites .launcher-app{min-height:47px}
+ body[data-home-page="home"] .launcher-clock{padding-bottom:17px}
+}
 </style>
 </head>
 <body data-home-page="home">
@@ -424,31 +536,41 @@ body.low-power #launcherSwipeGhost,body.low-power #tabSwipePreview{filter:none!i
 </main>
 <div id="launcherShell">
  <section class="launcher-page" id="launcherHomePage" aria-label="Audio Desk Home">
-  <div class="launcher-titlebar"><strong>[ HOME ]</strong>
-   <span class="launcher-brand"><img src="desk-premium.webp" alt=""> AUDIO DESK_OS</span></div>
-  <div class="launcher-clock"><div class="clock" id="launcherClock">--:--</div>
-   <div class="clock-date" id="launcherDate"></div></div>
-  <div class="n-home-heading"><span>FAVORITES · MOST OPENED</span>
-   <button type="button" id="launcherFavoritesEdit">☆ EDIT</button></div>
-  <div id="launcherFavorites"></div>
-  <div id="launcherFavoritesEmpty" hidden>OPEN APPS THROUGH AUDIO DESK TO BUILD YOUR HOME LIST.</div>
-  <div class="n-home-shortcuts">
-   <button type="button" id="launcherAllApps">▦ ALL APPS</button>
-   <button type="button" id="launcherOpenNews">◂ AUDIO NEWS</button>
+  <div class="launcher-clock">
+   <div class="clock" id="launcherClock">--:--</div>
+   <div class="clock-date" id="launcherDate"></div>
   </div>
-  <div id="launcherHomeSetup" class="launcher-setup">
-   <div><strong>SET AS HOME</strong><p id="launcherHomeStatus">Choose Audio Desk as your default Home app in Android Settings.</p></div>
-   <button class="primary" type="button" id="launcherMakeDefault">SET HOME ↗</button>
+  <div id="launcherFavorites" aria-label="Favourite and frequently used applications"></div>
+  <div id="launcherFavoritesEmpty" hidden>YOUR APPS WILL APPEAR HERE.</div>
+  <div class="launcher-dots" aria-hidden="true"><span>·</span> <span class="active">●</span> <span>·</span></div>
+  <button id="launcherSettingsToggle" class="launcher-settings-fab" type="button"
+   aria-label="Launcher options" aria-expanded="false" aria-controls="launcherHomeOptions">
+   <img src="pixel-icons/settings-cog.svg" alt="" decoding="async">
+  </button>
+  <div id="launcherHomeOptions" role="dialog" aria-modal="true" aria-label="Launcher options" hidden>
+   <div id="launcherOptionsSheet">
+    <div class="launcher-options-heading"><span>AUDIO DESK</span>
+     <button id="launcherOptionsClose" type="button" aria-label="Close launcher options">×</button>
+    </div>
+    <div class="n-home-shortcuts">
+     <button type="button" id="launcherAllApps">▦ ALL APPS</button>
+     <button type="button" id="launcherOpenNews">◂ AUDIO NEWS</button>
+    </div>
+    <button id="launcherFavoritesEdit" type="button" class="launcher-options-action">☆ EDIT FAVORITES</button>
+    <div id="launcherHomeSetup" class="launcher-setup">
+     <div><strong>DEFAULT HOME</strong><p id="launcherHomeStatus">Choose Audio Desk as your default Home app in Android Settings.</p></div>
+     <button class="primary" type="button" id="launcherMakeDefault">SET HOME ↗</button>
+    </div>
+    <button type="button" id="launcherShowRecents" class="launcher-options-action">▣ RECENTLY OPENED APPS</button>
+    <div id="launcherRecentDrawer" hidden>
+     <div class="launcher-summary"><span id="launcherRecentCount">0 RECENT APPS</span>
+      <button type="button" id="launcherRecentRefresh">REFRESH ↻</button>
+     </div>
+     <div class="launcher-recent-grid" id="launcherRecentGrid"></div>
+     <div id="launcherRecentEmpty" class="launcher-empty">NO RECENTLY LAUNCHED APPS YET.</div>
+    </div>
+   </div>
   </div>
-  <button type="button" id="launcherShowRecents">▣ RECENTLY OPENED APPS</button>
-  <div id="launcherRecentDrawer" hidden>
-   <div class="launcher-summary"><span id="launcherRecentCount">0 RECENT APPS</span>
-    <button type="button" id="launcherRecentRefresh">REFRESH ↻</button></div>
-   <div class="launcher-recent-grid" id="launcherRecentGrid"></div>
-   <div id="launcherRecentEmpty" class="launcher-empty">NO RECENTLY LAUNCHED APPS YET.</div>
-  </div>
-  <div class="launcher-foot">HOME · SWIPE LEFT FOR A–Z APPS · SWIPE RIGHT FOR AUDIO NEWS. Frequently opened apps rise automatically; star an app to pin it.</div>
-  <div class="launcher-dots">● <span class="active">●</span> ●</div>
  </section>
  <section class="launcher-page" id="launcherAppsPage" aria-label="All applications" hidden>
   <div class="launcher-titlebar"><strong>[ ALL APPLICATIONS ]</strong><span class="launcher-label">A—Z</span></div>
@@ -1896,6 +2018,7 @@ window.launcherLaunchResult=function(opened){
  }
 };
 function setLauncherPage(page,animate=true){
+ if(page!=="home")closeHomeOptions();
  if(!launcherPages.includes(page))return;
  if(page===launcherPage&&$("launcherShell").hidden===(page==="events"))return;
  const previous=launcherPage;
@@ -1931,14 +2054,33 @@ function setLauncherPage(page,animate=true){
   setTimeout(()=>panel.classList.remove("launcher-enter"),370);
  }
 }
-window.launcherGoHome=function(){setLauncherPage("home",true)};
+window.launcherGoHome=function(){closeHomeOptions();setLauncherPage("home",true)};
 window.launcherBack=function(){
+ if(!$("launcherHomeOptions").hidden){closeHomeOptions();return}
  if(!$("launcherShortcutMenu").hidden){closeAppShortcuts();return}
  if(!$("gridDetail").hidden){closeGridDetails();return}
  if(launcherPage!=="home"){setLauncherPage("home");return}
  if(activeView!=="news"){setView("news");render();return}
  if(active!=="All"){active="All";setView("news");render();}
 };
+function closeHomeOptions(){
+ $("launcherHomeOptions").hidden=true;
+ $("launcherSettingsToggle").setAttribute("aria-expanded","false");
+}
+$("launcherSettingsToggle").onclick=()=>{
+ const shown=$("launcherHomeOptions").hidden;
+ $("launcherHomeOptions").hidden=!shown;
+ $("launcherSettingsToggle").setAttribute("aria-expanded",String(shown));
+ if(shown)$("launcherOptionsClose").focus();
+};
+$("launcherOptionsClose").onclick=closeHomeOptions;
+$("launcherHomeOptions").addEventListener("click",event=>{
+ if(event.target===$("launcherHomeOptions"))closeHomeOptions();
+});
+document.addEventListener("keydown",event=>{
+ if(event.key==="Escape"&&!$("launcherHomeOptions").hidden)closeHomeOptions();
+});
+
 document.querySelectorAll("[data-home-nav]").forEach(b=>b.onclick=()=>setLauncherPage(b.dataset.homeNav));
 $("launcherAllApps").onclick=()=>setLauncherPage("apps");
 $("launcherOpenNews").onclick=()=>setLauncherPage("events");

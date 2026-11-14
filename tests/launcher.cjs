@@ -63,6 +63,14 @@ const demoApps=[
   await page.waitForFunction(()=>launcherApps.length===8);
   assert.equal(await page.evaluate(()=>launcherPage),'home','launcher must open on favorites Home');
   assert.equal(await page.locator('#launcherHomePage').isVisible(),true);
+  assert.equal(await page.locator('#launcherNavigation').isVisible(),false,
+   'Home has no visible tab bar');
+  assert.equal(await page.locator('#launcherHomeOptions').isVisible(),false,
+   'Home controls are tucked away behind one small button');
+  assert.equal(await page.locator('#launcherSettingsToggle').isVisible(),true);
+  assert.equal(await page.locator('#launcherHomeSetup').isVisible(),false);
+  assert.equal(await page.locator('#launcherFavorites .n-star').first().isVisible(),false,
+   'Home list has no distracting pin icons');
   assert.equal(await page.locator('header').isVisible(),false);
   assert.equal(await page.locator('#stories .story').count(),1,'news remains cached');
   assert.equal(await page.locator('#launcherFavorites .n-app-row').count(),8);
@@ -70,7 +78,10 @@ const demoApps=[
   assert.equal(await page.locator('[data-home-nav="home"].active').count(),1);
   assert.match(await page.locator('#densityHint').textContent(),/PINCH IN/);
 
+  await page.locator('#launcherSettingsToggle').click();
+  assert.equal(await page.locator('#launcherHomeOptions').isVisible(),true);
   await page.locator('#launcherAllApps').click();
+  assert.equal(await page.locator('#launcherHomeOptions').isVisible(),false);
   assert.equal(await page.evaluate(()=>launcherPage),'apps');
   assert.equal(await page.locator('#launcherAppsGrid .n-app-row').count(),8,'all installed apps shown alphabetically');
   assert.equal(await page.locator('#launcherAlphaIndex [data-launcher-letter]').count(),26);
@@ -89,6 +100,7 @@ const demoApps=[
   assert.deepEqual((await page.evaluate(()=>window.appLaunchCalls))[0],[
    'com.example.reaper','com.example.reaper.Main'
   ]);
+  await page.locator('#launcherSettingsToggle').click();
   await page.locator('#launcherShowRecents').click();
   await page.waitForFunction(()=>!document.getElementById('launcherRecentDrawer').hidden);
   await page.waitForFunction(()=>launcherRecents.length===1);
@@ -98,6 +110,7 @@ const demoApps=[
   await page.locator('#launcherMakeDefault').click();
   assert.equal(await page.evaluate(()=>window.makeDefaultRequests),1);
   assert.equal(await page.locator('#launcherMakeDefault').isVisible(),false);
+  await page.locator('#launcherOptionsClose').click();
 
   const swipe=async(target,x0,x1)=>{
    await page.evaluate(({target,x0,x1})=>{
@@ -130,6 +143,19 @@ const demoApps=[
   assert.equal(await page.evaluate(()=>launcherPage),'home','Android Home intent shows favorites');
   await page.evaluate(()=>window.launcherBack());
   assert.equal(await page.evaluate(()=>launcherPage),'home');
+  await page.setViewportSize({width:320,height:640});
+  await page.evaluate(()=>setLauncherPage('home',false));
+  const metrics=await page.evaluate(()=>({
+   bodyWidth:document.body.scrollWidth,
+   viewport:innerWidth,
+   clockSize:parseFloat(getComputedStyle(document.querySelector('#launcherClock')).fontSize),
+   firstBorder:getComputedStyle(document.querySelector('#launcherFavorites .n-app-row')).borderBottomWidth,
+   homeNav:getComputedStyle(document.getElementById('launcherNavigation')).display
+  }));
+  assert.ok(metrics.bodyWidth<=metrics.viewport+1,'minimal Home avoids horizontal overflow on narrow Android');
+  assert.ok(metrics.clockSize>=50,'clock is a prominent part of Home');
+  assert.equal(metrics.firstBorder,'0px','Home app rows have no dividers');
+  assert.equal(metrics.homeNav,'none','no visible navbar on Home');
   assert.deepEqual(errors,[],'no launcher errors');
   console.log('PASS: favorite home, frequent rank, pins, alphabetical rail, search, app launch, local recents, default Home and both swipe directions');
  }finally{await browser.close()}
