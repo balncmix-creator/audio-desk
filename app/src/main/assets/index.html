@@ -82,6 +82,24 @@ main{padding-bottom:190px}
 .sample-demo-output audio{display:block;width:100%;max-width:100%;height:48px;margin:8px 0}
 .sample-demo-output a{display:inline-block;margin-top:5px}
 .sample-demo-note{margin-top:5px;color:#aaa;font-size:9px}
+
+/* Horizontal tab navigation: outgoing page recedes, blurs and fades;
+   incoming tab rises behind it. Does not replace vertical page scrolling. */
+main#swipeMain{z-index:2;transform-origin:50% 45%;backface-visibility:hidden}
+#tabSwipePreview[hidden]{display:none!important}
+#tabSwipePreview{position:fixed;left:0;right:0;z-index:1;pointer-events:none;overflow:hidden;
+ background:linear-gradient(145deg,#191919,#0b0b0b 75%);border-top:1px solid #444;
+ box-shadow:inset 0 0 55px rgba(0,0,0,.55);will-change:transform,opacity}
+.tab-swipe-inside{max-width:900px;margin:0 auto;padding:22px 16px 32px}
+.tab-swipe-kicker{color:#aaa;font-size:10px;letter-spacing:1.5px}
+.tab-swipe-title{font:400 16px/1.6 "Press Start 2P",monospace;color:#fafafa;margin:14px 0 22px;overflow-wrap:anywhere}
+.tab-swipe-card{border:1px solid #484848;background:#191919;color:#ddd;
+ margin-bottom:14px;padding:14px 12px;min-height:70px;box-shadow:0 6px 15px rgba(0,0,0,.2)}
+.tab-swipe-card:before{content:"";display:block;width:38%;height:3px;background:#666;margin-bottom:12px}
+.tab-swipe-card p{margin:0;font-size:11px;line-height:1.55}
+@media(prefers-reduced-motion:reduce){
+ main#swipeMain,#tabSwipePreview{animation:none!important;transition:none!important;filter:none!important}
+}
 </style>
 </head>
 <body>
@@ -100,7 +118,7 @@ main{padding-bottom:190px}
 </svg>
 </div>
 <header><div class="mast"><div class="top"><div><div class="brand-line"><div class="brand">THE <span>AUDIO</span> DESK_</div><span class="header-desk-holder" aria-hidden="true"><img class="header-desk-art" src="desk-premium.webp" alt="" decoding="async"><canvas id="animatedDeskLogo" class="header-desk-icon" width="256" height="256" role="img" aria-label="Audio Desk rotating in 3D"></canvas></span></div><div class="sub">[ AUDIO INDUSTRY NEWS TERMINAL ]</div><div class="sub" id="liveRadarStatus" aria-live="polite">GLOBAL RELEASE RADAR · CHECKS EVERY 2 MIN WHILE OPEN</div></div><button class="primary" id="refresh">Refresh ↻</button></div><div class="edition">[ TOOLS ] [ TECHNOLOGY ] [ RECORDING ] [ POST ]</div></div></header>
-<main>
+<main id="swipeMain">
 <div class="stats" id="stats"><span id="count">Waiting for feeds…</span><span id="updated">Not refreshed yet</span></div>
 <div id="status" class="status">Tap Refresh or pull down to fetch the latest headlines.</div>
 <div id="offlineNotice" class="offline-notice" hidden role="status" aria-label="Offline: broken Audio Desk">
@@ -182,6 +200,13 @@ main{padding-bottom:190px}
 </section>
 <p class="foot">THE AUDIO DESK · Headlines remain the property of their publishers. Read full stories at source.</p>
 </main>
+<div id="tabSwipePreview" hidden aria-hidden="true">
+ <div class="tab-swipe-inside">
+  <div class="tab-swipe-kicker">THE AUDIO DESK · SWITCHING TO</div>
+  <div class="tab-swipe-title" id="tabSwipeTitle"></div>
+  <div id="tabSwipeCards"></div>
+ </div>
+</div>
 <nav class="bottom-dock" aria-label="Feed navigation">
   <div class="dock-search"><span class="dock-search-icon">⌕</span><input class="search" id="search" placeholder="Search all audio news…" autocomplete="off"></div>
   <div class="search-options">
@@ -1125,6 +1150,169 @@ async function loadFeeds(){
   if(window.AudioDesk && typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();
  }
 }
+// Swipe anywhere in the content panel to switch bottom tabs. The dock itself
+// keeps its independent horizontal scrolling, while vertical scrolling stays native.
+const swipeMain=$("swipeMain"),tabSwipePreview=$("tabSwipePreview");
+const swipeReducedMotion=window.matchMedia("(prefers-reduced-motion: reduce)");
+let tabGesture=null,tabAnimationBusy=false,tabFrame=0,tabSettleTimer=0;
+function tabButtons(){return [...document.querySelectorAll("#filters button[data-filter],#filters button[data-view]")]}
+function currentTabIndex(){
+ const buttons=tabButtons();
+ return buttons.findIndex(b=>activeView==="news"
+  ?b.dataset.filter===active:b.dataset.view===activeView);
+}
+function tabPreviewContent(index){
+ const target=tabButtons()[index];if(!target)return;
+ const category=target.dataset.filter,view=target.dataset.view;
+ $("tabSwipeTitle").textContent=target.textContent.trim();
+ let records=[];
+ if(category){
+  const data=category==="Saved"
+   ?[...savedItems,...items].filter(x=>saved.includes(x.key))
+   :category==="All"?items:items.filter(x=>x.cat===category);
+  records=data.slice().sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0))
+   .slice(0,3).map(x=>x.title);
+ }else if(view==="samples"){
+  records=[...items.filter(x=>x.cat==="Sample packs").slice(0,2).map(x=>x.title),
+   "SAMPLE PACK DIRECTORY · LISTEN BEFORE YOU DOWNLOAD"];
+ }else{
+  records=["LATEST RELEASES","RELEASE RADAR","DISCOVER NEW RELEASES"];
+ }
+ if(!records.length)records=["No cached stories for this tab. Refresh to check for updates."];
+ $("tabSwipeCards").innerHTML=records.map(x=>'<div class="tab-swipe-card"><p>'+esc(x)+'</p></div>').join("");
+ const bounds=swipeMain.getBoundingClientRect();
+ const dock=document.querySelector(".bottom-dock").getBoundingClientRect();
+ tabSwipePreview.style.top=Math.max(0,Math.round(bounds.top))+"px";
+ tabSwipePreview.style.bottom=Math.max(0,Math.round(window.innerHeight-dock.top))+"px";
+ tabSwipePreview.hidden=false;
+}
+function clearTabSwipe(){
+ cancelAnimationFrame(tabFrame);tabFrame=0;
+ clearTimeout(tabSettleTimer);tabSettleTimer=0;
+ for(const key of ["transform","filter","opacity","transition","will-change","pointer-events","background"])
+  swipeMain.style.removeProperty(key);
+ for(const key of ["transform","opacity","transition"])tabSwipePreview.style.removeProperty(key);
+ tabSwipePreview.hidden=true;
+ tabGesture=null;tabAnimationBusy=false;
+}
+function setTabSwipeProgress(dx){
+ if(!tabGesture||!tabGesture.locked||swipeReducedMotion.matches)return;
+ const direction=Math.sign(dx)||tabGesture.direction;
+ if(!direction)return;
+ const index=currentTabIndex(),target=index-direction;
+ if(target<0||target>=tabButtons().length){
+  // A small elastic resistance at either end, without wrapping to a different tab.
+  const n=Math.min(1,Math.abs(dx)/240);
+  swipeMain.style.transform="translate3d("+(direction*n*12)+"px,0,0)";
+  return;
+ }
+ if(tabGesture.target!==target){tabGesture.target=target;tabPreviewContent(target)}
+ const p=Math.min(1,Math.abs(dx)/Math.max(170,window.innerWidth*.75));
+ swipeMain.style.willChange="transform,filter,opacity";
+ swipeMain.style.transition="none";
+ swipeMain.style.transform="translate3d("+(direction*p*window.innerWidth*.09)+"px,0,0) scale("+(1-p*.11)+")";
+ swipeMain.style.filter="blur("+(p*5).toFixed(2)+"px)";
+ swipeMain.style.opacity=String(1-p*.68);
+ swipeMain.style.background="#080808";
+ tabSwipePreview.style.transition="none";
+ tabSwipePreview.style.opacity=String(.18+p*.78);
+ tabSwipePreview.style.transform="translate3d("+(-direction*(1-p)*window.innerWidth*.24)+"px,0,0) scale("+(.95+p*.05)+")";
+}
+function activateTabIndex(index){
+ const tab=tabButtons()[index];if(!tab)return;
+ pauseSampleDemos();
+ if(tab.dataset.filter!==undefined){
+  active=tab.dataset.filter;setView("news");render();
+ }else if(tab.dataset.view){
+  setView(tab.dataset.view);
+ }
+ const toolbar=$("filters"),left=tab.getBoundingClientRect().left-toolbar.getBoundingClientRect().left+toolbar.scrollLeft;
+ const desired=left-(toolbar.clientWidth-tab.clientWidth)/2;
+ toolbar.scrollTo({left:Math.max(0,desired),behavior:swipeReducedMotion.matches?"auto":"smooth"});
+}
+function finishTabSwipe(target,direction){
+ if(tabAnimationBusy)return;
+ tabAnimationBusy=true;
+ const reduce=swipeReducedMotion.matches;
+ if(reduce){
+  activateTabIndex(target);window.scrollTo(0,0);clearTabSwipe();return;
+ }
+ if(tabSwipePreview.hidden)tabPreviewContent(target);
+ swipeMain.style.pointerEvents="none";
+ swipeMain.style.willChange="transform,filter,opacity";
+ swipeMain.style.transition="transform 135ms ease-in,filter 135ms ease-in,opacity 135ms ease-in";
+ swipeMain.style.transform="translate3d("+(direction*window.innerWidth*.13)+"px,0,0) scale(.86)";
+ swipeMain.style.filter="blur(6px)";swipeMain.style.opacity="0";
+ tabSwipePreview.style.transition="transform 145ms ease-out,opacity 145ms ease-out";
+ tabSwipePreview.style.transform="translate3d(0,0,0) scale(1)";
+ tabSwipePreview.style.opacity="1";
+ tabSettleTimer=setTimeout(()=>{
+  activateTabIndex(target);
+  window.scrollTo(0,0);
+  swipeMain.style.transition="none";
+  swipeMain.style.transform="translate3d("+(-direction*window.innerWidth*.18)+"px,0,0) scale(.96)";
+  swipeMain.style.filter="blur(3px)";swipeMain.style.opacity=".18";
+  // Style flush ensures the new page enters instead of appearing immediately.
+  void swipeMain.offsetWidth;
+  requestAnimationFrame(()=>{
+   swipeMain.style.transition="transform 300ms cubic-bezier(.16,1,.3,1),filter 300ms ease-out,opacity 300ms ease-out";
+   swipeMain.style.transform="translate3d(0,0,0) scale(1)";
+   swipeMain.style.filter="blur(0px)";swipeMain.style.opacity="1";
+   tabSwipePreview.style.transition="opacity 260ms ease-out";
+   tabSwipePreview.style.opacity="0";
+   tabSettleTimer=setTimeout(clearTabSwipe,330);
+  });
+ },150);
+}
+function cancelTabSwipe(){
+ if(tabAnimationBusy)return;
+ if(swipeReducedMotion.matches){clearTabSwipe();return}
+ swipeMain.style.transition="transform 190ms ease-out,filter 190ms ease-out,opacity 190ms ease-out";
+ swipeMain.style.transform="translate3d(0,0,0) scale(1)";
+ swipeMain.style.filter="blur(0px)";swipeMain.style.opacity="1";
+ tabSwipePreview.style.transition="opacity 190ms ease-out";
+ tabSwipePreview.style.opacity="0";
+ tabSettleTimer=setTimeout(clearTabSwipe,210);
+}
+swipeMain.addEventListener("touchstart",e=>{
+ if(tabAnimationBusy||e.touches.length!==1)return;
+ const interactive=e.target.closest("input,textarea,select,button,a,audio,video,iframe,[contenteditable],.sample-demo-panel,[data-no-swipe]");
+ if(interactive)return;
+ const t=e.touches[0];
+ tabGesture={x:t.clientX,y:t.clientY,lastX:t.clientX,start:performance.now(),
+  locked:false,vertical:false,target:-1,direction:0};
+},{passive:true});
+swipeMain.addEventListener("touchmove",e=>{
+ const g=tabGesture;if(!g||g.vertical||e.touches.length!==1||tabAnimationBusy)return;
+ const touch=e.touches[0],dx=touch.clientX-g.x,dy=touch.clientY-g.y;
+ if(!g.locked){
+  if(Math.abs(dy)>14&&Math.abs(dy)>Math.abs(dx)*1.2){g.vertical=true;return}
+  if(Math.abs(dx)<16||Math.abs(dx)<Math.abs(dy)*1.35)return;
+  g.locked=true;
+ }
+ if(e.cancelable)e.preventDefault();
+ g.direction=Math.sign(dx)||g.direction;
+ g.lastX=touch.clientX;
+ cancelAnimationFrame(tabFrame);
+ tabFrame=requestAnimationFrame(()=>setTabSwipeProgress(dx));
+},{passive:false});
+swipeMain.addEventListener("touchend",e=>{
+ const g=tabGesture;if(!g||tabAnimationBusy)return;
+ cancelAnimationFrame(tabFrame);tabFrame=0;tabGesture=null;
+ if(!g.locked){clearTabSwipe();return}
+ const touch=e.changedTouches[0],dx=(touch?.clientX??g.lastX)-g.x;
+ const direction=Math.sign(dx)||g.direction;
+ const candidate=currentTabIndex()-direction;
+ const speed=Math.abs(dx)/Math.max(40,performance.now()-g.start);
+ const enough=Math.abs(dx)>Math.max(70,window.innerWidth*.20) ||
+  (Math.abs(dx)>42&&speed>.65);
+ if(enough&&candidate>=0&&candidate<tabButtons().length){
+  tabGesture=g;
+  finishTabSwipe(candidate,direction);
+ }else cancelTabSwipe();
+},{passive:true});
+swipeMain.addEventListener("touchcancel",()=>{if(!tabAnimationBusy){tabGesture=null;cancelTabSwipe()}},{passive:true});
+
 document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{setView("news");active=b.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===b));render()});
 $("search").addEventListener("input",()=>{if(activeView==="news")render();else if(activeView==="torrents")renderTorrentMonitor();else renderResourceDirectory()});
 $("resourceCategory").addEventListener("change",()=>{if(activeView==="torrents")renderTorrentMonitor();else renderResourceDirectory()});
