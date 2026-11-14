@@ -12,8 +12,8 @@ android {
         applicationId = "com.balnc.audioddesk"
         minSdk = 23
         targetSdk = 36
-        versionCode = 35
-        versionName = "2.4"
+        versionCode = 36
+        versionName = "2.5"
     }
     signingConfigs {
         create("stableDebug") {
@@ -55,6 +55,7 @@ abstract class PreparePlayAssets : DefaultTask() {
     @get:InputFile abstract val sourceHtml: RegularFileProperty
     @get:InputFile abstract val generatorScript: RegularFileProperty
     @get:InputFile abstract val premiumImage: RegularFileProperty
+    @get:InputDirectory abstract val personalizationAssets: DirectoryProperty
     @get:OutputDirectory abstract val outputDirectory: DirectoryProperty
     @get:Inject abstract val execOperations: ExecOperations
 
@@ -72,6 +73,7 @@ androidComponents {
             sourceHtml.set(layout.projectDirectory.file("src/main/assets/index.html"))
             generatorScript.set(rootProject.layout.projectDirectory.file("scripts/prepare-play.cjs"))
             premiumImage.set(layout.projectDirectory.file("src/main/assets/desk-premium.webp"))
+            personalizationAssets.set(layout.projectDirectory.dir("src/main/assets"))
             outputDirectory.set(layout.buildDirectory.dir("generated/playAssets"))
         }
         // Let AGP track the producer for every asset consumer, including lint.

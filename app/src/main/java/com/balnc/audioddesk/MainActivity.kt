@@ -2,7 +2,9 @@ package com.balnc.audioddesk
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.os.Build
 import android.os.Handler
@@ -14,6 +16,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.ValueCallback
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -40,6 +43,8 @@ class MainActivity : Activity() {
     private var destroyed = false
     private var statusInsetDp = 24
     private var bottomInsetDp = 0
+    private var wallpaperFileCallback: ValueCallback<Array<Uri>>? = null
+    private val wallpaperFileRequest = 2405
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun configure(webView: WebView) {
@@ -57,6 +62,9 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = Color.TRANSPARENT
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isStatusBarContrastEnforced = false
+        }
         window.navigationBarColor = Color.rgb(8, 8, 8)
 
         val loader = WebViewAssetLoader.Builder()
@@ -67,9 +75,8 @@ class MainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.rgb(8, 8, 8))
         }
-        // Android 15+ enforces edge-to-edge for target SDK 35. Apply the
-        // system-bar and cutout insets to the native root, not the WebView,
-        // so the HTML header starts below the status bar on every device.
+        // Wallpaper fills the WebView behind the status bar; HTML applies
+        // the safe top/bottom insets to interactive content only.
         ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
             val safe = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
@@ -86,6 +93,30 @@ class MainActivity : Activity() {
         swipeRefresh = DeskRefreshLayout(this)
         appWebView = WebView(this)
         configure(appWebView)
+        appWebView.webChromeClient = object : WebChromeClient() {
+            override fun onShowFileChooser(
+                webView: WebView?, callback: ValueCallback<Array<Uri>>?,
+                params: FileChooserParams?
+            ): Boolean {
+                if (webView?.url != "https://appassets.androidplatform.net/assets/index.html") return false
+                wallpaperFileCallback?.onReceiveValue(null)
+                wallpaperFileCallback = callback
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "image/*"
+                    putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/jpeg", "image/png", "image/webp"))
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                try {
+                    @Suppress("DEPRECATION")
+                    startActivityForResult(intent, wallpaperFileRequest)
+                } catch (_: android.content.ActivityNotFoundException) {
+                    wallpaperFileCallback?.onReceiveValue(null)
+                    wallpaperFileCallback = null
+                }
+                return true
+            }
+        }
         // The news interface handles two-finger gestures to change card density.
         // Disable WebView's own page-scale pinch (the article browser is separate).
         appWebView.settings.setSupportZoom(false)
@@ -353,7 +384,29 @@ class MainActivity : Activity() {
         super.onResume()
         // Refresh installed apps after returning from another app or installing a package.
         if (::appWebView.isInitialized && ::launcherSupport.isInitialized)
-            appWebView.evaluateJavascript("window.launcherOnResume&&window.launcherOnResume()", null)
+            appWebView.evaluateJavascript(
+                "window.launcherOnResume&&window.launcherOnResume();" +
+                    "window.launcherWallpaperActive&&window.launcherWallpaperActive(true)", null)
+    }
+
+    override fun onPause() {
+        if (::appWebView.isInitialized && !destroyed) appWebView.evaluateJavascript(
+            "window.launcherWallpaperActive&&window.launcherWallpaperActive(false)", null)
+        super.onPause()
+    }
+
+    @Deprecated("Activity result compatibility for minSdk 23")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != wallpaperFileRequest) return
+        val callback = wallpaperFileCallback
+        wallpaperFileCallback = null
+        val uri = data?.data?.takeIf { resultCode == RESULT_OK && it.scheme == "content" }
+        val allowed = uri?.let {
+            try { contentResolver.getType(it) in setOf("image/jpeg", "image/png", "image/webp") }
+            catch (_: SecurityException) { false }
+        } ?: false
+        callback?.onReceiveValue(if (uri != null && allowed) arrayOf(uri) else null)
     }
 
     private fun openInBrowser(url: String) {
@@ -388,6 +441,8 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         destroyed = true
+        wallpaperFileCallback?.onReceiveValue(null)
+        wallpaperFileCallback = null
         if (::imageAccents.isInitialized) imageAccents.close()
         if (::articleImages.isInitialized) articleImages.close()
         if (::feedDiscovery.isInitialized) feedDiscovery.close()

@@ -420,76 +420,9 @@ body[data-home-page="home"] .launcher-dots .active{color:#c9c9c9}
  body[data-home-page="home"] .launcher-clock{padding-bottom:17px}
 }
 
-/* v2.4: true edge-to-edge, lightweight pixel wallpaper and long-press personalization. */
-#wallpaperStage{display:none;position:fixed;inset:0;z-index:0;pointer-events:none;background-color:#0b0b0b;background-repeat:no-repeat;background-size:500% 200%;image-rendering:pixelated}
-body[data-home-page="home"] #wallpaperStage{display:block}
-body[data-home-page="home"] #launcherShell{background:transparent!important}
-body[data-home-page="home"] #launcherHomePage{padding-top:calc(var(--status-top,24px) + clamp(55px,9.1dvh,92px));padding-bottom:calc(95px + var(--system-bottom,0px))}
-body[data-home-page="apps"] #launcherShell{padding-top:calc(11px + var(--status-top,24px))}
-body[data-home-page="events"] header{padding-top:calc(17px + var(--status-top,24px))}
-body[data-home-page="home"] .launcher-settings-fab{bottom:calc(24px + var(--system-bottom,0px))}
-body[data-home-page="home"] .launcher-dots{bottom:calc(24px + var(--system-bottom,0px))}
-body[data-home-page="home"] .launcher-clock{touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:pointer}
-body[data-home-page="home"][data-wallpaper-light="true"] .launcher-clock .clock,
-body[data-home-page="home"][data-wallpaper-light="true"] #launcherFavorites .app-name,
-body[data-home-page="home"][data-wallpaper-light="true"] #launcherFavorites .pixel-letter{color:#10151b}
-body[data-home-page="home"][data-wallpaper-light="true"] .launcher-clock .clock-date{color:#27323a}
-body[data-home-page="home"][data-wallpaper-light="true"] #launcherFavorites .pixel-icon img{filter:invert(.10)}
-body[data-home-page="home"][data-wallpaper-light="true"] .launcher-dots .active{color:#1d2931}
-#wallpaperEffect{position:absolute;inset:0;pointer-events:none;opacity:0}
-body[data-home-page="home"][data-wallpaper-motion="rain"] #wallpaperEffect{
- opacity:.35;background:repeating-linear-gradient(94deg,transparent 0 25px,rgba(96,190,209,.35) 26px 27px,transparent 28px 54px);
- background-size:120px 120px;animation:wall-rain 3s linear infinite}
-body[data-home-page="home"][data-wallpaper-motion="aurora"] #wallpaperEffect{
- opacity:.2;background:linear-gradient(110deg,transparent 35%,rgba(72,255,193,.5) 70%,transparent 85%);animation:wall-glow 7s ease-in-out infinite alternate}
-body[data-home-page="home"][data-wallpaper-motion="stars"] #wallpaperEffect{
- opacity:.25;background-image:radial-gradient(#fff 1px,transparent 2px),radial-gradient(#aaaaff 1px,transparent 2px);
- background-size:64px 79px,101px 88px;animation:wall-twinkle 5s ease-in-out infinite alternate}
-body[data-home-page="home"][data-wallpaper-motion="ocean"] #wallpaperEffect{
- opacity:.18;background:repeating-linear-gradient(180deg,transparent 0 16px,rgba(255,255,255,.26) 17px 18px,transparent 19px 32px);animation:wall-shimmer 9s ease-in-out infinite alternate}
-body[data-home-page="home"][data-wallpaper-motion="studio"] #wallpaperEffect{
- opacity:.24;background-image:radial-gradient(#20f7d7 1px,transparent 3px),radial-gradient(#ffbc50 1px,transparent 3px);background-size:91px 159px,127px 141px;animation:wall-twinkle 3s ease-in-out infinite alternate}
-@keyframes wall-rain{from{transform:translateY(-48px)}to{transform:translateY(48px)}}
-@keyframes wall-glow{from{opacity:.09;transform:translateX(-5%)}to{opacity:.29;transform:translateX(3%)}}
-@keyframes wall-twinkle{from{opacity:.05}to{opacity:.32}}
-@keyframes wall-shimmer{from{opacity:.06;transform:translateY(-5px)}to{opacity:.22;transform:translateY(5px)}}
-#launcherAppsPage.search-rise{animation:search-rise .19s cubic-bezier(.2,.8,.2,1) both}
-@keyframes search-rise{from{opacity:.45;transform:translate3d(0,28px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
-body.low-power #launcherAppsPage.search-rise{animation-duration:.13s}
-@media(prefers-reduced-motion:reduce){#launcherAppsPage.search-rise{animation:none!important}#wallpaperEffect{animation:none!important;opacity:0!important}}
-.customize-overlay[hidden]{display:none!important}
-.customize-overlay{position:fixed;inset:0;z-index:52;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.76)}
-.customize-panel{box-sizing:border-box;width:min(100%,560px);max-height:82dvh;overflow:auto;overscroll-behavior:contain;background:#151515;border:1px solid #545454;border-bottom:0;padding:18px 16px calc(22px + var(--system-bottom,0px));color:#f4f4f4;font:13px/1.45 system-ui,sans-serif}
-.customize-head{display:flex;align-items:center;justify-content:space-between;margin:0 0 17px}
-.customize-head strong{font:15px/1.4 system-ui,sans-serif;font-weight:700}
-.customize-head button{box-shadow:none;border:0;background:transparent;font-size:20px}
-.wallpaper-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
-.wallpaper-choice{display:block;position:relative;width:100%;border:1px solid #525252;box-shadow:none;background:#111;padding:4px;color:#eee;font:11px/1.3 system-ui,sans-serif;text-align:left;text-transform:none}
-.wallpaper-choice[aria-pressed="true"]{outline:2px solid white;outline-offset:1px}
-.wallpaper-thumb{width:100%;height:145px;display:block;background-repeat:no-repeat;background-size:500% 200%;image-rendering:pixelated;margin-bottom:5px}
-.wallpaper-choice small{color:#aaa;display:block;font-size:10px;margin-top:2px}
-.wallpaper-motion{margin:16px 0 5px;display:flex;align-items:center;gap:10px}
-.wallpaper-motion input{accent-color:white;width:18px;height:18px}
-.customize-tip{font-size:11px;color:#aaa;line-height:1.5}
-.clock-design-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:18px}
-.clock-choice{box-shadow:none;text-align:left;display:flex;flex-direction:column;gap:5px;border:1px solid #666;background:#202020;min-height:84px;text-transform:none}
-.clock-choice[aria-pressed="true"]{border:2px solid #fff}
-.clock-choice .clock-sample{font:24px/1.25 monospace;color:#eee}
-.clock-choice .clock-choice-name{font:11px system-ui;color:#aaa}
-.clock-size-label{display:flex;justify-content:space-between;font:13px system-ui;margin-bottom:8px}
-#clockSizeSlider{display:block;width:100%;accent-color:#fff;margin:0 0 16px}
-body[data-home-page="home"] #launcherClock{font-size:var(--clock-size,66px)!important;max-width:100%;overflow-wrap:anywhere}
-body[data-clock-style="1"] #launcherClock{font-family:"Press Start 2P",monospace!important;font-weight:400!important;letter-spacing:-5px!important}
-body[data-clock-style="2"] #launcherClock{font-family:"Courier New",monospace!important;font-weight:700!important;letter-spacing:-5px!important}
-body[data-clock-style="3"] #launcherClock{font-family:system-ui,sans-serif!important;font-weight:200!important;letter-spacing:1px!important}
-body[data-clock-style="4"] #launcherClock{font-family:"Silkscreen",monospace!important;font-weight:700!important;letter-spacing:-4px!important}
-body[data-clock-style="5"] #launcherClock{font-family:monospace!important;font-weight:900!important;letter-spacing:0!important;text-shadow:3px 3px 0 #666}
-body[data-clock-style="6"] #launcherClock{font-family:system-ui,sans-serif!important;font-weight:900!important;letter-spacing:-6px!important}
-body[data-clock-style="7"] #launcherClock{font-family:"Courier New",monospace!important;font-weight:400!important;letter-spacing:-2px!important;border-bottom:2px solid currentColor;width:fit-content}
-body[data-clock-style="8"] #launcherClock{font-family:"Silkscreen",monospace!important;font-weight:400!important;letter-spacing:-4px!important;text-shadow:0 0 8px rgba(96,255,226,.6)}
-body[data-clock-style="9"] #launcherClock{font-family:monospace!important;font-weight:900!important;letter-spacing:-3px!important;border:2px solid currentColor;padding:6px;width:fit-content}
-
 </style>
+<link rel="stylesheet" href="personalization.css">
+<script src="wallpapers/catalog.js"></script>
 </head>
 <body data-home-page="home">
 <div id="arcade-bg" aria-hidden="true">
@@ -650,8 +583,17 @@ body[data-clock-style="9"] #launcherClock{font-family:monospace!important;font-w
   <div class="customize-panel">
    <div class="customize-head"><strong>PIXEL WALLPAPERS</strong><button id="wallpaperClose" type="button" aria-label="Close wallpapers">×</button></div>
    <div id="wallpaperGrid" class="wallpaper-grid"></div>
-   <label class="wallpaper-motion"><input type="checkbox" id="wallpaperMotionToggle"><span>Animated effects (5 wallpapers)</span></label>
-   <p class="customize-tip">Animations pause in reduced-motion mode. Optimized 8-bit artwork is bundled offline.</p>
+   <button type="button" id="customWallpaperChoose">Choose wallpaper from phone</button>
+   <input type="file" id="customWallpaperFile" accept="image/jpeg,image/png,image/webp" hidden>
+   <button type="button" id="customWallpaperRestore" hidden>Use my saved photo</button>
+   <p id="customWallpaperStatus" class="customize-tip" role="status"></p>
+   <label id="customWallpaperCrop" hidden><span>Crop position</span><input id="customWallpaperPosition" type="range" min="0" max="100" value="35" aria-label="Wallpaper horizontal crop"></label>
+   <label class="wallpaper-motion"><span>Animation</span><select id="wallpaperEffectSelect" aria-label="Wallpaper animation">
+    <option value="auto">Match wallpaper</option><option value="none">None</option><option value="rain">Rain</option>
+    <option value="aurora">Aurora</option><option value="stars">Stars</option><option value="ocean">Ocean</option><option value="studio">Studio lights</option>
+   </select></label>
+   <p id="wallpaperMotionStatus" class="customize-tip" role="status"></p>
+   <p class="customize-tip">Your photo stays on this phone. Wallpaper fills the screen behind the status bar.</p>
   </div>
  </div>
  <div id="launcherClockDialog" class="customize-overlay" role="dialog" aria-modal="true" aria-label="Customize clock" hidden>
@@ -2109,7 +2051,7 @@ window.launcherLaunchResult=function(opened){
  }
 };
 function setLauncherPage(page,animate=true){
- if(page!=="home")closeHomeOptions();
+ if(page!=="home"){closeHomeOptions();if(typeof closeCustomize==="function")closeCustomize();}
  if(!launcherPages.includes(page))return;
  if(page===launcherPage&&$("launcherShell").hidden===(page==="events"))return;
  const previous=launcherPage;
@@ -2137,8 +2079,9 @@ function setLauncherPage(page,animate=true){
   window.scrollTo(0,launcherEventScroll);
  }
  window.dispatchEvent(new Event("launcher-page-changed"));
- if(animate&&!LOW_POWER_DEVICE){
+ if(animate&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
   const panel=homePanel(page);
+  panel.style.setProperty("--page-enter",launcherPages.indexOf(page)>launcherPages.indexOf(previous)?"22px":"-22px");
   panel.classList.remove("launcher-enter");
   void panel.offsetWidth;
   panel.classList.add("launcher-enter");
@@ -2147,6 +2090,7 @@ function setLauncherPage(page,animate=true){
 }
 window.launcherGoHome=function(){closeHomeOptions();setLauncherPage("home",true)};
 window.launcherBack=function(){
+ if(!$("launcherWallpaperDialog").hidden||!$("launcherClockDialog").hidden){closeCustomize();return}
  if(!$("launcherHomeOptions").hidden){closeHomeOptions();return}
  if(!$("launcherShortcutMenu").hidden){closeAppShortcuts();return}
  if(!$("gridDetail").hidden){closeGridDetails();return}
@@ -2200,119 +2144,6 @@ $("launcherShell").addEventListener("click",event=>{
  }else $("launcherAppCount").textContent="LAUNCHING APPS REQUIRES THE ANDROID HOME APK";
 });
 renderLauncherHome();renderLauncherApps();renderLauncherRecents();
-
-/* Offline, low-memory theme assets: 10 originals downsampled into one WebP atlas. */
-const WALLPAPER_SPRITE="data:image/webp;base64,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";
-const WALLPAPERS=["Moonlit City","Rainy Neon","Northern Lights","Purple Planet","Midnight Studio","Pastel Sunrise","Tropical Beach","Sunset Highway","Floating Islands","Retro Music"];
-const WALLPAPER_ANIMATIONS=["","rain","aurora","stars","studio","","ocean","","",""];
-const CLOCK_DESIGNS=["Minimal","Arcade Pixel","Bold Mono","Thin","8-Bit Block","Shadow","Heavy","Underlined","Neon Pixel","Framed"];
-const loadPersonalInt=(key,fallback,max)=>{const n=Number(localStorage.getItem(key));return Number.isInteger(n)&&n>=0&&n<=max?n:fallback};
-let selectedWallpaper=loadPersonalInt("ar_wallpaper_v1",0,9);
-let clockDesign=loadPersonalInt("ar_clock_style_v1",0,9);
-let clockSize=loadPersonalInt("ar_clock_size_v1",66,110);
-if(clockSize<48)clockSize=66;
-let wallpaperMotion=localStorage.getItem("ar_wallpaper_motion_v1")==="true";
-function applyWallpaper(){
- const stage=$("wallpaperStage"), x=(selectedWallpaper%5)*25, y=selectedWallpaper>=5?100:0;
- stage.style.backgroundImage='url("'+WALLPAPER_SPRITE+'")';
- stage.style.backgroundPosition=x+'% '+y+'%';
- const light=selectedWallpaper>=5;
- document.body.dataset.wallpaperLight=String(light);
- document.body.dataset.wallpaperMotion=wallpaperMotion?WALLPAPER_ANIMATIONS[selectedWallpaper]:"";
- if(window.AudioDesk&&typeof window.AudioDesk.setWallpaperTone==="function")
-  window.AudioDesk.setWallpaperTone(light);
-}
-function applyClockDesign(){
- document.body.dataset.clockStyle=String(clockDesign);
- document.documentElement.style.setProperty("--clock-size",clockSize+"px");
- $("clockSizeSlider").value=clockSize;
- $("clockSizeValue").textContent=clockSize+"px";
-}
-function closeCustomize(){
- $("launcherWallpaperDialog").hidden=true;$("launcherClockDialog").hidden=true;
-}
-function openWallpaperPicker(){
- closeHomeOptions();closeCustomize();renderWallpaperPicker();
- $("launcherWallpaperDialog").hidden=false;
-}
-function openClockCustomizer(){
- closeHomeOptions();closeCustomize();renderClockCustomizer();
- $("launcherClockDialog").hidden=false;
-}
-function renderWallpaperPicker(){
- $("wallpaperGrid").innerHTML=WALLPAPERS.map((name,i)=>{
-  const x=(i%5)*25,y=i>=5?100:0;
-  return '<button class="wallpaper-choice" data-wallpaper="'+i+'" aria-pressed="'+(selectedWallpaper===i)+'">'+
-   '<span class="wallpaper-thumb" style="background-image:url('+WALLPAPER_SPRITE+');background-position:'+x+'% '+y+'%"></span>'+
-   '<span>'+name+'</span>'+ (WALLPAPER_ANIMATIONS[i]?'<small>Animated option</small>':'<small>Static</small>')+'</button>';
- }).join("");
- $("wallpaperMotionToggle").checked=wallpaperMotion;
- $("wallpaperMotionToggle").disabled=!WALLPAPER_ANIMATIONS[selectedWallpaper];
-}
-function renderClockCustomizer(){
- $("clockDesignGrid").innerHTML=CLOCK_DESIGNS.map((name,i)=>
-  '<button type="button" class="clock-choice" data-clock-design="'+i+'" aria-pressed="'+(clockDesign===i)+'">'+
-  '<span class="clock-sample" style="font-family:'+(i===0||i===3||i===6?'system-ui':'monospace')+'">'+(i===9?'[19:24]':'19:24')+'</span>'+
-  '<span class="clock-choice-name">'+name+'</span></button>').join("");
- applyClockDesign();
-}
-$("wallpaperGrid").addEventListener("click",e=>{
- const b=e.target.closest("[data-wallpaper]");if(!b)return;
- selectedWallpaper=Number(b.dataset.wallpaper);
- localStorage.setItem("ar_wallpaper_v1",selectedWallpaper);
- applyWallpaper();renderWallpaperPicker();
-});
-$("wallpaperMotionToggle").onchange=e=>{
- wallpaperMotion=e.target.checked;localStorage.setItem("ar_wallpaper_motion_v1",String(wallpaperMotion));applyWallpaper();
-};
-$("clockDesignGrid").addEventListener("click",e=>{
- const b=e.target.closest("[data-clock-design]");if(!b)return;
- clockDesign=Number(b.dataset.clockDesign);
- localStorage.setItem("ar_clock_style_v1",clockDesign);
- applyClockDesign();renderClockCustomizer();
-});
-$("clockSizeSlider").addEventListener("input",e=>{
- clockSize=Number(e.target.value);
- localStorage.setItem("ar_clock_size_v1",clockSize);
- applyClockDesign();
-});
-$("launcherWallpaperChoose").onclick=openWallpaperPicker;
-$("launcherClockChoose").onclick=openClockCustomizer;
-$("wallpaperClose").onclick=closeCustomize;
-$("clockClose").onclick=closeCustomize;
-for(const id of ["launcherWallpaperDialog","launcherClockDialog"]){
- $(id).addEventListener("click",e=>{if(e.target===$(id))closeCustomize()});
-}
-document.addEventListener("keydown",e=>{if(e.key==="Escape")closeCustomize()});
-/* Long press an empty part of Home for the personalization menu; the clock opens directly. */
-let longHold=0,longStart=null,longConsumed=false;
-function cancelHomeHold(){clearTimeout(longHold);longHold=0;longStart=null}
-$("launcherHomePage").addEventListener("touchstart",e=>{
- if(e.touches.length!==1||launcherPage!=="home")return;
- const target=e.target;
- if(target.closest("button,input,textarea,.launcher-app,.customize-overlay,#launcherHomeOptions"))return;
- const clock=!!target.closest(".launcher-clock");
- const t=e.touches[0];longStart={x:t.clientX,y:t.clientY};
- longConsumed=false;
- clearTimeout(longHold);
- longHold=setTimeout(()=>{
-  longConsumed=true;upStart=null;longStart=null;
-  if(clock)openClockCustomizer();else $("launcherSettingsToggle").click();
- },520);
-},{passive:true});
-$("launcherHomePage").addEventListener("touchmove",e=>{
- if(!longStart||e.touches.length!==1)return;
- const t=e.touches[0];
- if(Math.hypot(t.clientX-longStart.x,t.clientY-longStart.y)>14)cancelHomeHold();
-},{passive:true});
-$("launcherHomePage").addEventListener("touchend",cancelHomeHold,{passive:true});
-$("launcherHomePage").addEventListener("touchcancel",cancelHomeHold,{passive:true});
-$("launcherHomePage").addEventListener("contextmenu",e=>{
- if(e.target.closest(".launcher-app,button,.customize-overlay"))return;
- e.preventDefault();
- if(e.target.closest(".launcher-clock"))openClockCustomizer();else $("launcherSettingsToggle").click();
-});
-applyWallpaper();applyClockDesign();
 
 /* Swipe UP on Home opens app search and Android keyboard automatically. */
 let upStart=null;
@@ -2611,4 +2442,5 @@ document.addEventListener("click",e=>{
  sync();
 })();
 </script>
+<script src="personalization.js"></script>
 </body></html>
