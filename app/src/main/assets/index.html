@@ -294,7 +294,7 @@ function isSamplePack(item){
  const title=String(item.title||"");
  const description=String(item.description||item.desc||"");
  const text=(title+" "+description).toLowerCase();
- return /\b(?:sample[\s-]*(?:packs?|libraries?|collections?|bundles?)|sampled[\s-]+(?:instruments?|libraries?)|sound[\s-]*(?:packs?|libraries?|banks?)|loop[\s-]*(?:packs?|libraries?|kits?)|one[\s-]*shots?|construction[\s-]*kits?|kontakt[\s-]*(?:libraries?|instruments?)|sfz[\s-]*(?:libraries?|instruments?)|midi[\s-]*(?:packs?|kits?)|preset[\s-]*(?:packs?|banks?)|royalty[\s-]*free[\s-]+samples?|drum[\s-]*sample[\s-]*(?:packs?|kits?)|audio[\s-]+loops?)\b/i.test(text);
+ return /\b(?:sample[\s-]*(?:packs?|libraries?|collections?|bundles?)|sampled[\s-]+(?:instruments?|libraries?)|sound[\s-]*(?:packs?|libraries?|banks?)|loop[\s-]*(?:packs?|libraries?|kits?)|one[\s-]*shots?|construction[\s-]*kits?|kontakt[\s-]*(?:libraries?|instruments?)|sfz[\s-]*(?:libraries?|instruments?)|midi[\s-]*(?:packs?|kits?)|preset[\s-]*(?:packs?|banks?)|royalty[\s-]*free[\s-]+samples?|drum[\s-]*sample[\s-]*(?:packs?|kits?)|audio[\s-]+loops?|(?:sound[\s-]*(?:effects?|fx)|sfx)[\s-]*(?:packs?|libraries?|collections?)|(?:instrument|virtual[\s-]+instrument)[\s-]*(?:packs?|libraries?|bundles?))\b/i.test(text);
 }
 function classify(item,feed){
  if(feed.cat==="REAPER")return "REAPER";
