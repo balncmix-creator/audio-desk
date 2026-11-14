@@ -72,7 +72,10 @@ const assert=require('node:assert/strict');
   });
   assert.equal(await page.locator('#offlineNotice').isVisible(),true);
   await page.screenshot({path:path.join(output,'offline.png')});
+  await page.locator('[data-view="samples"]').click();
+  assert.equal(await page.locator('#sampleReleases .sample-demo-button').count(),1);
+  await page.screenshot({path:path.join(output,'sample-packs.png')});
   assert.deepEqual(errors,[],'the screenshot version of the app must render without script errors');
-  console.log('Captured 3 actual Audio Desk browser UI screenshots with demo headlines');
+  console.log('Captured 4 actual Audio Desk browser UI screenshots with demo headlines');
  }finally{await browser.close()}
 })().catch(err=>{console.error(err);process.exit(1)});

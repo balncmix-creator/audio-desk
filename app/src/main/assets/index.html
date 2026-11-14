@@ -70,6 +70,18 @@ main{padding-bottom:190px}
 @media(max-width:600px){.brand{font-size:12px;letter-spacing:-.8px;line-height:1.5}.top{gap:8px}.header-desk-holder{width:46px;height:46px;flex-basis:46px}.sub{font-size:8px;letter-spacing:.55px}.top #refresh{padding:7px 6px;font-size:9px;box-shadow:2px 2px 0 #555}}
 @media(max-width:360px){.brand{font-size:10px}.header-desk-holder{width:40px;height:40px;flex-basis:40px}}
 
+
+/* Sample pack previews retain the quiet grey treatment used across Audio Desk. */
+.sample-release-section{border-top:1px dashed #555;margin-top:20px;padding-top:14px}
+.sample-release-card{background:#171717;border:1px solid #353535;padding:12px;margin:12px 0}
+.sample-release-title{color:#eee;font-size:13px;font-weight:700;line-height:1.5}
+.sample-release-meta{color:#aaa;font-size:9px;margin:7px 0}
+.sample-demo-panel{margin-top:12px;padding-top:10px;border-top:1px dashed #454545}
+.sample-demo-button{font-family:inherit;font-size:10px;cursor:pointer}
+.sample-demo-output{margin-top:8px;font-size:10px;color:#bcbcbc;line-height:1.65}
+.sample-demo-output audio{display:block;width:100%;max-width:100%;height:48px;margin:8px 0}
+.sample-demo-output a{display:inline-block;margin-top:5px}
+.sample-demo-note{margin-top:5px;color:#aaa;font-size:9px}
 </style>
 </head>
 <body>
@@ -136,6 +148,11 @@ main{padding-bottom:190px}
     </div>
     <div id="resourceCount" class="status"></div>
     <div id="resourceList"></div>
+    <div id="sampleReleaseSection" class="sample-release-section" hidden>
+      <div class="resource-title">LATEST SAMPLE PACKS · LISTEN BEFORE YOU DOWNLOAD</div>
+      <p class="note">Choose a sample-pack article and tap FIND DEMO. Original publisher audio plays here when a direct preview is available; some publishers only offer an external player.</p>
+      <div id="sampleReleases"></div>
+    </div>
   </div>
   <p class="foot">THE AUDIO DESK · Resource listings are for discovery. Check each publisher's current terms, licensing and redistribution permissions before downloading or using material.</p>
 </div>
@@ -472,9 +489,33 @@ function renderResourceDirectory(){
   ?"Automatically scan multiple Google News and Bing News query groups for recent audio-software release mentions across torrent/warez domains and broader audio categories. Results are leads only; indexing is incomplete and listings are not verified."
   :"A separate directory for sample packs, loops, one-shots, instruments, Foley and sound libraries. Free/paid labels are indicative; verify the current terms on the source site.";
  $("resourceCount").textContent=list.length+" sources · "+unique.length+" unique domains";
- $("resourceList").innerHTML=list.length?list.map(x=>'<div class="resource-card"><div class="resource-title">'+esc(x.name)+'</div><div class="resource-meta">'+esc(x.category)+' · '+esc(x.access)+'</div><p class="resource-desc">'+esc(x.desc)+'</p><a href="'+esc(x.url)+'" target="_blank" rel="noopener">VISIT SOURCE ↗</a></div>').join(""):'<div class="empty">No resources match this search or filter.</div>';
+ $("resourceList").innerHTML=list.length?list.map(x=>'<div class="resource-card"><div class="resource-title">'+esc(x.name)+'</div><div class="resource-meta">'+esc(x.category)+' · '+esc(x.access)+'</div><p class="resource-desc">'+esc(x.desc)+'</p><a href="'+esc(x.url)+'" target="_blank" rel="noopener">BROWSE PACKS ↗</a></div>').join(""):'<div class="empty">No resources match this search or filter.</div>';
+ renderSamplePackReleases();
+}
+function renderSamplePackReleases(){
+ const section=$("sampleReleaseSection");
+ if(!section)return;
+ section.hidden=activeView!=="samples";
+ if(section.hidden)return;
+ const byLink=new Map();
+ for(const story of [...items,...savedItems]){
+  if(story&&story.cat==="Sample packs"&&story.link&&/^https:\/\//i.test(story.link))byLink.set(story.key||story.link,story);
+ }
+ const q=($("search").value||"").toLowerCase().trim();
+ const releases=[...byLink.values()].filter(x=>!q||(x.title+" "+x.desc+" "+x.source).toLowerCase().includes(q))
+  .sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0)).slice(0,24);
+ $("sampleReleases").innerHTML=releases.length?releases.map(x=>
+  '<div class="sample-release-card"><div class="sample-release-title">'+esc(x.title)+'</div>'+
+  '<div class="sample-release-meta">'+esc(x.source)+' · '+(x.date?new Date(x.date).toLocaleDateString():"DATE UNAVAILABLE")+'</div>'+
+  '<p class="resource-desc">'+esc(x.desc)+'</p>'+
+  '<a href="'+esc(x.link)+'" target="_blank" rel="noopener">OPEN PACK ↗</a>'+
+  sampleDemoMarkup(x)+
+  '</div>'
+ ).join(""):'<div class="empty">No sample-pack articles are cached yet. Refresh the news feed or browse the publishers above. Previews are available for actual pack announcements, not entire stores.</div>';
+ wireSampleDemoButtons($("sampleReleases"));
 }
 function setView(view){
+ if(view!==activeView)pauseSampleDemos();
  activeView=view;
  const news=view==="news";
  $("resourceHub").hidden=news;
@@ -491,6 +532,118 @@ function setView(view){
  if(!news){if(view==="torrents")loadTorrentMonitor();else renderResourceDirectory();}
 }
 
+// Publisher-supplied demo URLs only; the app never creates substitute demo music.
+const sampleDemoCache=readStore("ar_sample_demo_urls",{})||{};
+const pendingSampleDemos=new Map();
+let nextSampleDemoId=0;
+function safeDemoURL(raw){
+ try{
+  const u=new URL(raw);
+  if(u.protocol!=="https:"||u.username||u.password||u.port&&u.port!=="443")return "";
+  if(/^(?:localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|169\.254\.)$/i.test(u.hostname))return "";
+  return u.href;
+ }catch{return ""}
+}
+function normalizeSampleDemo(raw){
+ if(!raw||typeof raw!=="object"||!["audio","external"].includes(raw.kind))return null;
+ const url=safeDemoURL(raw.url);
+ return url?{kind:raw.kind,url}:null;
+}
+function extractFeedSampleDemo(it){
+ const candidates=[it.enclosure,it.media,it["media:content"],it.audio,it.demo];
+ for(const candidate of candidates){
+  if(!candidate)continue;
+  const src=typeof candidate==="string"?candidate:(candidate.url||candidate.link||candidate.src);
+  const type=typeof candidate==="string"?"":String(candidate.type||"");
+  const url=safeDemoURL(src);
+  if(url&&(type.startsWith("audio/")||/\.(?:mp3|m4a|aac|ogg|oga|wav|opus)(?:[?#]|$)/i.test(url)))return {kind:"audio",url};
+ }
+ const container=document.createElement("div");
+ container.innerHTML=[it.content,it.content_encoded,it.description].filter(Boolean).join(" ");
+ for(const media of container.querySelectorAll("audio,source,a[href]")){
+  const url=safeDemoURL(media.getAttribute("src")||media.getAttribute("href"));
+  if(!url)continue;
+  const mime=media.getAttribute("type")||"";
+  if(media.tagName==="A"&&!/\.(?:mp3|m4a|aac|ogg|oga|wav|opus)(?:[?#]|$)/i.test(url))continue;
+  if(mime.startsWith("audio/")||/\.(?:mp3|m4a|aac|ogg|oga|wav|opus)(?:[?#]|$)/i.test(url))
+   return {kind:"audio",url};
+ }
+ return null;
+}
+function sampleDemoMarkup(story){
+ return '<div class="sample-demo-panel">'+
+  '<button type="button" class="primary sample-demo-button" data-demo-key="'+esc(story.key||story.link)+'">▶ FIND DEMO</button>'+
+  '<div class="sample-demo-output" aria-live="polite"></div></div>';
+}
+function pauseSampleDemos(){
+ for(const player of document.querySelectorAll(".sample-demo-output audio"))player.pause();
+}
+function showSampleDemo(key,record){
+ for(const btn of document.querySelectorAll("[data-demo-key]")){
+  if(btn.dataset.demoKey!==key)continue;
+  const panel=btn.closest(".sample-demo-panel");
+  if(!panel)continue;
+  const output=panel.querySelector(".sample-demo-output");
+  const story=[...items,...savedItems].find(x=>(x.key||x.link)===key);
+  const openLink=story&&safeDemoURL(story.link)||"";
+  btn.disabled=false;
+  if(record&&record.kind==="audio"){
+   btn.textContent="♫ DEMO FOUND";
+   output.innerHTML='<div>ORIGINAL PUBLISHER PREVIEW · TAP PLAY</div>'+
+     '<audio controls preload="none" src="'+esc(record.url)+'" aria-label="Sample pack audio preview"></audio>'+
+     '<div class="sample-demo-note">One preview plays at a time. Audio streams from the publisher; no files are downloaded by Audio Desk.</div>';
+   const player=output.querySelector("audio");
+   player.addEventListener("play",()=>{
+    for(const other of document.querySelectorAll(".sample-demo-output audio"))if(other!==player)other.pause();
+   });
+   player.addEventListener("error",()=>{output.querySelector(".sample-demo-note").textContent="This preview cannot play in your browser. Open the publisher page to listen there.";});
+  }else if(record&&record.kind==="external"){
+   btn.textContent="♫ EXTERNAL DEMO";
+   output.innerHTML='<div>Publisher hosts this preview on an external audio/video player.</div>'+
+     '<a href="'+esc(record.url)+'" target="_blank" rel="noopener">▶ LISTEN ON PUBLISHER ↗</a>';
+  }else{
+   btn.textContent="NO INLINE DEMO";
+   output.innerHTML='<div>The publisher did not expose a playable preview for this article.</div>'+
+     (openLink?'<a href="'+esc(openLink)+'" target="_blank" rel="noopener">OPEN PACK TO LISTEN ↗</a>':"");
+  }
+ }
+}
+function receiveSampleDemo(id,result){
+ const pending=pendingSampleDemos.get(String(id));if(!pending)return;
+ clearTimeout(pending.timer);
+ pendingSampleDemos.delete(String(id));
+ const demo=normalizeSampleDemo(result);
+ if(demo){
+  sampleDemoCache[pending.key]=demo;
+  const keys=Object.keys(sampleDemoCache);
+  if(keys.length>80)for(const key of keys.slice(0,keys.length-80))delete sampleDemoCache[key];
+  try{localStorage.setItem("ar_sample_demo_urls",JSON.stringify(sampleDemoCache))}catch(e){}
+ }
+ showSampleDemo(pending.key,demo);
+}
+function requestSampleDemo(key,btn){
+ if([...pendingSampleDemos.values()].some(x=>x.key===key))return;
+ const story=[...items,...savedItems].find(x=>(x.key||x.link)===key);
+ if(!story)return;
+ const found=normalizeSampleDemo(sampleDemoCache[key]||story.demo);
+ if(found){showSampleDemo(key,found);return}
+ if(!window.AudioDesk||typeof window.AudioDesk.lookupSampleDemo!=="function"){
+  showSampleDemo(key,null);return;
+ }
+ const id=String(++nextSampleDemoId);
+ btn.disabled=true;
+ btn.textContent="SEARCHING PUBLISHER…";
+ const timer=setTimeout(()=>receiveSampleDemo(id,null),12000);
+ pendingSampleDemos.set(id,{key,timer});
+ try{window.AudioDesk.lookupSampleDemo(story.link,id)}
+ catch(e){receiveSampleDemo(id,null)}
+}
+function wireSampleDemoButtons(root){
+ for(const btn of root.querySelectorAll("[data-demo-key]")){
+  btn.onclick=()=>requestSampleDemo(btn.dataset.demoKey,btn);
+ }
+}
+document.addEventListener("visibilitychange",()=>{if(document.hidden)pauseSampleDemos()});
 const storyAccentCache=new Map(),pendingStoryAccents=new Map();
 let storyAccentSequence=0;
 function setStoryImageAccent(img,rgb){
@@ -648,10 +801,11 @@ function render(){
  let list=available.filter(x=>(active==="All"|| (active==="Saved"?saved.includes(x.key):x.cat===active)) && (!q||(x.title+" "+x.source+" "+x.desc).toLowerCase().includes(q)));
  list.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
  $("count").textContent=`${list.length} headlines · ${items.length} collected`;
- $("stories").innerHTML=list.length?list.map(x=>`<article class="story">${x.image?`<img class="storymedia" src="${esc(x.image)}" alt="Image for ${esc(x.title)}" loading="lazy" decoding="async" onload="storyImageLoaded(this)" onerror="storyImageFailed(this)">`:""}<div class="meta"><span>${esc(x.source)}</span><span class="dot"></span><span>${esc(x.cat)}</span><span class="dot"></span><span>${x.date?new Date(x.date).toLocaleString():"Date unavailable"}</span></div><h2><a class="storytitle" href="${esc(x.link)}" target="_blank" rel="noopener">${esc(x.title)}</a></h2><p>${esc(x.desc)}</p><div class="storyfoot"><span class="note">OPEN STORY ↗</span><button class="save" data-save="${esc(x.key)}">${saved.includes(x.key)?"★ Saved":"☆ Save"}</button></div></article>`).join(""):`<div class="empty">No headlines match this view. Try another category or refresh the feeds.</div>`;
+ $("stories").innerHTML=list.length?list.map(x=>`<article class="story">${x.image?`<img class="storymedia" src="${esc(x.image)}" alt="Image for ${esc(x.title)}" loading="lazy" decoding="async" onload="storyImageLoaded(this)" onerror="storyImageFailed(this)">`:""}<div class="meta"><span>${esc(x.source)}</span><span class="dot"></span><span>${esc(x.cat)}</span><span class="dot"></span><span>${x.date?new Date(x.date).toLocaleString():"Date unavailable"}</span></div><h2><a class="storytitle" href="${esc(x.link)}" target="_blank" rel="noopener">${esc(x.title)}</a></h2><p>${esc(x.desc)}</p><div class="storyfoot"><span class="note">OPEN STORY ↗</span><button class="save" data-save="${esc(x.key)}">${saved.includes(x.key)?"★ Saved":"☆ Save"}</button></div>${x.cat==="Sample packs"?sampleDemoMarkup(x):""}</article>`).join(""):`<div class="empty">No headlines match this view. Try another category or refresh the feeds.</div>`;
  document.querySelectorAll("#stories .story").forEach((card,i)=>{card.__article=list[i]});
  document.querySelectorAll("#stories .storymedia").forEach(img=>{if(img.complete&&img.naturalWidth)storyImageLoaded(img)});
  watchVisibleStories();
+ wireSampleDemoButtons($("stories"));
  document.querySelectorAll("[data-save]").forEach(b=>b.onclick=()=>{let k=b.dataset.save;saved=saved.includes(k)?saved.filter(v=>v!==k):[...saved,k];rememberSaved();render()});
 }
 // Publisher feed discovery is bounded, opt-out aware, and only checks curated sites.
@@ -727,7 +881,7 @@ async function fetchFeed(feed){
   const link=it.link||it.guid||"#";
   const title=it.title||"Untitled";
   const images=extractImageCandidates(it);
-  return {title,link,date:it.pubDate||"",desc:cleanDesc(it.description||it.content),image:images[0]||"",images,source:feed.name,cat:classify({title,description:it.description||it.content},feed),key:link};
+  return {title,link,date:it.pubDate||"",desc:cleanDesc(it.description||it.content),image:images[0]||"",images,demo:extractFeedSampleDemo(it),source:feed.name,cat:classify({title,description:it.description||it.content},feed),key:link};
  });
 }
 function normalizeStoryUrl(raw){

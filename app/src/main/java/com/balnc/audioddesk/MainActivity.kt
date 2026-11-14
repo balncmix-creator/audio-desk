@@ -35,6 +35,7 @@ class MainActivity : Activity() {
     private lateinit var imageAccents: ImageAccentSampler
     private lateinit var articleImages: ArticleImageFinder
     private lateinit var feedDiscovery: PublisherFeedDiscovery
+    private lateinit var sampleDemos: SampleDemoFinder
     private var destroyed = false
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -42,6 +43,7 @@ class MainActivity : Activity() {
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
         webView.settings.loadsImagesAutomatically = true
+        webView.settings.mediaPlaybackRequiresUserGesture = true
         webView.settings.allowFileAccess = false
         webView.settings.allowContentAccess = false
         webView.webChromeClient = WebChromeClient()
@@ -79,6 +81,7 @@ class MainActivity : Activity() {
         imageAccents = ImageAccentSampler(appWebView.settings.userAgentString)
         articleImages = ArticleImageFinder(appWebView.settings.userAgentString)
         feedDiscovery = PublisherFeedDiscovery(appWebView.settings.userAgentString)
+        sampleDemos = SampleDemoFinder(appWebView.settings.userAgentString)
         appWebView.addJavascriptInterface(AppBridge(), "AudioDesk")
         appWebView.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?) =
@@ -169,6 +172,22 @@ class MainActivity : Activity() {
     }
 
     private inner class AppBridge {
+        @JavascriptInterface fun lookupSampleDemo(url: String, requestId: String) {
+            if (requestId.length !in 1..32 || !requestId.all { it.isDigit() }) return
+            sampleDemos.find(url) { result ->
+                runOnUiThread {
+                    if (!destroyed) {
+                        val record = result?.let {
+                            JSONObject().put("kind", it.kind).put("url", it.url).toString()
+                        } ?: "null"
+                        appWebView.evaluateJavascript(
+                            "window.receiveSampleDemo&&window.receiveSampleDemo(" +
+                                JSONObject.quote(requestId) + "," + record + ")", null
+                        )
+                    }
+                }
+            }
+        }
         @JavascriptInterface fun discoverPublisherFeeds(seeds: String, requestId: String) {
             if (requestId.length !in 1..32 || !requestId.all { it.isDigit() } || seeds.length > 8000) return
             feedDiscovery.discover(seeds) { found ->
@@ -252,6 +271,7 @@ class MainActivity : Activity() {
         if (::imageAccents.isInitialized) imageAccents.close()
         if (::articleImages.isInitialized) articleImages.close()
         if (::feedDiscovery.isInitialized) feedDiscovery.close()
+        if (::sampleDemos.isInitialized) sampleDemos.close()
         refreshHandler.removeCallbacks(refreshFailsafe)
         if (::browserWebView.isInitialized) browserWebView.destroy()
         if (::appWebView.isInitialized) appWebView.destroy()

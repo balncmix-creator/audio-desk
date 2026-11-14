@@ -2,7 +2,7 @@
 
 **A retro-styled Android news desk for people who make sound.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk v1.23 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v1.23/Audio-Desk-v1.23.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk v1.24 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v1.23/Audio-Desk-v1.23.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
 
@@ -12,6 +12,8 @@
 |:--:|:--:|:--:|
 | ![Audio Desk news reader showing audio news cards](docs/screenshots/news-feed.png) | ![The single Post Production news category](docs/screenshots/post-production.png) | ![Audio Desk offline screen with broken-down desk illustration](docs/screenshots/offline.png) |
 
+**Sample pack audition screen:** ![Audio Desk sample pack release cards with Find Demo control](docs/screenshots/sample-packs.png)
+
 *Genuine captures of the app's HTML interface at a phone-sized viewport, rendered in Chromium. The headlines and thumbnail artwork are **illustrative demo content**, not live news; Android system chrome and fonts may differ.*
 
 ## What can Audio Desk do?
@@ -20,6 +22,7 @@
 - **Film/TV post-production radar:** Discover coverage of dialogue editorial, ADR, Foley, Atmos, immersive mixing, restoration, broadcast delivery and related tools in one unified category.
 - **Subtle image color accents:** Dark grey article cards remain neutral without an image and receive a restrained color tint when an article has an image.
 - **Offline reading:** Previously fetched and saved stories stay visible without a connection; the familiar desk becomes a broken-down offline illustration.
+- **Sample pack auditions:** Listen to real publisher audio previews for sample-pack releases when available, or open their original demo player.
 - **Customizable sources and bookmarks:** Add or remove RSS feeds and save stories for later.
 - **Discovery tools:** Search news sources and explore relevant REAPER and audio-software developments.
 
@@ -45,6 +48,13 @@ node scripts/capture-readme-screenshots.cjs
 The last command captures the app's interface into `docs/screenshots/` with labeled fictional example content. Tests and browser screenshots are not substitutes for physical-device testing.
 
 ## Changelog
+
+### Version 1.24
+- **Sample pack audition:** The Sample Packs directory now lists recent sample-pack news, with a per-pack **Find Demo** button. The Sample Pack News filter also offers audition controls.
+- Plays real publisher-provided MP3/M4A/WAV/OGG previews directly inside the app using a tap-to-play HTML5 audio player; only one preview plays at a time.
+- When RSS contains no demo, Android securely checks the publisher article's audio metadata, HTML5 audio tags, and SoundCloud/YouTube embeds. For external demos or unavailable direct media, users can open the original publisher/player.
+- Preview links are cached locally; audio files are not downloaded or reproduced. Some publishers do not provide an embeddable demo.
+
 
 ### Version 1.23
 - Add direct audio industry coverage from Rekkerd, A Sound Effect and Bedroom Producers Blog.
@@ -132,7 +142,7 @@ including network failures. They do not replace Android device testing.
 
 GitHub Actions builds an installable debug APK and an unsigned Play review bundle
 on pushes to `main`. Download the `Audio-Desk-APK` artifact from the successful
-build. Version 1.23 uses version code 24 and targets Android 16 / API 36.
+build. Version 1.24 uses version code 25 and targets Android 16 / API 36.
 
 Release builds generate a separate asset bundle with torrent/warez discovery UI,
 feed definitions and code removed. The ordinary debug APK retains its existing
