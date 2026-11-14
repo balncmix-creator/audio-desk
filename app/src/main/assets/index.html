@@ -645,6 +645,24 @@ body[data-clock-style="9"] #launcherClock{font-family:monospace!important;font-w
    </div>
   </div>
  </section>
+
+ <div id="launcherWallpaperDialog" class="customize-overlay" role="dialog" aria-modal="true" aria-label="Choose wallpaper" hidden>
+  <div class="customize-panel">
+   <div class="customize-head"><strong>PIXEL WALLPAPERS</strong><button id="wallpaperClose" type="button" aria-label="Close wallpapers">×</button></div>
+   <div id="wallpaperGrid" class="wallpaper-grid"></div>
+   <label class="wallpaper-motion"><input type="checkbox" id="wallpaperMotionToggle"><span>Animated effects (5 wallpapers)</span></label>
+   <p class="customize-tip">Animations pause in reduced-motion mode. Optimized 8-bit artwork is bundled offline.</p>
+  </div>
+ </div>
+ <div id="launcherClockDialog" class="customize-overlay" role="dialog" aria-modal="true" aria-label="Customize clock" hidden>
+  <div class="customize-panel">
+   <div class="customize-head"><strong>CLOCK DESIGN</strong><button id="clockClose" type="button" aria-label="Close clock settings">×</button></div>
+   <div id="clockDesignGrid" class="clock-design-grid"></div>
+   <div class="clock-size-label"><span>Clock size</span><output id="clockSizeValue">66px</output></div>
+   <input id="clockSizeSlider" type="range" min="48" max="110" value="66" step="2" aria-label="Clock size">
+   <p class="customize-tip">Press and hold the Home clock anytime to change its appearance.</p>
+  </div>
+ </div>
  <section class="launcher-page" id="launcherAppsPage" aria-label="All applications" hidden>
   <div class="launcher-titlebar"><strong>[ ALL APPLICATIONS ]</strong><span class="launcher-label">A—Z</span></div>
   <input id="launcherAppSearch" class="search launcher-search" type="search"
