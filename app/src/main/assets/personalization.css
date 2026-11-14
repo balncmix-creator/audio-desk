@@ -1,0 +1,90 @@
+@font-face{font-family:"Press Start 2P";src:url("fonts/press-start-2p.ttf") format("truetype");font-weight:400;font-display:swap}
+@font-face{font-family:Silkscreen;src:url("fonts/silkscreen-regular.ttf") format("truetype");font-weight:400;font-display:swap}
+@font-face{font-family:Silkscreen;src:url("fonts/silkscreen-bold.ttf") format("truetype");font-weight:700;font-display:swap}
+#wallpaperStage{display:none;position:fixed;inset:0;z-index:0;pointer-events:none;background:#0b0b0b;overflow:hidden}
+body[data-home-page="home"] #wallpaperStage{display:block}
+.wallpaper-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:35% center;image-rendering:auto}
+body[data-home-page="home"] #launcherShell{background:transparent!important}
+body[data-home-page="home"] #launcherHomePage{padding-top:calc(var(--status-top,24px) + clamp(55px,9.1dvh,92px));padding-bottom:calc(95px + var(--system-bottom,0px))}
+body[data-home-page="apps"] #launcherShell{padding-top:calc(11px + var(--status-top,24px))}
+body[data-home-page="events"] header{padding-top:calc(17px + var(--status-top,24px))}
+body[data-home-page="home"] .launcher-settings-fab,body[data-home-page="home"] .launcher-dots{bottom:calc(24px + var(--system-bottom,0px))}
+body[data-home-page="home"] .launcher-clock{touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:pointer}
+body[data-home-page="home"][data-wallpaper-light="true"] .launcher-clock .clock,
+body[data-home-page="home"][data-wallpaper-light="true"] #launcherFavorites .app-name,
+body[data-home-page="home"][data-wallpaper-light="true"] #launcherFavorites .pixel-letter{color:#10151b}
+body[data-home-page="home"][data-wallpaper-light="true"] .launcher-clock .clock-date{color:#27323a}
+body[data-home-page="home"][data-wallpaper-light="true"] #launcherFavorites .pixel-icon img{filter:invert(.10)}
+body[data-home-page="home"][data-wallpaper-light="true"] .launcher-dots .active{color:#1d2931}
+#wallpaperEffect{position:absolute;inset:-64px;pointer-events:none;opacity:0}
+body[data-wallpaper-motion="rain"] #wallpaperEffect{opacity:.6;background:repeating-linear-gradient(100deg,transparent 0 48px,rgba(109,214,255,.65) 49px 50px,transparent 51px 96px);animation:wall-rain 1.8s linear infinite}
+body[data-wallpaper-motion="aurora"] #wallpaperEffect{opacity:.5;background:linear-gradient(115deg,transparent 35%,rgba(69,255,176,.6) 63%,rgba(109,100,255,.5) 73%,transparent 85%);animation:wall-glow 8s ease-in-out infinite alternate}
+body[data-wallpaper-motion="stars"] #wallpaperEffect{opacity:.7;background-image:radial-gradient(#fff 1px,transparent 2px),radial-gradient(#a8baff 1px,transparent 2px);background-size:73px 97px,139px 163px;animation:wall-twinkle 4s ease-in-out infinite alternate}
+body[data-wallpaper-motion="ocean"] #wallpaperEffect{inset:55% -64px -64px;opacity:.5;background:repeating-linear-gradient(180deg,transparent 0 22px,rgba(205,250,255,.65) 23px 24px,transparent 25px 44px);animation:wall-shimmer 5s ease-in-out infinite alternate}
+body[data-wallpaper-motion="studio"] #wallpaperEffect{opacity:.75;background-image:radial-gradient(#20f7d7 2px,transparent 3px),radial-gradient(#ffbc50 2px,transparent 3px);background-size:91px 159px,127px 141px;animation:wall-twinkle 2.5s ease-in-out infinite alternate}
+@keyframes wall-rain{from{transform:translate3d(0,-48px,0)}to{transform:translate3d(0,48px,0)}}
+@keyframes wall-glow{from{opacity:.25;transform:translate3d(-4%,0,0)}to{opacity:.6;transform:translate3d(4%,0,0)}}
+@keyframes wall-twinkle{from{opacity:.18}to{opacity:.8}}
+@keyframes wall-shimmer{from{opacity:.2;transform:translate3d(0,-10px,0)}to{opacity:.6;transform:translate3d(0,10px,0)}}
+body:not([data-home-page="home"]) #wallpaperEffect,body[data-motion-paused="true"] #wallpaperEffect{animation-play-state:paused!important}
+body.low-power #wallpaperEffect{animation-timing-function:steps(12,end)}
+.customize-overlay[hidden]{display:none!important}
+.customize-overlay{position:fixed;inset:0;z-index:52;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.7)}
+.customize-panel{box-sizing:border-box;width:min(100%,560px);max-height:82dvh;overflow:auto;overscroll-behavior:contain;background:#151515;border:1px solid #545454;border-bottom:0;padding:18px 16px calc(22px + var(--system-bottom,0px));color:#f4f4f4;font:13px/1.45 system-ui,sans-serif}
+.customize-head{display:flex;align-items:center;justify-content:space-between;margin:0 0 17px}
+.customize-head strong{font:700 15px/1.4 system-ui,sans-serif}
+.customize-head button{box-shadow:none;border:0;background:transparent;font-size:20px}
+.wallpaper-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+.wallpaper-choice{display:block;position:relative;width:100%;border:1px solid #525252;box-shadow:none;background:#111;padding:4px;color:#eee;font:11px/1.3 system-ui,sans-serif;text-align:left;text-transform:none}
+.wallpaper-choice[aria-pressed="true"]{outline:2px solid white;outline-offset:1px}
+.wallpaper-thumb{width:100%;aspect-ratio:9/20;display:block;object-fit:cover;object-position:35% center;margin-bottom:5px;background:#222}
+.wallpaper-choice small{color:#aaa;display:block;font-size:10px;margin-top:2px}
+.wallpaper-motion{margin:16px 0 5px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.wallpaper-motion select{max-width:62%;font:13px system-ui;background:#222;color:#eee;padding:10px;border:1px solid #666}
+.customize-tip{font-size:11px;color:#aaa;line-height:1.5}
+#customWallpaperChoose{width:100%;margin-bottom:12px;font:13px system-ui;text-transform:none;box-shadow:none}
+#customWallpaperStatus{min-height:1.5em}
+#customWallpaperCrop{display:flex;align-items:center;gap:12px;margin:12px 0}
+#customWallpaperCrop[hidden]{display:none}
+#customWallpaperPosition{flex:1;min-width:0;accent-color:#fff}
+.clock-design-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:18px}
+.clock-choice{box-shadow:none;text-align:left;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:8px;border:1px solid #666;background:#202020;min-height:100px;min-width:0;padding:10px 8px;text-transform:none;overflow:hidden}
+.clock-choice[aria-pressed="true"]{outline:2px solid #fff;outline-offset:-2px}
+.clock-choice-name{font:11px system-ui;color:#aaa}
+.clock-size-label{display:flex;justify-content:space-between;font:13px system-ui;margin-bottom:8px}
+#clockSizeSlider{display:block;width:100%;accent-color:#fff;margin:0 0 16px}
+/* The same style rules render the actual clock and every miniature preview. */
+.clock-face{font-family:var(--clock-font,system-ui),sans-serif!important;font-weight:var(--clock-weight,450)!important;letter-spacing:var(--clock-spacing,-.045em)!important;font-variant-numeric:tabular-nums;line-height:1.12!important;white-space:nowrap;text-shadow:var(--clock-shadow,none);border:var(--clock-border,0);border-bottom:var(--clock-bottom,var(--clock-border,0));padding:var(--clock-padding,0);box-sizing:border-box;width:fit-content;max-width:100%}
+.clock-face[data-design="1"]{--clock-font:"Press Start 2P";--clock-weight:400;--clock-spacing:-.075em}
+.clock-face[data-design="2"]{--clock-font:"Courier New",monospace;--clock-weight:700;--clock-spacing:-.075em}
+.clock-face[data-design="3"]{--clock-weight:200;--clock-spacing:.015em}
+.clock-face[data-design="4"]{--clock-font:"Silkscreen",monospace;--clock-weight:700;--clock-spacing:-.06em}
+.clock-face[data-design="5"]{--clock-font:monospace;--clock-weight:900;--clock-spacing:0;--clock-shadow:.045em .045em 0 #666}
+.clock-face[data-design="6"]{--clock-weight:900;--clock-spacing:-.09em}
+.clock-face[data-design="7"]{--clock-font:"Courier New",monospace;--clock-weight:400;--clock-spacing:-.03em;--clock-bottom:.03em solid currentColor}
+.clock-face[data-design="8"]{--clock-font:"Silkscreen",monospace;--clock-weight:400;--clock-spacing:-.06em;--clock-shadow:0 0 .12em rgba(96,255,226,.8)}
+.clock-face[data-design="9"]{--clock-font:monospace;--clock-weight:900;--clock-spacing:-.045em;--clock-border:.03em solid currentColor;--clock-padding:.09em}
+.clock-choice .clock-sample{font-size:clamp(15px,5.2vw,25px);color:#eee}
+body[data-home-page="home"] #launcherClock{font-size:min(var(--clock-size,66px),var(--clock-fit,110px))!important;overflow-wrap:normal}
+/* Short compositor animations keep touches responsive. No blur or perpetual JS loop. */
+:root{--motion-duration:240ms;--motion-ease:cubic-bezier(.2,.75,.25,1)}
+body.low-power{--motion-duration:150ms}
+.launcher-enter{animation:launcher-arrive var(--motion-duration) var(--motion-ease) both}
+body.low-power .launcher-enter{animation:launcher-arrive var(--motion-duration) var(--motion-ease) both!important}
+@keyframes launcher-arrive{from{opacity:.35;transform:translate3d(var(--page-enter,22px),0,0)}to{opacity:1;transform:translate3d(0,0,0)}}
+#launcherAppsPage.search-rise{animation:search-rise var(--motion-duration) var(--motion-ease) both}
+@keyframes search-rise{from{opacity:.35;transform:translate3d(0,30px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
+.customize-overlay:not([hidden]){animation:surface-fade 180ms ease both}
+.customize-overlay:not([hidden]) .customize-panel{animation:sheet-rise var(--motion-duration) var(--motion-ease) both}
+#launcherHomeOptions:not([hidden]),#launcherShortcutMenu:not([hidden]){animation:sheet-rise var(--motion-duration) var(--motion-ease) both}
+@keyframes surface-fade{from{opacity:0}to{opacity:1}}
+@keyframes sheet-rise{from{opacity:0;transform:translate3d(0,24px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
+.launcher-app,.launcher-options-action,.clock-choice,.wallpaper-choice,.n-star,.launcher-settings-fab{transition:transform 140ms var(--motion-ease),background-color 180ms,border-color 180ms,color 180ms}
+.launcher-app:active,.clock-choice:active,.wallpaper-choice:active,.launcher-options-action:active,.launcher-settings-fab:active{transform:scale(.96)}
+.n-star:active{transform:scale(.85)}
+.launcher-dots span{transition:color 180ms}
+@media(prefers-reduced-motion:reduce){
+ .launcher-enter,body.low-power .launcher-enter,#launcherAppsPage.search-rise,.customize-overlay,.customize-panel,#launcherHomeOptions,#launcherShortcutMenu{animation:none!important}
+ #wallpaperEffect{animation:none!important;opacity:0!important}
+ .launcher-app,.launcher-options-action,.clock-choice,.wallpaper-choice,.n-star,.launcher-settings-fab,.launcher-dots span{transition:none!important;transform:none!important}
+}

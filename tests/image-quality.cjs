@@ -37,6 +37,7 @@ const assert=require('node:assert/strict');
     description:'A tiny RSS thumbnail should never be stretched.',thumbnail:'https://publisher.example/thumbnail-96x96.png'}
   ];
   await page.route('**/*',route=>{
+  const localAsset = require('./serve-assets.cjs')(route); if(localAsset)return localAsset;
    const url=route.request().url();
    if(url==='https://appassets.androidplatform.net/assets/index.html')
     return route.fulfill({contentType:'text/html',body:fs.readFileSync(path.join(__dirname,'../app/src/main/assets/index.html'))});

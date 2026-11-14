@@ -23,6 +23,7 @@ const assert=require('node:assert/strict');
    };
   });
   await page.route('**/*',route=>{
+  const localAsset = require('./serve-assets.cjs')(route); if(localAsset)return localAsset;
    const url=route.request().url();
    if(url==='https://appassets.androidplatform.net/assets/index.html')
     return route.fulfill({contentType:'text/html',body:fs.readFileSync(path.join(__dirname,'../app/src/main/assets/index.html'))});

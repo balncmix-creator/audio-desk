@@ -8,6 +8,7 @@ const assert=require('node:assert/strict');
   const page=await browser.newPage({viewport:{width:393,height:852}});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/*',route=>{
+  const localAsset = require('./serve-assets.cjs')(route); if(localAsset)return localAsset;
    const url=route.request().url();
    if(url==='https://appassets.androidplatform.net/assets/index.html')return route.fulfill({contentType:'text/html',body:fs.readFileSync(path.join(__dirname,'../app/src/main/assets/index.html'),'utf8')});
    if(url.endsWith('/assets/desk-premium.webp'))return route.fulfill({contentType:'image/webp',body:fs.readFileSync(path.join(__dirname,'../app/src/main/assets/desk-premium.webp'))});

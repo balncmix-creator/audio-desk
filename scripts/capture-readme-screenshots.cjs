@@ -14,6 +14,7 @@ const assert=require('node:assert/strict');
   const errors=[];page.on('pageerror',err=>errors.push(err.message));
   const appUrl='https://appassets.androidplatform.net/assets/index.html';
   await page.route('**/*',route=>{
+   const localAsset=require('../tests/serve-assets.cjs')(route);if(localAsset)return localAsset;
    const url=route.request().url();
    if(url===appUrl)return route.fulfill({contentType:'text/html',body:fs.readFileSync(path.join(__dirname,'../app/src/main/assets/index.html'))});
    if(url.includes('/assets/pixel-icons/') && url.endsWith('.svg')) {

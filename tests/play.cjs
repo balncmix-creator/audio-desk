@@ -14,6 +14,7 @@ const assert = require('node:assert/strict');
     const requests = [];
     page.on('pageerror', e => errors.push(e.message));
     await page.route('**/*', route => {
+  const localAsset = require('./serve-assets.cjs')(route,'play'); if(localAsset)return localAsset;
       const url = route.request().url();
       requests.push(decodeURIComponent(url));
       if (url === 'https://appassets.androidplatform.net/assets/index.html') return route.fulfill({contentType: 'text/html', body: html});
