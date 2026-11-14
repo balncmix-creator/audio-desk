@@ -16,6 +16,12 @@ const assert=require('node:assert/strict');
   await page.route('**/*',route=>{
    const url=route.request().url();
    if(url===appUrl)return route.fulfill({contentType:'text/html',body:fs.readFileSync(path.join(__dirname,'../app/src/main/assets/index.html'))});
+   if(url.includes('/assets/pixel-icons/') && url.endsWith('.svg')) {
+    const name=url.split('/').pop();
+    const iconPath=path.join(__dirname,'../app/src/main/assets/pixel-icons',name);
+    if(fs.existsSync(iconPath))
+     return route.fulfill({contentType:'image/svg+xml',body:fs.readFileSync(iconPath)});
+   }
    if(url==='https://appassets.androidplatform.net/assets/desk-premium.webp')
     return route.fulfill({contentType:'image/webp',body:fs.readFileSync(path.join(__dirname,'../app/src/main/assets/desk-premium.webp'))});
    if(url.includes('api.rss2json.com'))return route.fulfill({json:{status:'ok',items:[]}});
