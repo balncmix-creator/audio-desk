@@ -151,6 +151,8 @@ main{padding-bottom:190px}
 <section class="panel">
 <h3>Sources included</h3>
 <div id="sources"></div>
+<div class="row" style="margin-top:12px"><button class="primary" id="discoverFeeds">⌕ DISCOVER NEW FEEDS</button></div>
+<p class="note" id="discoveryStatus" role="status">Audio Desk checks trusted publishers for new RSS/Atom feeds every seven days while connected. Only verified feeds are added.</p>
 <p class="note">POST PRODUCTION RADAR is a dedicated stream for film/TV audio post, dialogue editing, ADR, Foley, sound effects, Dolby Atmos, ADM/BWF, spatial audio, Ambisonics, surround plugins, post-production DAWs, restoration, loudness, QC and delivery. It uses multiple topic-specific news searches. Plugin releases uses multiple global news searches in addition to KVR. It cannot guarantee every independent developer announcement, especially social-only posts. The Videos tab collects recent YouTube-related results via a live video-focused RSS search. Feeds are fetched through RSS2JSON. GitHub repository discovery uses GitHub's public API. Some forums and publishers restrict automated feeds, so this is a broad discovery feed rather than a guarantee of every post.</p>
 <p class="note">REAPER links: <a href="https://forum.cockos.com/forumdisplay.php?f=22" target="_blank" rel="noopener">Cockos Pre-Release forum</a> · <a href="https://github.com/ReaTeam/ReaScripts" target="_blank" rel="noopener">ReaTeam ReaScripts</a> · <a href="https://github.com/topics/reaper-scripts" target="_blank" rel="noopener">GitHub Reaper Scripts topic</a></p>
 </section>
@@ -192,9 +194,20 @@ const defaults = [
 {name:"Global — Audio software product launches",url:"https://news.google.com/rss/search?q=(audio+software+OR+sound+design+plugin+OR+mixing+plugin)+(new+OR+launches+OR+released)&hl=en-US&gl=US&ceid=US:en",cat:"Plugin releases"},
 {name:"HAL Audio — Company news",url:"https://news.google.com/rss/search?q=%22HAL+Audio%22+(plugin+OR+software+OR+release+OR+launch)&hl=en-US&gl=US&ceid=US:en",cat:"Plugin releases"},
 {name:"Audiofanzine — Plugin and software news",url:"https://news.google.com/rss/search?q=site%3Aaudiofanzine.com+(plugin+OR+plug-in)+news&hl=en-US&gl=US&ceid=US:en",cat:"Plugin releases"},
+// Confirmed direct publisher feeds rather than relying only on search indexes.
+{name:"A Sound Effect",url:"https://www.asoundeffect.com/feed/",cat:"Sound design"},
+{name:"Rekkerd — Audio plugins & samples",url:"https://rekkerd.org/feed/",cat:"Plugin releases"},
+{name:"Bedroom Producers Blog",url:"https://bedroomproducersblog.com/feed/",cat:"Plugin releases"},
+// Targeted search fallbacks for publishers that restrict RSS or publish in forums.
+{name:"Mix — Professional audio",url:"https://news.google.com/rss/search?q=site%3Amixonline.com+(audio+OR+post+OR+immersive)&hl=en-US&gl=US&ceid=US:en",cat:"Post Production"},
+{name:"postPerspective — Film & TV audio",url:"https://news.google.com/rss/search?q=site%3Apostperspective.com+(audio+OR+sound+OR+mixing)&hl=en-US&gl=US&ceid=US:en",cat:"Post Production"},
+{name:"Sonic State — Product releases",url:"https://news.google.com/rss/search?q=site%3Asonicstate.com+(plugin+OR+synth+OR+audio)&hl=en-US&gl=US&ceid=US:en",cat:"Plugin releases"},
+{name:"Gearspace — New Product Alert",url:"https://news.google.com/rss/search?q=site%3Agearspace.com%2Fforums%2Fnew-product-alert+(plugin+OR+audio+OR+software)&hl=en-US&gl=US&ceid=US:en",cat:"Plugin releases"},
+{name:"Reapertips — Scripts & REAPER",url:"https://news.google.com/rss/search?q=site%3Areapertips.com+(REAPER+OR+script+OR+ReaScript)&hl=en-US&gl=US&ceid=US:en",cat:"REAPER"},
+{name:"Sample Library Review",url:"https://news.google.com/rss/search?q=site%3Asamplelibraryreview.com+(sample+library+OR+Kontakt+OR+instrument)&hl=en-US&gl=US&ceid=US:en",cat:"Sample packs"},
+{name:"VI-Control — Sample libraries",url:"https://news.google.com/rss/search?q=site%3Avi-control.net%2Fcommunity+(sample+library+OR+new+instrument)&hl=en-US&gl=US&ceid=US:en",cat:"Sample packs"},
 {name:"Sound On Sound",url:"https://www.soundonsound.com/latest_news.xml",cat:"Production"},
-{name:"The REAPER Blog",url:"https://reaper.blog/feed/",cat:"Post Production"},
-{name:"The Pro Audio Files",url:"https://theproaudiofiles.com/feed/",cat:"Production"},
+{name:"The REAPER Blog",url:"https://reaper.blog/feed/",cat:"REAPER"},
 {name:"Attack Magazine",url:"https://attackmagazine.com/feed/",cat:"Production"},
 {name:"audioXpress",url:"https://audioxpress.com/rss",cat:"Hardware"},
 {name:"SonicScoop",url:"https://sonicscoop.com/feed/",cat:"Production"},
@@ -224,9 +237,23 @@ const defaults = [
 {name:"GitHub — MPL ReaScripts commits",url:"https://github.com/MichaelPilyavskiy/ReaScripts/commits/master.atom",cat:"REAPER"},
 {name:"Google News — new REAPER scripts on GitHub",url:"https://news.google.com/rss/search?q=(REAPER+OR+ReaScript)+GitHub+(script+OR+ReaPack)&hl=en-US&gl=US&ceid=US:en",cat:"REAPER"}
 ];
+
+const publisherSeeds=[
+ {name:"A Sound Effect",site:"https://www.asoundeffect.com/",cat:"Sound design"},
+ {name:"Mix",site:"https://www.mixonline.com/",cat:"Post Production"},
+ {name:"postPerspective",site:"https://postperspective.com/",cat:"Post Production"},
+ {name:"Rekkerd",site:"https://rekkerd.org/",cat:"Plugin releases"},
+ {name:"Bedroom Producers Blog",site:"https://bedroomproducersblog.com/",cat:"Plugin releases"},
+ {name:"Sonic State",site:"https://sonicstate.com/",cat:"Plugin releases"},
+ {name:"Gearspace",site:"https://gearspace.com/forums/new-product-alert.9/",cat:"Plugin releases"},
+ {name:"Reapertips",site:"https://reapertips.com/",cat:"REAPER"},
+ {name:"Sample Library Review",site:"https://www.samplelibraryreview.com/",cat:"Sample packs"},
+ {name:"VI-Control",site:"https://vi-control.net/community/",cat:"Sample packs"}
+];
+const autoFeeds=readStore("ar_auto_feeds",[])||[];
 const savedFeeds=readStore("ar_feeds",[])||[];
 const removedFeeds=new Set(readStore("ar_removed_feeds",[])||[]);
-let feeds=[...defaults,...savedFeeds.filter(saved=>!defaults.some(d=>d.url===saved.url))].filter(f=>!removedFeeds.has(f.url));
+let feeds=[...new Map([...defaults,...savedFeeds,...autoFeeds].filter(f=>f&&typeof f.url==="string").map(f=>[f.url,f])).values()].filter(f=>!removedFeeds.has(f.url));
 let items=readStore("ar_items",[]),active="All",saved=readStore("ar_saved",[]);
 let savedItems=readStore("ar_saved_items",[])||[];
 const $=id=>document.getElementById(id);
@@ -627,6 +654,67 @@ function render(){
  watchVisibleStories();
  document.querySelectorAll("[data-save]").forEach(b=>b.onclick=()=>{let k=b.dataset.save;saved=saved.includes(k)?saved.filter(v=>v!==k):[...saved,k];rememberSaved();render()});
 }
+// Publisher feed discovery is bounded, opt-out aware, and only checks curated sites.
+// It runs weekly in the background; users can also request a scan from Sources.
+let discoverySerial=0,discoveryPending=null;
+const DISCOVERY_INTERVAL_MS=7*24*60*60*1000;
+function feedPublisherMatches(url,site){
+ try{
+  const source=new URL(url),publisher=new URL(site);
+  const origin=publisher.hostname.replace(/^www\./,"");
+  const target=source.hostname.replace(/^www\./,"");
+  return source.protocol==="https:"&&(target===origin||target.endsWith("."+origin));
+ }catch{return false}
+}
+async function receiveDiscoveredFeeds(requestId,found){
+ if(!discoveryPending||discoveryPending.id!==String(requestId))return;
+ discoveryPending=null;
+ if(!Array.isArray(found))found=[];
+ const candidates=found.slice(0,20).filter(x=>x&&typeof x.url==="string"&&typeof x.name==="string"&&
+  publisherSeeds.some(p=>p.name===x.name.replace(/ — RSS$/,"")&&p.cat===x.cat&&feedPublisherMatches(x.url,p.site)));
+ const unique=[...new Map(candidates.map(x=>[x.url,x])).values()].filter(x=>!removedFeeds.has(x.url)&&!feeds.some(f=>f.url===x.url));
+ // The scanner verifies RSS/Atom XML. Also ensure the RSS2JSON service
+ // can import it, otherwise new sources would never show any news.
+ let added=0;
+ for(const x of unique.slice(0,12)){
+  try{
+   const recent=await fetchFeedWithTimeout(x,3500);
+   if(!recent.length)continue;
+   feeds.push({name:x.name,url:x.url,cat:x.cat,auto:true});
+   autoFeeds.push({name:x.name,url:x.url,cat:x.cat,auto:true});
+   added++;
+  }catch(e){}
+ }
+ if(added){
+  localStorage.setItem("ar_auto_feeds",JSON.stringify(autoFeeds.slice(-60)));
+  renderSources();
+  if(!$("refresh").disabled)loadFeeds();
+ }
+ $("discoveryStatus").textContent=added?"Found "+added+" new working feed(s), added automatically. "+feeds.length+" sources available.":
+  "Scan complete. No new verified feeds ("+feeds.length+" sources). Checking again next week.";
+ $("discoverFeeds").disabled=false;
+}
+function discoverPublisherFeeds(force=false){
+ if(discoveryPending||!navigator.onLine)return;
+ const last=Number(localStorage.getItem("ar_last_discovery")||0);
+ if(!force&&Date.now()-last<DISCOVERY_INTERVAL_MS)return;
+ const button=$("discoverFeeds");
+ if(!window.AudioDesk||typeof window.AudioDesk.discoverPublisherFeeds!=="function"){
+  $("discoveryStatus").textContent="Automatic discovery requires the Android app. Existing built-in feeds remain available.";
+  return;
+ }
+ const id=String(++discoverySerial);
+ discoveryPending={id};
+ button.disabled=true;
+ $("discoveryStatus").textContent="Checking trusted publishers for new RSS/Atom sources…";
+ localStorage.setItem("ar_last_discovery",String(Date.now()));
+ try{window.AudioDesk.discoverPublisherFeeds(JSON.stringify(publisherSeeds),id)}
+ catch(e){
+  discoveryPending=null;
+  button.disabled=false;
+  $("discoveryStatus").textContent="Publisher discovery could not start.";
+ }
+}
 function renderSources(){
  $("sources").innerHTML=feeds.map((f,i)=>`<div class="source"><div>${esc(f.name)}<small>${esc(f.cat)}</small></div><button class="save" data-remove="${i}">Remove</button></div>`).join("");
  document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{const removed=feeds.splice(+b.dataset.remove,1)[0];removedFeeds.add(removed.url);localStorage.setItem("ar_removed_feeds",JSON.stringify([...removedFeeds]));localStorage.setItem("ar_feeds",JSON.stringify(feeds));renderSources();loadFeeds()});
@@ -798,15 +886,17 @@ $("torrentPeriod").addEventListener("change",loadTorrentMonitor);
 $("webSearch").onclick=runWebSearch;
 $("search").addEventListener("keydown",e=>{if(e.key==="Enter")runWebSearch()});
 $("refresh").onclick=loadFeeds;
+$("discoverFeeds").onclick=()=>discoverPublisherFeeds(true);
 $("addFeed").onclick=()=>{let name=$("feedName").value.trim(),url=$("feedUrl").value.trim();if(!name||!/^https?:\/\//i.test(url)){alert("Enter a source name and a valid http(s) RSS URL.");return}removedFeeds.delete(url);localStorage.setItem("ar_removed_feeds",JSON.stringify([...removedFeeds]));if(!feeds.some(f=>f.url===url))feeds.push({name,url,cat:"Production"});localStorage.setItem("ar_feeds",JSON.stringify(feeds));$("feedName").value="";$("feedUrl").value="";renderSources();loadFeeds()};
 renderSources();
 setOfflineNotice(!navigator.onLine);
 window.addEventListener("offline",()=>{setOfflineNotice(true);$("status").textContent="No internet connection. Cached headlines remain available.";});
-window.addEventListener("online",()=>{setOfflineNotice(false);if(!$("refresh").disabled)loadFeeds();});
+window.addEventListener("online",()=>{setOfflineNotice(false);if(!$("refresh").disabled)loadFeeds();discoverPublisherFeeds();});
 // Always show the first filter from its left edge on launch.
 $("filters").scrollLeft=0;
 if(items.length){render();$("status").textContent="Showing saved headlines instantly · checking for updates…";$("updated").textContent="Cached feed";}
 loadFeeds();
+setTimeout(()=>discoverPublisherFeeds(),800);
 // Route all publisher/source links through the native in-app browser when running in Android.
 document.addEventListener("click",e=>{
  const a=e.target.closest("a[href]"); if(!a)return;

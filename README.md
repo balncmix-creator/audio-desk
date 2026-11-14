@@ -2,7 +2,7 @@
 
 **A retro-styled Android news desk for people who make sound.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk v1.22 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v1.21/Audio-Desk-v1.21.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk v1.23 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v1.21/Audio-Desk-v1.21.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
 
@@ -45,6 +45,14 @@ node scripts/capture-readme-screenshots.cjs
 The last command captures the app's interface into `docs/screenshots/` with labeled fictional example content. Tests and browser screenshots are not substitutes for physical-device testing.
 
 ## Changelog
+
+### Version 1.23
+- Add direct audio industry coverage from Rekkerd, A Sound Effect and Bedroom Producers Blog.
+- Add targeted searches for Mix, postPerspective, Sonic State, Gearspace, Reapertips, Sample Library Review and VI-Control.
+- Correct The REAPER Blog to the REAPER category, and remove the inactive Pro Audio Files news feed.
+- Automatically scan ten curated publisher sites weekly for new RSS/Atom feed links (or on demand); native Android verifies same-publisher HTTPS feeds and RSS2JSON readability before adding them.
+- Persist discovered sources, respect user-removed sources, and avoid duplicate entries. This expands coverage of monitored publishers but cannot find every unknown website across the internet.
+
 
 ### Version 1.21
 - Merge the duplicate Post-production and POST PRODUCTION filters into **one** Post Production feed; normalize sources and migrate cached and saved article categories.
@@ -124,7 +132,7 @@ including network failures. They do not replace Android device testing.
 
 GitHub Actions builds an installable debug APK and an unsigned Play review bundle
 on pushes to `main`. Download the `Audio-Desk-APK` artifact from the successful
-build. Version 1.22 uses version code 23 and targets Android 16 / API 36.
+build. Version 1.23 uses version code 24 and targets Android 16 / API 36.
 
 Release builds generate a separate asset bundle with torrent/warez discovery UI,
 feed definitions and code removed. The ordinary debug APK retains its existing

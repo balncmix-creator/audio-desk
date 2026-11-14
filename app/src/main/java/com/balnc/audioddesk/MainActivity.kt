@@ -34,6 +34,7 @@ class MainActivity : Activity() {
     private val refreshFailsafe = Runnable { swipeRefresh.isRefreshing = false }
     private lateinit var imageAccents: ImageAccentSampler
     private lateinit var articleImages: ArticleImageFinder
+    private lateinit var feedDiscovery: PublisherFeedDiscovery
     private var destroyed = false
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -77,6 +78,7 @@ class MainActivity : Activity() {
         configure(appWebView)
         imageAccents = ImageAccentSampler(appWebView.settings.userAgentString)
         articleImages = ArticleImageFinder(appWebView.settings.userAgentString)
+        feedDiscovery = PublisherFeedDiscovery(appWebView.settings.userAgentString)
         appWebView.addJavascriptInterface(AppBridge(), "AudioDesk")
         appWebView.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?) =
@@ -167,6 +169,18 @@ class MainActivity : Activity() {
     }
 
     private inner class AppBridge {
+        @JavascriptInterface fun discoverPublisherFeeds(seeds: String, requestId: String) {
+            if (requestId.length !in 1..32 || !requestId.all { it.isDigit() } || seeds.length > 8000) return
+            feedDiscovery.discover(seeds) { found ->
+                runOnUiThread {
+                    if (!destroyed) {
+                        appWebView.evaluateJavascript(
+                            "window.receiveDiscoveredFeeds&&window.receiveDiscoveredFeeds(" +
+                                JSONObject.quote(requestId) + "," + found.toString() + ")", null)
+                    }
+                }
+            }
+        }
         @JavascriptInterface fun lookupArticleImage(url: String, requestId: String) {
             if (requestId.isEmpty() || requestId.length > 32 || !requestId.all { it.isDigit() }) return
             articleImages.find(url) { imageUrl ->
@@ -237,6 +251,7 @@ class MainActivity : Activity() {
         destroyed = true
         if (::imageAccents.isInitialized) imageAccents.close()
         if (::articleImages.isInitialized) articleImages.close()
+        if (::feedDiscovery.isInitialized) feedDiscovery.close()
         refreshHandler.removeCallbacks(refreshFailsafe)
         if (::browserWebView.isInitialized) browserWebView.destroy()
         if (::appWebView.isInitialized) appWebView.destroy()
