@@ -1,0 +1,182 @@
+[
+  {
+    "id": "moonlit-city",
+    "origin": "generated-replacement",
+    "sourceName": "moonlit-city.png",
+    "sourceSha256": "f3e1822c79a4d9981f17d993ef1234718f4bc74cff51e211654e81278499fefd",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "7f177e87fb0a18fdffd3a202bc64f85dea3fbe0b43ff0a247d71e65208b8efee",
+    "thumbnailSha256": "298afd3d01f5f33cdf2a62761f86f2e7c46abbae60f7ec2acab64ed9e1f009cd",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  },
+  {
+    "id": "rainy-neon",
+    "origin": "generated-replacement",
+    "sourceName": "rainy-neon.png",
+    "sourceSha256": "615c736ee947b2b1c4d67ade3b595b4a11fab715517d8a2e1f9be35c878fb262",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "bd91ae218343573ec2868b251cc3b2f98fe789bbc5a8e0db073f831706612e9e",
+    "thumbnailSha256": "71995b854e685ad4506486feb59197f1bc63b8dc969f946606875b809f854a7f",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  },
+  {
+    "id": "northern-lights",
+    "origin": "generated-replacement",
+    "sourceName": "northern-lights.png",
+    "sourceSha256": "9894700fe42ca98774da7e2e310d8d24cb3194644f2aa0b407e555230cb3ecbe",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "cafb7a106937a5c83e58c11e5388f172af19ec4b3a9eadbc05dd4530df0130a5",
+    "thumbnailSha256": "4a50c415faae334b009bbf2fc8c510a6caffc54778a32f9eecfc503999a0a23c",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  },
+  {
+    "id": "purple-planet",
+    "origin": "generated-replacement",
+    "sourceName": "purple-planet.png",
+    "sourceSha256": "1cca141ab1e8245f804fb9117ae640cf06cbd96894fec5664302033867482eba",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "93e75f7ccdfb6b4afae951944107739ad284f3127739ae2bfaa62c10e49380b3",
+    "thumbnailSha256": "f720f7ca19d10d90473fdb3436b46cde7812065d04189fbc2b6444d7b8e76f0c",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  },
+  {
+    "id": "midnight-studio",
+    "origin": "generated-replacement",
+    "sourceName": "midnight-studio.png",
+    "sourceSha256": "24c5d8d076f5efe603a6243870dba65d65eb26351b77deca46eb1d0f7393f64c",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "16da69a5efa9c644e7d2d9135af2c38d3f51f7d75b2675818a49e9bee18cef50",
+    "thumbnailSha256": "8e236c594d9edfa2d74150e24225dc9462e6467f7ea4e5d95e07e5fdc3d40742",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  },
+  {
+    "id": "pastel-sunrise",
+    "origin": "generated-replacement",
+    "sourceName": "pastel-sunrise.png",
+    "sourceSha256": "94725198d13a76a32ddaf299b92303754e6dd9c31a9e423b949cffb3ae7c425c",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "ff552671e32b726b86edc452a0dcf69cd2884ffa8c03ddcd0f1afa89b2dfc50c",
+    "thumbnailSha256": "1fb3ef732d9e65cc324e30793b5360e11c87bfcc0df6cd8a336d13851a138470",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  },
+  {
+    "id": "tropical-beach",
+    "origin": "generated-replacement",
+    "sourceName": "tropical-beach.png",
+    "sourceSha256": "1a82ec989c289a7a38f6cdf182c6aec7f1c78408988b801ac771d6a39e59b016",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "9e6b86c7deef8e42d952e06ebf92bfb1ab10c27d7d39d920061cd31864b25e16",
+    "thumbnailSha256": "e78c90829178a59599d55d035309bfc9bd6a7c6293b7d7a3a1009b45f144d431",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  },
+  {
+    "id": "sunset-highway",
+    "origin": "generated-replacement",
+    "sourceName": "sunset-highway.png",
+    "sourceSha256": "da0e7755ed3318d2b402e426ed1bf54e09d969ea7c8eee686dad8420601b006f",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "0e98ee8a8fb8475a0e13ce39f08c5e146d2e16007faa253e545cf33fde838df0",
+    "thumbnailSha256": "b3c501e9b866a803a54e0e1362870997b3246ef28274838518431338fb1ea663",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  },
+  {
+    "id": "floating-islands",
+    "origin": "generated-replacement",
+    "sourceName": "floating-islands.png",
+    "sourceSha256": "75e1b9d84d362c8e5804701c196621771f6f91ef8833fe6968f38bb8629ea330",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "7edc74b5c882d607cd722c30f2f67912769148def4325b710f5909ff235cf512",
+    "thumbnailSha256": "ca535570d9e1f0174266e087120649848847ec111e648cacde50461142bebd41",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  },
+  {
+    "id": "retro-music",
+    "origin": "generated-replacement",
+    "sourceName": "retro-music.png",
+    "sourceSha256": "6be4a155e84be443f328982c27492321cb0fd995857eaa5fc63c0fc415398084",
+    "sourceWidth": 1024,
+    "sourceHeight": 1536,
+    "width": 1024,
+    "height": 1536,
+    "sha256": "5933a21a7176323adb46263294f4eb3fb21c7416f4a57e1781452ef470a369f6",
+    "thumbnailSha256": "3a5d91d58f76db10779af6d7b2f524510526b176696ab103f189f8b92cbd2256",
+    "encoding": "lossless",
+    "psnr": 99,
+    "cropAnchor": [
+      0.35,
+      0.5
+    ]
+  }
+]

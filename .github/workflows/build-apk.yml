@@ -35,7 +35,7 @@ jobs:
         run: gradle :app:testDebugUnitTest :app:assembleDebug :app:bundleRelease --stacktrace
       - name: Verify packaged editions
         run: python scripts/verify-artifacts.py --apk app/build/outputs/apk/debug/app-debug.apk --bundle app/build/outputs/bundle/release/app-release.aab
-      - name: Require recovered original wallpapers before uploading or publishing
+      - name: Verify wallpaper resolution, provenance and quality before publishing
         run: npm run test:wallpapers
       - uses: actions/upload-artifact@v4
         with:

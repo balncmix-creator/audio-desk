@@ -5,7 +5,7 @@
     "test": "npm run test:ui && npm run test:wallpapers",
     "prepare:play": "node scripts/prepare-play.cjs",
     "test:ui": "node scripts/generate-brand.cjs --check && node tests/app.cjs && node tests/categories.cjs && node tests/header-logo.cjs && node tests/image-accents.cjs && node tests/image-quality.cjs && node tests/feed-discovery.cjs && node tests/sample-demos.cjs && node tests/live-radar.cjs && node tests/swipe-navigation.cjs && node tests/pinch-grid.cjs && node tests/launcher.cjs && node tests/launcher-gestures.cjs && node tests/launcher-manifest.cjs && node scripts/prepare-play.cjs && node tests/play.cjs && node tests/personalization.cjs",
-    "test:wallpapers": "node tests/wallpaper-assets.cjs"
+    "test:wallpapers": "node tests/wallpaper-assets.cjs && node tests/wallpaper-rendering.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"
