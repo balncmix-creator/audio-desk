@@ -1878,6 +1878,7 @@ window.receiveLauncherApps=function(apps,recents,isDefault){
  launcherRecents=recents.filter(a=>a&&typeof a.pkg==="string"&&typeof a.activity==="string"&&
   typeof a.label==="string").slice(0,16);
  launcherNativeLoaded=true;
+ renderLauncherAlphabet();
  renderLauncherHome();renderLauncherApps();renderLauncherRecents();updateHomeRole(isDefault);
 };
 function requestLauncherApps(force=false){
