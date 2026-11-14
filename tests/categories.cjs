@@ -32,6 +32,7 @@ const assert=require('node:assert/strict');
    return route.abort();
   });
   await page.goto('https://appassets.androidplatform.net/assets/index.html');
+  await page.evaluate(()=>setLauncherPage('events',false));
   await page.waitForFunction(()=>!document.getElementById('refresh').disabled);
   const cats=await page.evaluate(()=>[
    classify({title:'SUBVERSELAB SVL 8-BIT ORCHESTRAL',description:'Hip hop construction kits and sample libraries'}, {cat:'DAWs & plugins'}),

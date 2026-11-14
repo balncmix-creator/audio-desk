@@ -16,6 +16,7 @@ const assert=require('node:assert/strict');
    return route.abort();
   });
   await page.goto('https://appassets.androidplatform.net/assets/index.html');
+  await page.evaluate(()=>setLauncherPage('events',false));
   const icon=page.locator('#animatedDeskLogo');
   assert.equal(await icon.count(),1,'a single rotating desk sits next to the title');
   const artwork=page.locator('.header-desk-art');

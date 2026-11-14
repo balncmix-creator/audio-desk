@@ -41,6 +41,7 @@ const assert=require('node:assert/strict');
    return route.abort();
   });
   await page.goto('https://appassets.androidplatform.net/assets/index.html');
+  await page.evaluate(()=>setLauncherPage('events',false));
   await page.waitForFunction(()=>!document.getElementById('refresh').disabled);
   await page.waitForFunction(()=>document.getElementById('status').textContent.includes('GitHub: 0 repositories added.'));
   for(let i=0;i<articles.length;i++)await page.locator('.story').nth(i).scrollIntoViewIfNeeded();

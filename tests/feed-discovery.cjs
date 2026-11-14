@@ -31,6 +31,7 @@ const assert=require('node:assert/strict');
    return route.abort();
   });
   await page.goto('https://appassets.androidplatform.net/assets/index.html');
+  await page.evaluate(()=>setLauncherPage('events',false));
   await page.waitForFunction(()=>document.getElementById('discoveryStatus').textContent.includes('added automatically.'),null,{timeout:16000});
   let auto=await page.evaluate(()=>JSON.parse(localStorage.ar_auto_feeds));
   assert.equal(auto.length,1,'add just one matching, usable publisher feed');

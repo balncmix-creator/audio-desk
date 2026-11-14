@@ -30,6 +30,7 @@ const assert=require('node:assert/strict');
    return route.abort();
   });
   await page.goto('https://appassets.androidplatform.net/assets/index.html');
+  await page.evaluate(()=>setLauncherPage('events',false));
   await page.waitForFunction(()=>!document.getElementById('refresh').disabled);
   await page.waitForFunction(()=>document.getElementById('status').textContent.includes('GitHub:'));
   const send=async(stage,x,y)=>{

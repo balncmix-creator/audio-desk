@@ -23,6 +23,7 @@ const assert = require('node:assert/strict');
       return route.abort();
     });
     await page.goto('https://appassets.androidplatform.net/assets/index.html');
+  await page.evaluate(()=>setLauncherPage('events',false));
     await page.waitForFunction(() => !document.getElementById('refresh').disabled);
     assert.equal(await page.locator('#stories .story').count(), 1);
     await page.locator('[data-save]').click();

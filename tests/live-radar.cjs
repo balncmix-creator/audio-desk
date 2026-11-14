@@ -33,6 +33,7 @@ const assert=require('node:assert/strict');
    return route.abort();
   });
   await page.goto('https://appassets.androidplatform.net/assets/index.html');
+  await page.evaluate(()=>setLauncherPage('events',false));
   await page.waitForFunction(()=>!document.getElementById('refresh').disabled);
   await page.evaluate(()=>refreshLiveRadar(true));
   await page.waitForFunction(()=>!liveRadarBusy);
