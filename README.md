@@ -2,7 +2,7 @@
 
 **A retro-styled Android news desk for people who make sound.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk v1.28 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v1.28/Audio-Desk-v1.28.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk v1.29 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v1.29/Audio-Desk-v1.29.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
 
@@ -33,7 +33,7 @@
 
 ## Install on Android
 
-1. Open the [v1.28 APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v1.28/Audio-Desk-v1.28.apk) on your Android phone. **This is an APK, not a ZIP.**
+1. Open the [v1.29 APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v1.29/Audio-Desk-v1.29.apk) on your Android phone. **This is an APK, not a ZIP.**
 2. Open the downloaded file and, if Android asks, allow installations from the browser or file manager you used.
 3. Launch **Audio Desk**. Network access is used to refresh headlines, while saved items remain locally available.
 
@@ -53,6 +53,12 @@ node scripts/capture-readme-screenshots.cjs
 The last command captures the app's interface into `docs/screenshots/` with labeled fictional example content. Tests and browser screenshots are not substitutes for physical-device testing.
 
 ## Changelog
+
+### Version 1.29
+- Correct the pinch direction: **pinch inward** to zoom out into denser grids (1 → 3 → 5 cards per row), **spread fingers outward** to return to bigger cards (5 → 3 → 1).
+- Update the layout hint and regression tests to match the gestures.
+- Disable the main news WebView's competing native pinch-to-page zoom, while retaining the separate article browser's zoom behavior and the accessible 1 / 3 / 5 layout buttons.
+
 
 ### Version 1.28
 - Two-finger pinch outward switches story cards from 1 to 3 across a row, then 5 across on another pinch; pinch inward reverses 5 → 3 → 1.

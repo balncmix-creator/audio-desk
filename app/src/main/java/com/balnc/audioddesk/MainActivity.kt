@@ -78,6 +78,10 @@ class MainActivity : Activity() {
         swipeRefresh = DeskRefreshLayout(this)
         appWebView = WebView(this)
         configure(appWebView)
+        // The news interface handles two-finger gestures to change card density.
+        // Disable WebView's own page-scale pinch (the article browser is separate).
+        appWebView.settings.setSupportZoom(false)
+        appWebView.settings.builtInZoomControls = false
         // Only the explicitly tapped sample-preview control starts asynchronous playback.
         // Native lookup returns after the original click, so WebView gesture gating must be disabled.
         appWebView.settings.mediaPlaybackRequiresUserGesture = false

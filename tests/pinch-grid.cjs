@@ -43,12 +43,12 @@ const assert=require('node:assert/strict');
   };
   const cols=()=>page.locator('#stories').evaluate(x=>getComputedStyle(x).gridTemplateColumns.split(' ').length);
   assert.equal(await page.evaluate(()=>cardDensity),1);
-  await pinch([170,225],[100,300]); // spread: 1 -> 3
+  await pinch([100,300],[170,225]); // pinch IN: 1 -> 3
   assert.equal(await page.evaluate(()=>cardDensity),3);
   assert.equal(await cols(),3,'three cards must fit across a row');
   assert.equal(await page.locator('[data-card-density="3"]').getAttribute('aria-pressed'),'true');
   assert.equal(await page.evaluate(()=>active),'All','pinch should not switch news tab');
-  await pinch([172,225],[105,310]); // further spread: 3 -> 5
+  await pinch([105,310],[172,225]); // pinch IN again: 3 -> 5
   assert.equal(await page.evaluate(()=>cardDensity),5);
   assert.equal(await cols(),5,'five cards must fit across a row');
   const first=page.locator('#stories .story').first();
@@ -60,12 +60,12 @@ const assert=require('node:assert/strict');
   await page.locator('#gridDetailClose').click();
   assert.equal(await page.locator('#gridDetail').isVisible(),false);
 
-  // Inward gestures reverse grid density one step at a time.
-  await pinch([95,300],[169,225]);
+  // Spread OUT to zoom into the cards one grid step at a time.
+  await pinch([169,225],[95,300]);
   assert.equal(await page.evaluate(()=>cardDensity),3);
-  await pinch([95,300],[169,225]);
+  await pinch([169,225],[95,300]);
   assert.equal(await page.evaluate(()=>cardDensity),1);
-  await pinch([95,300],[169,225]);
+  await pinch([169,225],[95,300]);
   assert.equal(await page.evaluate(()=>cardDensity),1,'cannot go below 1 card');
   assert.equal(await page.locator('#stories .story p').first().isVisible(),true,'full articles return in list view');
 
@@ -103,6 +103,6 @@ const assert=require('node:assert/strict');
   await page.waitForFunction(()=>!tabAnimationBusy&&document.getElementById('tabSwipePreview').hidden);
   assert.equal(await page.evaluate(()=>active),'REAPER');
   assert.deepEqual(errors,[],'no JavaScript errors on pinch, modal, reload or swipe');
-  console.log('PASS: 1→3→5→3→1 pinches, column geometry, no tab conflicts, detail/save, persistence, sample pack grid, button alternative');
+  console.log('PASS: inward pinch 1→3→5, outward spread 5→3→1, column geometry, no tab conflicts, detail/save, persistence, sample pack grid, button alternative');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exit(1)});
