@@ -58,7 +58,19 @@ const html=fs.readFileSync(path.join(__dirname,'../app/src/main/assets/index.htm
    assert.equal(await page.locator('#launcherClockDialog').isVisible(),true,'old closing callbacks cannot hide a reopened sheet');
    await page.evaluate(()=>window.launcherGoHome());
    assert.equal(await page.locator('#launcherClockDialog').isVisible(),false,'Home dismisses sheets even while already Home');
-   // Swiping on an app row used to do nothing (or launch the app).
+   // Directional app gestures: right opens quick actions, left opens All Apps.
+   await swipe('#launcherFavorites .launcher-app',[70,320],[280,320]);
+   assert.equal(await page.locator('#launcherShortcutMenu').isVisible(),true);
+   await page.evaluate(()=>window.launcherGoHome());
+   await swipe('#launcherFavorites .launcher-app',[280,320],[70,320]);
+   assert.equal(await page.evaluate(()=>launcherPage),'apps');
+   assert.equal(await page.locator('#launcherShortcutMenu').isVisible(),false);
+   assert.equal(await page.locator('#wallpaperStage').isVisible(),true,'selected wallpaper stays visible in All Apps');
+   assert.equal(await page.evaluate(()=>document.body.dataset.motionPaused),'true','drawer wallpaper stays static to save power');
+   await swipe('#launcherAppsGrid .launcher-app',[280,320],[70,320]);
+   assert.equal(await page.locator('#launcherShortcutMenu').isVisible(),false,'left swipe never opens quick actions');
+   await page.evaluate(()=>window.launcherGoHome());
+   // Swiping up on an app row used to do nothing (or launch the app).
    await swipe('#launcherFavorites .launcher-app',[170,450],[170,210]);
    assert.equal(await page.evaluate(()=>launcherPage),'apps');
    assert.equal(await page.locator('#launcherAppSearch').evaluate(el=>el===document.activeElement),true);

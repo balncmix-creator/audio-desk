@@ -69,7 +69,7 @@ const assert=require('node:assert/strict');
    },{target,from,to});
   };
   // Swipe on the GPay icon horizontally: native-provided scan and pay options.
-  await gesture('#launcherFavorites .launcher-app',[250,330],[115,332]);
+  await gesture('#launcherFavorites .launcher-app',[115,330],[250,332]);
   assert.equal(await page.locator('#launcherShortcutMenu').isVisible(),true);
   assert.equal((await page.evaluate(()=>window.testShortcutsRequests)).length,1);
   assert.match(await page.locator('#launcherShortcutActions').textContent(),/Scan QR/);

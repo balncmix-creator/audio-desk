@@ -2277,7 +2277,8 @@ $("launcherShell").addEventListener("touchend",e=>{
  const t=e.changedTouches[0],dx=t.clientX-start.x,dy=t.clientY-start.y;
  if(Math.abs(dx)>44&&Math.abs(dx)>Math.abs(dy)*1.35){
   blockAppClickUntil=Date.now()+600;
-  showAppShortcuts(start.pkg,start.activity);
+  if(dx>0)showAppShortcuts(start.pkg,start.activity);
+  else if(launcherPage==='home')setLauncherPage('apps');
  }
 },{passive:true});
 $("launcherShell").addEventListener("click",e=>{
