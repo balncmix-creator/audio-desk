@@ -42,7 +42,7 @@ internal class HomeLauncherSupport(private val activity: Activity) {
             if (!info.enabled || !info.applicationInfo.enabled || !info.exported) continue
             val pkg = info.packageName
             val cls = info.name
-            if (pkg.isBlank() || cls.isBlank()) continue
+            if (pkg.isBlank() || cls.isBlank() || pkg == activity.packageName) continue
             if (!used.add(pkg + "/" + cls)) continue
             val name = try { resolve.loadLabel(pm)?.toString().orEmpty().ifBlank { pkg } }
                 catch (_: Exception) { pkg }

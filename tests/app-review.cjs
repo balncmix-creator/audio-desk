@@ -87,6 +87,9 @@ const html=fs.readFileSync(path.join(__dirname,'../app/src/main/assets/index.htm
    await page.evaluate(()=>{document.querySelector('#launcherClock').textContent='STALE';launcherOnResume()});
    assert.notEqual(await page.locator('#launcherClock').textContent(),'STALE');
    assert.equal(await page.evaluate(()=>forceRequests.at(-1)),true,'resume bypasses the app cache');
+   await page.evaluate(()=>{document.documentElement.style.setProperty('--status-top','32px');setLauncherPage('apps',false)});
+   assert.ok(await page.locator('#launcherNavigation').evaluate(el=>el.getBoundingClientRect().top)>=32,'sticky app navigation stays below Android status bar');
+   await page.evaluate(()=>window.launcherGoHome());
    await page.evaluate(()=>{openWallpaperPicker();closeCustomize();openWallpaperPicker()});
    await page.emulateMedia({reducedMotion:'reduce'});
    await page.waitForTimeout(220);
@@ -100,6 +103,11 @@ const html=fs.readFileSync(path.join(__dirname,'../app/src/main/assets/index.htm
     await page.locator('#customWallpaperFile').setInputFiles({name:'photo.png',mimeType:'',buffer:png});
     await page.waitForFunction(()=>document.querySelector('#customWallpaperStatus').textContent.includes('Saved on this phone'));
    }
+   await page.clock.install({time:new Date('2026-11-15T07:00:59.500Z')});
+   await page.evaluate(()=>formatLauncherClock());
+   const before=await page.locator('#launcherClock').textContent();
+   await page.clock.runFor(1000);
+   assert.notEqual(await page.locator('#launcherClock').textContent(),before,'Home clock advances at the minute boundary');
    assert.deepEqual(errors,[],legacy?'legacy WebView fallback':'modern interaction flow');
    await page.close();
   }

@@ -167,8 +167,9 @@ body[data-card-columns="5"] #sampleReleases .sample-release-card:focus-visible{
 #gridDetailBody a{color:#fff;font-size:11px}
 
 /* AUDIO DESK HOME — MeeGo-inspired three-plane launcher, original pixel theme. */
-#launcherNavigation{position:sticky;top:0;z-index:9;background:rgba(8,8,8,.98);
- border-bottom:1px solid #777;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+#launcherNavigation{position:sticky;top:var(--status-top,24px);z-index:9;background:rgba(8,8,8,.98);
+ border-bottom:1px solid #777}
+#launcherNavigation::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:var(--status-top,24px);background:#080808}
 .launcher-nav-inner{display:flex;max-width:900px;margin:auto;padding:6px 13px;gap:5px}
 .launcher-nav-inner button{flex:1;min-width:0;box-shadow:none;border:1px solid #555;
  color:#aaa;font-size:9px;padding:7px 3px;letter-spacing:.3px}
@@ -685,7 +686,7 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
   </div>
   <div id="searchStatus" class="search-status">Search Google News + Bing News together. Results are merged and duplicates removed.</div>
   <div class="toolbar" id="filters">
-    <button class="active" data-filter="All">All</button><button data-filter="REAPER">REAPER</button><button data-filter="Post Production">POST PRODUCTION</button><button data-filter="Sample packs">SAMPLE PACK NEWS</button><button data-filter="DAWs & plugins">DAWs & plugins</button><button data-filter="Plugin releases">PLUGIN RELEASES</button><button data-filter="Sound design">Sound design</button><button data-filter="Hardware">Hardware</button><button data-filter="Production">Production</button><button data-filter="Torrent Monitor">TORRENT MONITOR</button><button data-filter="Videos">▶ VIDEOS</button><button data-filter="Saved">★ Saved</button><button data-view="torrents">TORRENT MONITOR</button><button data-view="samples">SAMPLE PACKS</button>
+    <button class="active" data-filter="All">All</button><button data-filter="REAPER">REAPER</button><button data-filter="Post Production">POST PRODUCTION</button><button data-filter="Sample packs">SAMPLE PACK NEWS</button><button data-filter="DAWs & plugins">DAWs & plugins</button><button data-filter="Plugin releases">PLUGIN RELEASES</button><button data-filter="Sound design">Sound design</button><button data-filter="Hardware">Hardware</button><button data-filter="Production">Production</button><button data-filter="Torrent Monitor">TORRENT NEWS</button><button data-filter="Videos">▶ VIDEOS</button><button data-filter="Saved">★ Saved</button><button data-view="torrents">TORRENT SOURCES</button><button data-view="samples">SAMPLE PACKS</button>
   </div>
 </nav>
 <script>
@@ -1901,13 +1902,16 @@ const launcherGhost=$("launcherSwipeGhost");
 function homePanel(page){
  return page==="events"?$("swipeMain"):page==="apps"?$("launcherAppsPage"):$("launcherHomePage");
 }
+let launcherClockTimer=0;
 function formatLauncherClock(){
+ clearTimeout(launcherClockTimer);
  const now=new Date();
  $("launcherClock").textContent=now.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",hour12:false});
  $("launcherDate").textContent=now.toLocaleDateString([], {weekday:"short",month:"short",day:"numeric"});
+ launcherClockTimer=setTimeout(formatLauncherClock,60000-Date.now()%60000+25);
 }
 formatLauncherClock();
-setInterval(formatLauncherClock,60000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)formatLauncherClock()});
 const pixelCategories=[
  [/camera|photo|instagram/,"camera"],[/music|spotify|audio|sound|player/,"music"],
  [/gpay|google pay|phonepe|paytm|wallet|upi|bank|payment/,"credit-card"],

@@ -87,3 +87,5 @@ body[data-home-page="home"][data-wallpaper-light="true"] #launcherFavorites .app
 button{transition:transform 140ms var(--motion-ease),background-color 180ms,border-color 180ms,color 180ms}
 button:active{transform:scale(.97)}
 button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid #ddd;outline-offset:3px}
+
+body:not([data-home-page="events"]) #arcade-bg{display:none}
