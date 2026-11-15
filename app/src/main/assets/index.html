@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#080808">
 <title>THE AUDIO DESK // 8-BIT NEWS</title>
 <style>
+[hidden]{display:none!important}
 :root{color-scheme:dark;--bg:#080808;--panel:#101010;--ink:#f4f4f4;--muted:#929292;--line:#555;--soft:#1b1b1b;--pixel:#fff}
 *{box-sizing:border-box}html{background:var(--bg)}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 "Silkscreen","Courier New",Courier,monospace;letter-spacing:0;-webkit-font-smoothing:none}
 header{background:#080808;border-bottom:2px solid var(--ink);padding:17px 16px 13px}.mast{max-width:900px;margin:auto}.top{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{font:400 17px/1.5 "Press Start 2P","Courier New",monospace;letter-spacing:-1px;text-transform:uppercase}.brand span{color:#080808;background:#f4f4f4;padding:1px 4px}.sub{font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:#aaa;margin-top:7px}.edition{font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:#aaa;margin-top:13px;border-top:1px dashed #555;padding-top:8px}
@@ -538,7 +539,7 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
     <div id="resourceList"></div>
     <div id="sampleReleaseSection" class="sample-release-section" hidden>
       <div class="resource-title">LATEST SAMPLE PACKS · LISTEN BEFORE YOU DOWNLOAD</div>
-      <p class="note">Choose a sample-pack article and tap FIND DEMO. Original publisher audio plays here when a direct preview is available; some publishers only offer an external player.</p>
+      <p class="note">Choose a sample-pack article and tap PLAY DEMO. Original publisher audio plays here when a direct preview is available; some publishers only offer an external player.</p>
       <div id="sampleReleases"></div>
     </div>
   </div>

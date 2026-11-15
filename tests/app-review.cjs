@@ -66,7 +66,11 @@ const html=fs.readFileSync(path.join(__dirname,'../app/src/main/assets/index.htm
    await page.evaluate(()=>window.launcherGoHome());
    assert.ok(await page.evaluate(()=>keyboardHidden)>0);
    assert.equal(await page.locator('#launcherAppSearch').evaluate(el=>el===document.activeElement),false);
-   await page.evaluate(()=>setLauncherPage('events',false));
+   await page.evaluate(()=>{setLauncherPage('events',false);setView('samples')});
+   assert.equal(await page.locator('#stories').isVisible(),false,'resource directory hides news cards even in compact grid mode');
+   assert.equal(await page.locator('#stats').isVisible(),false,'resource directory hides headline counters');
+   assert.equal(await page.locator('#resourceHub').isVisible(),true);
+   await page.evaluate(()=>setView('news'));
    assert.equal(await page.evaluate(()=>refreshStates.at(-1)),true);
    await page.evaluate(()=>{setCardDensity(3);openGridDetails(items[0])});
    await page.waitForFunction(()=>refreshStates.at(-1)===false);

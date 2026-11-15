@@ -39,7 +39,8 @@ class LauncherLifecycleTest {
             ReflectionHelpers.ClassParameter.from(String::class.java, "https://example.com/article"))
         assertEquals(View.VISIBLE, panel.visibility)
         assertFalse(refresh.isEnabled)
-        activity.onNewIntent(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME))
+        ReflectionHelpers.callInstanceMethod<Void>(activity, "onNewIntent",
+            ReflectionHelpers.ClassParameter.from(Intent::class.java, Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)))
         assertEquals(View.GONE, panel.visibility)
         assertEquals(View.VISIBLE, refresh.visibility)
         assertFalse(refresh.isRefreshing)
