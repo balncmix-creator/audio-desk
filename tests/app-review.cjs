@@ -91,6 +91,9 @@ const html=fs.readFileSync(path.join(__dirname,'../app/src/main/assets/index.htm
    assert.ok(await page.locator('#launcherNavigation').evaluate(el=>el.getBoundingClientRect().top)>=32,'sticky app navigation stays below Android status bar');
    await page.evaluate(()=>window.launcherGoHome());
    await page.evaluate(()=>{openWallpaperPicker();closeCustomize();openWallpaperPicker()});
+   const thumbRatio=await page.locator('.wallpaper-thumb').first().evaluate(el=>{const r=el.getBoundingClientRect();return r.height/r.width});
+   assert.ok(Math.abs(thumbRatio-400/180)<.02,'gallery thumbnail height follows its portrait aspect ratio');
+   assert.ok(await page.locator('#customWallpaperChoose').evaluate(el=>el.getBoundingClientRect().bottom<innerHeight),'custom photo control is immediately visible');
    await page.emulateMedia({reducedMotion:'reduce'});
    await page.waitForTimeout(220);
    assert.equal(await page.locator('#launcherWallpaperDialog').isVisible(),true);

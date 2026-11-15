@@ -37,7 +37,7 @@ body.low-power #wallpaperEffect{animation-timing-function:steps(12,end)}
 .wallpaper-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
 .wallpaper-choice{display:block;position:relative;width:100%;border:1px solid #525252;box-shadow:none;background:#111;padding:4px;color:#eee;font:11px/1.3 system-ui,sans-serif;text-align:left;text-transform:none}
 .wallpaper-choice[aria-pressed="true"]{outline:2px solid white;outline-offset:1px}
-.wallpaper-thumb{width:100%;aspect-ratio:9/20;display:block;object-fit:cover;object-position:35% center;margin-bottom:5px;background:#222}
+.wallpaper-thumb{width:100%;height:auto;aspect-ratio:9/20;display:block;object-fit:cover;object-position:35% center;margin-bottom:5px;background:#222}
 .wallpaper-choice small{color:#aaa;display:block;font-size:10px;margin-top:2px}
 .wallpaper-motion{margin:16px 0 5px;display:flex;align-items:center;justify-content:space-between;gap:10px}
 .wallpaper-motion select{max-width:62%;font:13px system-ui;background:#222;color:#eee;padding:10px;border:1px solid #666}

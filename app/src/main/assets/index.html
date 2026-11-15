@@ -617,7 +617,6 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
  <div id="launcherWallpaperDialog" class="customize-overlay" role="dialog" aria-modal="true" aria-label="Choose wallpaper" hidden>
   <div class="customize-panel">
    <div class="customize-head"><strong>PIXEL WALLPAPERS</strong><button id="wallpaperClose" type="button" aria-label="Close wallpapers">×</button></div>
-   <div id="wallpaperGrid" class="wallpaper-grid"></div>
    <button type="button" id="customWallpaperChoose">Choose wallpaper from phone</button>
    <input type="file" id="customWallpaperFile" accept="image/jpeg,image/png,image/webp" hidden>
    <button type="button" id="customWallpaperRestore" hidden>Use my saved photo</button>
@@ -629,6 +628,7 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
    </select></label>
    <p id="wallpaperMotionStatus" class="customize-tip" role="status"></p>
    <p class="customize-tip">Your photo stays on this phone. Wallpaper fills the screen behind the status bar.</p>
+   <div id="wallpaperGrid" class="wallpaper-grid"></div>
   </div>
  </div>
  <div id="launcherClockDialog" class="customize-overlay" role="dialog" aria-modal="true" aria-label="Customize clock" hidden>
