@@ -2,9 +2,19 @@
 
 **A one-handed Android Home launcher for people who make sound, inspired by minimalist Niagara-style app access and Nokia N9 swipe navigation, without replacing Audio Desk's original retro design.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk Launcher v2.5 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v2.5/Audio-Desk-Launcher-v2.5.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk Launcher v2.6 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v2.6/Audio-Desk-Launcher-v2.6.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
+
+## v2.6 interaction fixes
+
+Pages, sheets and menus now share interruptible motion. Home/Back dismiss panels consistently, swipe-up works over app rows, the keyboard closes when leaving Apps, and background News refresh no longer shifts Home. The clock updates on minute boundaries and installed apps refresh on return.
+
+**Swipe an app left-to-right for quick actions. Swipe right-to-left on Home to open All Apps.** The selected wallpaper stays visible in All Apps beneath a readability overlay; its animation pauses there to save power.
+
+Wallpaper thumbnails now retain their portrait proportions. Custom-photo and animation controls appear above the gallery. Navigation respects the Android status bar, sample players stop when hidden, News cards stay hidden in directories, and older WebView/photo and saved-data recovery paths have regression coverage.
+
+Browser, wallpaper quality, packaging and Android lifecycle tests passed. Native lifecycle checks cover Android 6, 9 and 15; an isolated Android 15 emulator walkthrough exposed additional layout issues addressed in this release.
 
 ## v2.5 personalization
 
@@ -24,7 +34,7 @@ The wallpaper fills the screen behind the Android status bar. Custom photos and 
 
 The list becomes personalized as you open apps from Audio Desk. **Swipe up on Home to open app search and the keyboard automatically.** **Usage counts are local to Audio Desk launches**, not Android's restricted global usage history. New installations initially show suggested apps until local launch counts develop. Favorite pins are stored locally.
 
-**App shortcuts:** swipe horizontally on an app icon to reveal actions published by the installed app. Google Pay's QR scan appears only if Google Pay exposes that shortcut to Android; Audio Desk does not invent or replicate payment functionality. The **Recently Opened** section is still accessible directly from Home. It shows apps opened through Audio Desk, not privileged Android running-task screenshots. The navigation strip remains accessible in News and the app list, but is hidden on Home to keep it clean.
+**App shortcuts:** swipe left-to-right on an app icon to reveal actions published by the installed app. Google Pay's QR scan appears only if Google Pay exposes that shortcut to Android; Audio Desk does not invent or replicate payment functionality. The **Recently Opened** section is still accessible directly from Home. It shows apps opened through Audio Desk, not privileged Android running-task screenshots. The navigation strip remains accessible in News and the app list, but is hidden on Home to keep it clean.
 
 **To make Audio Desk your real Home:** install the APK, open Home, tap the small **bottom-right settings icon**, and choose **SET HOME**, then select Audio Desk in Android's default Home chooser. The app cannot silently replace your previous launcher. You can revert via **Android Settings → Apps → Default apps → Home app**. Existing cached news and bookmarks remain in the same installed package.
 
@@ -64,7 +74,7 @@ The list becomes personalized as you open apps from Audio Desk. **Swipe up on Ho
 
 ## Install on Android
 
-1. Open the [v2.5 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v2.5/Audio-Desk-Launcher-v2.5.apk) on your Android phone. **This is an APK, not a ZIP.**
+1. Open the [v2.5 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v2.6/Audio-Desk-Launcher-v2.6.apk) on your Android phone. **This is an APK, not a ZIP.**
 2. Open the downloaded file and, if Android asks, allow installations from the browser or file manager you used.
 3. Launch **Audio Desk Launcher**. Tap the **bottom-right settings icon → Set Home** if you want it to become your default Android launcher. Your existing Audio Desk bookmarks and cached feeds remain available.
 
