@@ -155,7 +155,7 @@ body[data-card-columns="5"] #sampleReleases .sample-release-card:focus-visible{
  outline:2px solid #fff;outline-offset:2px}
 #gridDetail{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
  padding:18px;background:rgba(0,0,0,.89);backdrop-filter:blur(7px)}
-#gridDetailCard{width:min(100%,520px);max-height:86dvh;overflow-y:auto;padding:14px;
+#gridDetailCard{width:min(100%,520px);max-height:86vh;max-height:86dvh;overflow-y:auto;padding:14px;
  background:#171717;border:1px solid #888;box-shadow:0 15px 50px #000}
 #gridDetailClose{display:block;margin-left:auto}
 #gridDetailBody h2{font:700 17px/1.5 "Silkscreen",monospace;overflow-wrap:anywhere;margin:10px 0}
@@ -299,7 +299,7 @@ body.low-power #launcherNavigation,body.low-power #gridDetail{backdrop-filter:no
 body.low-power #launcherSwipeGhost,body.low-power #tabSwipePreview{filter:none!important}
 #launcherShortcutMenu[hidden]{display:none!important}
 #launcherShortcutMenu{position:fixed;inset:0;z-index:45;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.8)}
-#launcherShortcutPanel{width:min(100%,520px);max-height:70dvh;overflow:auto;background:#151515;border:1px solid #888;padding:17px}
+#launcherShortcutPanel{width:min(100%,520px);max-height:70vh;max-height:70dvh;overflow:auto;background:#151515;border:1px solid #888;padding:17px}
 #launcherShortcutTitle{font-size:12px;margin-bottom:12px}
 #launcherShortcutActions{display:flex;flex-direction:column;gap:8px}
 #launcherShortcutActions button{font-size:11px;box-shadow:none;text-align:left;padding:11px}
@@ -309,11 +309,11 @@ body.low-power #launcherSwipeGhost,body.low-power #tabSwipePreview{filter:none!i
 body[data-home-page="home"]{background:#0b0b0b}
 body[data-home-page="home"] #launcherNavigation{display:none!important}
 body[data-home-page="home"] #launcherShell{
- max-width:none;margin:0;padding:0;min-height:100dvh;overflow:visible;background:#0b0b0b}
+ max-width:none;margin:0;padding:0;min-height:100vh;min-height:100dvh;overflow:visible;background:#0b0b0b}
 body[data-home-page="home"] #launcherHomePage{
  position:relative;box-sizing:border-box;margin:0 auto;
- max-width:600px;min-height:100dvh;
- padding:clamp(55px,9.1dvh,92px) clamp(36px,11.5vw,62px) 105px;
+ max-width:600px;min-height:100vh;min-height:100dvh;
+ padding:clamp(55px,9.1vh,92px) clamp(36px,11.5vw,62px) 105px;padding:clamp(55px,9.1dvh,92px) clamp(36px,11.5vw,62px) 105px;
 }
 body[data-home-page="home"] .launcher-clock{
  display:block;border:0;margin:0;padding:0 0 27px;
@@ -387,7 +387,7 @@ body[data-home-page="home"] .launcher-dots .active{color:#c9c9c9}
 }
 #launcherOptionsSheet{
  box-sizing:border-box;width:min(100%,560px);
- max-height:80dvh;overflow-y:auto;overscroll-behavior:contain;
+ max-height:80vh;max-height:80dvh;overflow-y:auto;overscroll-behavior:contain;
  padding:21px 20px max(24px,env(safe-area-inset-bottom));
  background:#181818;border:1px solid #484848;
  border-bottom:0;box-shadow:0 -8px 30px rgba(0,0,0,.3);
@@ -419,6 +419,42 @@ body[data-home-page="home"] .launcher-dots .active{color:#c9c9c9}
 
 </style>
 <link rel="stylesheet" href="personalization.css">
+<script>
+// One interruptible motion vocabulary for pages, sheets and touch feedback.
+const DeskMotion=(()=>{
+ const preference=matchMedia('(prefers-reduced-motion: reduce)'),running=new Map(),closing=new Map();
+ const ease='cubic-bezier(.2,.75,.25,1)';
+ function cancel(node){const entry=running.get(node);if(entry){entry.cancel();running.delete(node)}}
+ function run(node,frames,duration=240){
+  cancel(node);
+  if(!node||preference.matches||typeof node.animate!=='function')return Promise.resolve();
+  return new Promise(resolve=>{
+   const animation=node.animate(frames,{duration:document.body?.classList.contains('low-power')?Math.round(duration*.65):duration,easing:ease});
+   const finish=()=>{if(running.get(node)===animation)running.delete(node);resolve()};
+   running.set(node,animation);animation.onfinish=finish;animation.oncancel=finish;
+  });
+ }
+ function panel(node){return node.querySelector('.customize-panel,#launcherOptionsSheet,.launcher-shortcut-panel,.grid-detail-panel')||node.firstElementChild||node}
+ function show(node){
+  closing.delete(node);cancel(node);cancel(panel(node));node.hidden=false;
+  run(node,[{opacity:0},{opacity:1}]);run(panel(node),[{transform:'translate3d(0,24px,0)'},{transform:'translate3d(0,0,0)'}]);
+ }
+ function hide(node,immediate=false){
+  if(!node||node.hidden)return;
+  const token={};closing.set(node,token);cancel(panel(node));
+  const finish=()=>{if(closing.get(node)===token){node.hidden=true;closing.delete(node)}};
+  if(immediate||preference.matches){cancel(node);finish();return}
+  run(panel(node),[{transform:'translate3d(0,0,0)'},{transform:'translate3d(0,24px,0)'}],180);
+  run(node,[{opacity:1},{opacity:0}],180).then(finish);
+ }
+ function enter(node,axis='x',direction=1){return run(node,[{opacity:.4,transform:'translate3d('+(axis==='x'?direction*22:0)+'px,'+(axis==='y'?22:0)+'px,0)'},{opacity:1,transform:'translate3d(0,0,0)'}])}
+ function reduce(){if(!preference.matches)return;for(const animation of running.values())animation.cancel();running.clear();for(const node of closing.keys())node.hidden=true;closing.clear()}
+ if(preference.addEventListener)preference.addEventListener('change',reduce);else preference.addListener(reduce);
+ return {run,show,hide,enter,cancel};
+})();
+// A full or disabled store must never disable navigation or personalization.
+const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{return null}},setItem(key,value){try{localStorage.setItem(key,value)}catch{}}};
+</script>
 <script src="wallpapers/catalog.js"></script>
 </head>
 <body data-home-page="home">
@@ -727,18 +763,21 @@ const removedFeeds=new Set(readStore("ar_removed_feeds",[])||[]);
 let feeds=[...new Map([...defaults,...savedFeeds,...autoFeeds].filter(f=>f&&typeof f.url==="string").map(f=>[f.url,f])).values()].filter(f=>!removedFeeds.has(f.url));
 let items=readStore("ar_items",[]),active="All",saved=readStore("ar_saved",[]);
 let savedItems=readStore("ar_saved_items",[])||[];
+function articleURL(raw,base){if(typeof raw!=="string"||!raw.trim())return "";try{const u=new URL(String(raw||""),base);return /^https?:$/.test(u.protocol)&&!u.username&&!u.password?u.href:""}catch{return ""}}
+function validStories(records){return records.filter(x=>x&&typeof x.title==="string"&&typeof x.key==="string"&&articleURL(x.link)).map(x=>({...x,link:articleURL(x.link),source:typeof x.source==="string"?x.source:"Audio Desk",desc:typeof x.desc==="string"?x.desc:"",cat:typeof x.cat==="string"?x.cat:"Production",date:typeof x.date==="string"?x.date:"",image:safeImage(x.image)}))}
+items=validStories(items);savedItems=validStories(savedItems);saved=saved.filter(x=>typeof x==="string");
 const $=id=>document.getElementById(id);
 function rememberSaved(){
  const records=new Map([...savedItems,...items].filter(x=>saved.includes(x.key)).map(x=>[x.key,x]));
  savedItems=[...records.values()];
  try{
-  localStorage.setItem("ar_saved_items",JSON.stringify(savedItems));
-  localStorage.setItem("ar_saved",JSON.stringify(saved));
+  deskStorage.setItem("ar_saved_items",JSON.stringify(savedItems));
+  deskStorage.setItem("ar_saved",JSON.stringify(saved));
  }catch(e){console.warn("Could not save bookmarks",e)}
 }
 // Migrate bookmarks while their article details are still in the old cache.
 rememberSaved();
-function readStore(key,fallback){try{const raw=localStorage.getItem(key);return raw===null?fallback:JSON.parse(raw)}catch(e){console.warn("Storage recovery:",key,e);return fallback}}
+function readStore(key,fallback){try{const raw=deskStorage.getItem(key);const value=raw===null?fallback:JSON.parse(raw);return Array.isArray(fallback)?(Array.isArray(value)?value:fallback):fallback&&typeof fallback==="object"?(value&&typeof value==="object"&&!Array.isArray(value)?value:fallback):value}catch(e){console.warn("Storage recovery:",key,e);return fallback}}
 window.onerror=function(message,source,line,col,error){const status=$("status");if(status)status.textContent="App script error: "+String(message)+" (line "+line+"). Tap Refresh to retry.";console.error("Audio Desk boot error",message,source,line,col,error);return false};
 window.addEventListener("unhandledrejection",e=>{const status=$("status");if(status)status.textContent="App request error: "+String((e.reason&&e.reason.message)||e.reason||"Unknown error")+". Tap Refresh to retry.";console.error("Audio Desk promise error",e.reason)});
 const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -776,11 +815,11 @@ for(const story of [...items,...savedItems]){
 }
 if(correctedCategories){
  try{
-  localStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)));
-  localStorage.setItem("ar_saved_items",JSON.stringify(savedItems));
+  deskStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)));
+  deskStorage.setItem("ar_saved_items",JSON.stringify(savedItems));
  }catch(e){console.warn("Could not update stored article categories",e)}
 }
-function cleanDesc(s){let d=document.createElement("div");d.innerHTML=s||"";return (d.textContent||"").replace(/\s+/g," ").trim().slice(0,210)}
+function cleanDesc(s){const d=new DOMParser().parseFromString(String(s||""),"text/html");return (d.body.textContent||"").replace(/\s+/g," ").trim().slice(0,210)}
 function safeImage(raw){
  if(!raw)return "";
  try{const u=new URL(String(raw).replace(/&amp;/gi,"&"),location.href);return /^https?:$/.test(u.protocol)?u.href:""}catch{return ""}
@@ -807,8 +846,7 @@ function extractImageCandidates(it){
    if(pair)offer(pair[1],priority,pair[3]==="w"?Number(pair[2]):pair[3]==="x"?Number(pair[2])*360:0);
   }
  }
- const doc=document.createElement("div");
- doc.innerHTML=[it.content,it.content_encoded,it.description].filter(Boolean).join(" ");
+ const doc=new DOMParser().parseFromString([it.content,it.content_encoded,it.description].filter(Boolean).join(" "),"text/html");
  for(const img of doc.querySelectorAll("img")){
   const width=Number(img.getAttribute("width"))||0,height=Number(img.getAttribute("height"))||0;
   srcset(img.getAttribute("srcset"),120);
@@ -899,7 +937,7 @@ async function loadTorrentMonitor(){
 }
 async function scanPluginWatchlist(){
  const names=$("pluginWatchlist").value.split(",").map(x=>x.trim()).filter(Boolean).slice(0,12);
- localStorage.setItem("ar_plugin_watchlist",names.join(","));
+ deskStorage.setItem("ar_plugin_watchlist",names.join(","));
  $("watchlistStatus").textContent=names.length?"Scanning "+names.length+" names…":"Add at least one plugin or developer name.";
  if(!names.length){watchlistItems=[];if(activeView==="torrents")renderTorrentMonitor();return;}
  $("scanWatchlist").disabled=true;
@@ -974,6 +1012,7 @@ function setView(view){
  if(view!==activeView)pauseSampleDemos();
  activeView=view;
  const news=view==="news";
+ DeskMotion.enter(news?$("stories"):$("resourceHub"));
  $("resourceHub").hidden=news;
  $("watchlistTools").hidden=view!=="torrents";
  $("torrentControls").hidden=view!=="torrents";
@@ -998,7 +1037,7 @@ function safeDemoURL(raw){
  try{
   const u=new URL(raw);
   if(u.protocol!=="https:"||u.username||u.password||u.port&&u.port!=="443")return "";
-  if(/^(?:localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|169\.254\.)$/i.test(u.hostname))return "";
+  if(/^(?:localhost$|.*\.localhost$|127\.|0\.|10\.|192\.168\.|169\.254\.|172\.(?:1[6-9]|2[0-9]|3[01])\.|\[)/i.test(u.hostname))return "";
   return u.href;
  }catch{return ""}
 }
@@ -1016,8 +1055,7 @@ function extractFeedSampleDemo(it){
   const url=safeDemoURL(src);
   if(url&&(type.startsWith("audio/")||/\.(?:mp3|m4a|aac|ogg|oga|wav|opus)(?:[?#]|$)/i.test(url)))return {kind:"audio",url};
  }
- const container=document.createElement("div");
- container.innerHTML=[it.content,it.content_encoded,it.description].filter(Boolean).join(" ");
+ const container=new DOMParser().parseFromString([it.content,it.content_encoded,it.description].filter(Boolean).join(" "),"text/html");
  for(const media of container.querySelectorAll("audio,source,a[href]")){
   const url=safeDemoURL(media.getAttribute("src")||media.getAttribute("href"));
   if(!url)continue;
@@ -1035,6 +1073,10 @@ function sampleDemoMarkup(story){
 }
 function pauseSampleDemos(){
  for(const player of document.querySelectorAll(".sample-demo-output audio"))player.pause();
+ for(const frame of document.querySelectorAll(".sample-demo-output iframe"))frame.remove();
+ for(const pending of pendingSampleDemos.values())clearTimeout(pending.timer);
+ pendingSampleDemos.clear();
+ for(const button of document.querySelectorAll('[data-demo-key]:disabled')){button.disabled=false;button.textContent='▶ PLAY DEMO'}
 }
 function embedOfficialPreview(record){
  try{
@@ -1108,7 +1150,7 @@ function receiveSampleDemo(id,result){
   sampleDemoCache[pending.key]=demo;
   const keys=Object.keys(sampleDemoCache);
   if(keys.length>80)for(const key of keys.slice(0,keys.length-80))delete sampleDemoCache[key];
-  try{localStorage.setItem("ar_sample_demo_urls",JSON.stringify(sampleDemoCache))}catch(e){}
+  try{deskStorage.setItem("ar_sample_demo_urls",JSON.stringify(sampleDemoCache))}catch(e){}
  }
  pauseSampleDemos();
  showSampleDemo(pending.key,demo);
@@ -1210,8 +1252,8 @@ function rememberResolvedImage(story,url){
  for(const record of [...items,...savedItems])if(record.key===story.key){
   record.image=url;record.images=[...story.images];
  }
- try{localStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)));}catch(e){}
- try{localStorage.setItem("ar_saved_items",JSON.stringify(savedItems));}catch(e){}
+ try{deskStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)));}catch(e){}
+ try{deskStorage.setItem("ar_saved_items",JSON.stringify(savedItems));}catch(e){}
  for(const card of document.querySelectorAll("#stories .story")){
   if(card.__article&&card.__article.key===story.key&&!card.querySelector(".storymedia"))mountStoryMedia(card,story);
  }
@@ -1334,7 +1376,7 @@ async function receiveDiscoveredFeeds(requestId,found){
   }catch(e){}
  }
  if(added){
-  localStorage.setItem("ar_auto_feeds",JSON.stringify(autoFeeds.slice(-60)));
+  deskStorage.setItem("ar_auto_feeds",JSON.stringify(autoFeeds.slice(-60)));
   renderSources();
   if(!$("refresh").disabled)loadFeeds();
  }
@@ -1344,7 +1386,7 @@ async function receiveDiscoveredFeeds(requestId,found){
 }
 function discoverPublisherFeeds(force=false){
  if(discoveryPending||!navigator.onLine)return;
- const last=Number(localStorage.getItem("ar_last_discovery")||0);
+ const last=Number(deskStorage.getItem("ar_last_discovery")||0);
  if(!force&&Date.now()-last<DISCOVERY_INTERVAL_MS)return;
  const button=$("discoverFeeds");
  if(!window.AudioDesk||typeof window.AudioDesk.discoverPublisherFeeds!=="function"){
@@ -1355,7 +1397,7 @@ function discoverPublisherFeeds(force=false){
  discoveryPending={id};
  button.disabled=true;
  $("discoveryStatus").textContent="Checking trusted publishers for new RSS/Atom sources…";
- localStorage.setItem("ar_last_discovery",String(Date.now()));
+ deskStorage.setItem("ar_last_discovery",String(Date.now()));
  try{window.AudioDesk.discoverPublisherFeeds(JSON.stringify(publisherSeeds),id)}
  catch(e){
   discoveryPending=null;
@@ -1365,18 +1407,18 @@ function discoverPublisherFeeds(force=false){
 }
 function renderSources(){
  $("sources").innerHTML=feeds.map((f,i)=>`<div class="source"><div>${esc(f.name)}<small>${esc(f.cat)}</small></div><button class="save" data-remove="${i}">Remove</button></div>`).join("");
- document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{const removed=feeds.splice(+b.dataset.remove,1)[0];removedFeeds.add(removed.url);localStorage.setItem("ar_removed_feeds",JSON.stringify([...removedFeeds]));localStorage.setItem("ar_feeds",JSON.stringify(feeds));renderSources();loadFeeds()});
+ document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{const removed=feeds.splice(+b.dataset.remove,1)[0];removedFeeds.add(removed.url);deskStorage.setItem("ar_removed_feeds",JSON.stringify([...removedFeeds]));deskStorage.setItem("ar_feeds",JSON.stringify(feeds));renderSources();loadFeeds()});
 }
 async function fetchFeed(feed){
  const endpoint="https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(feed.url);
  const r=await fetch(endpoint); if(!r.ok)throw Error("HTTP "+r.status);
  const j=await r.json(); if(j.status!=="ok")throw Error(j.message||"Feed unavailable");
- return (j.items||[]).map(it=>{
-  const link=it.link||it.guid||"#";
-  const title=it.title||"Untitled";
+ return (Array.isArray(j.items)?j.items:[]).filter(it=>it&&typeof it==="object").map(it=>{
+  const link=articleURL(it.link,feed.url)||articleURL(it.guid);
+  const title=String(it.title||"Untitled");
   const images=extractImageCandidates(it);
   return {title,link,date:it.pubDate||"",desc:cleanDesc(it.description||it.content),image:images[0]||"",images,demo:extractFeedSampleDemo(it),source:feed.name,cat:classify({title,description:it.description||it.content},feed),key:link};
- });
+ }).filter(story=>story.link);
 }
 function normalizeStoryUrl(raw){
  try{const u=new URL(raw);u.hash="";["utm_source","utm_medium","utm_campaign","utm_term","utm_content","ocid","fbclid","gclid"].forEach(k=>u.searchParams.delete(k));return u.hostname.replace(/^www\./,"")+u.pathname.replace(/\/$/,"")+u.search}catch{return String(raw||"").trim().toLowerCase()}
@@ -1530,7 +1572,7 @@ async function refreshLiveRadar(force=false){
    if(added){
     items.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
     items=items.slice(0,500);
-    try{localStorage.setItem("ar_items",JSON.stringify(items))}catch(e){}
+    try{deskStorage.setItem("ar_items",JSON.stringify(items))}catch(e){}
     if(activeView==="news")render();
     if(activeView==="samples")renderSamplePackReleases();
    }
@@ -1561,7 +1603,7 @@ async function loadFeeds(){
   const all=[...results.flat(),...retained];
   const seen=new Set();
   items=all.filter(x=>{const k=normalizeStoryUrl(x.link)||titleKey(x.title);if(seen.has(k))return false;seen.add(k);return true});
-  try{localStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)))}catch(e){console.warn("Could not cache headlines",e)}
+  try{deskStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)))}catch(e){console.warn("Could not cache headlines",e)}
   if(ok>0)$("updated").textContent="RSS updated "+new Date().toLocaleTimeString();
   render();
   const unreachable=!navigator.onLine||(feeds.length>0&&ok===0&&failed.length===feeds.length);
@@ -1572,7 +1614,7 @@ async function loadFeeds(){
    const merged=[...items,...repos],unique=new Map();
    merged.forEach(x=>{const k=normalizeStoryUrl(x.link)||titleKey(x.title);if(!unique.has(k))unique.set(k,x)});
    items=[...unique.values()].sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
-   try{localStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)))}catch(e){console.warn("Could not cache GitHub results",e)}
+   try{deskStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)))}catch(e){console.warn("Could not cache GitHub results",e)}
    render();
    $("status").textContent+=` GitHub: ${repos.length} repositories added.`;
   }).catch(e=>console.warn("Background GitHub discovery failed",e));
@@ -1737,7 +1779,7 @@ function setCardDensity(value){
  const origins=tiles.map(el=>el.getBoundingClientRect());
  cardDensity=next;
  document.body.dataset.cardColumns=String(cardDensity);
- try{localStorage.setItem("ar_card_columns",JSON.stringify(cardDensity))}catch(e){}
+ try{deskStorage.setItem("ar_card_columns",JSON.stringify(cardDensity))}catch(e){}
  updateDensityTargets();
  if(!swipeReducedMotion.matches){
   tiles.forEach((tile,i)=>{
@@ -1746,10 +1788,10 @@ function setCardDensity(value){
    const dx=old.left-now.left,dy=old.top-now.top;
    const sx=Math.min(2.8,Math.max(.35,old.width/now.width));
    const sy=Math.min(2.8,Math.max(.35,old.height/now.height));
-   tile.animate([
+   DeskMotion.run(tile,[
     {transform:"translate("+dx+"px,"+dy+"px) scale("+sx+","+sy+")",opacity:.74},
     {transform:"translate(0,0) scale(1,1)",opacity:1}
-   ],{duration:300,easing:"cubic-bezier(.16,.85,.3,1)"});
+   ]);
   });
  }
 }
@@ -1760,8 +1802,9 @@ function stepCardDensity(direction){
 document.querySelectorAll("[data-card-density]").forEach(b=>b.onclick=()=>setCardDensity(b.dataset.cardDensity));
 updateDensityTargets();
 
-function closeGridDetails(){
- $("gridDetail").hidden=true;
+function closeGridDetails(immediate=false){
+ immediate=immediate===true;
+ DeskMotion.hide($("gridDetail"),immediate);
  document.body.style.removeProperty("overflow");
  pauseSampleDemos();
 }
@@ -1776,7 +1819,7 @@ function openGridDetails(story){
   '<div class="detail-actions"><a href="'+esc(story.link)+'" target="_blank" rel="noopener">OPEN ORIGINAL ↗</a>'+
   '<button id="gridDetailSave" type="button">'+(saved.includes(key)?"★ SAVED":"☆ SAVE")+'</button></div>'+
   (story.cat==="Sample packs"?sampleDemoMarkup(story):"");
- $("gridDetail").hidden=false;
+ DeskMotion.show($("gridDetail"));
  document.body.style.overflow="hidden";
  $("gridDetailSave").onclick=()=>{
   saved=saved.includes(key)?saved.filter(x=>x!==key):[...saved,key];
@@ -1787,7 +1830,7 @@ function openGridDetails(story){
  wireSampleDemoButtons($("gridDetailBody"));
  $("gridDetailClose").focus();
 }
-$("gridDetailClose").onclick=closeGridDetails;
+$("gridDetailClose").onclick=()=>closeGridDetails();
 $("gridDetail").addEventListener("click",e=>{if(e.target===$("gridDetail"))closeGridDetails()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("gridDetail").hidden)closeGridDetails()});
 function onCompactTile(e){
@@ -1926,7 +1969,7 @@ function setLauncherPin(pkg,activity){
  if(!launcherApps.some(app=>launcherAppKey(app)===key))return;
  launcherPins=launcherPins.includes(key)?launcherPins.filter(x=>x!==key):[...launcherPins,key];
  launcherPins=launcherPins.slice(-18);
- try{localStorage.setItem(launcherPinsKey,JSON.stringify(launcherPins))}catch(e){}
+ try{deskStorage.setItem(launcherPinsKey,JSON.stringify(launcherPins))}catch(e){}
  renderLauncherHome();if(launcherPage==="apps")renderLauncherApps();
 }
 function appLetter(app){
@@ -2022,7 +2065,7 @@ window.receiveLauncherApps=function(apps,recents,isDefault){
  if(!Array.isArray(apps)||!Array.isArray(recents))return;
  // Only data received directly from the Android package manager is rendered.
  launcherApps=apps.filter(a=>a&&typeof a.pkg==="string"&&typeof a.activity==="string"&&
-  typeof a.label==="string").slice(0,400);
+  typeof a.label==="string").slice(0,4000);
  launcherRecents=recents.filter(a=>a&&typeof a.pkg==="string"&&typeof a.activity==="string"&&
   typeof a.label==="string").slice(0,16);
  launcherNativeLoaded=true;
@@ -2035,10 +2078,11 @@ function requestLauncherApps(force=false){
  }
  if(!force&&Date.now()-launcherLastRequest<15000)return;
  launcherLastRequest=Date.now();
- try{window.AudioDesk.requestLauncherApps()}catch(e){$("launcherAppCount").textContent="APP LIST UNAVAILABLE"}
+ try{window.AudioDesk.requestLauncherApps(force)}catch(e){$("launcherAppCount").textContent="APP LIST UNAVAILABLE"}
 }
 window.launcherOnResume=function(){
- requestLauncherApps(false);
+ formatLauncherClock();if(typeof fitClock==="function")fitClock();
+ requestLauncherApps(true);
 };
 window.launcherLaunchResult=function(opened){
  if(!opened){
@@ -2048,7 +2092,10 @@ window.launcherLaunchResult=function(opened){
  }
 };
 function setLauncherPage(page,animate=true){
- if(page!=="home"){closeHomeOptions();if(typeof closeCustomize==="function")closeCustomize();}
+ if(page!=="home"){closeHomeOptions(true);if(typeof closeCustomize==="function")closeCustomize(true);}
+ if(page!=="apps"){const search=$("launcherAppSearch");search.blur();window.AudioDesk?.hideSearchKeyboard?.()}
+ if(page!=="events"){pauseSampleDemos();closeGridDetails(true)}
+ closeAppShortcuts(true);
  if(!launcherPages.includes(page))return;
  if(page===launcherPage&&$("launcherShell").hidden===(page==="events"))return;
  const previous=launcherPage;
@@ -2076,16 +2123,13 @@ function setLauncherPage(page,animate=true){
   window.scrollTo(0,launcherEventScroll);
  }
  window.dispatchEvent(new Event("launcher-page-changed"));
- if(animate&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
-  const panel=homePanel(page);
-  panel.style.setProperty("--page-enter",launcherPages.indexOf(page)>launcherPages.indexOf(previous)?"22px":"-22px");
-  panel.classList.remove("launcher-enter");
-  void panel.offsetWidth;
-  panel.classList.add("launcher-enter");
-  setTimeout(()=>panel.classList.remove("launcher-enter"),370);
- }
+ if(animate)DeskMotion.enter(homePanel(page),'x',launcherPages.indexOf(page)>launcherPages.indexOf(previous)?1:-1);
 }
-window.launcherGoHome=function(){closeHomeOptions();setLauncherPage("home",true)};
+window.launcherGoHome=function(){
+ closeHomeOptions(true);closeCustomize(true);closeAppShortcuts(true);closeGridDetails(true);
+ $("launcherRecentDrawer").hidden=true;$("launcherShowRecents").textContent="▣ RECENTLY OPENED APPS";
+ cancelHomeHold();upStart=null;iconSwipe=null;resetLauncherGesture();setLauncherPage("home",true);formatLauncherClock();
+};
 window.launcherBack=function(){
  if(!$("launcherWallpaperDialog").hidden||!$("launcherClockDialog").hidden){closeCustomize();return}
  if(!$("launcherHomeOptions").hidden){closeHomeOptions();return}
@@ -2095,17 +2139,18 @@ window.launcherBack=function(){
  if(activeView!=="news"){setView("news");render();return}
  if(active!=="All"){active="All";setView("news");render();}
 };
-function closeHomeOptions(){
- $("launcherHomeOptions").hidden=true;
+function closeHomeOptions(immediate=false){
+ immediate=immediate===true;
+ DeskMotion.hide($("launcherHomeOptions"),immediate);
  $("launcherSettingsToggle").setAttribute("aria-expanded","false");
 }
 $("launcherSettingsToggle").onclick=()=>{
  const shown=$("launcherHomeOptions").hidden;
- $("launcherHomeOptions").hidden=!shown;
+ if(shown){cancelHomeHold();upStart=null;DeskMotion.show($("launcherHomeOptions"))}else closeHomeOptions();
  $("launcherSettingsToggle").setAttribute("aria-expanded",String(shown));
  if(shown)$("launcherOptionsClose").focus();
 };
-$("launcherOptionsClose").onclick=closeHomeOptions;
+$("launcherOptionsClose").onclick=()=>closeHomeOptions();
 $("launcherHomeOptions").addEventListener("click",event=>{
  if(event.target===$("launcherHomeOptions"))closeHomeOptions();
 });
@@ -2121,7 +2166,7 @@ $("launcherShowRecents").onclick=()=>{
  $("launcherRecentDrawer").hidden=!$("launcherRecentDrawer").hidden;
  $("launcherShowRecents").textContent=$("launcherRecentDrawer").hidden?
   "▣ RECENTLY OPENED APPS":"× HIDE RECENT APPS";
- if(!$("launcherRecentDrawer").hidden)requestLauncherApps(true);
+ if(!$("launcherRecentDrawer").hidden){DeskMotion.enter($("launcherRecentDrawer"),"y");requestLauncherApps(true);}
 };
 
 $("launcherAppSearch").addEventListener("input",renderLauncherApps);
@@ -2146,11 +2191,7 @@ renderLauncherHome();renderLauncherApps();renderLauncherRecents();
 let upStart=null;
 function openLauncherSearch(){
  setLauncherPage("apps",false);
- const panel=$("launcherAppsPage");
- panel.classList.remove("search-rise");
- void panel.offsetWidth;
- panel.classList.add("search-rise");
- panel.addEventListener("animationend",()=>panel.classList.remove("search-rise"),{once:true});
+ DeskMotion.enter($("launcherAppsPage"),"y");
  const search=$("launcherAppSearch");
  search.value="";renderLauncherApps();
  search.focus();
@@ -2158,21 +2199,28 @@ function openLauncherSearch(){
   window.AudioDesk.requestSearchKeyboard();
 }
 $("launcherHomePage").addEventListener("touchstart",e=>{
- if(e.touches.length!==1||e.target.closest("button,input,textarea"))return;
+ if(e.touches.length!==1||hasLauncherOverlay()||e.target.closest("input,textarea,button:not(.launcher-app)"))return;
  const t=e.touches[0];upStart={x:t.clientX,y:t.clientY};
 },{passive:true});
+$("launcherHomePage").addEventListener("touchmove",e=>{
+ if(!upStart||e.touches.length!==1)return;
+ const t=e.touches[0],dx=t.clientX-upStart.x,dy=t.clientY-upStart.y;
+ if(dy< -24&&Math.abs(dy)>Math.abs(dx)*1.4){
+  cancelHomeHold();iconSwipe=null;blockAppClickUntil=Date.now()+600;if(e.cancelable)e.preventDefault();
+ }
+},{passive:false});
 $("launcherHomePage").addEventListener("touchend",e=>{
  const origin=upStart;upStart=null;
  if(longConsumed||!origin||!e.changedTouches.length||launcherPage!=="home")return;
  const t=e.changedTouches[0],dx=t.clientX-origin.x,dy=t.clientY-origin.y;
- if(dy< -75&&Math.abs(dy)>Math.abs(dx)*1.4)openLauncherSearch();
+ if(dy< -75&&Math.abs(dy)>Math.abs(dx)*1.4){blockAppClickUntil=Date.now()+600;iconSwipe=null;cancelHomeHold();openLauncherSearch()}
 },{passive:true});
 $("launcherHomePage").addEventListener("touchcancel",()=>upStart=null,{passive:true});
 
 /* Swipe sideways directly on an app icon for its published shortcuts. */
 let selectedApp=null,iconSwipe=null,blockAppClickUntil=0;
-function closeAppShortcuts(){selectedApp=null;$("launcherShortcutMenu").hidden=true}
-$("launcherShortcutClose").onclick=closeAppShortcuts;
+function closeAppShortcuts(immediate=false){immediate=immediate===true;selectedApp=null;DeskMotion.hide($("launcherShortcutMenu"),immediate)}
+$("launcherShortcutClose").onclick=()=>closeAppShortcuts();
 $("launcherShortcutMenu").onclick=e=>{
  if(e.target===$("launcherShortcutMenu"))closeAppShortcuts();
 };
@@ -2180,7 +2228,7 @@ function showAppShortcuts(pkg,activity){
  const app=launcherApps.find(a=>a.pkg===pkg&&a.activity===activity);
  if(!app)return;
  selectedApp=app;
- $("launcherShortcutMenu").hidden=false;
+ cancelHomeHold();upStart=null;DeskMotion.show($("launcherShortcutMenu"));
  $("launcherShortcutTitle").textContent=app.label.toUpperCase()+" · QUICK ACTIONS";
  const pinned=launcherPins.includes(launcherAppKey(app));
  $("launcherShortcutActions").innerHTML=
@@ -2252,10 +2300,10 @@ function renderLauncherDrag(dx,target){
  const p=Math.min(1,Math.abs(dx)/Math.max(200,window.innerWidth*.8));
  for(const node of gesturePanels()){
   node.style.transition="none";
-  node.style.willChange="transform,opacity,filter";
+  node.style.willChange="transform,opacity";
   node.style.transform="translate3d("+(dx*.08)+"px,0,0) scale("+(1-p*.10)+")";
   node.style.opacity=String(1-p*.65);
-  if(!LOW_POWER_DEVICE)node.style.filter="blur("+(p*3).toFixed(2)+"px)";
+
  }
  launcherGhost.hidden=false;
  $("launcherSwipeName").textContent=target==="events"?"AUDIO NEWS":target==="apps"?"ALL APPS":"HOME";
@@ -2265,11 +2313,11 @@ function renderLauncherDrag(dx,target){
  launcherGhost.style.transform="translate3d("+(-Math.sign(dx)*Math.max(0,1-p)*28)+"%,0,0) scale("+(.96+p*.04)+")";
 }
 document.addEventListener("touchstart",e=>{
- if(e.touches.length!==1||tabAnimationBusy||pinchBlocksSwipe)return;
+ if(e.touches.length!==1||tabAnimationBusy||pinchBlocksSwipe||hasLauncherOverlay())return;
  const t=e.touches[0],x=t.clientX;
  const edge=x<34||x>window.innerWidth-34;
  if(launcherPage==="events"&&!edge)return; // Keep existing news category swipes.
- if(e.target.closest("#launcherAlphaIndex,.launcher-app,input,textarea,select,audio,video,iframe,[contenteditable]"))return;
+ if(e.target.closest("#launcherAlphaIndex,.launcher-app,button,a,input,textarea,select,audio,video,iframe,[contenteditable]"))return;
  launcherGesture={x,y:t.clientY,lastX:x,locked:false,edge};
 },{capture:true,passive:true});
 document.addEventListener("touchmove",e=>{
@@ -2282,6 +2330,7 @@ document.addEventListener("touchmove",e=>{
   const idx=launcherPages.indexOf(launcherPage),target=idx-Math.sign(dx);
   if(target<0||target>=launcherPages.length){launcherGesture=null;return}
   g.locked=true;g.target=launcherPages[target];
+  cancelHomeHold();upStart=null;iconSwipe=null;
   if(typeof clearTabSwipe==="function")clearTabSwipe();
  }
  if(e.cancelable)e.preventDefault();
@@ -2302,20 +2351,20 @@ document.addEventListener("touchcancel",()=>{if(launcherGesture)resetLauncherGes
 // The Android Home intent opens Favorites; the original news reader stays one swipe to the left.
 document.body.dataset.homePage="home";
 
-document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{setView("news");active=b.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===b));render()});
+document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{setView("news");active=b.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===b));render();DeskMotion.enter($("stories"))});
 $("search").addEventListener("input",()=>{if(activeView==="news")render();else if(activeView==="torrents")renderTorrentMonitor();else renderResourceDirectory()});
 $("resourceCategory").addEventListener("change",()=>{if(activeView==="torrents")renderTorrentMonitor();else renderResourceDirectory()});
 $("resourceAccess").addEventListener("change",()=>{if(activeView==="torrents")renderTorrentMonitor();else renderResourceDirectory()});
 document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
 $("scanWatchlist").onclick=scanPluginWatchlist;
-$("pluginWatchlist").value=localStorage.getItem("ar_plugin_watchlist")||"";
+$("pluginWatchlist").value=deskStorage.getItem("ar_plugin_watchlist")||"";
 $("refreshTorrent").onclick=loadTorrentMonitor;
 $("torrentPeriod").addEventListener("change",loadTorrentMonitor);
 $("webSearch").onclick=runWebSearch;
 $("search").addEventListener("keydown",e=>{if(e.key==="Enter")runWebSearch()});
 $("refresh").onclick=loadFeeds;
 $("discoverFeeds").onclick=()=>discoverPublisherFeeds(true);
-$("addFeed").onclick=()=>{let name=$("feedName").value.trim(),url=$("feedUrl").value.trim();if(!name||!/^https?:\/\//i.test(url)){alert("Enter a source name and a valid http(s) RSS URL.");return}removedFeeds.delete(url);localStorage.setItem("ar_removed_feeds",JSON.stringify([...removedFeeds]));if(!feeds.some(f=>f.url===url))feeds.push({name,url,cat:"Production"});localStorage.setItem("ar_feeds",JSON.stringify(feeds));$("feedName").value="";$("feedUrl").value="";renderSources();loadFeeds()};
+$("addFeed").onclick=()=>{let name=$("feedName").value.trim(),url=$("feedUrl").value.trim();if(!name||!/^https?:\/\//i.test(url)){alert("Enter a source name and a valid http(s) RSS URL.");return}removedFeeds.delete(url);deskStorage.setItem("ar_removed_feeds",JSON.stringify([...removedFeeds]));if(!feeds.some(f=>f.url===url))feeds.push({name,url,cat:"Production"});deskStorage.setItem("ar_feeds",JSON.stringify(feeds));$("feedName").value="";$("feedUrl").value="";renderSources();loadFeeds()};
 renderSources();
 setOfflineNotice(!navigator.onLine);
 window.addEventListener("offline",()=>{setOfflineNotice(true);$("status").textContent="No internet connection. Cached headlines remain available.";});
@@ -2440,4 +2489,12 @@ document.addEventListener("click",e=>{
 })();
 </script>
 <script src="personalization.js"></script>
+<script>
+function hasLauncherOverlay(){return ['launcherHomeOptions','launcherShortcutMenu','launcherWallpaperDialog','launcherClockDialog','gridDetail'].some(id=>!document.getElementById(id).hidden)}
+function syncRefreshAvailability(){window.AudioDesk?.setRefreshEnabled?.(launcherPage==='events'&&!hasLauncherOverlay())}
+for(const id of ['launcherHomeOptions','launcherShortcutMenu','launcherWallpaperDialog','launcherClockDialog','gridDetail']){
+ new MutationObserver(()=>{syncRefreshAvailability();if(hasLauncherOverlay()){cancelHomeHold();upStart=null;if(launcherGesture)resetLauncherGesture()}}).observe($(id),{attributes:true,attributeFilter:['hidden']});
+}
+window.addEventListener('launcher-page-changed',syncRefreshAvailability);syncRefreshAvailability();
+</script>
 </body></html>

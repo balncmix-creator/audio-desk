@@ -58,6 +58,17 @@ class DeskRefreshLayout(context: Context) : FrameLayout(context) {
         addView(indicator, LayoutParams(-1, dp(108), Gravity.TOP or Gravity.CENTER_HORIZONTAL))
     }
 
+    override fun setEnabled(enabled: Boolean) {
+        super.setEnabled(enabled)
+        if (!enabled) {
+            eligible = false
+            dragging = false
+            isRefreshing = false
+            settle?.cancel()
+            showOffset(0f)
+        }
+    }
+
     fun setContent(view: View) {
         check(content == null)
         content = view

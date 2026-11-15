@@ -77,7 +77,7 @@ const assert=require('node:assert/strict');
   assert.deepEqual((await page.evaluate(()=>window.launchedShortcut)),{
    pkg:'com.google.android.apps.nbu.paisa.user',activity:'GPayHome',id:'scan_qr'
   });
-  assert.equal(await page.locator('#launcherShortcutMenu').isVisible(),false);
+  await page.locator('#launcherShortcutMenu').waitFor({state:'hidden'});
   // Swipe up from the home surface (away from app buttons).
   await gesture('#launcherHomePage',[180,660],[179,432]);
   assert.equal(await page.evaluate(()=>launcherPage),'apps');

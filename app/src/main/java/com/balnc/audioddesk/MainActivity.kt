@@ -43,6 +43,7 @@ class MainActivity : Activity() {
     private var destroyed = false
     private var statusInsetDp = 24
     private var bottomInsetDp = 0
+    private var refreshAllowed = false
     private var wallpaperFileCallback: ValueCallback<Array<Uri>>? = null
     private val wallpaperFileRequest = 2405
 
@@ -87,12 +88,15 @@ class MainActivity : Activity() {
             statusInsetDp = (safe.top / density).toInt()
             bottomInsetDp = (safe.bottom / density).toInt()
             if (::appWebView.isInitialized) applyWebInsets()
+            if (::browserPanel.isInitialized) browserPanel.setPadding(0, safe.top, 0, safe.bottom)
             insets
         }
 
-        swipeRefresh = DeskRefreshLayout(this)
+        swipeRefresh = DeskRefreshLayout(this).apply { isEnabled = false }
         appWebView = WebView(this)
+        // Only the trusted local interface reads user-picked content URIs.
         configure(appWebView)
+        appWebView.settings.allowContentAccess = true
         appWebView.webChromeClient = object : WebChromeClient() {
             override fun onShowFileChooser(
                 webView: WebView?, callback: ValueCallback<Array<Uri>>?,
@@ -229,9 +233,9 @@ class MainActivity : Activity() {
         )
     }
 
-    private fun sendLauncherApps() {
+    private fun sendLauncherApps(forceRefresh: Boolean = false) {
         if (!::launcherSupport.isInitialized || destroyed) return
-        launcherSupport.load { apps, recents ->
+        launcherSupport.load(forceRefresh) { apps, recents ->
             runOnUiThread {
                 if (!destroyed && ::appWebView.isInitialized) {
                     val home = launcherSupport.isDefaultHome()
@@ -287,8 +291,24 @@ class MainActivity : Activity() {
                 }
             }
         }
-        @JavascriptInterface fun requestLauncherApps() {
-            runOnUiThread { sendLauncherApps() }
+        @JavascriptInterface fun hideSearchKeyboard() {
+            runOnUiThread {
+                if (!destroyed && ::appWebView.isInitialized) {
+                    val manager = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                    manager.hideSoftInputFromWindow(appWebView.windowToken, 0)
+                }
+            }
+        }
+        @JavascriptInterface fun setRefreshEnabled(enabled: Boolean) {
+            runOnUiThread {
+                if (!destroyed) {
+                    refreshAllowed = enabled
+                    swipeRefresh.isEnabled = enabled && browserPanel.visibility != View.VISIBLE
+                }
+            }
+        }
+        @JavascriptInterface fun requestLauncherApps(forceRefresh: Boolean) {
+            runOnUiThread { sendLauncherApps(forceRefresh) }
         }
         @JavascriptInterface fun launchExternalApp(pkg: String, activityName: String) {
             runOnUiThread {
@@ -359,7 +379,7 @@ class MainActivity : Activity() {
         @JavascriptInterface fun openArticle(url: String) { runOnUiThread { openInBrowser(url) } }
         @JavascriptInterface fun refreshStarted() {
             runOnUiThread {
-                swipeRefresh.isRefreshing = true
+                if (swipeRefresh.isEnabled) swipeRefresh.isRefreshing = true
                 refreshHandler.removeCallbacks(refreshFailsafe)
                 refreshHandler.postDelayed(refreshFailsafe, 15000L)
             }
@@ -376,6 +396,7 @@ class MainActivity : Activity() {
         super.onNewIntent(intent)
         setIntent(intent)
         if (::appWebView.isInitialized && intent?.hasCategory(android.content.Intent.CATEGORY_HOME) == true) {
+            if (::browserPanel.isInitialized && browserPanel.visibility == View.VISIBLE) closeBrowser()
             appWebView.evaluateJavascript("window.launcherGoHome&&window.launcherGoHome()", null)
         }
     }
@@ -386,12 +407,13 @@ class MainActivity : Activity() {
         if (::appWebView.isInitialized && ::launcherSupport.isInitialized)
             appWebView.evaluateJavascript(
                 "window.launcherOnResume&&window.launcherOnResume();" +
-                    "window.launcherWallpaperActive&&window.launcherWallpaperActive(true)", null)
+                    "window.launcherWallpaperActive&&window.launcherWallpaperActive(" + (browserPanel.visibility != View.VISIBLE) + ")", null)
     }
 
     override fun onPause() {
         if (::appWebView.isInitialized && !destroyed) appWebView.evaluateJavascript(
-            "window.launcherWallpaperActive&&window.launcherWallpaperActive(false)", null)
+            "window.launcherWallpaperActive&&window.launcherWallpaperActive(false);" +
+                "if(typeof pauseSampleDemos==='function')pauseSampleDemos()", null)
         super.onPause()
     }
 
@@ -403,7 +425,7 @@ class MainActivity : Activity() {
         wallpaperFileCallback = null
         val uri = data?.data?.takeIf { resultCode == RESULT_OK && it.scheme == "content" }
         val allowed = uri?.let {
-            try { contentResolver.getType(it) in setOf("image/jpeg", "image/png", "image/webp") }
+            try { contentResolver.getType(it).let { mime -> mime == null || mime in setOf("image/jpeg", "image/jpg", "image/png", "image/webp") } }
             catch (_: SecurityException) { false }
         } ?: false
         callback?.onReceiveValue(if (uri != null && allowed) arrayOf(uri) else null)
@@ -411,6 +433,9 @@ class MainActivity : Activity() {
 
     private fun openInBrowser(url: String) {
         if (!url.startsWith("https://") && !url.startsWith("http://")) return
+        appWebView.evaluateJavascript("if(typeof pauseSampleDemos==='function')pauseSampleDemos();window.launcherWallpaperActive&&window.launcherWallpaperActive(false)", null)
+        swipeRefresh.isEnabled = false
+        WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = false
         swipeRefresh.visibility = View.GONE
         browserPanel.visibility = View.VISIBLE
         browserWebView.loadUrl(url)
@@ -421,6 +446,8 @@ class MainActivity : Activity() {
         browserWebView.loadUrl("about:blank")
         browserPanel.visibility = View.GONE
         swipeRefresh.visibility = View.VISIBLE
+        swipeRefresh.isEnabled = refreshAllowed
+        appWebView.evaluateJavascript("window.launcherWallpaperActive&&window.launcherWallpaperActive(true)", null)
     }
 
     @Deprecated("Deprecated in Android API")

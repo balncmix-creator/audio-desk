@@ -112,6 +112,7 @@ const demoApps=[
   assert.equal(await page.evaluate(()=>window.makeDefaultRequests),1);
   assert.equal(await page.locator('#launcherMakeDefault').isVisible(),false);
   await page.locator('#launcherOptionsClose').click();
+  await page.locator('#launcherHomeOptions').waitFor({state:'hidden'});
 
   const swipe=async(target,x0,x1)=>{
    await page.evaluate(({target,x0,x1})=>{

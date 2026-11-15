@@ -65,9 +65,9 @@ internal class HomeLauncherSupport(private val activity: Activity) {
         return "data:image/png;base64," + Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
     }
 
-    fun load(callback: (JSONArray, JSONArray) -> Unit) {
+    fun load(forceRefresh: Boolean = false, callback: (JSONArray, JSONArray) -> Unit) {
         executor.execute {
-            val apps = if (knownApps.isNotEmpty() &&
+            val apps = if (!forceRefresh && knownApps.isNotEmpty() &&
                 System.currentTimeMillis() - lastScanAt < 120_000L) knownApps
                 else try { query().also { lastScanAt = System.currentTimeMillis() } }
                     catch (_: Exception) { knownApps }
