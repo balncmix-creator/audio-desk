@@ -96,4 +96,28 @@ class DeskRefreshLayoutTest {
         assertFalse(layout.isRefreshing)
         assertEquals(0, calls)
     }
+    @Test fun disablingDuringPullImmediatelyRetractsAndCannotRefresh() {
+        touch(MotionEvent.ACTION_DOWN, 20f, 20f)
+        touch(MotionEvent.ACTION_MOVE, 20f, 240f)
+        touch(MotionEvent.ACTION_MOVE, 20f, 240f)
+        assertTrue(content.translationY > 0f)
+        layout.isEnabled = false
+        assertEquals(0f, content.translationY, .1f)
+        touch(MotionEvent.ACTION_UP, 20f, 240f)
+        assertEquals(0, calls)
+        assertFalse(layout.isRefreshing)
+        layout.isEnabled = true
+        pull(240f)
+        assertEquals(1, calls)
+    }
+
+    @Test fun disablingAnActiveRefreshCancelsItsOffset() {
+        layout.isRefreshing = true
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(250))
+        layout.isEnabled = false
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(250))
+        assertFalse(layout.isRefreshing)
+        assertEquals(0f, content.translationY, .1f)
+    }
+
 }

@@ -60,7 +60,7 @@ const assert=require('node:assert/strict');
   await page.locator('#gridDetailSave').click();
   assert.equal(await page.locator('#gridDetailSave').textContent(),'★ SAVED');
   await page.locator('#gridDetailClose').click();
-  assert.equal(await page.locator('#gridDetail').isVisible(),false);
+  await page.locator('#gridDetail').waitFor({state:'hidden'});
 
   // Spread OUT to zoom into the cards one grid step at a time.
   await pinch([169,225],[95,300]);
