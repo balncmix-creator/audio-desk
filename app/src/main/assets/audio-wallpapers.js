@@ -145,9 +145,11 @@ function renderActive(id){
   // Audio SVGs are vector sharp at every Android screen density.
   document.body.dataset.wallpaperLight="false";
   document.body.dataset.wallpaperStatusLight="false";
+   window.audioDeskApplyWallpaperColors?.(art[4],art[2]);
  }else{
   delete document.body.dataset.audioWallpaper;
   artworkImg.hidden=true;artworkImg.removeAttribute("src");
+  window.audioDeskRefreshWallpaperColors?.();
  }
  renderChoices();
 }
