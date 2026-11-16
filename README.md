@@ -2,9 +2,21 @@
 
 **A one-handed Android Home launcher for people who make sound, inspired by minimalist Niagara-style app access and Nokia N9 swipe navigation, without replacing Audio Desk's original retro design.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk Launcher v3.1 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v3.1/Audio-Desk-Launcher-v3.1.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk Launcher v3.3 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v3.3/Audio-Desk-Launcher-v3.3.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
+
+## v3.3 — Home and Lock screen wallpapers match by default
+
+Selecting a bundled image, choosing a photo from the phone, restoring a saved custom photo, or applying the selected wallpaper now updates **both Android Home and Lock screens by default**. The Lock screen checkbox is on initially, and its state is saved when explicitly changed, allowing a user to opt into **Home only**. No wallpaper is changed on app start or APK upgrade: open Wallpapers & Animation and select a wallpaper, or tap **Apply to Android Wallpaper**.
+
+The native implementation now calls Android's WallpaperManager separately for the Home and Lock images, so a partial Lock-screen failure can be reported instead of claiming both were updated. The chosen image is static on the Android system lock screen; launcher-only rain, stars, aurora, ocean and studio-light animations do not cross the system boundary.
+
+**Samsung / OEM note:** Some One UI or administrator-managed configurations may override lock screen updates by third-party apps. If the picker reports a Lock-screen error or the picture still does not update, use the phone's **Settings → Wallpaper and style → Change wallpapers → Gallery → Lock screen** to apply that image using the system editor. System-specific restrictions cannot be bypassed by the launcher.
+
+## v3.2 — remove the status bar overlay seam
+
+The purple vertical stripes and bright border above the 8-bit Home wallpaper were caused by a separate status-bar background drawn over the wallpaper. All Home themes now use a transparent native status bar, and the wallpaper fills the top safe inset behind the genuine Android clock, battery, signal and notifications. Non-Home pages retain a neutral backing for legibility. Theme-independent icon designs remain controlled by Android.
 
 ## v3.1 — real Android wallpaper and visible status-bar themes
 
@@ -126,7 +138,7 @@ The wallpaper fills the screen behind the Android status bar. Custom photos and 
 
 ## Install on Android
 
-1. Open the [v3.1 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v3.1/Audio-Desk-Launcher-v3.1.apk) on your Android phone. **This is an APK, not a ZIP.**
+1. Open the [v3.3 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v3.3/Audio-Desk-Launcher-v3.3.apk) on your Android phone. **This is an APK, not a ZIP.**
 2. Open the downloaded file and, if Android asks, allow installations from the browser or file manager you used.
 3. Launch **Audio Desk Launcher**. Tap the **bottom-right settings icon → Set Home** if you want it to become your default Android launcher. Your existing Audio Desk bookmarks and cached feeds remain available.
 
