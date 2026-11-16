@@ -154,7 +154,28 @@ const assert=require('node:assert/strict');
   assert.ok(await page.evaluate(()=>document.getElementById('launcherAlphaIndex').getBoundingClientRect().left-
    document.getElementById('warmAudioWidget').getBoundingClientRect().right>=8),
    'screenshot widgets do not collide with A–Z letters');
-  await page.screenshot({path:path.join(output,'launcher-warm-minimal.png')});
+  assert.ok(await page.evaluate(()=>{
+    const music=document.getElementById('launcherMusicWidget').getBoundingClientRect();
+    const rail=document.getElementById('launcherAlphaIndex').getBoundingClientRect();
+    return rail.left-music.right>=8;
+   }),'Warm music card must clear the A–Z rail');
+   await page.screenshot({path:path.join(output,'launcher-warm-minimal.png')});
+   // Capture each themed Apps surface for visual QA, not only each Home.
+   for(const mode of ['warm','minimal','pixel','windows']){
+    await page.evaluate(mode=>{setLauncherTheme(mode);setLauncherPage('apps',false)},mode);
+    assert.equal(await page.locator('#launcherAppsGrid .n-app-row').count(),12);
+    const font=await page.locator('#launcherAppsPage .launcher-titlebar strong')
+     .evaluate(el=>getComputedStyle(el).fontFamily);
+    if(mode==='pixel')assert.ok(font.includes('Press Start 2P'),'8-Bit keeps arcade typography');
+    else assert.ok(!/Press Start|Silkscreen/.test(font),'modern themes use non-pixel fonts');
+    await page.screenshot({path:path.join(output,'launcher-'+mode+'-applications.png')});
+   }
+   await page.evaluate(()=>{setLauncherTheme('warm');setLauncherPage('home',false)});
+   await page.locator('#launcherSettingsToggle').click();
+   assert.equal(await page.locator('#launcherHomeOptions').isVisible(),true);
+   await page.screenshot({path:path.join(output,'launcher-warm-quick-actions.png')});
+   await page.locator('#launcherOptionsClose').click();
+   await page.locator('#launcherHomeOptions').waitFor({state:'hidden'});
   await page.evaluate(()=>setLauncherTheme('minimal'));
   await page.evaluate(()=>setLauncherPage('apps',false));
   assert.equal(await page.locator('#launcherAppsGrid .launcher-app').count(),12);

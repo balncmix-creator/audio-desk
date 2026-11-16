@@ -117,6 +117,21 @@ const demoApps=[
   await page.locator('[data-launcher-theme-choice="warm"]').click();
   assert.equal(await page.evaluate(()=>launcherTheme),'warm','Warm Minimal is a fourth selectable theme');
   assert.equal(await page.locator('#launcherMusicWidget').isVisible(),true,'all themes include the media widget');
+  assert.ok(await page.evaluate(()=>{
+   const music=document.getElementById('launcherMusicWidget').getBoundingClientRect();
+   const rail=document.getElementById('launcherAlphaIndex').getBoundingClientRect();
+   return rail.left-music.right>=8;
+  }),'Warm media controls must not intersect A–Z navigation');
+  assert.equal(await page.evaluate(()=>window.audioDeskBeginWidgetResize('launcherMusicWidget')),true,
+   'long press opens a widget resize surface');
+  assert.equal(await page.locator('.widget-resize-frame .widget-resize-handle').count(),4,
+   'resize surface has four visible corner handles');
+  await page.locator('.widget-resize-handle[data-corner="se"]').focus();
+  await page.keyboard.press('ArrowDown');
+  assert.ok(await page.locator('#launcherMusicWidget').evaluate(el=>
+   el.style.getPropertyValue('--user-widget-height').endsWith('px')),
+   'resizing is keyboard accessible and changes widget dimensions');
+  await page.locator('.widget-resize-done').click();
   assert.equal(await page.locator('#launcherMusicWidget').evaluate(el=>getComputedStyle(el).fontFamily.includes('system-ui')),true);
   assert.equal(await page.locator('#launcherHomeOptions').isVisible(),false);
   await page.locator('#launcherSettingsToggle').click();
