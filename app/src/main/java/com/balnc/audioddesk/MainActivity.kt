@@ -19,6 +19,7 @@ import android.webkit.WebViewClient
 import android.webkit.ValueCallback
 import android.widget.Button
 import android.widget.LinearLayout
+import android.widget.FrameLayout
 import android.widget.TextView
 import android.window.OnBackInvokedDispatcher
 import androidx.core.view.ViewCompat
@@ -41,6 +42,10 @@ class MainActivity : Activity() {
     private lateinit var sampleDemos: SampleDemoFinder
     private lateinit var launcherSupport: HomeLauncherSupport
     private lateinit var systemWallpaperInstaller: SystemWallpaperInstaller
+    private lateinit var pixelStatusBar: PixelStatusBar
+    private var pixelHomeThemeRequested = false
+    private var pixelBarActive = false
+    private var pixelBarSuspended = false
     private var destroyed = false
     private var statusInsetDp = 24
     private var bottomInsetDp = 0
@@ -86,8 +91,22 @@ class MainActivity : Activity() {
             // Let the wallpaper draw behind the Android status bar.
             view.setPadding(safe.left, 0, safe.right, 0)
             val density = resources.displayMetrics.density
-            statusInsetDp = (safe.top / density).toInt()
+            // When the OS status bar is hidden for 8-bit Home, the WebView
+            // must still reserve the physical status/cutout height.
+            val stableTop = insets.getInsetsIgnoringVisibility(
+                WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.displayCutout()
+            ).top
+            val top = if (pixelBarActive) maxOf(stableTop, (24f * density).toInt()) else safe.top
+            statusInsetDp = (top / density).toInt()
             bottomInsetDp = (safe.bottom / density).toInt()
+            if (::pixelStatusBar.isInitialized) {
+                pixelStatusBar.setInsets(safe.left, safe.right)
+                val params = pixelStatusBar.layoutParams as FrameLayout.LayoutParams
+                if (params.height != top.coerceAtLeast((24f * density).toInt())) {
+                    params.height = top.coerceAtLeast((24f * density).toInt())
+                    pixelStatusBar.layoutParams = params
+                }
+            }
             if (::appWebView.isInitialized) applyWebInsets()
             if (::browserPanel.isInitialized) browserPanel.setPadding(0, safe.top, 0, safe.bottom)
             insets
@@ -217,6 +236,17 @@ class MainActivity : Activity() {
         ))
 
         setContentView(root)
+        // The 8-bit bar is a *native Android View* layered over the wallpaper,
+        // not HTML and not an attempt to reskin SystemUI outside this app.
+        pixelStatusBar = PixelStatusBar(this)
+        findViewById<FrameLayout>(android.R.id.content).addView(
+            pixelStatusBar,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                (24f * resources.displayMetrics.density).toInt(),
+                Gravity.TOP
+            )
+        )
         ViewCompat.requestApplyInsets(root)
         appWebView.loadUrl("https://appassets.androidplatform.net/assets/index.html")
         // Android 16 no longer dispatches onBackPressed for apps targeting API 36.
@@ -225,6 +255,28 @@ class MainActivity : Activity() {
                 OnBackInvokedDispatcher.PRIORITY_DEFAULT
             ) { handleBack() }
         }
+    }
+
+    private fun applyPixelStatusMode() {
+        if (!::pixelStatusBar.isInitialized) return
+        val shouldShow = pixelHomeThemeRequested && !pixelBarSuspended &&
+            !(::browserPanel.isInitialized && browserPanel.visibility == View.VISIBLE)
+        if (pixelBarActive == shouldShow) return
+        pixelBarActive = shouldShow
+        val controller = WindowCompat.getInsetsController(window, window.decorView)
+        if (shouldShow) {
+            pixelStatusBar.visibility = View.VISIBLE
+            pixelStatusBar.startUpdates()
+            controller.systemBarsBehavior =
+                androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            controller.hide(WindowInsetsCompat.Type.statusBars())
+        } else {
+            pixelStatusBar.stopUpdates()
+            pixelStatusBar.visibility = View.GONE
+            controller.show(WindowInsetsCompat.Type.statusBars())
+        }
+        // Retain clock and alphabet safe areas despite hiding the system bar.
+        ViewCompat.requestApplyInsets(window.decorView)
     }
 
     private fun applyWebInsets() {
@@ -290,6 +342,9 @@ class MainActivity : Activity() {
             runOnUiThread {
                 if (!destroyed) {
                     val windowsHome = theme == "windows"
+                    pixelHomeThemeRequested = theme == "pixel"
+                    if (::pixelStatusBar.isInitialized) pixelStatusBar.setContrast(light)
+                    applyPixelStatusMode()
                     // Wallpaper fills the entire status inset in every Home theme.
                     // Android 15+ mandates a transparent status bar; older versions use
                     // the same transparent behavior so no tinted band appears.
@@ -446,6 +501,8 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        pixelBarSuspended = false
+        applyPixelStatusMode()
         // Refresh installed apps after returning from another app or installing a package.
         if (::appWebView.isInitialized && ::launcherSupport.isInitialized)
             appWebView.evaluateJavascript(
@@ -454,6 +511,8 @@ class MainActivity : Activity() {
     }
 
     override fun onPause() {
+        pixelBarSuspended = true
+        applyPixelStatusMode()
         if (::appWebView.isInitialized && !destroyed) appWebView.evaluateJavascript(
             "window.launcherWallpaperActive&&window.launcherWallpaperActive(false);" +
                 "if(typeof pauseSampleDemos==='function')pauseSampleDemos()", null)
@@ -478,9 +537,11 @@ class MainActivity : Activity() {
         if (!url.startsWith("https://") && !url.startsWith("http://")) return
         appWebView.evaluateJavascript("if(typeof pauseSampleDemos==='function')pauseSampleDemos();window.launcherWallpaperActive&&window.launcherWallpaperActive(false)", null)
         swipeRefresh.isEnabled = false
+        applyPixelStatusMode()
         WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = false
         swipeRefresh.visibility = View.GONE
         browserPanel.visibility = View.VISIBLE
+        applyPixelStatusMode()
         browserWebView.loadUrl(url)
     }
 
@@ -488,6 +549,7 @@ class MainActivity : Activity() {
         browserWebView.stopLoading()
         browserWebView.loadUrl("about:blank")
         browserPanel.visibility = View.GONE
+        applyPixelStatusMode()
         swipeRefresh.visibility = View.VISIBLE
         swipeRefresh.isEnabled = refreshAllowed
         appWebView.evaluateJavascript("window.launcherWallpaperActive&&window.launcherWallpaperActive(true)", null)
@@ -511,6 +573,7 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         destroyed = true
+        if (::pixelStatusBar.isInitialized) pixelStatusBar.stopUpdates()
         wallpaperFileCallback?.onReceiveValue(null)
         wallpaperFileCallback = null
         if (::imageAccents.isInitialized) imageAccents.close()

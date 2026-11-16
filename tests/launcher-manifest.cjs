@@ -8,6 +8,9 @@ assert.match(xml,/<queries>[\s\S]*android.intent.category.LAUNCHER[\s\S]*<\/quer
 assert.doesNotMatch(xml,/android.permission.QUERY_ALL_PACKAGES/,'do not request broad app visibility');
 assert.doesNotMatch(xml,/android.permission.PACKAGE_USAGE_STATS/,'no intrusive usage permission');
 assert.match(xml,/android.permission.SET_WALLPAPER/,'global Android wallpaper requires permission');
+assert.match(xml,/android.permission.ACCESS_NETWORK_STATE/,'pixel Wi-Fi status uses the public network API');
+assert.doesNotMatch(xml,/android.permission.READ_PHONE_STATE|android.permission.ACCESS_FINE_LOCATION|android.permission.BIND_NOTIFICATION_LISTENER_SERVICE/,
+ 'pixel status bar must not request sensitive telephony, location or notification access');
 const systemWall=fs.readFileSync('app/src/main/java/com/balnc/audioddesk/SystemWallpaperInstaller.kt','utf8');
 assert.match(systemWall,/WallpaperManager\.getInstance/);
 assert.match(systemWall,/WallpaperManager\.FLAG_SYSTEM/);
@@ -19,6 +22,25 @@ assert.match(systemWall,/decodeBounded/);
 const bridge=fs.readFileSync('app/src/main/java/com/balnc/audioddesk/MainActivity.kt','utf8');
 assert.match(bridge,/fun setStatusBarTheme\([\s\S]*?window\.statusBarColor = Color\.TRANSPARENT/,
  'all Home themes use a transparent native status bar');
+assert.match(bridge,/controller\.hide\(WindowInsetsCompat\.Type\.statusBars\(\)\)/,
+ 'hide only Android status bar on pixel Home, not the navigation gestures');
+assert.match(bridge,/controller\.show\(WindowInsetsCompat\.Type\.statusBars\(\)\)/,
+ 'restore genuine Android status bar when leaving pixel Home');
+assert.match(bridge,/pixelHomeThemeRequested = theme == "pixel"/,
+ 'custom status UI only appears in the 8-bit Home theme');
+assert.match(bridge,/pixelBarSuspended = true[\s\S]*applyPixelStatusMode\(\)/,
+ 'leaving the app restores the normal system bar');
+const pixelStatus=fs.readFileSync('app/src/main/java/com/balnc/audioddesk/PixelStatusBar.kt','utf8');
+assert.match(pixelStatus,/class PixelStatusBar\(context: Context\) : View\(context\)/,
+ 'custom status bar is a native Android View, not HTML');
+assert.match(pixelStatus,/fonts\/silkscreen-bold\.ttf/,'pixel clock loads bundled retro typeface');
+assert.match(pixelStatus,/DateFormat\.format\(/,'time comes from the device');
+assert.match(pixelStatus,/Intent\.ACTION_BATTERY_CHANGED/,'battery percentage comes from Android');
+assert.match(pixelStatus,/NetworkCapabilities\.TRANSPORT_WIFI/,'Wi-Fi indicator is based on real network state');
+assert.match(pixelStatus,/registerDefaultNetworkCallback/,'network changes update the pixel status bar');
+assert.match(pixelStatus,/stopUpdates\(\)/,'updates stop while the launcher is hidden');
+assert.doesNotMatch(pixelStatus,/notificationManager|NotificationListenerService|fabricatedNotification/,
+ 'do not fake Android notification icons');
 for(const symbol of ['requestLauncherApps','launchExternalApp','requestDefaultLauncher','launcherOnResume',
  'setSystemWallpaperBundled','setSystemWallpaperCustom','audioDeskWallpaperResult'])
  assert.ok(bridge.includes(symbol),'missing bridge '+symbol);

@@ -52,9 +52,10 @@ const origin='https://appassets.androidplatform.net/assets/';
   for(const theme of ['windows','pixel','minimal']){
    await page.evaluate(theme=>setLauncherTheme(theme),theme);
    assert.equal(await statusSurface.isVisible(),false,theme+' must keep actual wallpaper behind status icons');
+   assert.equal(await page.evaluate(()=>wallpaperStatusCalls.at(-1).theme),theme,
+    'native status bridge receives selected launcher theme for icon ownership');
    assert.equal(await page.locator('#wallpaperStage').evaluate(el=>el.getBoundingClientRect().top),0,
     'selected wallpaper extends through Android status inset');
-   assert.equal(await page.evaluate(()=>wallpaperStatusCalls.at(-1).theme),theme);
   }
   await page.evaluate(()=>setLauncherPage('events'));
   assert.equal(await statusSurface.isVisible(),true,'News retains an accessible dark status background');
