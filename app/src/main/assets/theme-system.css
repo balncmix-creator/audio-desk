@@ -560,3 +560,29 @@ body:has(#launcherHomeOptions:not([hidden])) #launcherAlphaIndex,
 body:has(#launcherHomeOptions:not([hidden])) #launcherAlphaBubble{
  pointer-events:none!important;visibility:hidden!important;
 }
+
+/* v3.9: keep media and every corner of its hitbox out of the A–Z rail. */
+body[data-launcher-theme="warm"] #launcherMusicWidget[data-widget-resizable]{
+ width:min(calc(100% - 32px),var(--user-widget-width,calc(100% - 32px)))!important;
+ max-width:400px!important;
+}
+body[data-launcher-theme="warm"] .music-buttons #musicAccess{
+ flex:0 0 auto!important;min-width:90px;width:auto!important;
+ margin-left:auto;padding:0 12px!important;
+ font-size:11px!important;border-radius:999px!important;
+}
+.widget-resize-frame .widget-resize-handle{
+ position:absolute!important;width:28px;height:28px;padding:0!important;
+ border:3px solid var(--ds-panel)!important;
+ border-radius:8px!important;background:var(--ds-accent)!important;
+ touch-action:none!important;box-shadow:0 3px 12px #0006;cursor:nwse-resize;
+}
+.widget-resize-frame .widget-resize-handle[data-corner="nw"]{top:-14px;left:-14px;bottom:auto;right:auto}
+.widget-resize-frame .widget-resize-handle[data-corner="ne"]{top:-14px;right:-14px;bottom:auto;left:auto;cursor:nesw-resize}
+.widget-resize-frame .widget-resize-handle[data-corner="sw"]{bottom:-14px;left:-14px;top:auto;right:auto;cursor:nesw-resize}
+.widget-resize-frame .widget-resize-handle[data-corner="se"]{bottom:-14px;right:-14px;top:auto;left:auto}
+body[data-launcher-theme="pixel"] .widget-resize-frame .widget-resize-handle,
+body[data-launcher-theme="windows"] .widget-resize-frame .widget-resize-handle{border-radius:0!important}
+.widget-resize-frame{animation:widget-enter 180ms cubic-bezier(.2,.75,.25,1) both}
+@keyframes widget-enter{from{opacity:.4}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.widget-resize-frame{animation:none!important}}
