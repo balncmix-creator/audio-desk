@@ -402,3 +402,150 @@ body[data-home-page="home"] #launcherStatusBackplate{display:none!important;}
 #wallpaperApplySystem{width:100%;margin:4px 0 7px;padding:12px 8px;box-shadow:none;
  text-transform:none;font:600 12px/1.3 system-ui,sans-serif}
 #wallpaperSystemStatus{min-height:2em}
+
+/* v3.5 · Warm Minimal: a functional fourth Home inspired by the user's
+   warm monochrome reference. Pure CSS geometry; no large image assets. */
+.theme-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.warm-preview{position:relative;display:block;overflow:hidden;
+ background:linear-gradient(160deg,#292529,#0f0e10);color:#f6e5df}
+.warm-preview:before{content:"";position:absolute;inset:45% 0 0;
+ background:linear-gradient(135deg,#f3dcd5,#d5b8af);
+ clip-path:polygon(0 0,84% 0,65% 100%,0 100%)}
+.warm-preview-widgets{position:relative;display:flex;flex-direction:column;gap:5px}
+.warm-preview-widgets b{background:#f0dbd4;color:#292123;border-radius:7px;
+ padding:5px 6px;font:600 clamp(7px,1.9vw,11px)/1.15 system-ui,sans-serif;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.warm-preview-widgets b:last-child{background:#5a5356;color:#fff}
+.warm-preview-list{position:absolute;top:53%;left:9px;z-index:1;
+ color:#241f20;font:600 clamp(8px,2vw,12px)/2 system-ui,sans-serif}
+.warm-widgets{display:none}
+body[data-home-page="home"][data-launcher-theme="warm"] #wallpaperStage::after{
+ content:"";position:absolute;inset:0;pointer-events:none;
+ background:linear-gradient(148deg,rgba(37,32,35,.96),rgba(11,11,13,.975));
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #wallpaperEffect{
+ display:none!important}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherHomePage{
+ max-width:480px;
+ padding:calc(var(--status-top,24px) + 33px) 23px calc(94px + var(--system-bottom,0px));
+ overflow:hidden;isolation:isolate;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherHomePage::before{
+ content:"";position:absolute;z-index:0;pointer-events:none;
+ inset:clamp(320px,43dvh,420px) 0 0;
+ background:linear-gradient(152deg,#f0dcd5 0%,#e7cfc6 48%,#d3ada4 100%);
+ clip-path:polygon(0 0,80% 0,64% 100%,0 100%);
+}
+body[data-home-page="home"][data-launcher-theme="warm"] .launcher-clock{
+ display:none!important}
+body[data-home-page="home"][data-launcher-theme="warm"] .warm-widgets{
+ position:relative;z-index:1;
+ display:flex;flex-direction:column;gap:10px;
+ width:100%;max-width:400px;margin:0 auto;
+}
+.warm-widget{
+ box-sizing:border-box;display:flex;align-items:center;gap:12px;
+ width:100%;min-width:0;margin:0;
+ border:0;border-radius:17px;box-shadow:0 6px 20px rgba(0,0,0,.14);
+ padding:12px 16px;text-align:left;text-transform:none;
+ font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+ transition:transform 145ms ease,background 145ms ease;
+}
+.warm-widget:active{transform:scale(.985)}
+.warm-date{min-height:59px;background:#efdad3;color:#201b1d}
+.warm-date-label{font:600 13px/1.25 system-ui,sans-serif;flex:1}
+.warm-date-time{font:500 24px/1 system-ui,sans-serif;letter-spacing:-.045em}
+.warm-widget-icon{font:700 23px/1 system-ui,sans-serif}
+.warm-audio{min-height:76px;background:#f1ddd6;color:#231b1e}
+.warm-audio-mark{width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;
+ background:#232125;color:#f6dfd8;border-radius:13px;font:700 29px/1 system-ui,sans-serif}
+.warm-audio-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.warm-audio-copy strong{font:600 16px/1.15 system-ui,sans-serif}
+.warm-audio-copy small{font:400 11px/1.3 system-ui,sans-serif;color:#62585a;
+ overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.warm-audio-open{width:32px;height:32px;flex:0 0 32px;border:1.5px solid #41383a;
+ border-radius:50%;display:grid;place-items:center;font:700 19px/1 system-ui,sans-serif}
+.warm-search{min-height:51px;background:#514b50;color:#f6eff0;
+ font:500 13px/1.3 system-ui,sans-serif}
+.warm-search-icon{font:700 24px/1 system-ui,sans-serif}
+.warm-search-hint{margin-left:auto;font-size:16px}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentStrip{
+ position:relative;z-index:1;
+ width:min(66vw,270px);max-width:none;
+ margin:clamp(61px,8dvh,96px) 0 0!important;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentStripTitle{
+ margin:0 0 8px;color:#383031;text-shadow:none;
+ font:600 11px/1.4 system-ui,sans-serif;letter-spacing:.07em;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick{
+ width:100%;gap:0;max-width:none;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick .launcher-app{
+ min-height:53px;height:53px;gap:15px;padding:4px 0;
+ border:0;border-radius:9px;background:transparent;
+ color:#292326;text-align:left;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick .launcher-app:active{
+ background:rgba(69,45,42,.1)
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick .pixel-icon{
+ flex:0 0 29px;width:29px;height:29px;
+ border:0;background:transparent;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick .pixel-icon img{
+ width:25px!important;height:25px!important;
+ filter:brightness(0)!important;image-rendering:auto;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick .pixel-letter{
+ color:#251f23!important;font:600 20px/1 system-ui,sans-serif
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick .app-name{
+ font:500 14px/1.35 system-ui,-apple-system,sans-serif!important;
+ color:#292326!important;text-shadow:none!important;
+ max-width:calc(100% - 45px)
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherAlphaIndex button{
+ color:#f1e0db;text-shadow:0 1px 3px #000;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherAlphaIndex button.active{
+ color:#21191c;background:#ead7d0;text-shadow:none
+}
+body[data-home-page="home"][data-launcher-theme="warm"] .launcher-dots{
+ display:none!important
+}
+body[data-home-page="home"][data-launcher-theme="warm"] .launcher-settings-fab{
+ background:#4b4146;border-color:#806d72;box-shadow:0 4px 16px #0006;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] .launcher-settings-fab img{
+ filter:invert(.94)
+}
+@media(max-height:725px){
+ body[data-home-page="home"][data-launcher-theme="warm"] #launcherHomePage{
+  padding-top:calc(var(--status-top,24px) + 19px)
+ }
+ body[data-home-page="home"][data-launcher-theme="warm"] #launcherHomePage::before{
+  top:310px
+ }
+ body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentStrip{
+  margin-top:52px!important
+ }
+ body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick .launcher-app{
+  min-height:47px;height:47px
+ }
+}
+@media(max-width:350px){
+ body[data-home-page="home"][data-launcher-theme="warm"] #launcherHomePage{
+  padding-left:18px;padding-right:18px
+ }
+ body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick .app-name{
+  font-size:12px!important
+ }
+ .warm-widget{gap:8px;padding:10px 12px}
+ .warm-audio-mark{width:42px;height:42px;flex-basis:42px}
+ .warm-audio-copy strong{font-size:14px}
+}
+@media(prefers-reduced-motion:reduce){
+ .warm-widget{transition:none!important}
+ .warm-widget:active{transform:none}
+}

@@ -580,6 +580,23 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
    <div class="clock" id="launcherClock">--:--</div>
    <div class="clock-date" id="launcherDate"></div>
   </div>
+  <section id="warmWidgets" class="warm-widgets" aria-label="Date, Audio Desk and app search">
+   <button type="button" id="warmDateWidget" class="warm-widget warm-date" aria-label="Today's date and calendar">
+    <span class="warm-widget-icon" aria-hidden="true">▦</span>
+    <span id="warmDateLabel" class="warm-date-label">TODAY</span>
+    <strong id="warmTimeLabel" class="warm-date-time">--:--</strong>
+   </button>
+   <button type="button" id="warmAudioWidget" class="warm-widget warm-audio" aria-label="Open Audio Desk audio and news">
+    <span class="warm-audio-mark" aria-hidden="true">▥</span>
+    <span class="warm-audio-copy"><strong>Audio Desk</strong><small>Sound, stories &amp; discoveries</small></span>
+    <span class="warm-audio-open" aria-hidden="true">↗</span>
+   </button>
+   <button type="button" id="warmSearchWidget" class="warm-widget warm-search" aria-label="Search installed apps">
+    <span class="warm-search-icon" aria-hidden="true">⌕</span>
+    <span>Search your apps</span>
+    <span class="warm-search-hint" aria-hidden="true">↗</span>
+   </button>
+  </section>
   <button id="launcherTilesSearch" type="button" aria-label="Search all installed apps">⌕ SEARCH APPS</button>
   <div id="launcherFavorites" aria-label="Favourite and frequently used applications"></div>
   <div id="launcherFavoritesEmpty" hidden>YOUR APPS WILL APPEAR HERE.</div>
@@ -643,8 +660,9 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
     <button type="button" class="theme-choice" data-launcher-theme-choice="minimal" aria-pressed="true"><span class="theme-visual minimal-preview"><i>12:48</i><em>A<br>B<br>C<br>D</em></span><strong>Minimal A–Z</strong><small>Wallpaper, clock and right-hand letters</small></button>
     <button type="button" class="theme-choice" data-launcher-theme-choice="pixel" aria-pressed="false"><span class="theme-visual pixel-preview"><i>12:48</i><em>A<br>B<br>C<br>D</em></span><strong>8-Bit</strong><small>Pixel styling and quick app letters</small></button>
     <button type="button" class="theme-choice" data-launcher-theme-choice="windows" aria-pressed="false"><span class="theme-visual windows-preview"><i>12:48</i><em>▣ ▪<br>▪ ▣</em></span><strong>Windows Live Tiles</strong><small>Real clock, date, headlines and app activity</small></button>
+    <button type="button" class="theme-choice" data-launcher-theme-choice="warm" aria-pressed="false"><span class="theme-visual warm-preview" aria-hidden="true"><span class="warm-preview-widgets"><b>WED, 18</b><b>♪ AUDIO DESK</b><b>⌕ SEARCH</b></span><span class="warm-preview-list">◎ &nbsp; Music<br>▢ &nbsp; Camera<br>▣ &nbsp; Apps</span></span><strong>Warm Minimal</strong><small>Cream and charcoal split, rounded widgets, favorite apps</small></button>
    </div>
-   <p class="customize-tip">All three themes keep swipe-up search and the A–Z edge rail. Tile colors use CSS, not extra images.</p>
+   <p class="customize-tip">Four themes. Swipe up to search in Minimal, 8-Bit and Warm Minimal; Windows Tiles scrolls freely. Every theme retains A–Z browsing.</p>
   </div>
  </div>
  <div id="launcherWallpaperDialog" class="customize-overlay" role="dialog" aria-modal="true" aria-label="Choose wallpaper" hidden>
@@ -1930,7 +1948,7 @@ swipeMain.addEventListener("touchcancel",endPinch,{capture:true,passive:true});
 /* MeeGo-style Home planes: EVENTS preserves the original Audio Desk news UI,
    APPLICATIONS uses real installed Android apps, OPEN APPS lists local launches. */
 const launcherPages=["events","home","apps"];
-const LAUNCHER_THEMES=["minimal","pixel","windows"];
+const LAUNCHER_THEMES=["minimal","pixel","windows","warm"];
 let launcherTheme=deskStorage.getItem("ad_launcher_theme_v1")||"minimal";
 if(!LAUNCHER_THEMES.includes(launcherTheme))launcherTheme="minimal";
 document.body.dataset.launcherTheme=launcherTheme;
@@ -1961,6 +1979,8 @@ function formatLauncherClock(){
  const now=new Date();
  $("launcherClock").textContent=now.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",hour12:false});
  $("launcherDate").textContent=now.toLocaleDateString([], {weekday:"short",month:"short",day:"numeric"});
+ $("warmTimeLabel").textContent=now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:false});
+ $("warmDateLabel").textContent=now.toLocaleDateString([],{weekday:"short",month:"short",day:"numeric"});
  if(document.body.dataset.launcherTheme==="windows"&&document.body.dataset.homePage==="home"){
   const liveClock=$("launcherLiveTime"),liveDay=$("launcherLiveDay"),liveMonth=$("launcherLiveMonth");
   if(liveClock){liveClock.textContent=now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:false});
@@ -2027,17 +2047,19 @@ function launcherSuggestedApps(){
  return [...pinned,...mostUsed].slice(0,8);
 }
 function renderLauncherHome(){
- const windows=launcherTheme==="windows";
- // Only the selected Windows theme mounts app tiles. Minimal and Pixel mount
- // a short vertical list of up to six recent or suggested app shortcuts.
+ const windows=launcherTheme==="windows",warm=launcherTheme==="warm";
+ // Windows is the only tiled Home. Warm Minimal uses pinned/frequently
+ // launched shortcuts; Minimal and Pixel keep their recently opened list.
  const tiles=windows?launcherSuggestedApps():[];
  $("launcherFavorites").innerHTML=tiles.map(renderFavoriteRow).join("");
  const recents=launcherRecents.slice(0,6);
- const quick=recents.length?recents:launcherSuggestedApps().slice(0,6);
+ const quick=warm?launcherSuggestedApps().slice(0,7):
+  (recents.length?recents:launcherSuggestedApps().slice(0,6));
  $("launcherRecentStrip").hidden=windows||!quick.length;
  if(!windows){
-  $("launcherRecentStripTitle").textContent=recents.length?"RECENTLY OPENED":"SUGGESTED APPS";
-  const fingerprint=(recents.length?"r":"s")+":"+quick.map(launcherAppKey).join("|");
+  $("launcherRecentStripTitle").textContent=warm?"FAVORITES & FREQUENT":
+   (recents.length?"RECENTLY OPENED":"SUGGESTED APPS");
+  const fingerprint=(warm?"w":recents.length?"r":"s")+":"+quick.map(launcherAppKey).join("|");
   if($("launcherRecentQuick").dataset.fingerprint!==fingerprint){
    $("launcherRecentQuick").innerHTML=quick.map(app=>launchAppButton(app,"launcher-app launcher-recent-app")).join("");
    $("launcherRecentQuick").dataset.fingerprint=fingerprint;
@@ -2064,18 +2086,23 @@ function updateLauncherLiveTiles(){
  $("launcherLiveNewsSource").textContent=story?String(story.source||"AUDIO DESK").slice(0,64):"OPEN NEWS TO FETCH HEADLINES";
 }
 window.addEventListener("audio-desk-news-updated",updateLauncherLiveTiles);
+function openLauncherCalendar(){
+ const app=launcherApps.find(x=>/calendar/i.test(x.label+" "+x.pkg));
+ if(app&&window.AudioDesk?.launchExternalApp)
+  window.AudioDesk.launchExternalApp(app.pkg,app.activity);
+ else {
+  openLauncherSearch();
+  $("launcherAppSearch").value="calendar";renderLauncherApps();
+ }
+}
+$("warmDateWidget").onclick=openLauncherCalendar;
+$("warmAudioWidget").onclick=()=>setLauncherPage("events");
+$("warmSearchWidget").onclick=()=>openLauncherSearch();
 $("launcherLiveTiles").addEventListener("click",event=>{
  const action=event.target.closest("[data-live-action]")?.dataset.liveAction;
  if(action==="news"){setLauncherPage("events");return}
  if(action==="clock"){if(typeof openClockCustomizer==="function")openClockCustomizer();return}
- if(action==="calendar"){
-  const app=launcherApps.find(x=>/calendar/i.test(x.label+" "+x.pkg));
-  if(app&&window.AudioDesk?.launchExternalApp)window.AudioDesk.launchExternalApp(app.pkg,app.activity);
-  else{
-   openLauncherSearch();
-   $("launcherAppSearch").value="calendar";renderLauncherApps();
-  }
- }
+ if(action==="calendar")openLauncherCalendar();
 });
 function setLauncherPin(pkg,activity){
  const key=pkg+"/"+activity;
@@ -2370,7 +2397,7 @@ function previewHomeSwipe(distance){
   homeSwipeFrame=0;
   if(launcherPage!=="home")return;
   const progress=homeSwipeDistance/120;
-  for(const node of [$("launcherFavorites"),$("launcherRecentStrip"),$("launcherLiveTiles")]){
+  for(const node of [$("launcherFavorites"),$("launcherRecentStrip"),$("launcherLiveTiles"),$("warmWidgets")]){
    node.style.transform="translate3d(0,"+(-progress*20)+"px,0)";
    node.style.opacity=String(1-progress*.28);
   }
@@ -2379,7 +2406,7 @@ function previewHomeSwipe(distance){
 }
 function resetHomeSwipe(immediate=false){
  cancelAnimationFrame(homeSwipeFrame);homeSwipeFrame=0;homeSwipeDistance=0;
- for(const node of [$("launcherFavorites"),$("launcherRecentStrip"),$("launcherLiveTiles"),document.querySelector(".launcher-clock")]){
+ for(const node of [$("launcherFavorites"),$("launcherRecentStrip"),$("launcherLiveTiles"),$("warmWidgets"),document.querySelector(".launcher-clock")]){
   if(!node)continue;
   if(immediate){node.style.transition="none";node.style.removeProperty("transform");node.style.removeProperty("opacity");requestAnimationFrame(()=>node.style.removeProperty("transition"));}
   else{node.style.transition="transform 170ms cubic-bezier(.2,.75,.25,1),opacity 170ms";node.style.removeProperty("transform");node.style.removeProperty("opacity");}

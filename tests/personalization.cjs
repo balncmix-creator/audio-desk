@@ -49,7 +49,7 @@ const origin='https://appassets.androidplatform.net/assets/';
   assert.equal(await page.evaluate(()=>wallpaperNativeCalls.length),0,'startup must never overwrite Android wallpaper');
   const statusSurface=page.locator('#launcherStatusBackplate');
   assert.equal(await statusSurface.isVisible(),false,'Home never adds an unrelated status-bar panel');
-  for(const theme of ['windows','pixel','minimal']){
+  for(const theme of ['windows','pixel','minimal','warm']){
    await page.evaluate(theme=>setLauncherTheme(theme),theme);
    assert.equal(await statusSurface.isVisible(),false,theme+' must keep actual wallpaper behind status icons');
    assert.equal(await page.evaluate(()=>wallpaperStatusCalls.at(-1).theme),theme,
@@ -57,6 +57,11 @@ const origin='https://appassets.androidplatform.net/assets/';
    assert.equal(await page.locator('#wallpaperStage').evaluate(el=>el.getBoundingClientRect().top),0,
     'selected wallpaper extends through Android status inset');
   }
+  await page.evaluate(()=>setLauncherTheme('warm'));
+  assert.equal(await page.locator('#warmWidgets').isVisible(),true);
+  assert.equal(await page.locator('#warmSearchWidget').isVisible(),true);
+  assert.equal(await page.locator('#launcherClock').isVisible(),false);
+  await page.evaluate(()=>setLauncherTheme('minimal'));
   await page.evaluate(()=>setLauncherPage('events'));
   assert.equal(await statusSurface.isVisible(),true,'News retains an accessible dark status background');
   await page.evaluate(()=>setLauncherPage('home'));

@@ -112,6 +112,34 @@ const demoApps=[
   await page.locator('[data-home-nav="home"]').click();
   await page.locator('#launcherSettingsToggle').click();
   await page.locator('#launcherThemeChoose').click();
+  await page.locator('[data-launcher-theme-choice="warm"]').click();
+  assert.equal(await page.evaluate(()=>launcherTheme),'warm','Warm Minimal is a fourth selectable theme');
+  assert.equal(await page.locator('#warmWidgets').isVisible(),true,'rounded Warm Minimal widgets display on Home');
+  assert.equal(await page.locator('#launcherClock').isVisible(),false,'Warm Minimal has its own date card instead of duplicate clock');
+  assert.equal(await page.locator('#launcherRecentQuick .launcher-app').count(),7,
+   'Warm Minimal renders seven real pinned or frequent app shortcuts');
+  assert.match(await page.locator('#launcherRecentStripTitle').textContent(),/FAVORITES & FREQUENT/);
+  assert.equal(await page.locator('#launcherRecentQuick').evaluate(el=>getComputedStyle(el).flexDirection),'column');
+  assert.equal(await page.locator('#warmDateLabel').textContent(),
+   new Date().toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}));
+  assert.match(await page.locator('#warmTimeLabel').textContent(),/^\\d{2}:\\d{2}$/);
+  assert.ok(await page.locator('#launcherHomePage').evaluate(el=>getComputedStyle(el,'::before').clipPath.includes('polygon')),
+   'Warm Minimal uses the cream diagonal panel from the reference');
+  assert.equal(await page.locator('#launcherAlphaIndex').isVisible(),true,'the A–Z rail remains usable');
+  await page.locator('#warmSearchWidget').click();
+  assert.equal(await page.evaluate(()=>launcherPage),'apps','Warm search opens real installed apps');
+  assert.equal(await page.locator('#launcherAppSearch').evaluate(el=>document.activeElement===el),true);
+  await page.evaluate(()=>setLauncherPage('home',false));
+  await page.locator('#warmDateWidget').click();
+  assert.equal(await page.evaluate(()=>launcherPage),'apps','date widget opens Calendar search when no Calendar is installed');
+  assert.equal(await page.locator('#launcherAppSearch').inputValue(),'calendar');
+  await page.evaluate(()=>setLauncherPage('home',false));
+  await page.locator('#warmAudioWidget').click();
+  assert.equal(await page.evaluate(()=>launcherPage),'events','audio widget opens real Audio Desk news, not fake media playback');
+  await page.evaluate(()=>setLauncherPage('home',false));
+  assert.equal(await page.evaluate(()=>localStorage.getItem('ad_launcher_theme_v1')),'warm',
+   'selected theme persists across app restarts');
+  await page.evaluate(()=>openThemePicker());
   await page.locator('[data-launcher-theme-choice="windows"]').click();
   assert.equal(await page.evaluate(()=>launcherTheme),'windows');
   assert.equal(await page.locator('#launcherTilesSearch').isVisible(),true);

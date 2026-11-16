@@ -136,6 +136,11 @@ const assert=require('node:assert/strict');
   assert.equal(await page.locator('#launcherFavorites .launcher-app').count(),8,'Windows Phone-style app tiles remain accessible');
   assert.equal(await page.locator('#launcherLiveTiles .launcher-live-tile').count(),3,'Clock, date and news are real live tiles');
   await page.screenshot({path:path.join(output,'launcher-windows-tiles.png')});
+  await page.evaluate(()=>setLauncherTheme('warm'));
+  assert.equal(await page.locator('#warmWidgets').isVisible(),true);
+  assert.equal(await page.locator('#launcherRecentQuick .launcher-app').count(),7,
+   'Warm Minimal captures seven usable installed-app shortcuts');
+  await page.screenshot({path:path.join(output,'launcher-warm-minimal.png')});
   await page.evaluate(()=>setLauncherTheme('minimal'));
   await page.evaluate(()=>setLauncherPage('apps',false));
   assert.equal(await page.locator('#launcherAppsGrid .launcher-app').count(),12);
