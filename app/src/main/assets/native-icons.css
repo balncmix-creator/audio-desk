@@ -1,0 +1,147 @@
+/* v4.1 Icon Studio. Native APK icon is a recognizable reference; the theme
+   styles and monochrome palettes are applied by Android, never a remote API. */
+.ad-icon-shell{
+ display:inline-grid;place-items:center;
+ position:relative;isolation:isolate;flex:0 0 40px;
+ width:40px;height:40px;overflow:hidden;
+ border-radius:var(--ds-radius);
+ color:var(--ds-text);
+ background:color-mix(in srgb,var(--ds-panel2) 70%,transparent);
+}
+.ad-icon-shell .ad-icon-image{
+ position:absolute!important;inset:0!important;z-index:2;
+ box-sizing:border-box;width:100%!important;height:100%!important;
+ max-width:100%!important;max-height:100%!important;display:block;
+ margin:0!important;padding:2px!important;object-fit:contain;
+ opacity:0;image-rendering:auto!important;filter:none!important;
+ transition:opacity .12s ease-out;
+}
+.ad-icon-shell.icon-loaded .ad-icon-image{opacity:1}
+.ad-icon-shell .ad-icon-fallback{
+ position:absolute;inset:0;display:grid;place-items:center;
+ opacity:1;transition:opacity .12s ease-out;pointer-events:none;
+}
+.ad-icon-shell.icon-loaded .ad-icon-fallback{opacity:0}
+.ad-icon-shell .ad-icon-fallback .warm-line-icon{
+ box-sizing:border-box;width:38px;height:38px;
+ display:grid;place-items:center;
+}
+.ad-icon-shell .ad-icon-fallback .pixel-icon{width:38px;height:38px}
+body[data-launcher-theme="minimal"] .ad-icon-shell{
+ border:1px solid color-mix(in srgb,var(--ds-line) 45%,transparent);
+}
+body[data-launcher-theme="warm"] .ad-icon-shell{
+ background:#e9d5ce;border:1px solid #c8b4ae;border-radius:11px;
+}
+body[data-launcher-theme="windows"] .ad-icon-shell{
+ background:color-mix(in srgb,var(--ds-accent) 50%,var(--ds-panel2));
+ border:0;border-radius:0;
+}
+body[data-launcher-theme="pixel"] .ad-icon-shell{
+ border:2px solid var(--ds-line);border-radius:0;
+ background:#20172f;
+ width:42px;height:42px;flex-basis:42px;
+}
+body[data-launcher-theme="pixel"] .ad-icon-shell .ad-icon-image{
+ image-rendering:pixelated!important;
+ padding:4px!important;
+}
+body[data-launcher-theme="pixel"] .ad-icon-shell .ad-icon-fallback .pixel-icon img{
+ image-rendering:pixelated!important;
+}
+body[data-app-layout="grid"] .ad-icon-shell{
+ margin:0 auto!important;flex:0 0 40px;
+}
+body[data-launcher-theme="windows"] #launcherFavorites .ad-icon-shell{
+ width:48px;height:48px;flex-basis:48px;
+}
+body[data-launcher-theme="warm"] #launcherRecentQuick .ad-icon-shell{
+ width:35px;height:35px;flex-basis:35px;
+ background:transparent;border:0;
+}
+body[data-launcher-theme="warm"] #launcherRecentQuick .ad-icon-shell .ad-icon-fallback .warm-line-icon{
+ width:34px;height:34px;
+}
+body.low-power .ad-icon-shell .ad-icon-image,
+body.low-power .ad-icon-shell .ad-icon-fallback{transition:none!important}
+#launcherIconStudioDialog[hidden]{display:none!important}
+#launcherIconStudioDialog{
+ position:fixed;inset:0;z-index:96;
+ display:flex;justify-content:center;align-items:flex-end;
+ background:rgba(0,0,0,.66);
+ font-family:var(--ds-font);color:var(--ds-text);
+}
+.icon-studio-panel{
+ box-sizing:border-box;width:min(100%,550px);max-height:84dvh;
+ overflow:auto;padding:22px 18px 26px;
+ border:1px solid var(--ds-line);
+ border-radius:var(--ds-radius) var(--ds-radius) 0 0;
+ background:var(--ds-panel);box-shadow:0 -15px 45px #0006;
+}
+.icon-studio-heading{
+ display:flex;align-items:start;justify-content:space-between;gap:12px;margin-bottom:16px;
+}
+.icon-studio-heading strong{font:700 20px/1.3 var(--ds-font);letter-spacing:0}
+.icon-studio-heading p{font:400 12px/1.55 var(--ds-font);margin:7px 0 0;color:var(--ds-muted)}
+.icon-studio-panel button{
+ box-shadow:none!important;border:1px solid var(--ds-line)!important;
+ border-radius:var(--ds-radius)!important;
+ background:var(--ds-panel2)!important;color:var(--ds-text)!important;
+ font:500 13px/1.3 var(--ds-font)!important;
+}
+.icon-studio-heading button{
+ flex:0 0 42px;width:42px;height:42px;
+ font-size:22px!important;
+}
+.icon-studio-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.icon-studio-options button{
+ display:flex;flex-direction:column;text-align:left;
+ min-height:94px;padding:12px 9px!important;
+ align-items:flex-start;justify-content:flex-start;gap:7px;
+}
+.icon-studio-options button small{
+ font:400 10px/1.35 var(--ds-font);color:var(--ds-muted);
+}
+.icon-studio-options button[aria-pressed="true"]{
+ outline:2px solid var(--ds-accent)!important;outline-offset:1px;
+ border-color:var(--ds-accent)!important;
+}
+.icon-studio-subtitle{
+ margin:24px 0 12px;font:650 13px/1.35 var(--ds-font);
+}
+.icon-studio-preview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.icon-studio-preview-app{
+ box-sizing:border-box;min-width:0;display:flex;align-items:center;
+ flex-direction:column;text-align:center;gap:7px;
+ padding:12px 4px;background:var(--ds-panel2);
+ border:1px solid var(--ds-line);border-radius:var(--ds-radius);
+ font:400 11px/1.25 var(--ds-font);
+}
+.icon-studio-preview-app .ad-icon-shell{margin:0 auto}
+.icon-studio-preview-app span:last-child{
+ width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;
+ white-space:nowrap;
+}
+.icon-studio-note{
+ font:400 11px/1.55 var(--ds-font);
+ color:var(--ds-muted);margin:15px 0 20px;
+}
+#iconStudioDone{
+ display:block;width:100%;padding:12px!important;
+ background:var(--ds-accent)!important;
+ color:var(--ds-bg)!important;
+ border-color:var(--ds-accent)!important;
+}
+body[data-launcher-theme="pixel"] .icon-studio-panel,
+body[data-launcher-theme="windows"] .icon-studio-panel,
+body[data-launcher-theme="pixel"] .icon-studio-panel button,
+body[data-launcher-theme="windows"] .icon-studio-panel button{
+ border-radius:0!important;
+}
+@media(max-width:390px){
+ .icon-studio-options{grid-template-columns:1fr}
+ .icon-studio-options button{min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){
+ .ad-icon-shell *{transition:none!important}
+}

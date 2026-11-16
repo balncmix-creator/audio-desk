@@ -75,8 +75,12 @@ class MainActivity : Activity() {
         }
         window.navigationBarColor = Color.rgb(8, 8, 8)
 
+        val appIconProvider = LocalAppIconProvider(applicationContext) { pkg ->
+            ::launcherSupport.isInitialized && launcherSupport.hasLaunchablePackage(pkg)
+        }
         val loader = WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
+            .addPathHandler("/app-icons/", appIconProvider)
             .build()
 
         val root = LinearLayout(this).apply {
@@ -325,6 +329,8 @@ class MainActivity : Activity() {
     }
 
     private inner class AppBridge {
+        @JavascriptInterface fun supportsAdaptiveAppIcons(): Boolean = true
+
         @JavascriptInterface fun requestMediaState() {
             runOnUiThread {
                 if (!destroyed && ::mediaWidgetSupport.isInitialized)
@@ -395,26 +401,6 @@ class MainActivity : Activity() {
                 }
             }
         }
-        /**
-         * Per-visible-app native artwork. Scanning returns labels only; expensive
-         * drawable decoding is requested lazily by Home/Favorites/Recents/Apps.
-         */
-        @JavascriptInterface fun requestLauncherIcon(pkg: String, activityName: String, theme: String) {
-            if (destroyed || !::launcherSupport.isInitialized) return
-            launcherSupport.icon(pkg, activityName, theme) { encoded ->
-                runOnUiThread {
-                    if (!destroyed && ::appWebView.isInitialized)
-                        appWebView.evaluateJavascript(
-                            "window.receiveAudioDeskAppIcon&&window.receiveAudioDeskAppIcon(" +
-                                JSONObject.quote(pkg) + "," +
-                                JSONObject.quote(activityName) + "," +
-                                JSONObject.quote(theme) + "," +
-                                (if (encoded == null) "null" else JSONObject.quote(encoded)) + ")", null
-                        )
-                }
-            }
-        }
-
         @JavascriptInterface fun getAppShortcuts(pkg: String, activityName: String) {
             if (!::launcherSupport.isInitialized || destroyed) return
             launcherSupport.shortcuts(pkg, activityName) { list ->
