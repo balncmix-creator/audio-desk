@@ -154,11 +154,13 @@ const assert=require('node:assert/strict');
   assert.ok(await page.evaluate(()=>document.getElementById('launcherAlphaIndex').getBoundingClientRect().left-
    document.getElementById('warmAudioWidget').getBoundingClientRect().right>=8),
    'screenshot widgets do not collide with A–Z letters');
-  assert.ok(await page.evaluate(()=>{
+  await page.waitForTimeout(240);
+   const gap=await page.evaluate(()=>{
     const music=document.getElementById('launcherMusicWidget').getBoundingClientRect();
     const rail=document.getElementById('launcherAlphaIndex').getBoundingClientRect();
-    return rail.left-music.right>=8;
-   }),'Warm music card must clear the A–Z rail');
+    return rail.left-music.right;
+   });
+   assert.ok(gap>=8,'Warm music card must clear the A–Z rail, gap='+gap+'px');
    await page.screenshot({path:path.join(output,'launcher-warm-minimal.png')});
    // Capture each themed Apps surface for visual QA, not only each Home.
    for(const mode of ['warm','minimal','pixel','windows']){

@@ -117,11 +117,14 @@ const demoApps=[
   await page.locator('[data-launcher-theme-choice="warm"]').click();
   assert.equal(await page.evaluate(()=>launcherTheme),'warm','Warm Minimal is a fourth selectable theme');
   assert.equal(await page.locator('#launcherMusicWidget').isVisible(),true,'all themes include the media widget');
-  assert.ok(await page.evaluate(()=>{
+  await page.waitForTimeout(240);
+  const musicRail=await page.evaluate(()=>{
    const music=document.getElementById('launcherMusicWidget').getBoundingClientRect();
    const rail=document.getElementById('launcherAlphaIndex').getBoundingClientRect();
-   return rail.left-music.right>=8;
-  }),'Warm media controls must not intersect A–Z navigation');
+   return {gap:rail.left-music.right,musicRight:music.right,railLeft:rail.left,
+    width:getComputedStyle(document.getElementById('launcherMusicWidget')).width};
+  });
+  assert.ok(musicRail.gap>=8,'Warm media controls must not intersect A–Z navigation: '+JSON.stringify(musicRail));
   assert.equal(await page.evaluate(()=>window.audioDeskBeginWidgetResize('launcherMusicWidget')),true,
    'long press opens a widget resize surface');
   assert.equal(await page.locator('.widget-resize-frame .widget-resize-handle').count(),4,
