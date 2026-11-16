@@ -2127,7 +2127,7 @@ function renderLauncherHome(){
  if(!windows){
   $("launcherRecentStripTitle").textContent=warm?"FAVORITES & FREQUENT":
    (recents.length?"RECENTLY OPENED":"SUGGESTED APPS");
-  const fingerprint=(warm?"w":recents.length?"r":"s")+":"+quick.map(launcherAppKey).join("|");
+  const fingerprint=launcherTheme+":"+(warm?"w":recents.length?"r":"s")+":"+quick.map(launcherAppKey).join("|");
   if($("launcherRecentQuick").dataset.fingerprint!==fingerprint){
    $("launcherRecentQuick").innerHTML=quick.map(app=>launchAppButton(app,"launcher-app launcher-recent-app")).join("");
    $("launcherRecentQuick").dataset.fingerprint=fingerprint;
