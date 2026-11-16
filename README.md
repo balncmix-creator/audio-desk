@@ -2,9 +2,19 @@
 
 **A one-handed Android Home launcher for people who make sound, inspired by minimalist Niagara-style app access and Nokia N9 swipe navigation, without replacing Audio Desk's original retro design.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk Launcher v4.0 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v4.0/Audio-Desk-Launcher-v4.0.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk Launcher v4.1 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v4.1/Audio-Desk-Launcher-v4.1.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
+
+## v4.1 — App Icon Studio: icons for every installed app
+
+Audio Desk now includes an automatic **on-device icon designer**. It uses each installed application's real Android launcher icon, creates a style matched to the selected launcher theme, and serves the icon locally. Icons are loaded lazily as users scroll, with a bounded in-memory cache; an unavailable icon falls back to the theme's existing SVG or pixel design rather than displaying a blank space.
+
+Open **Home options → App Icon Studio** to select one of three choices for each theme: **Theme-matched** (default; a monochrome/duotone transformation based on that theme), **Original** (the app's actual colourful Android icon), or **Simple outline** (the original lightweight icon set). Minimal, 8-Bit, Windows Tiles and Warm Minimal each store their own selection. The pixel edition uses deliberately low-resolution, crisp pixel renderings; other themes retain smooth vector-like silhouettes. Icons are covered consistently on Home, All Apps, app folders and recent app panels.
+
+This design does not need a manually maintained icon pack, Internet access, an AI service, or broad app visibility permissions. Icons cannot be generated for apps not installed or not exposed by Android; a graceful fallback is always provided. No app names or icon artwork are uploaded.
+
+**Verification:** Icon Studio's three modes, per-theme selection, native Android asset delivery, fallback behavior, UI screenshots, full Android compilation, APK packaging and wallpaper quality checks passed.
 
 ## v4.0 — Movable, aligned Home widgets and 16 audio wallpapers
 
