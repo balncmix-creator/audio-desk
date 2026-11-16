@@ -125,6 +125,7 @@ $("launcherThemeGrid").addEventListener("click",e=>{
  closeCustomize();
 });
 function openWallpaperPicker(){
+ $("wallpaperApplyLock").checked=false;
  renderWallpaperPicker();openCustomize("launcherWallpaperDialog");
  requestAnimationFrame(()=>{
   const selected=$("wallpaperGrid").querySelector('[aria-pressed="true"]');
@@ -157,7 +158,48 @@ $("wallpaperGrid").addEventListener("click",e=>{
  customWallpaperSelected=false;deskStorage.setItem("ar_wallpaper_custom_v2","false");
  selectedWallpaper=Number(b.dataset.wallpaper);deskStorage.setItem("ar_wallpaper_v1",selectedWallpaper);
  applyWallpaper();renderWallpaperPicker();
+ applySystemWallpaper();
 });
+/* The system wallpaper changes only after explicit user selection, never at boot. */
+let systemWallpaperRequest=0;
+window.audioDeskWallpaperResult=function(id,ok,message){
+ if(Number(id)!==systemWallpaperRequest)return;
+ $("wallpaperSystemStatus").textContent=ok?
+  "Android wallpaper updated"+($("wallpaperApplyLock").checked?" (Home and Lock).":" (Home)."):
+  "Android wallpaper could not be changed: "+String(message||"Check device wallpaper restrictions.");
+};
+function customPhotoDataUrl(blob){
+ return new Promise((resolve,reject)=>{
+  const reader=new FileReader();
+  reader.onload=()=>resolve(String(reader.result||""));
+  reader.onerror=()=>reject(new Error("Photo could not be read for Android wallpaper."));
+  reader.readAsDataURL(blob);
+ });
+}
+async function applySystemWallpaper(){
+ const status=$("wallpaperSystemStatus"),native=window.AudioDesk;
+ if(!native||typeof native.setSystemWallpaperBundled!=="function"||typeof native.setSystemWallpaperCustom!=="function"){
+  status.textContent="Android system wallpaper is available in the installed launcher APK.";
+  return;
+ }
+ const request=++systemWallpaperRequest,alsoLock=$("wallpaperApplyLock").checked;
+ status.textContent="Applying to Android "+(alsoLock?"Home and Lock":"Home")+" wallpaper…";
+ try{
+  if(customWallpaperSelected&&customWallpaper?.blob){
+   const data=await customPhotoDataUrl(customWallpaper.blob);
+   if(request!==systemWallpaperRequest)return;
+   if(data.length>12_000_000)throw new Error("Photo too large for system wallpaper. Choose a smaller photo.");
+   native.setSystemWallpaperCustom(data,customPosition,alsoLock,request);
+  }else{
+   const item=WALLPAPERS[selectedWallpaper];
+   if(!item)throw new Error("Wallpaper not found.");
+   native.setSystemWallpaperBundled(item.id,parseInt(item.position,10)||35,alsoLock,request);
+  }
+ }catch(err){
+  if(request===systemWallpaperRequest)status.textContent=String(err.message||"Cannot apply Android wallpaper.");
+ }
+}
+$("wallpaperApplySystem").onclick=applySystemWallpaper;
 $("wallpaperEffectSelect").onchange=e=>{
  wallpaperEffectChoice=e.target.value;deskStorage.setItem("ar_wallpaper_effect_v2",wallpaperEffectChoice);syncWallpaperMotion();
 };
@@ -215,6 +257,7 @@ async function imageDimensions(file){
 $("customWallpaperChoose").onclick=()=>$("customWallpaperFile").click();
 $("customWallpaperRestore").onclick=()=>{
  customWallpaperSelected=true;deskStorage.setItem("ar_wallpaper_custom_v2","true");applyWallpaper();renderWallpaperPicker();
+ applySystemWallpaper();
 };
 $("customWallpaperFile").onchange=async e=>{
  const input=e.target,file=input.files[0];if(!file)return;
@@ -245,6 +288,7 @@ $("customWallpaperFile").onchange=async e=>{
   await customWallpaperStore(record);useCustomWallpaper(record);
   customWallpaperSelected=true;deskStorage.setItem("ar_wallpaper_custom_v2","true");
   await applyWallpaper();renderWallpaperPicker();status.textContent="Saved on this phone. Adjust the crop below.";
+  applySystemWallpaper();
  }catch(error){status.textContent=error.message||"Could not save that wallpaper. Try another photo."}
  finally{if(typeof decoded?.close==="function")decoded.close();input.value="";choose.disabled=false}
 };
@@ -253,6 +297,9 @@ $("customWallpaperPosition").oninput=e=>{
  if(customWallpaperSelected&&$("wallpaperImage"))$("wallpaperImage").style.objectPosition=customPosition+"% center";
  scheduleWallpaperTone();
 };
+$("customWallpaperPosition").addEventListener("change",()=>{
+ if(customWallpaperSelected)applySystemWallpaper();
+});
 $("launcherWallpaperChoose").onclick=openWallpaperPicker;$("launcherClockChoose").onclick=openClockCustomizer;
 $("wallpaperClose").onclick=()=>closeCustomize();$("clockClose").onclick=()=>closeCustomize();
 for(const id of ["launcherThemeDialog","launcherWallpaperDialog","launcherClockDialog"]){$(id).addEventListener("click",e=>{if(e.target===$(id))closeCustomize()})}

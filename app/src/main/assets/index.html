@@ -573,6 +573,7 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
 <p class="foot">THE AUDIO DESK · Headlines remain the property of their publishers. Read full stories at source.</p>
 </main>
 <div id="wallpaperStage" aria-hidden="true"><div id="wallpaperEffect"></div></div>
+<div id="launcherStatusBackplate" aria-hidden="true"></div>
 <div id="launcherShell">
  <section class="launcher-page" id="launcherHomePage" aria-label="Audio Desk Home">
   <div class="launcher-clock">
@@ -659,7 +660,10 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
     <option value="aurora">Aurora</option><option value="stars">Stars</option><option value="ocean">Ocean</option><option value="studio">Studio lights</option>
    </select></label>
    <p id="wallpaperMotionStatus" class="customize-tip" role="status"></p>
-   <p class="customize-tip">Your photo stays on this phone. Wallpaper fills the screen behind the status bar.</p>
+   <label class="wallpaper-system-lock"><input id="wallpaperApplyLock" type="checkbox"> Also apply to Android lock screen</label>
+   <button type="button" id="wallpaperApplySystem">APPLY TO ANDROID WALLPAPER</button>
+   <p id="wallpaperSystemStatus" class="customize-tip" role="status">Choosing a wallpaper also applies its static image to Android Home. Animated effects remain in Audio Desk.</p>
+   <p class="customize-tip">Your imported photo stays on this phone. Wallpaper fills the screen behind the status bar.</p>
    <div id="wallpaperGrid" class="wallpaper-grid"></div>
   </div>
  </div>

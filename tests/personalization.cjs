@@ -29,14 +29,48 @@ const origin='https://appassets.androidplatform.net/assets/';
    if(url.includes('api.github.com'))return route.fulfill({json:{items:[]}});
    return route.abort();
   });
+  await page.addInitScript(()=>{
+   window.wallpaperNativeCalls=[];
+   window.wallpaperStatusCalls=[];
+   window.AudioDesk={
+    setStatusBarTheme(theme,light){wallpaperStatusCalls.push({theme,light})},
+    setSystemWallpaperBundled(id,position,lock,requestId){
+     wallpaperNativeCalls.push({kind:'bundled',id,position,lock});
+     window.audioDeskWallpaperResult(requestId,true,'Applied');
+    },
+    setSystemWallpaperCustom(data,position,lock,requestId){
+     wallpaperNativeCalls.push({kind:'custom',prefix:data.slice(0,32),bytes:data.length,position,lock});
+     window.audioDeskWallpaperResult(requestId,true,'Applied');
+    }
+   };
+  });
   await page.goto(origin+'index.html');
   await page.waitForFunction(()=>document.querySelector('#wallpaperImage')?.complete);
+  assert.equal(await page.evaluate(()=>wallpaperNativeCalls.length),0,'startup must never overwrite Android wallpaper');
+  const statusSurface=page.locator('#launcherStatusBackplate');
+  assert.equal(await statusSurface.isVisible(),true,'status icons have a themeable background');
+  await page.evaluate(()=>setLauncherTheme('windows'));
+  assert.equal(await statusSurface.evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(13, 13, 13)');
+  assert.equal(await page.evaluate(()=>wallpaperStatusCalls.at(-1).theme),'windows');
+  await page.evaluate(()=>setLauncherTheme('pixel'));
+  assert.match(await statusSurface.evaluate(el=>getComputedStyle(el).backgroundImage),/repeating-linear-gradient/);
+  await page.evaluate(()=>setLauncherTheme('minimal'));
   assert.equal(wallpaperRequests.filter(u=>!u.includes('/thumbs/')).length,1,'only selected full-size wallpaper loads');
   assert.equal(await page.locator('#wallpaperStage').evaluate(e=>e.getBoundingClientRect().top),0,'wallpaper covers status-bar region');
   assert.equal(await page.locator('#wallpaperImage').evaluate(e=>getComputedStyle(e).objectFit),'cover');
   await page.evaluate(()=>openWallpaperPicker());
   assert.equal(await page.locator('.wallpaper-choice').count(),16);
   await page.locator('[data-wallpaper="1"]').click();
+  assert.deepEqual(await page.evaluate(()=>wallpaperNativeCalls.at(-1)),
+   {kind:'bundled',id:'rainy-neon',position:35,lock:false},
+   'gallery selection applies real system Home wallpaper');
+  assert.match(await page.locator('#wallpaperSystemStatus').textContent(),/Android wallpaper updated/);
+  await page.locator('#wallpaperApplyLock').check();
+  await page.locator('#wallpaperApplySystem').click();
+  assert.deepEqual(await page.evaluate(()=>wallpaperNativeCalls.at(-1)),
+   {kind:'bundled',id:'rainy-neon',position:35,lock:true},
+   'lock wallpaper is touched only after explicit opt-in');
+  await page.locator('#wallpaperApplyLock').uncheck();
   await page.waitForFunction(()=>document.querySelector('#wallpaperImage').src.endsWith('/rainy-neon.webp'));
   assert.equal(await page.locator('#wallpaperStage .wallpaper-image').count(),1,'one resident image');
   const full=wallpaperRequests.filter(u=>!u.includes('/thumbs/'));
@@ -69,9 +103,15 @@ const origin='https://appassets.androidplatform.net/assets/';
   await page.evaluate(()=>openWallpaperPicker());
   await page.locator('#customWallpaperFile').setInputFiles({name:'custom.png',mimeType:'image/png',buffer:fixture});
   await page.waitForFunction(()=>document.querySelector('#customWallpaperStatus').textContent.includes('Saved on this phone'));
+  await page.waitForFunction(()=>wallpaperNativeCalls.some(x=>x.kind==='custom'));
+  const customSystem=await page.evaluate(()=>wallpaperNativeCalls.filter(x=>x.kind==='custom').at(-1));
+  assert.match(customSystem.prefix,/^data:image\/webp;base64/);
+  assert.equal(customSystem.lock,false);
+  assert.ok(customSystem.bytes>200,'custom photos are delivered to Android's native wallpaper bridge');
   assert.equal(await page.locator('#wallpaperImage').evaluate(e=>e.src.startsWith('blob:')),true);
   await page.locator('#customWallpaperPosition').fill('70');
   assert.equal(await page.locator('#wallpaperImage').evaluate(e=>e.style.objectPosition),'70% center');
+  await page.waitForFunction(()=>wallpaperNativeCalls.some(x=>x.kind==='custom'&&x.position===70));
   await page.reload();
   await page.waitForFunction(()=>document.querySelector('#wallpaperImage')?.src.startsWith('blob:'));
   assert.equal(await page.locator('#wallpaperImage').evaluate(e=>e.style.objectPosition),'70% center','custom image and crop survive restart');

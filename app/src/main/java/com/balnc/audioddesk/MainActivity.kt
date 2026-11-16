@@ -40,6 +40,7 @@ class MainActivity : Activity() {
     private lateinit var feedDiscovery: PublisherFeedDiscovery
     private lateinit var sampleDemos: SampleDemoFinder
     private lateinit var launcherSupport: HomeLauncherSupport
+    private lateinit var systemWallpaperInstaller: SystemWallpaperInstaller
     private var destroyed = false
     private var statusInsetDp = 24
     private var bottomInsetDp = 0
@@ -133,6 +134,7 @@ class MainActivity : Activity() {
         feedDiscovery = PublisherFeedDiscovery(appWebView.settings.userAgentString)
         sampleDemos = SampleDemoFinder(appWebView.settings.userAgentString)
         launcherSupport = HomeLauncherSupport(this)
+        systemWallpaperInstaller = SystemWallpaperInstaller(applicationContext)
         appWebView.addJavascriptInterface(AppBridge(), "AudioDesk")
         appWebView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
@@ -248,7 +250,34 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun reportSystemWallpaperResult(id: Int, success: Boolean, detail: String) {
+        runOnUiThread {
+            if (!destroyed && ::appWebView.isInitialized) {
+                appWebView.evaluateJavascript(
+                    "window.audioDeskWallpaperResult&&window.audioDeskWallpaperResult(" +
+                        id + "," + success + "," + JSONObject.quote(detail) + ")", null
+                )
+            }
+        }
+    }
+
     private inner class AppBridge {
+        @JavascriptInterface fun setSystemWallpaperBundled(
+            id: String, position: Int, alsoLock: Boolean, requestId: Int
+        ) {
+            if (destroyed || !::systemWallpaperInstaller.isInitialized) return
+            systemWallpaperInstaller.applyBundled(id, position, alsoLock, requestId,
+                ::reportSystemWallpaperResult)
+        }
+
+        @JavascriptInterface fun setSystemWallpaperCustom(
+            dataUrl: String, position: Int, alsoLock: Boolean, requestId: Int
+        ) {
+            if (destroyed || !::systemWallpaperInstaller.isInitialized) return
+            systemWallpaperInstaller.applyCustom(dataUrl, position, alsoLock, requestId,
+                ::reportSystemWallpaperResult)
+        }
+
         @JavascriptInterface fun setWallpaperTone(light: Boolean) {
             runOnUiThread {
                 if (!destroyed) {
@@ -488,6 +517,7 @@ class MainActivity : Activity() {
         if (::feedDiscovery.isInitialized) feedDiscovery.close()
         if (::sampleDemos.isInitialized) sampleDemos.close()
         if (::launcherSupport.isInitialized) launcherSupport.close()
+        if (::systemWallpaperInstaller.isInitialized) systemWallpaperInstaller.close()
         refreshHandler.removeCallbacks(refreshFailsafe)
         if (::browserWebView.isInitialized) browserWebView.destroy()
         if (::appWebView.isInitialized) appWebView.destroy()
