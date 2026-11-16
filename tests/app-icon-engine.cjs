@@ -50,14 +50,14 @@ const assert=require('node:assert/strict');
   assert.equal(await first.locator('.icon-fallback').isVisible(),false,
    'matching native icon replaces the generic placeholder');
   // Android icons are cache-scoped by both app identity and visual theme.
-  await page.evaluate(()=>setLauncherTheme('pixel'));
+  await page.evaluate(()=>{setLauncherTheme('pixel');setLauncherPage('apps',false)});
   await page.waitForFunction(()=>nativeIconRequests.some(x=>x.theme==='pixel'));
   assert.equal(await page.locator('#launcherAppsGrid .auto-app-icon[data-icon-theme="pixel"]').count(),100);
-  await page.evaluate(()=>setLauncherTheme('windows'));
+  await page.evaluate(()=>{setLauncherTheme('windows');setLauncherPage('apps',false)});
   await page.waitForFunction(()=>nativeIconRequests.some(x=>x.theme==='windows'));
-  await page.evaluate(()=>setLauncherTheme('minimal'));
+  await page.evaluate(()=>{setLauncherTheme('minimal');setLauncherPage('apps',false)});
   await page.waitForFunction(()=>nativeIconRequests.some(x=>x.theme==='minimal'));
-  await page.evaluate(()=>setLauncherTheme('warm'));
+  await page.evaluate(()=>{setLauncherTheme('warm');setLauncherPage('apps',false)});
   const before=await page.evaluate(()=>nativeIconRequests.filter(x=>x.theme==='warm').length);
   await page.evaluate(()=>renderLauncherApps());
   await page.waitForTimeout(100);
