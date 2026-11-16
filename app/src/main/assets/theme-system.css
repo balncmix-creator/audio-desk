@@ -553,3 +553,10 @@ body[data-launcher-theme="pixel"] header .brand,
 body[data-launcher-theme="pixel"] #swipeMain .story h2{
  font-family:"Silkscreen",monospace!important;
 }
+
+/* The alphabet index lives above #launcherShell in a different stacking
+   context. It must never intercept taps on the fullscreen quick-actions sheet. */
+body:has(#launcherHomeOptions:not([hidden])) #launcherAlphaIndex,
+body:has(#launcherHomeOptions:not([hidden])) #launcherAlphaBubble{
+ pointer-events:none!important;visibility:hidden!important;
+}
