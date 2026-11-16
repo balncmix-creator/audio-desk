@@ -275,7 +275,9 @@ for(const id of ids){
  }
 }
 document.addEventListener("click",e=>{
- if(Date.now()<cancelClickUntil&&e.target.closest("[data-widget-resizable]")){
+ // Suppress only the matching long-pressed widget, never unrelated widgets.
+ // Dismissing the editor must restore normal click actions immediately.
+ if(chosen&&Date.now()<cancelClickUntil&&e.target.closest("[data-widget-resizable]")===chosen){
   e.preventDefault();e.stopImmediatePropagation();
  }
 },true);
