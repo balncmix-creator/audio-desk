@@ -39,7 +39,7 @@ const out = process.argv[2] ? path.resolve(process.argv[2]) : path.join(root, 'a
 fs.mkdirSync(out, { recursive: true });
 fs.writeFileSync(path.join(out, 'index.html'), html);
 fs.copyFileSync(path.join(root, 'app/src/main/assets/desk-premium.webp'), path.join(out, 'desk-premium.webp'));
-for (const name of ['wallpapers', 'fonts', 'pixel-icons', 'personalization.css', 'personalization.js']) {
+for (const name of ['wallpapers', 'fonts', 'pixel-icons', 'personalization.css', 'personalization.js', 'theme-system.css', 'theme-system.js']) {
   // Remove stale generated files when the user removes a wallpaper from the pack.
   const target = path.resolve(out, name);
   if (path.dirname(target) !== out) throw new Error('Asset output escaped its directory');
