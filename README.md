@@ -2,9 +2,26 @@
 
 **A one-handed Android Home launcher for people who make sound, inspired by minimalist Niagara-style app access and Nokia N9 swipe navigation, without replacing Audio Desk's original retro design.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk Launcher v3.9 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v3.9/Audio-Desk-Launcher-v3.9.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk Launcher v4.0 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v4.0/Audio-Desk-Launcher-v4.0.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
+
+## v4.0 — Movable, aligned Home widgets and 16 audio wallpapers
+
+Audio Desk v4.0 adds an interactive Home layout editor across **Minimal A–Z, 8-Bit, Windows Tiles, and Warm Minimal**. Long-press a widget, Favorites or Recent apps panel to select it. Use the **Move grip** to reposition it; drag any **corner or side handle** to resize. Handles are kept inside the visible screen even when a panel starts at the left edge. Nearby widget edges and centers snap together with visible alignment guides; the new position and size persist independently for each theme. Handles support keyboard arrows as well as touch/pointer dragging.
+
+App organization now includes:
+- **Home folders:** Open Home options → **Create app folder**, name it (for example *Games*), select installed apps, then save. Tap the folder to launch contained apps; long-press the folder to edit its name and contents. Folders appear with your Home shortcuts.
+- **All Apps list/grid:** Use the new **List / Grid** control at the top of the Apps page; the original vertical list remains the default and the choice persists.
+- **App management:** Long-press an installed app in Home Favorites/Recents or the Apps page for **App info, Storage & clear cache, Force stop, and App settings**. Android opens the application's system Settings page for those controls; normal launchers cannot silently clear other apps' cache or force-stop them.
+- **Consistent navigation:** A right-to-left swipe from anywhere on the News feed goes to Home. Published app quick actions by horizontal swipe are restricted to Home Favorites/Recents, not the All Apps list.
+- **Glass options:** In Home options, choose **Opaque**, **Liquid Glass**, **Aero Glass** or **Windows 11 Mica** for the Home cards and quick-action surfaces. Each theme remembers its own preference; default is opaque for smooth performance on affordable phones.
+
+### Audio wallpaper collections
+
+The wallpaper picker now includes **16 original, text-free audio-inspired vector wallpapers**, four created for each theme: Minimal (dark monochrome waveforms, spectral bars, vinyl grooves, flowing contours), 8-Bit (pixel night studio, retro levels, cassette and arcade pulse), Windows Tiles (geometric Metro frequencies, blue spectra, teal signal and indigo waveform), and Warm Minimal (analog vinyl, graphite frequency, cassette blush and soft flowing ribbons). These scale without blurry pixelation inside the launcher. On selection, the image can be exported at **1080 × 1920** and applied to Android Home and, if the option remains checked, the Lock screen. The palette of original colour wallpapers and imported photos remains available.
+
+**Build validation:** browser interactions and gestures, folder management, app layout toggle, left-side grip access, position persistence, themed wallpaper picker and high-resolution wallpaper export, real screenshots, Android native compilation, packaged editions and original wallpaper quality verification all passed. A physical Android device should still be used to confirm OEM-specific touch behavior and system Settings screens.
 
 ## v3.9 — Unified theme surfaces, wallpapers, music and widget resizing
 
@@ -192,7 +209,7 @@ The wallpaper fills the screen behind the Android status bar. Custom photos and 
 
 ## Install on Android
 
-1. Open the [v3.9 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v3.9/Audio-Desk-Launcher-v3.9.apk) on your Android phone. **This is an APK, not a ZIP.**
+1. Open the [v4.0 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v4.0/Audio-Desk-Launcher-v4.0.apk) on your Android phone. **This is an APK, not a ZIP.**
 2. Open the downloaded file and, if Android asks, allow installations from the browser or file manager you used.
 3. Launch **Audio Desk Launcher**. Tap the **bottom-right settings icon → Set Home** if you want it to become your default Android launcher. Your existing Audio Desk bookmarks and cached feeds remain available.
 
