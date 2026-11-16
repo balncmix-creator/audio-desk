@@ -24,8 +24,8 @@ function save(){
  const r=chosen.getBoundingClientRect();
  const size=geometry[chosen.id]||{};
  size.w=Math.round(r.width);size.h=Math.round(r.height);
- size.x=Math.round(Number(chosen.style.getPropertyValue("--widget-x"))||0);
- size.y=Math.round(Number(chosen.style.getPropertyValue("--widget-y"))||0);
+ size.x=Math.round(parseFloat(chosen.style.getPropertyValue("--widget-x"))||0);
+ size.y=Math.round(parseFloat(chosen.style.getPropertyValue("--widget-y"))||0);
  geometry[chosen.id]=size;
  deskStorage.setItem(storeKey(),JSON.stringify(geometry));
 }
