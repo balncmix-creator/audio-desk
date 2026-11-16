@@ -2,9 +2,21 @@
 
 **A one-handed Android Home launcher for people who make sound, inspired by minimalist Niagara-style app access and Nokia N9 swipe navigation, without replacing Audio Desk's original retro design.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk Launcher v3.7 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v3.7/Audio-Desk-Launcher-v3.7.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk Launcher v3.9 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v3.9/Audio-Desk-Launcher-v3.9.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
+
+## v3.9 — Unified theme surfaces, wallpapers, music and widget resizing
+
+All four themes (Minimal A–Z, 8-Bit, Windows Tiles and Warm Minimal) now apply their own typography, icon language, colours and surface treatment across Home, All Apps, A–Z index, quick-actions menus, popup dialogs and app shortcuts. The 8-bit icon art stays in the 8-Bit theme.
+
+Each theme retains its own selected background. The expanded colour editions include black, graphite, grey and blush choices in Warm Minimal. The wallpaper picker can apply these static colour wallpapers to Android Home and (optionally) Lock. Normal wallpaper and photo options remain available.
+
+The opt-in music widget reads public Android media-session playback state and offers Play/Pause, Previous and Next only when the selected player supports those controls. Enabling it requires granting Android Notification Access in Settings; it never guarantees removing ads or bypassing skip restrictions.
+
+Supported Home widgets allow press-and-hold resizing, with visible corner handles, accessibility controls, and sizes persisted separately for each theme.
+
+Automated tests checked the launcher surfaces and gestures, per-theme Apps screenshot captures, resize interactions, Android compilation, APK packaging and wallpaper quality checks. Physical-device behaviour varies with Android/OEM versions.
 
 ## v3.7 — Warm Minimal spacing and full-height finish
 
@@ -180,7 +192,7 @@ The wallpaper fills the screen behind the Android status bar. Custom photos and 
 
 ## Install on Android
 
-1. Open the [v3.7 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v3.7/Audio-Desk-Launcher-v3.7.apk) on your Android phone. **This is an APK, not a ZIP.**
+1. Open the [v3.9 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v3.9/Audio-Desk-Launcher-v3.9.apk) on your Android phone. **This is an APK, not a ZIP.**
 2. Open the downloaded file and, if Android asks, allow installations from the browser or file manager you used.
 3. Launch **Audio Desk Launcher**. Tap the **bottom-right settings icon → Set Home** if you want it to become your default Android launcher. Your existing Audio Desk bookmarks and cached feeds remain available.
 
