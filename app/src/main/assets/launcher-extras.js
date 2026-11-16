@@ -232,14 +232,18 @@ document.addEventListener("pointerdown",e=>{
  clearTimeout(appHeld?.timer);
  const {clientX:x,clientY:y,pointerId}=e;
  appHeld={pkg:a.dataset.launchPkg,activity:a.dataset.launchActivity,x,y,pointerId,
+  home:!!a.closest("#launcherFavorites,#launcherRecentQuick"),
   timer:setTimeout(()=>{
    if(!appHeld)return;
    const h=appHeld;appHeld=null;
    clickBlockedUntil=Date.now()+850;
-   // Suppress the native app-open tap after the long press.
+   // Suppress the native app-open tap and Home swipe after a long press.
    blockAppClickUntil=Date.now()+850;
-   appManage(h.pkg,h.activity);
-  },560)};
+   if(h.home){
+    upStart=null;iconSwipe=null;longConsumed=true;
+    showAppShortcuts(h.pkg,h.activity);
+   }else appManage(h.pkg,h.activity);
+  },520)};
 },true);
 document.addEventListener("pointermove",e=>{
  if(!appHeld||appHeld.pointerId!==e.pointerId)return;
@@ -249,6 +253,19 @@ document.addEventListener("pointermove",e=>{
 },true);
 for(const ev of ["pointerup","pointercancel"])
  document.addEventListener(ev,()=>{if(appHeld){clearTimeout(appHeld.timer);appHeld=null}},true);
+/* Android WebView may emit contextmenu/pointercancel before a hold timer fires.
+   The same Home shortcuts menu must still open for Favourites and Recents. */
+document.addEventListener("contextmenu",e=>{
+ const a=e.target.closest("#launcherFavorites .launcher-app,#launcherRecentQuick .launcher-app");
+ if(!a||launcherPage!=="home")return;
+ e.preventDefault();
+ if(appHeld){clearTimeout(appHeld.timer);appHeld=null}
+ clickBlockedUntil=Date.now()+850;
+ blockAppClickUntil=Date.now()+850;
+ upStart=null;iconSwipe=null;longConsumed=true;
+ if(byId("launcherShortcutMenu").hidden)
+  showAppShortcuts(a.dataset.launchPkg,a.dataset.launchActivity);
+},true);
 document.addEventListener("click",e=>{
  if(Date.now()<clickBlockedUntil&&e.target.closest(".launcher-app")){
   e.preventDefault();e.stopImmediatePropagation();
