@@ -2,15 +2,29 @@
 
 **A one-handed Android Home launcher for people who make sound, inspired by minimalist Niagara-style app access and Nokia N9 swipe navigation, without replacing Audio Desk's original retro design.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk Launcher v2.8 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v2.8/Audio-Desk-Launcher-v2.8.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk Launcher v2.9 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v2.9/Audio-Desk-Launcher-v2.9.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
 
+## v2.9 — Recent apps and functional Windows Live Tiles
+
+**Minimal A–Z and 8-Bit Home now show a compact row of up to four recently opened apps** below the clock, restoring quick access without bringing back the full app list. When there is no Audio Desk launch history yet, the row is clearly labeled **Suggested Apps** rather than falsely presenting suggestions as recent launches. The A–Z rail and swipe-up search remain unchanged.
+
+**Windows Live Tiles now display actual updating data:**
+- **Clock:** local time refreshes with the existing minute-aligned launcher clock.
+- **Calendar:** real local day and date, with a tap opening a visible Calendar app when available (or searching for one).
+- **Audio Desk News:** latest valid cached headline and source; refreshed when article data changes and when you return Home. Tap to open News.
+- **App tiles:** local Audio Desk launch activity (last-opened clock time or local use count where available), updated on returning from apps.
+
+Live-tile content uses locally available data and existing timers. It **does not** claim to read other apps' unread message counts, private notifications, or calendar events without the corresponding Android access. No new continuous animation loops or third-party data polling were added, to keep performance friendly to older and low-memory phones.
+
+The full UI suite, APK packaging, and wallpaper checks passed in GitHub Actions. Actual low-end physical-device performance remains to be benchmarked.
+
 ## v2.8 — A–Z Home, 3 themes and lightweight rendering
 
-**Minimal A–Z (default):** Home keeps the clock and selected wallpaper, with no duplicate app list. Touch or drag the A–Z letters along the right edge to reveal matching installed apps in a compact panel. **Swipe up** anywhere on Home to open the full searchable app drawer with the keyboard ready.
+**Minimal A–Z (default):** Home keeps the clock, selected wallpaper and four compact recent (or suggested) app shortcuts, with no duplicate full app list. Touch or drag the A–Z letters along the right edge to reveal matching installed apps in a compact panel. **Swipe up** anywhere on Home to open the full searchable app drawer with the keyboard ready.
 
-**8-Bit:** The same fast, list-free navigation with pixel clock styling and pixel alphabet. **Windows Tiles:** A Windows Phone-inspired, colorful two-column layout showing up to eight pinned or often-used app tiles. In all themes, the A–Z rail, swipe-up search, real Android app shortcuts and wallpaper customization remain available.
+**8-Bit:** The same fast navigation with pixel clock styling, pixel alphabet and compact recent app shortcuts. **Windows Tiles:** A Windows Phone-inspired layout with live time, date and real cached news above up to eight pinned or frequently launched app tiles. In all themes, the A–Z rail, swipe-up search, real Android app shortcuts and wallpaper customization remain available.
 
 Open **Home options → Home Theme** to switch between themes. Theme choice is stored locally. The layout uses CSS colors rather than extra wallpaper-sized assets, delays creating app tiles until the tile theme is selected, renders the A–Z letter panel on demand, applies offscreen containment where WebView supports it and keeps auto wallpaper effects paused on low-power devices. Performance is designed for inexpensive phones, but it has not been established as the fastest launcher in comparative device benchmarks.
 
@@ -36,13 +50,13 @@ The wallpaper fills the screen behind the Android status bar. Custom photos and 
 
 ## One-handed home launcher
 
-**Home is now deliberately minimal:** by default it shows the clock, wallpaper and a right-edge A–Z letter rail, instead of a permanently visible app list. The 8-bit theme uses pixel lettering and the Windows Phone-inspired theme adds colorful app tiles. A small bottom-right settings button opens theme, wallpaper, clock and other controls. Three horizontal spaces remain:
+**Home is now deliberately minimal:** by default it shows the clock, wallpaper, four recent/suggested shortcuts and a right-edge A–Z letter rail, instead of a permanently visible full app list. The 8-bit theme uses pixel lettering and the Windows Phone-inspired theme adds colorful app tiles. A small bottom-right settings button opens theme, wallpaper, clock and other controls. Three horizontal spaces remain:
 
 - **Swipe left-to-right → AUDIO NEWS:** all original Audio Desk stories, filters, REAPER and post-production headlines, bookmarks, sample previews, and pinch-grid options.
-- **HOME (center):** clock and right-edge alphabetical rail. Tap/drag a letter to browse apps without opening the drawer. Windows Tiles shows up to eight pinned/commonly launched app tiles; pin apps from the All Apps view.
+- **HOME (center):** clock, compact recent/suggested shortcuts and right-edge alphabetical rail. Tap/drag a letter to browse apps without opening the drawer. Windows Tiles shows real live time, date, headlines and up to eight pinned/commonly launched app tiles; pin apps from All Apps.
 - **Swipe right-to-left → ALL APPS:** every app visible to Android's launcher, in an alphabetical vertical list with quick A–Z navigation along the right edge and search.
 
-**Swipe up on Home to open app search and the keyboard automatically.** Windows Tiles becomes personalized based on locally counted Audio Desk launches; those usage counts are not Android's restricted global usage history. Pinned apps and chosen theme are stored locally. Minimal and Pixel keep Home free of app rows.
+**Swipe up on Home to open app search and the keyboard automatically.** Windows Tiles becomes personalized based on locally counted Audio Desk launches; those usage counts are not Android's restricted global usage history. Pinned apps and chosen theme are stored locally. Minimal and Pixel show only a four-app shortcut strip, not a complete app list.
 
 **App shortcuts:** swipe left-to-right on an app icon to reveal actions published by the installed app. Google Pay's QR scan appears only if Google Pay exposes that shortcut to Android; Audio Desk does not invent or replicate payment functionality. The **Recently Opened** section is still accessible directly from Home. It shows apps opened through Audio Desk, not privileged Android running-task screenshots. The navigation strip remains accessible in News and the app list, but is hidden on Home to keep it clean.
 
@@ -86,7 +100,7 @@ The wallpaper fills the screen behind the Android status bar. Custom photos and 
 
 ## Install on Android
 
-1. Open the [v2.8 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v2.8/Audio-Desk-Launcher-v2.8.apk) on your Android phone. **This is an APK, not a ZIP.**
+1. Open the [v2.9 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v2.9/Audio-Desk-Launcher-v2.9.apk) on your Android phone. **This is an APK, not a ZIP.**
 2. Open the downloaded file and, if Android asks, allow installations from the browser or file manager you used.
 3. Launch **Audio Desk Launcher**. Tap the **bottom-right settings icon → Set Home** if you want it to become your default Android launcher. Your existing Audio Desk bookmarks and cached feeds remain available.
 
