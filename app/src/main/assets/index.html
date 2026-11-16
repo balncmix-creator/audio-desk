@@ -2536,7 +2536,8 @@ $("launcherShortcutMenu").onclick=e=>{
  if(e.target===$("launcherShortcutMenu"))closeAppShortcuts();
 };
 function showAppShortcuts(pkg,activity){
- const app=launcherApps.find(a=>a.pkg===pkg&&a.activity===activity);
+ const app=launcherApps.find(a=>a.pkg===pkg&&a.activity===activity)||
+   launcherRecents.find(a=>a.pkg===pkg&&a.activity===activity);
  if(!app)return;
  selectedApp=app;
  cancelHomeHold();upStart=null;DeskMotion.show($("launcherShortcutMenu"));
