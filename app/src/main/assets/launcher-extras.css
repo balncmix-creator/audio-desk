@@ -205,8 +205,9 @@ body[data-launcher-theme="pixel"] #launcherFolderSheet .folder-dialog{border-rad
  border:1px solid var(--ds-line);border-radius:var(--ds-radius);
  font:500 12px var(--ds-font);
 }
-body[data-launcher-theme="warm"]{--glass-ink:#36282d;
- --glass-base:rgba(239,224,217,.74);--glass-strong:rgba(239,224,217,.86)}
+body[data-launcher-theme="warm"]{--glass-ink:var(--theme-ink,#36282d);
+ --glass-base:color-mix(in srgb,var(--theme-panel,#efe0d9) 74%,transparent);
+ --glass-strong:color-mix(in srgb,var(--theme-panel,#efe0d9) 86%,transparent)}
 body[data-launcher-theme="minimal"]{--glass-ink:#f1f4f5;
  --glass-base:rgba(37,44,50,.69);--glass-strong:rgba(38,43,49,.86)}
 body[data-launcher-theme="pixel"]{--glass-ink:#fff4ff;
