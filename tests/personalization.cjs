@@ -107,7 +107,7 @@ const origin='https://appassets.androidplatform.net/assets/';
   const customSystem=await page.evaluate(()=>wallpaperNativeCalls.filter(x=>x.kind==='custom').at(-1));
   assert.match(customSystem.prefix,/^data:image\/webp;base64/);
   assert.equal(customSystem.lock,false);
-  assert.ok(customSystem.bytes>200,'custom photos are delivered to Android's native wallpaper bridge');
+  assert.ok(customSystem.bytes>200,'custom photos are delivered to the Android wallpaper bridge');
   assert.equal(await page.locator('#wallpaperImage').evaluate(e=>e.src.startsWith('blob:')),true);
   await page.locator('#customWallpaperPosition').fill('70');
   assert.equal(await page.locator('#wallpaperImage').evaluate(e=>e.style.objectPosition),'70% center');
