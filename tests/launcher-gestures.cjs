@@ -52,12 +52,17 @@ const assert=require('node:assert/strict');
   assert.equal(await page.locator('#launcherRecentQuick .launcher-app').count(),2);
   assert.equal(await page.locator('#launcherRecentQuick').evaluate(el=>getComputedStyle(el).flexDirection),'column');
   assert.equal(await page.locator('#launcherAlphaIndex').isVisible(),true);
+  // Icon art belongs only to the selected visual theme.
+  await page.evaluate(()=>setLauncherTheme('pixel'));
+  const pixelPay=page.locator('#launcherRecentQuick .launcher-app').filter({hasText:'Google Pay'});
+  assert.equal(await pixelPay.locator('img[src*="credit-card.svg"]').count(),1,
+   'Google Pay uses its pixel artwork only inside the 8-bit theme');
+  await page.waitForFunction(()=>{const img=[...document.querySelectorAll('#launcherRecentQuick .launcher-app img')].find(el=>el.src.includes('credit-card.svg'));return !!img&&img.complete&&img.naturalWidth>0});
   await page.evaluate(()=>setLauncherTheme('windows'));
   const pay=page.locator('#launcherFavorites .launcher-app').filter({hasText:'Google Pay'});
-  assert.equal(await pay.locator('img[src*="credit-card.svg"]').count(),1,
-   'real pixel icon pack is used for Google Pay');
-  await page.waitForFunction(()=>{const img=[...document.querySelectorAll('#launcherFavorites .launcher-app img')].find(el=>el.src.includes('credit-card.svg'));return !!img&&img.complete&&img.naturalWidth>0});
-  assert.equal(await pay.locator('img').evaluate(img=>img.complete&&img.naturalWidth>0),true);
+  assert.equal(await pay.locator('.warm-line-icon svg').count(),1,
+   'Windows tile uses a vector icon, not the pixel icon pack');
+  assert.equal(await pay.locator('img[src*="credit-card.svg"]').count(),0);
 
   const gesture=async(target,from,to)=>{
    await page.evaluate(({target,from,to})=>{
