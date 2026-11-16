@@ -265,43 +265,64 @@ function cancelResize(){
 function beginResize(id){
  const el=byId(id);
  if(!el||el.offsetParent===null)return false;
- cancelResize();editing=el;
- el.classList.add("widget-editing");
+ cancelResize();editing=el;el.classList.add("widget-editing");
  const frame=document.createElement("div");
  frame.className="widget-resize-frame";
- frame.innerHTML='<span class="widget-resize-label">Resize widget</span>'+
-  '<button class="widget-resize-done" type="button" aria-label="Finish resizing">Done</button>'+
-  '<span class="widget-resize-handle" role="slider" tabindex="0" aria-label="Drag to resize widget" aria-valuemin="80" aria-valuemax="360"></span>';
+ frame.setAttribute("role","group");
+ frame.setAttribute("aria-label","Widget resize controls");
+ frame.innerHTML='<span class="widget-resize-label">Drag a corner to resize</span>'+
+  '<button class="widget-resize-done" type="button">Done</button>'+
+  ["nw","ne","sw","se"].map(c=>'<button type="button" class="widget-resize-handle" data-corner="'+c+
+   '" aria-label="Drag '+c+' corner to resize"></button>').join("");
  el.append(frame);
- frame.querySelector(".widget-resize-done").onclick=e=>{e.preventDefault();e.stopPropagation();cancelResize()};
- const handle=frame.querySelector(".widget-resize-handle");
- handle.addEventListener("pointerdown",e=>{
-  if(e.button!==0)return;
-  e.stopPropagation();e.preventDefault();
-  handle.setPointerCapture(e.pointerId);
-  const r=el.getBoundingClientRect();
-  dragging={el,x:e.clientX,y:e.clientY,w:r.width,h:r.height,moved:false};
-  document.body.classList.add("widget-dragging");
- });
- handle.addEventListener("pointermove",e=>{
-  if(!dragging||dragging.el!==el)return;
-  e.preventDefault();
+ frame.querySelector(".widget-resize-done").onclick=e=>{
+  e.preventDefault();e.stopPropagation();cancelResize();
+ };
+ function resize(w,h){
   const max=Math.min(window.innerWidth-24,el.parentElement.getBoundingClientRect().width);
-  const w=Math.min(max,Math.max(180,dragging.w+e.clientX-dragging.x));
-  const h=Math.min(340,Math.max(50,dragging.h+e.clientY-dragging.y));
-  el.style.setProperty("--user-widget-width",Math.round(w)+"px");
-  el.style.setProperty("--user-widget-height",Math.round(h)+"px");
-  dragging.moved=true;
- });
- function finish(){
-  if(!dragging)return;
-  const d=dragging;dragging=null;document.body.classList.remove("widget-dragging");
-  if(d.moved){
-   const r=el.getBoundingClientRect();saveSize(el,r.width,r.height);
-  }
+  const width=Math.min(max,Math.max(Math.min(160,max),w));
+  const height=Math.min(360,Math.max(50,h));
+  el.style.setProperty("--user-widget-width",Math.round(width)+"px");
+  el.style.setProperty("--user-widget-height",Math.round(height)+"px");
+  return {width,height};
  }
- handle.addEventListener("pointerup",finish);
- handle.addEventListener("pointercancel",finish);
+ for(const handle of frame.querySelectorAll(".widget-resize-handle")){
+  handle.addEventListener("pointerdown",e=>{
+   if(e.button!==0)return;
+   e.stopPropagation();e.preventDefault();
+   const r=el.getBoundingClientRect();
+   dragging={el,corner:handle.dataset.corner,x:e.clientX,y:e.clientY,
+    w:r.width,h:r.height,moved:false,pointerId:e.pointerId};
+   handle.setPointerCapture(e.pointerId);
+   document.body.classList.add("widget-dragging");
+  });
+  handle.addEventListener("pointermove",e=>{
+   if(!dragging||dragging.el!==el||dragging.pointerId!==e.pointerId)return;
+   e.preventDefault();
+   const dx=(dragging.corner.includes("e")?1:-1)*(e.clientX-dragging.x);
+   const dy=(dragging.corner.includes("s")?1:-1)*(e.clientY-dragging.y);
+   resize(dragging.w+dx,dragging.h+dy);
+   dragging.moved=true;
+  });
+  const finish=e=>{
+   if(!dragging||dragging.pointerId!==e.pointerId)return;
+   const moved=dragging.moved;dragging=null;
+   document.body.classList.remove("widget-dragging");
+   if(moved){const r=el.getBoundingClientRect();saveSize(el,r.width,r.height)}
+  };
+  handle.addEventListener("pointerup",finish);
+  handle.addEventListener("pointercancel",finish);
+  handle.addEventListener("keydown",e=>{
+   if(!["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(e.key))return;
+   e.preventDefault();e.stopPropagation();
+   const r=el.getBoundingClientRect();
+   const result=resize(
+    r.width+(e.key==="ArrowRight"?12:e.key==="ArrowLeft"?-12:0),
+    r.height+(e.key==="ArrowDown"?12:e.key==="ArrowUp"?-12:0)
+   );
+   saveSize(el,result.width,result.height);
+  });
+ }
  return true;
 }
 window.audioDeskBeginWidgetResize=beginResize;
