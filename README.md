@@ -2,9 +2,21 @@
 
 **A one-handed Android Home launcher for people who make sound, inspired by minimalist Niagara-style app access and Nokia N9 swipe navigation, without replacing Audio Desk's original retro design.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk Launcher v3.4 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v3.4/Audio-Desk-Launcher-v3.4.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk Launcher v3.5 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v3.5/Audio-Desk-Launcher-v3.5.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
+
+## v3.5 — Warm Minimal: a fourth selectable launcher Home
+
+The new **Warm Minimal** theme follows the reference's warm peach/cream and charcoal split: an original diagonal color panel, elegant rounded cards at the top and a crisp one-column app list. It adds **no heavyweight wallpaper assets or continuous animation loops**. Choose it via **Home options → Home Theme → Warm Minimal**; the choice persists after restarting.
+
+These are real controls rather than a nonfunctional picture:
+- The **date/time card** updates with your device's clock and opens your calendar when available (or searches for Calendar).
+- The **Audio Desk** card opens the existing news, audio stories and discovery experience. It is not a simulated media player or a fake pause button.
+- The **Search** card opens installed-app search and focuses the keyboard.
+- The **Favorites & Frequent** list shows up to seven real installed applications, prioritizes pinned favorites and local usage, and launches them on tap. The A–Z rail and swipe-up search remain accessible.
+
+Minimal A–Z, 8-Bit and Windows Tiles are unchanged. Pixel status-bar replacements still belong to the 8-Bit theme alone; Warm Minimal uses Android's regular status icons. Screenshots are rendered from the actual HTML/CSS app with illustrative app labels, while actual-device performance and OEM rendering still need physical testing.
 
 ## v3.4 — real native pixel status bar on 8-bit Home
 
@@ -112,9 +124,13 @@ The wallpaper fills the screen behind the Android status bar. Custom photos and 
 
 ## Screenshots
 
-| Minimal A–Z Home | Windows Tiles | 8-Bit Home |
-|:--:|:--:|:--:|
-| ![Minimal Home with right-hand app letters](docs/screenshots/launcher-home.png) | ![Windows Phone-inspired colorful app tiles](docs/screenshots/launcher-windows-tiles.png) | ![Pixel 8-bit clock theme](docs/screenshots/launcher-pixel-theme.png) |
+| Warm Minimal Home | Minimal A–Z Home |
+|:--:|:--:|
+| ![Warm Minimal theme with cream and charcoal split, rounded widgets and a vertical app list](docs/screenshots/launcher-warm-minimal.png) | ![Minimal Home with right-hand app letters](docs/screenshots/launcher-home.png) |
+
+| Windows Tiles | 8-Bit Home |
+|:--:|:--:|
+| ![Windows Phone-inspired colorful app tiles](docs/screenshots/launcher-windows-tiles.png) | ![Pixel 8-bit clock theme](docs/screenshots/launcher-pixel-theme.png) |
 
 ![Audio Desk alphabetical All Apps drawer](docs/screenshots/launcher-applications.png)
 
@@ -148,7 +164,7 @@ The wallpaper fills the screen behind the Android status bar. Custom photos and 
 
 ## Install on Android
 
-1. Open the [v3.4 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v3.4/Audio-Desk-Launcher-v3.4.apk) on your Android phone. **This is an APK, not a ZIP.**
+1. Open the [v3.5 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v3.5/Audio-Desk-Launcher-v3.5.apk) on your Android phone. **This is an APK, not a ZIP.**
 2. Open the downloaded file and, if Android asks, allow installations from the browser or file manager you used.
 3. Launch **Audio Desk Launcher**. Tap the **bottom-right settings icon → Set Home** if you want it to become your default Android launcher. Your existing Audio Desk bookmarks and cached feeds remain available.
 
