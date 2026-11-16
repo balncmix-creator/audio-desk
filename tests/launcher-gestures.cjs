@@ -54,6 +54,7 @@ const assert=require('node:assert/strict');
   const pay=page.locator('#launcherFavorites .launcher-app').filter({hasText:'Google Pay'});
   assert.equal(await pay.locator('img[src*="credit-card.svg"]').count(),1,
    'real pixel icon pack is used for Google Pay');
+  await page.waitForFunction(()=>{const img=[...document.querySelectorAll('#launcherFavorites .launcher-app img')].find(el=>el.src.includes('credit-card.svg'));return !!img&&img.complete&&img.naturalWidth>0});
   assert.equal(await pay.locator('img').evaluate(img=>img.complete&&img.naturalWidth>0),true);
 
   const gesture=async(target,from,to)=>{
