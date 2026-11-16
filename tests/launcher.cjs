@@ -125,6 +125,7 @@ const demoApps=[
   assert.equal(await page.locator('#launcherThemeChoose').textContent().then(x=>x.includes('Choose theme')),true,
    'Warm settings use themed labels');
   await page.locator('#launcherOptionsClose').click();
+  await page.locator('#launcherHomeOptions').waitFor({state:'hidden'});
   assert.equal(await page.locator('#warmWidgets').isVisible(),true,'rounded Warm Minimal widgets display on Home');
   assert.equal(await page.locator('#launcherClock').isVisible(),false,'Warm Minimal has its own date card instead of duplicate clock');
   assert.equal(await page.locator('#launcherRecentQuick .launcher-app').count(),7,
