@@ -11,7 +11,7 @@ function loadFolders(){
    typeof v.name==="string"&&Array.isArray(v.keys)).slice(0,30):[];
  }catch{return[]}
 }
-let folders=loadFolders(),selectedFolder=null,folderHeld=null,appHeld=null,clickBlockedUntil=0;
+let folders=loadFolders(),selectedFolder=null,folderHeld=null,appHeld=null,clickBlockedUntil=0,folderCancelUntil=0;
 function persistFolders(){deskStorage.setItem(folderKey,JSON.stringify(folders))}
 function folderMarkup(f){
  const icon=launcherTheme==="pixel"?
@@ -120,7 +120,7 @@ folderSheet.addEventListener("click",e=>{
 byId("launcherHomePage").addEventListener("click",e=>{
  const folder=e.target.closest("[data-folder-id]");if(!folder)return;
  e.preventDefault();e.stopPropagation();
- if(Date.now()<clickBlockedUntil)return;
+ if(Date.now()<folderCancelUntil)return;
  folderOpen(folder.dataset.folderId);
 });
 byId("launcherHomePage").addEventListener("pointerdown",e=>{
@@ -130,7 +130,7 @@ byId("launcherHomePage").addEventListener("pointerdown",e=>{
  const x=e.clientX,y=e.clientY;
  clearTimeout(folderHeld?.timer);
  folderHeld={id,x,y,pointerId:e.pointerId,timer:setTimeout(()=>{
-  folderHeld=null;clickBlockedUntil=Date.now()+800;folderEdit(id);
+  folderHeld=null;folderCancelUntil=Date.now()+800;folderEdit(id);
  },560)};
 });
 byId("launcherHomePage").addEventListener("pointermove",e=>{
