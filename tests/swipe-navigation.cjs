@@ -37,8 +37,10 @@ const assert=require('node:assert/strict');
    },{x0,x1});
   }
   await swipe(320,80);
-  assert.equal(await page.evaluate(()=>active),'All','horizontal swipe must not change news category');
-  assert.equal(await page.locator('#tabSwipePreview').isVisible(),false,'news swipe transition must be off');
+  assert.equal(await page.evaluate(()=>launcherPage),'home','News right-to-left opens Home from anywhere');
+  assert.equal(await page.evaluate(()=>active),'All','swiping does not change news category');
+  assert.equal(await page.locator('#tabSwipePreview').isVisible(),false,'old news category swipe preview remains off');
+  await page.evaluate(()=>setLauncherPage('events',false));
   await page.locator('[data-filter="REAPER"]').click();
   assert.equal(await page.evaluate(()=>active),'REAPER');
   await swipe(80,320);
@@ -50,6 +52,6 @@ const assert=require('node:assert/strict');
   await page.locator('[data-view="samples"]').click();
   assert.equal(await page.evaluate(()=>activeView),'samples','explicit resource tabs still work');
   assert.deepEqual(errors,[]);
-  console.log('PASS: horizontal news swipes disabled; REAPER, Post Production and Sample Pack category buttons still work');
+  console.log('PASS: News right-to-left opens Home; reverse swipe leaves category intact; REAPER, Post Production and Sample Pack buttons still work');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exit(1)});

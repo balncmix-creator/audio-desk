@@ -448,6 +448,25 @@ class MainActivity : Activity() {
                 }
             }
         }
+        /** Open Android-owned application management. Android restricts force-stop and
+         * cache deletion to Settings; the launcher never claims to do them itself. */
+        @JavascriptInterface fun openAppSettings(pkg: String, action: String) {
+            if (destroyed || action !in setOf("info", "storage", "force-stop", "settings")) return
+            if (pkg.length !in 4..160 || '.' !in pkg ||
+                !pkg.all { it.isLetterOrDigit() || it == '.' || it == '_' }) return
+            runOnUiThread {
+                if (destroyed) return@runOnUiThread
+                try {
+                    packageManager.getApplicationInfo(pkg, 0)
+                    val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                        .setData(Uri.parse("package:" + pkg))
+                    startActivity(intent)
+                } catch (_: Exception) {
+                    android.widget.Toast.makeText(this@MainActivity,
+                        "Android could not open this app's settings.", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
         @JavascriptInterface fun requestDefaultLauncher() {
             runOnUiThread { if (!destroyed) launcherSupport.requestDefaultHome() }
         }

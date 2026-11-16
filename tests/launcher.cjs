@@ -127,14 +127,16 @@ const demoApps=[
   assert.ok(musicRail.gap>=8,'Warm media controls must not intersect A–Z navigation: '+JSON.stringify(musicRail));
   assert.equal(await page.evaluate(()=>window.audioDeskBeginWidgetResize('launcherMusicWidget')),true,
    'long press opens a widget resize surface');
-  assert.equal(await page.locator('.widget-resize-frame .widget-resize-handle').count(),4,
-   'resize surface has four visible corner handles');
-  await page.locator('.widget-resize-handle[data-corner="se"]').focus();
+  assert.equal(await page.locator('#widgetLayoutOverlay .widget-resize-handle').count(),8,
+   'widget editor offers four corners plus four independently draggable sides');
+  assert.equal(await page.locator('#widgetLayoutOverlay .layout-move-handle').count(),1,
+   'selected widget has a move grip');
+  await page.locator('#widgetLayoutOverlay [data-edge="se"]').focus();
   await page.keyboard.press('ArrowDown');
   assert.ok(await page.locator('#launcherMusicWidget').evaluate(el=>
    el.style.getPropertyValue('--user-widget-height').endsWith('px')),
    'resizing is keyboard accessible and changes widget dimensions');
-  await page.locator('.widget-resize-done').click();
+  await page.locator('#widgetLayoutOverlay [data-layout-control="done"]').click();
   assert.equal(await page.locator('#launcherMusicWidget').evaluate(el=>getComputedStyle(el).fontFamily.includes('system-ui')),true);
   assert.equal(await page.locator('#launcherHomeOptions').isVisible(),false);
   await page.locator('#launcherSettingsToggle').click();

@@ -422,6 +422,8 @@ body[data-home-page="home"] .launcher-dots .active{color:#c9c9c9}
 </style>
 <link rel="stylesheet" href="personalization.css">
 <link rel="stylesheet" href="theme-system.css">
+<link rel="stylesheet" href="launcher-extras.css">
+<link rel="stylesheet" href="audio-wallpapers.css">
 <script>
 // One interruptible motion vocabulary for pages, sheets and touch feedback.
 const DeskMotion=(()=>{
@@ -2568,14 +2570,14 @@ $("launcherShortcutActions").addEventListener("click",e=>{
  closeAppShortcuts();
 });
 $("launcherShell").addEventListener("touchstart",e=>{
- if(e.touches.length!==1)return;
+ if(e.touches.length!==1||launcherPage!=="home")return;
  const icon=e.target.closest(".launcher-app");if(!icon)return;
  const t=e.touches[0];
  iconSwipe={x:t.clientX,y:t.clientY,pkg:icon.dataset.launchPkg,activity:icon.dataset.launchActivity};
 },{passive:true});
 $("launcherShell").addEventListener("touchend",e=>{
  const start=iconSwipe;iconSwipe=null;
- if(!start||!e.changedTouches.length)return;
+ if(launcherPage!=="home"||!start||!e.changedTouches.length)return;
  const t=e.changedTouches[0],dx=t.clientX-start.x,dy=t.clientY-start.y;
  if(Math.abs(dx)>44&&Math.abs(dx)>Math.abs(dy)*1.35){
   blockAppClickUntil=Date.now()+600;
@@ -2624,7 +2626,7 @@ document.addEventListener("touchstart",e=>{
  if(e.touches.length!==1||tabAnimationBusy||pinchBlocksSwipe||hasLauncherOverlay())return;
  const t=e.touches[0],x=t.clientX;
  const edge=x<34||x>window.innerWidth-34;
- if(launcherPage==="events"&&!edge)return; // Keep existing news category swipes.
+ // News→Home works from anywhere on the feed, never only its outer edge.
  if(e.target.closest("#launcherAlphaIndex,.launcher-app,button,a,input,textarea,select,audio,video,iframe,[contenteditable]"))return;
  launcherGesture={x,y:t.clientY,lastX:x,locked:false,edge};
 },{capture:true,passive:true});
@@ -2798,6 +2800,9 @@ document.addEventListener("click",e=>{
 </script>
 <script src="personalization.js"></script>
 <script src="theme-system.js"></script>
+<script src="widget-layout.js"></script>
+<script src="launcher-extras.js"></script>
+<script src="audio-wallpapers.js"></script>
 <script>
 function hasLauncherOverlay(){return ['launcherLetterPanel','launcherHomeOptions','launcherShortcutMenu','launcherThemeDialog','launcherWallpaperDialog','launcherClockDialog','gridDetail'].some(id=>!document.getElementById(id).hidden)}
 function syncRefreshAvailability(){window.AudioDesk?.setRefreshEnabled?.(launcherPage==='events'&&!hasLauncherOverlay())}

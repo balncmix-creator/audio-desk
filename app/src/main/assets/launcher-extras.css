@@ -1,0 +1,268 @@
+/* v4.0 move / resize / alignment, folder, app-grid and glass surface system. */
+[data-widget-resizable]{
+ position:relative;
+ translate:var(--widget-x,0px) var(--widget-y,0px);
+}
+[data-widget-resizable][data-layout-sized="true"]{
+ box-sizing:border-box;
+ width:min(calc(100vw - 18px),var(--user-widget-width,100%))!important;
+ min-height:min(75dvh,var(--user-widget-height,100px))!important;
+ height:var(--user-widget-height)!important;
+ overflow-y:auto;scrollbar-width:thin;
+ transition:translate 155ms cubic-bezier(.2,.8,.2,1),width 155ms ease,height 155ms ease;
+}
+body[data-launcher-theme="warm"] #launcherRecentStrip[data-layout-sized="true"],
+body[data-launcher-theme="warm"] #launcherMusicWidget[data-layout-sized="true"],
+body[data-launcher-theme="warm"] #warmWidgets [data-layout-sized="true"]{
+ width:min(calc(100vw - 18px),var(--user-widget-width))!important;
+ height:var(--user-widget-height)!important;
+ min-height:min(75dvh,var(--user-widget-height))!important;
+ overflow:auto!important;
+}
+body[data-launcher-theme="windows"] #launcherFavorites[data-layout-sized="true"],
+body[data-launcher-theme="windows"] #launcherLiveTiles [data-layout-sized="true"]{
+ width:min(calc(100vw - 18px),var(--user-widget-width))!important;
+ height:var(--user-widget-height)!important;
+ min-height:var(--user-widget-height)!important;
+}
+body.widget-dragging [data-widget-resizable]{transition:none!important}
+#widgetLayoutOverlay[hidden],#widgetSnapGuides:empty{display:none!important}
+#widgetLayoutOverlay{position:fixed;inset:0;z-index:88;pointer-events:none;
+ color:var(--ds-text);font-family:var(--ds-font)}
+#widgetLayoutOverlay .layout-outline{
+ position:absolute;box-sizing:border-box;pointer-events:none;
+ border:2px solid var(--ds-accent);border-radius:var(--ds-radius);
+ box-shadow:0 0 0 2px color-mix(in srgb,var(--ds-bg) 70%,transparent),
+  0 0 14px color-mix(in srgb,var(--ds-accent) 34%,transparent);
+}
+#widgetLayoutOverlay .widget-resize-handle{
+ position:absolute!important;pointer-events:auto!important;
+ width:31px;height:31px;margin:0;padding:0;border:3px solid var(--ds-panel)!important;
+ background:var(--ds-accent)!important;border-radius:9px!important;
+ transform:translate(-50%,-50%)!important;
+ touch-action:none!important;box-shadow:0 2px 10px #0009;
+ display:grid;place-items:center;cursor:nesw-resize;
+}
+#widgetLayoutOverlay .widget-resize-handle::after{
+ content:"";display:block;width:9px;height:9px;border:2px solid var(--ds-bg);
+ border-left:0;border-top:0;transform:rotate(-45deg);
+}
+#widgetLayoutOverlay .widget-resize-handle[data-edge="n"],
+#widgetLayoutOverlay .widget-resize-handle[data-edge="s"]{cursor:ns-resize}
+#widgetLayoutOverlay .widget-resize-handle[data-edge="w"],
+#widgetLayoutOverlay .widget-resize-handle[data-edge="e"]{cursor:ew-resize}
+#widgetLayoutOverlay .layout-move-handle{
+ position:absolute;pointer-events:auto;
+ transform:translate(-50%,-50%);touch-action:none;
+ padding:8px 11px!important;min-width:74px;min-height:36px;
+ border:1px solid var(--ds-accent)!important;border-radius:var(--ds-radius)!important;
+ color:var(--ds-bg)!important;background:var(--ds-accent)!important;
+ box-shadow:0 3px 12px #0008;cursor:move;
+ font:650 12px/1.2 var(--ds-font)!important;
+}
+#widgetLayoutOverlay .layout-toolbar{position:absolute;display:flex;gap:7px;pointer-events:auto}
+#widgetLayoutOverlay .layout-toolbar button{
+ border:1px solid var(--ds-line)!important;border-radius:var(--ds-radius)!important;
+ padding:9px 13px;min-height:34px;
+ background:var(--ds-panel)!important;color:var(--ds-text)!important;
+ box-shadow:0 3px 12px #0008;
+ font:600 12px var(--ds-font)!important;
+}
+#widgetSnapGuides{position:fixed;inset:0;pointer-events:none;z-index:87}
+#widgetSnapGuides .widget-snap-line{
+ position:absolute;background:var(--ds-accent);opacity:.9;
+ box-shadow:0 0 6px color-mix(in srgb,var(--ds-accent) 50%,transparent);
+}
+#widgetSnapGuides .vertical{top:0;bottom:0;width:1px}
+#widgetSnapGuides .horizontal{left:0;right:0;height:1px}
+body[data-launcher-theme="windows"] #widgetLayoutOverlay button,
+body[data-launcher-theme="pixel"] #widgetLayoutOverlay button{border-radius:0!important}
+body[data-launcher-theme="pixel"] #widgetLayoutOverlay .widget-resize-handle::after{border-radius:0}
+
+/* App list/grid toggle, shown above the searchable list. */
+#appsLayoutControls{display:flex;gap:6px;justify-content:flex-end;
+ padding:4px 32px 11px 0;color:var(--ds-text)}
+#appsLayoutControls button{min-height:36px;padding:7px 12px;
+ background:var(--ds-panel)!important;color:var(--ds-muted)!important;
+ border:1px solid var(--ds-line)!important;
+ border-radius:var(--ds-radius)!important;
+ font:600 12px/1.2 var(--ds-font)!important;box-shadow:none!important}
+#appsLayoutControls button[aria-pressed="true"]{
+ background:var(--ds-accent)!important;color:var(--ds-bg)!important;
+ border-color:var(--ds-accent)!important}
+body[data-app-layout="grid"] #launcherAppsGrid{
+ display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));
+ column-gap:9px;row-gap:10px;
+ padding-right:33px!important;
+ align-items:stretch;
+}
+body[data-app-layout="grid"] #launcherAppsGrid .n-letter-heading{
+ grid-column:1/-1;padding:12px 3px 6px;margin-top:5px}
+body[data-app-layout="grid"] #launcherAppsGrid .n-app-row{
+ flex-direction:column;align-items:stretch;justify-content:space-between;
+ position:relative;min-width:0;min-height:135px;
+ padding:11px 5px 4px!important;
+ border:1px solid var(--ds-line)!important;
+ border-radius:var(--ds-radius)!important;
+ background:var(--ds-panel)!important;
+}
+body[data-app-layout="grid"] #launcherAppsGrid .n-app-row .launcher-app{
+ box-sizing:border-box;min-width:0;width:100%;min-height:83px;
+ flex:1;display:flex;flex-direction:column;
+ justify-content:center;gap:9px;text-align:center;padding:0!important;
+}
+body[data-app-layout="grid"] #launcherAppsGrid .n-app-row .launcher-app .app-name{
+ width:100%;min-width:0;max-width:none;white-space:normal;
+ overflow-wrap:anywhere;text-overflow:clip;
+ display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+ font:500 12px/1.3 var(--ds-font)!important;
+}
+body[data-app-layout="grid"] #launcherAppsGrid .n-app-row .warm-line-icon,
+body[data-app-layout="grid"] #launcherAppsGrid .n-app-row .pixel-icon{
+ margin:0 auto;width:37px;height:37px;flex-basis:37px}
+body[data-app-layout="grid"] #launcherAppsGrid .n-app-row .n-star{
+ align-self:flex-end;min-width:29px;width:29px;height:29px;flex-basis:29px;
+ font-size:19px!important}
+@media(max-width:350px){
+ body[data-app-layout="grid"] #launcherAppsGrid{
+  grid-template-columns:repeat(2,minmax(0,1fr))
+ }
+}
+
+/* Folders display on Home without mixing icon styles. */
+.launcher-folder-tile{box-sizing:border-box;
+ display:flex;gap:14px;align-items:center;min-width:0;
+ width:100%;min-height:51px;
+ padding:9px 10px!important;cursor:pointer;text-align:left;
+ background:var(--ds-panel)!important;color:var(--ds-text)!important;
+ border:1px solid var(--ds-line)!important;
+ border-radius:var(--ds-radius)!important;
+ box-shadow:none!important;font:500 14px/1.25 var(--ds-font)!important;
+}
+.launcher-folder-tile .folder-icon{flex:0 0 28px;display:grid;place-items:center}
+.launcher-folder-tile .folder-icon svg{display:block;width:24px;height:24px;
+ stroke:currentColor;fill:none}
+.launcher-folder-tile .folder-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.launcher-folder-tile .folder-count{font:500 10px var(--ds-font);color:var(--ds-muted)}
+body[data-launcher-theme="warm"] #launcherRecentQuick .launcher-folder-tile{
+ background:transparent!important;color:#302628!important;
+ border:0!important;border-radius:10px!important;
+}
+body[data-launcher-theme="warm"] #launcherRecentQuick .folder-count{color:#65535b}
+body[data-launcher-theme="windows"] #launcherFavorites .launcher-folder-tile{
+ background:var(--ds-panel2)!important;min-height:90px;border-radius:0!important}
+#launcherFolderSheet[hidden]{display:none!important}
+#launcherFolderSheet{
+ position:fixed;z-index:92;inset:0;display:grid;place-items:end center;
+ background:#0008;color:var(--ds-text);font:400 14px/1.4 var(--ds-font);
+}
+#launcherFolderSheet .folder-dialog{
+ box-sizing:border-box;width:100%;max-width:530px;
+ max-height:78dvh;overflow:auto;padding:19px 20px 26px;
+ background:var(--ds-panel);border:1px solid var(--ds-line);
+ border-radius:var(--ds-radius) var(--ds-radius) 0 0;
+ box-shadow:0 -18px 50px #0009;
+}
+.folder-dialog h3{margin:3px 0 15px;font:700 19px/1.3 var(--ds-font)}
+.folder-dialog .folder-heading{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.folder-dialog .folder-heading button{min-width:40px}
+.folder-dialog input[type="text"]{
+ display:block;width:100%;box-sizing:border-box;
+ padding:13px;border:1px solid var(--ds-line);
+ border-radius:var(--ds-radius);
+ font:500 15px var(--ds-font);color:var(--ds-text);background:var(--ds-panel2)
+}
+.folder-dialog .folder-apps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ max-height:39dvh;overflow:auto;gap:6px;padding:10px 0}
+.folder-dialog .folder-app-choice{display:flex;align-items:center;gap:8px;
+ padding:9px;border:1px solid var(--ds-line);border-radius:var(--ds-radius);
+ color:var(--ds-text);font:500 12px/1.3 var(--ds-font)}
+.folder-dialog .folder-app-choice span{overflow-wrap:anywhere}
+.folder-dialog input[type="checkbox"]{accent-color:var(--ds-accent)}
+.folder-dialog .folder-actions{display:flex;gap:9px;justify-content:flex-end;margin-top:10px}
+.folder-dialog button{
+ background:var(--ds-panel2);color:var(--ds-text);
+ border:1px solid var(--ds-line);border-radius:var(--ds-radius);
+ padding:10px 13px;min-height:40px;font:600 13px var(--ds-font);box-shadow:none}
+.folder-dialog .folder-actions .primary{
+ background:var(--ds-accent);color:var(--ds-bg)}
+.folder-dialog .folder-item{
+ display:flex;align-items:center;justify-content:space-between;
+ gap:10px;padding:8px 0;border-bottom:1px solid var(--ds-line)}
+.folder-dialog .folder-item button:first-child{flex:1;text-align:left}
+.folder-dialog p{color:var(--ds-muted);font-size:12px}
+body[data-launcher-theme="windows"] #launcherFolderSheet .folder-dialog,
+body[data-launcher-theme="pixel"] #launcherFolderSheet .folder-dialog{border-radius:0}
+
+/* Opacity controls: no glass is enabled by default on entry-level phones. */
+#glassStyleControl{
+ display:flex;align-items:center;gap:8px;justify-content:space-between;
+ padding:8px 0 14px;font:600 13px var(--ds-font);color:var(--ds-text)
+}
+#glassStyleControl select{
+ width:min(60%,210px);min-height:41px;padding:7px 9px;
+ color:var(--ds-text);background:var(--ds-panel2);
+ border:1px solid var(--ds-line);border-radius:var(--ds-radius);
+ font:500 12px var(--ds-font);
+}
+body[data-launcher-theme="warm"]{--glass-ink:#36282d;
+ --glass-base:rgba(239,224,217,.74);--glass-strong:rgba(239,224,217,.86)}
+body[data-launcher-theme="minimal"]{--glass-ink:#f1f4f5;
+ --glass-base:rgba(37,44,50,.69);--glass-strong:rgba(38,43,49,.86)}
+body[data-launcher-theme="pixel"]{--glass-ink:#fff4ff;
+ --glass-base:rgba(36,22,49,.68);--glass-strong:rgba(32,17,48,.88)}
+body[data-launcher-theme="windows"]{--glass-ink:#f2f8fc;
+ --glass-base:rgba(29,61,89,.68);--glass-strong:rgba(23,57,84,.89)}
+body[data-glass-mode="liquid"] .launcher-music-widget,
+body[data-glass-mode="liquid"] .warm-widget,
+body[data-glass-mode="liquid"] #launcherRecentStrip,
+body[data-glass-mode="liquid"] #launcherFavorites,
+body[data-glass-mode="liquid"] #launcherLiveTiles .launcher-live-tile,
+body[data-glass-mode="liquid"] .launcher-folder-tile,
+body[data-glass-mode="liquid"] #launcherOptionsSheet{
+ background:linear-gradient(145deg,rgba(255,255,255,.22),transparent 38%),
+  var(--glass-base)!important;
+ color:var(--glass-ink)!important;
+ border:1px solid rgba(255,255,255,.42)!important;
+ box-shadow:inset 0 1px rgba(255,255,255,.5),0 8px 30px #0003!important;
+ -webkit-backdrop-filter:blur(18px) saturate(1.32);
+ backdrop-filter:blur(18px) saturate(1.32);
+}
+body[data-glass-mode="aero"] .launcher-music-widget,
+body[data-glass-mode="aero"] .warm-widget,
+body[data-glass-mode="aero"] #launcherRecentStrip,
+body[data-glass-mode="aero"] #launcherFavorites,
+body[data-glass-mode="aero"] #launcherLiveTiles .launcher-live-tile,
+body[data-glass-mode="aero"] .launcher-folder-tile,
+body[data-glass-mode="aero"] #launcherOptionsSheet{
+ background:linear-gradient(165deg,rgba(169,218,247,.20),transparent 70%),
+  var(--glass-base)!important;
+ color:var(--glass-ink)!important;
+ border:1px solid rgba(180,213,240,.53)!important;
+ box-shadow:inset 0 0 1px #fff,0 7px 24px #0004!important;
+ -webkit-backdrop-filter:blur(21px) saturate(1.23);
+ backdrop-filter:blur(21px) saturate(1.23);
+}
+body[data-glass-mode="mica"] .launcher-music-widget,
+body[data-glass-mode="mica"] .warm-widget,
+body[data-glass-mode="mica"] #launcherRecentStrip,
+body[data-glass-mode="mica"] #launcherFavorites,
+body[data-glass-mode="mica"] #launcherLiveTiles .launcher-live-tile,
+body[data-glass-mode="mica"] .launcher-folder-tile,
+body[data-glass-mode="mica"] #launcherOptionsSheet{
+ background:var(--glass-strong)!important;
+ color:var(--glass-ink)!important;
+ border:1px solid color-mix(in srgb,var(--ds-line) 55%,transparent)!important;
+ box-shadow:0 5px 16px #0002!important;
+ -webkit-backdrop-filter:blur(30px) saturate(1.08);
+ backdrop-filter:blur(30px) saturate(1.08);
+}
+body[data-glass-mode="liquid"] .warm-widget,
+body[data-glass-mode="aero"] .warm-widget,
+body[data-glass-mode="mica"] .warm-widget{
+ color:var(--glass-ink)!important}
+body[data-launcher-theme="warm"][data-glass-mode]:not([data-glass-mode="opaque"]) #launcherRecentStrip{
+ background:var(--glass-base)!important}
+@media(prefers-reduced-motion:reduce){
+ [data-widget-resizable],#widgetLayoutOverlay .layout-outline{transition:none!important}
+}
