@@ -586,3 +586,85 @@ body[data-launcher-theme="windows"] .widget-resize-frame .widget-resize-handle{b
 .widget-resize-frame{animation:widget-enter 180ms cubic-bezier(.2,.75,.25,1) both}
 @keyframes widget-enter{from{opacity:.4}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.widget-resize-frame{animation:none!important}}
+
+
+/* Wallpaper palette: selected hue drives all controls, keeping theme-specific geometry. */
+body[data-launcher-theme="warm"] .warm-date,
+body[data-launcher-theme="warm"] .warm-audio,
+body[data-launcher-theme="warm"] #launcherMusicWidget{
+ background:var(--warm-panel)!important;
+ color:var(--warm-ink)!important;
+ border-color:var(--ds-line)!important;
+}
+body[data-launcher-theme="warm"] .warm-audio-copy small,
+body[data-launcher-theme="warm"] .music-meta small,
+body[data-launcher-theme="warm"] .music-note{
+ color:var(--warm-muted)!important;
+}
+body[data-launcher-theme="warm"] .warm-audio-mark,
+body[data-launcher-theme="warm"] .music-symbol,
+body[data-launcher-theme="warm"] .music-buttons button{
+ background:var(--warm-search)!important;
+ color:var(--warm-search-ink)!important;
+ border-color:var(--ds-line)!important;
+}
+body[data-launcher-theme="warm"] .warm-audio-open{border-color:var(--warm-ink)!important}
+body[data-launcher-theme="warm"] .warm-search{
+ background:var(--warm-search)!important;
+ color:var(--warm-search-ink)!important;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentStrip{
+ background:linear-gradient(180deg,var(--warm-panel),var(--warm-panel2))!important;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentStripTitle,
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick .app-name,
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick .warm-line-icon,
+body[data-home-page="home"][data-launcher-theme="warm"][data-wallpaper-light="true"] #launcherRecentQuick .app-name{
+ color:var(--warm-ink)!important;
+}
+body[data-launcher-theme="warm"] #launcherAlphaIndex{
+ background:var(--ds-panel)!important;
+ border-color:var(--ds-line)!important;
+}
+body[data-launcher-theme="warm"] #launcherAlphaIndex button{
+ color:var(--ds-text)!important;
+}
+body[data-launcher-theme="warm"] #launcherAlphaIndex button.active{
+ background:var(--ds-accent)!important;
+ color:var(--ds-bg)!important;
+}
+body[data-launcher-theme="warm"] #launcherAlphaBubble{
+ background:var(--ds-accent)!important;
+ color:var(--ds-bg)!important;
+}
+body[data-launcher-theme="warm"][data-home-page="apps"] #launcherAppSearch{
+ background:var(--ds-panel)!important;
+ border-color:var(--ds-line)!important;
+ color:var(--ds-text)!important;
+}
+body[data-launcher-theme="warm"][data-home-page="apps"] #launcherAppSearch::placeholder{
+ color:var(--ds-muted)!important;
+}
+body[data-launcher-theme="warm"] .launcher-settings-fab{
+ background:var(--ds-panel2)!important;
+ border-color:var(--ds-line)!important;
+}
+body[data-launcher-theme="warm"] .warm-settings-symbol{
+ color:var(--ds-text)!important;
+}
+body[data-launcher-theme="warm"][data-home-page="home"] #wallpaperStage{
+ background:var(--theme-wallpaper,var(--ds-bg))!important;
+}
+body[data-launcher-theme="warm"][data-home-page="home"] #wallpaperStage::after{
+ background:transparent!important;
+}
+body[data-launcher-theme="warm"][data-home-page="home"] #wallpaperStage #wallpaperImage{
+ opacity:1!important;
+}
+body[data-launcher-theme="warm"][data-home-page="home"][data-theme-palette]:not([data-theme-palette=""]) #wallpaperStage #wallpaperImage{
+ opacity:0!important;
+}
+body[data-launcher-theme="windows"] .launcher-music-widget{
+ background:var(--ds-panel)!important;
+ border:1px solid var(--ds-line)!important;
+}
