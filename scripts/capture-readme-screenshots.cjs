@@ -140,6 +140,15 @@ const assert=require('node:assert/strict');
   assert.equal(await page.locator('#warmWidgets').isVisible(),true);
   assert.equal(await page.locator('#launcherRecentQuick .launcher-app').count(),7,
    'Warm Minimal captures seven usable installed-app shortcuts');
+  assert.equal(await page.locator('#launcherRecentQuick .warm-line-icon svg').count(),7);
+  assert.equal(await page.locator('#launcherRecentQuick img[src*="pixel-icons"]').count(),0,
+   'warm preview screenshot contains no 8-bit app icons');
+  assert.equal(await page.locator('#launcherHomePage').evaluate(el=>getComputedStyle(el,'::before').content),'none');
+  const firstGeometry=await page.locator('#launcherRecentStrip').evaluate(panel=>{
+   const r=panel.getBoundingClientRect(),i=panel.querySelector('.warm-line-icon').getBoundingClientRect();
+   return {inside:i.left>=r.left&&i.right<=r.right&&i.top>=r.top&&i.bottom<=r.bottom};
+  });
+  assert.equal(firstGeometry.inside,true,'warm screenshot has no clipped first icon');
   await page.screenshot({path:path.join(output,'launcher-warm-minimal.png')});
   await page.evaluate(()=>setLauncherTheme('minimal'));
   await page.evaluate(()=>setLauncherPage('apps',false));

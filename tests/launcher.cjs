@@ -123,11 +123,46 @@ const demoApps=[
   assert.equal(await page.locator('#warmDateLabel').textContent(),
    new Date().toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}));
   assert.match(await page.locator('#warmTimeLabel').textContent(),/^\d{2}:\d{2}$/);
-  assert.ok(await page.locator('#launcherHomePage').evaluate(el=>getComputedStyle(el,'::before').clipPath.includes('polygon')),
-   'Warm Minimal uses the cream diagonal panel from the reference');
+  assert.equal(await page.locator('#launcherHomePage').evaluate(el=>getComputedStyle(el,'::before').content),'none',
+   'Warm Minimal removes the old 7-shaped diagonal overlay');
+  const warmPanel=await page.locator('#launcherRecentStrip').evaluate(el=>{
+   const panel=el.getBoundingClientRect();
+   const first=el.querySelector('.launcher-app').getBoundingClientRect();
+   const icon=el.querySelector('.warm-line-icon').getBoundingClientRect();
+   const last=el.querySelector('.launcher-app:last-child').getBoundingClientRect();
+   const style=getComputedStyle(el);
+   return {clip:style.clipPath,bg:style.backgroundColor,
+    panel:[panel.left,panel.right,panel.top,panel.bottom],
+    first:[first.left,first.right,first.top,first.bottom],
+    icon:[icon.left,icon.right,icon.top,icon.bottom],
+    last:[last.left,last.right,last.top,last.bottom]};
+  });
+  assert.equal(warmPanel.clip,'none','the cream panel is straight, not clipped into a diagonal');
+  assert.ok(warmPanel.panel[0]<=warmPanel.first[0]&&warmPanel.panel[1]>=warmPanel.first[1]
+   &&warmPanel.first[2]>=warmPanel.panel[2]&&warmPanel.panel[3]>=warmPanel.last[3],
+   'all seven favorite rows stay inside the cream panel');
+  assert.ok(warmPanel.icon[0]>=warmPanel.panel[0]&&warmPanel.icon[1]<=warmPanel.panel[1]
+   &&warmPanel.icon[2]>=warmPanel.panel[2],
+   'first app icon is never masked by a color boundary');
+  assert.equal(await page.locator('#launcherRecentQuick .warm-line-icon svg').count(),7,
+   'every Warm Minimal app uses a native-looking line icon');
+  assert.equal(await page.locator('#launcherRecentQuick img[src*="pixel-icons"]').count(),0,
+   'no 8-bit app artwork appears in Warm Minimal');
+  assert.equal(await page.locator('#launcherRecentQuick .pixel-letter').count(),0,
+   'no 8-bit fallback letters appear in Warm Minimal');
+  assert.equal(await page.locator('#launcherSettingsToggle img').isVisible(),false,
+   '8-bit settings icon is hidden when switching to Warm Minimal');
+  assert.equal(await page.locator('#launcherSettingsToggle .warm-settings-symbol svg').isVisible(),true,
+   'settings control uses a matching outline icon');
+  assert.ok((await page.locator('#launcherAlphaIndex button').first().evaluate(el=>getComputedStyle(el).fontFamily)).includes('system-ui'),
+   'A–Z labels use modern system typography rather than a pixel font');
   assert.equal(await page.locator('#launcherAlphaIndex').isVisible(),true,'the A–Z rail remains usable');
   await page.locator('#warmSearchWidget').click();
   assert.equal(await page.evaluate(()=>launcherPage),'apps','Warm search opens real installed apps');
+  assert.equal(await page.locator('#launcherAppsGrid .warm-line-icon svg').count(),8,
+   'All Apps drawer also uses matching outline icons in Warm Minimal');
+  assert.equal(await page.locator('#launcherAppsGrid img[src*="pixel-icons"]').count(),0,
+   'pixel icons do not leak into the Warm Minimal app drawer');
   assert.equal(await page.locator('#launcherAppSearch').evaluate(el=>document.activeElement===el),true);
   await page.evaluate(()=>setLauncherPage('home',false));
   await page.locator('#warmDateWidget').click();

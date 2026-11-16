@@ -61,6 +61,8 @@ const origin='https://appassets.androidplatform.net/assets/';
   assert.equal(await page.locator('#warmWidgets').isVisible(),true);
   assert.equal(await page.locator('#warmSearchWidget').isVisible(),true);
   assert.equal(await page.locator('#launcherClock').isVisible(),false);
+  assert.equal(await page.locator('#launcherHomePage').evaluate(el=>getComputedStyle(el,'::before').content),'none');
+  assert.equal(await page.locator('#launcherRecentQuick img[src*="pixel-icons"]').count(),0);
   await page.evaluate(()=>setLauncherTheme('minimal'));
   await page.evaluate(()=>setLauncherPage('events'));
   assert.equal(await statusSurface.isVisible(),true,'News retains an accessible dark status background');

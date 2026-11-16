@@ -549,3 +549,176 @@ body[data-home-page="home"][data-launcher-theme="warm"] .launcher-settings-fab i
  .warm-widget{transition:none!important}
  .warm-widget:active{transform:none}
 }
+
+/* v3.6: straight warm split, readable panel, no arcade/pixel assets in Warm Minimal.
+   The cream backing belongs to the actual shortcut list, so it cannot intersect
+   or mask the first row when status-bar insets / screen heights vary. */
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherHomePage::before{
+ content:none!important;display:none!important;clip-path:none!important;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #wallpaperStage{
+ background:#1b181a!important;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #wallpaperStage .wallpaper-image{
+ opacity:0!important;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #wallpaperStage::after{
+ background:#1b181a!important;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentStrip{
+ box-sizing:border-box;
+ position:relative;z-index:1;
+ margin:26px 0 0 -23px!important;
+ padding:23px 18px calc(90px + var(--system-bottom,0px)) 35px!important;
+ width:min(76vw,330px)!important;max-width:none!important;
+ min-height:calc(100dvh - 385px);
+ background:linear-gradient(180deg,#f2dfd8 0%,#e8cbc1 100%)!important;
+ background-clip:padding-box;
+ border-radius:0 18px 0 0;
+ clip-path:none!important;
+ overflow:visible;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentStripTitle{
+ margin:0 0 11px!important;color:#514348!important;
+ font:600 10px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+ letter-spacing:.11em;text-shadow:none!important;white-space:nowrap;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick{
+ width:100%!important;min-width:0;max-width:none!important;
+ display:flex;flex-direction:column;gap:2px;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick .launcher-app{
+ width:100%;min-width:0;min-height:53px;height:53px;
+ display:flex;flex-direction:row;align-items:center;
+ gap:14px;padding:4px 2px!important;
+ color:#2d2427;text-shadow:none!important;
+ background:transparent;border:0;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick .app-name{
+ display:block;min-width:0;max-width:none!important;
+ color:#30272a!important;
+ font:500 14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+ letter-spacing:0!important;text-shadow:none!important;
+ text-overflow:ellipsis;white-space:nowrap;overflow:hidden;
+}
+body[data-home-page="home"][data-launcher-theme="warm"][data-wallpaper-light="true"] #launcherRecentQuick .app-name{
+ color:#30272a!important;text-shadow:none!important;
+}
+.warm-line-icon{
+ box-sizing:border-box;display:inline-flex;align-items:center;
+ justify-content:center;flex:0 0 29px;width:29px;height:29px;
+ color:currentColor;background:transparent;border:0;border-radius:0;
+}
+.warm-line-icon svg{display:block;width:25px;height:25px;overflow:visible;
+ stroke:currentColor;fill:none;shape-rendering:geometricPrecision}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick .warm-line-icon{
+ color:#2d2528;flex-basis:29px;width:29px;height:29px;
+}
+body[data-launcher-theme="warm"] #launcherAlphaIndex button,
+body[data-launcher-theme="warm"] #launcherAlphaBubble{
+ font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important;
+ font-weight:600;letter-spacing:0!important;
+}
+body[data-launcher-theme="warm"] #launcherAlphaIndex button{
+ font-size:clamp(10px,1.7vh,12px)!important;
+}
+body[data-launcher-theme="warm"] .launcher-letter-head,
+body[data-launcher-theme="warm"] #launcherLetterPanel,
+body[data-launcher-theme="warm"] #launcherMoreByLetter,
+body[data-launcher-theme="warm"] .n-letter-heading{
+ font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important;
+}
+body[data-launcher-theme="warm"] #launcherLetterApps .launcher-app,
+body[data-launcher-theme="warm"] #launcherAppsGrid .launcher-app{
+ font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important;
+}
+body[data-launcher-theme="warm"] #launcherLetterApps .launcher-app .app-name,
+body[data-launcher-theme="warm"] #launcherAppsGrid .launcher-app .app-name{
+ font:500 14px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+ letter-spacing:0!important;text-transform:none!important;
+}
+body[data-launcher-theme="warm"] #launcherLetterApps .warm-line-icon,
+body[data-launcher-theme="warm"] #launcherAppsGrid .warm-line-icon{
+ color:#ede6e5;flex:0 0 38px;width:38px;height:38px;
+ border:1px solid #ffffff2f;border-radius:12px;
+}
+body[data-launcher-theme="warm"] #launcherLetterApps .warm-line-icon svg,
+body[data-launcher-theme="warm"] #launcherAppsGrid .warm-line-icon svg{
+ width:22px;height:22px;
+}
+body[data-launcher-theme="warm"] .launcher-settings-fab img{
+ display:none!important;
+}
+.warm-settings-symbol{display:none}
+body[data-launcher-theme="warm"] .warm-settings-symbol{
+ display:flex;align-items:center;justify-content:center;
+ width:25px;height:25px;color:#f2e1dc;
+}
+body[data-launcher-theme="warm"] .warm-settings-symbol svg{
+ width:24px;height:24px;stroke:currentColor;fill:none;
+}
+body[data-launcher-theme="warm"] .warm-widget svg{
+ display:block;stroke:currentColor;fill:none;stroke-width:1.75;
+ stroke-linecap:round;stroke-linejoin:round;
+}
+body[data-launcher-theme="warm"] .warm-widget-icon,
+body[data-launcher-theme="warm"] .warm-search-icon{
+ display:inline-flex;align-items:center;justify-content:center;
+ flex:0 0 25px;width:25px;height:25px;
+}
+body[data-launcher-theme="warm"] .warm-widget-icon svg,
+body[data-launcher-theme="warm"] .warm-search-icon svg{
+ width:22px;height:22px;
+}
+body[data-launcher-theme="warm"] .warm-audio-mark svg{
+ width:27px;height:27px;
+}
+body[data-launcher-theme="warm"] .warm-audio-open svg{
+ width:17px;height:17px;
+}
+body[data-launcher-theme="warm"] .warm-search-hint{
+ display:flex;align-items:center;justify-content:center;
+ width:20px;height:20px;
+}
+body[data-launcher-theme="warm"] .warm-search-hint svg{
+ width:17px;height:17px;
+}
+body[data-launcher-theme="warm"] #launcherOptionsSheet,
+body[data-launcher-theme="warm"] #launcherThemeDialog .customize-panel,
+body[data-launcher-theme="warm"] #launcherClockDialog .customize-panel,
+body[data-launcher-theme="warm"] #launcherWallpaperDialog .customize-panel{
+ font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important;
+}
+body[data-launcher-theme="warm"] .launcher-options-heading,
+body[data-launcher-theme="warm"] #launcherOptionsSheet .launcher-options-action{
+ font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important;
+ letter-spacing:0!important;
+}
+body[data-launcher-theme="warm"] .theme-choice strong,
+body[data-launcher-theme="warm"] .theme-choice small{
+ font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important;
+}
+.warm-preview:before{
+ background:linear-gradient(180deg,#f3dfd7,#e6c8bd)!important;
+ clip-path:none!important;inset:45% 28% 0 0!important;
+ border-radius:0 5px 0 0;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick .pixel-icon,
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick .pixel-letter{
+ display:none!important;
+}
+@media(max-width:350px){
+ body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentStrip{
+  margin-left:-18px!important;padding-left:28px!important;
+  width:min(79vw,310px)!important;
+ }
+ body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick .app-name{
+  font-size:13px!important;
+ }
+}
+@media(max-height:725px){
+ body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentStrip{
+  margin-top:22px!important;padding-top:18px!important;
+  min-height:calc(100dvh - 325px);
+ }
+}
