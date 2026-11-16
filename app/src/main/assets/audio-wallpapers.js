@@ -167,6 +167,8 @@ heading.className="theme-wallpaper-heading";
 heading.innerHTML='<strong>Audio wallpapers</strong><small>Four originals for this theme</small>';
 byId("wallpaperGrid").before(heading,grid);
 function renderChoices(){
+ // Skip expensive SVG thumbnail work until the actual picker is on screen.
+ if(byId("launcherWallpaperDialog").hidden)return;
  grid.innerHTML=available().map(p=>
   '<button type="button" class="audio-art-choice" data-audio-art="'+p[0]+'" aria-pressed="'+
   (p[0]===currentId)+'"><img loading="lazy" alt="" src="'+xml(svgData(p))+'">'+
@@ -226,5 +228,8 @@ for(const id of ["themePaletteGrid","wallpaperGrid","customWallpaperRestore"]){
 byId("customWallpaperFile").addEventListener("change",e=>{
  if(e.target.files?.length)saveSelected("");
 },true);
+new MutationObserver(()=>{
+ if(!byId("launcherWallpaperDialog").hidden)renderChoices();
+}).observe(byId("launcherWallpaperDialog"),{attributes:true,attributeFilter:["hidden"]});
 switchArt(launcherTheme);
 })();
