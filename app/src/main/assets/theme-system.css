@@ -586,3 +586,106 @@ body[data-launcher-theme="windows"] .widget-resize-frame .widget-resize-handle{b
 .widget-resize-frame{animation:widget-enter 180ms cubic-bezier(.2,.75,.25,1) both}
 @keyframes widget-enter{from{opacity:.4}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.widget-resize-frame{animation:none!important}}
+
+/* v4.1: full-corner Favourites/Recents and wallpaper-linked Warm Minimal. */
+body[data-home-page="home"] #launcherFavorites,
+body[data-home-page="home"] #launcherRecentStrip{
+ border-radius:16px!important;
+}
+body[data-home-page="home"][data-launcher-theme="windows"] #launcherFavorites{
+ overflow:auto;border-radius:16px!important;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentStrip{
+ margin-left:0!important;
+ padding:22px 18px 22px!important;
+ min-height:max(240px,calc(100dvh - 490px))!important;
+ border-radius:19px!important;
+ overflow:auto;
+ background-clip:padding-box;
+}
+body[data-home-page="home"][data-launcher-theme="warm"]:is(:not([data-glass-mode]),[data-glass-mode="opaque"]) #launcherRecentStrip{
+ background:var(--theme-panel,#f0dad3)!important;
+}
+body[data-launcher-theme="warm"]{
+ --ds-bg:var(--theme-dark,#1e1b1d);
+ --ds-panel:var(--theme-surface,#302c30);
+ --ds-panel2:var(--theme-surface2,#42383d);
+ --ds-muted:var(--theme-muted,#c6b6b5);
+ --ds-line:var(--theme-line,#665a5e);
+ --ds-accent:var(--theme-accent,#eed9d2);
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #wallpaperStage{
+ background:var(--theme-dark,#1b181a)!important;
+}
+body[data-home-page="home"][data-launcher-theme="warm"][data-theme-palette]:not([data-theme-palette=""]) #wallpaperStage{
+ background:var(--theme-wallpaper)!important;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #wallpaperStage .wallpaper-image{
+ opacity:1!important;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #wallpaperStage::after{
+ background:linear-gradient(180deg,rgba(10,10,14,.70),rgba(10,10,14,.33))!important;
+}
+body[data-launcher-theme="warm"] .warm-date,
+body[data-launcher-theme="warm"] .warm-audio{
+ background:var(--theme-panel,#eedbd4)!important;
+ color:var(--theme-ink,#292529)!important;
+}
+body[data-launcher-theme="warm"] .warm-search{
+ background:var(--theme-surface2,#514b50)!important;
+ color:var(--ds-accent)!important;
+}
+body[data-launcher-theme="warm"] .warm-audio-mark,
+body[data-launcher-theme="warm"] .warm-audio-open,
+body[data-launcher-theme="warm"] .music-symbol,
+body[data-launcher-theme="warm"] .music-buttons button{
+ background:var(--theme-dark,#232125)!important;
+ color:var(--ds-accent)!important;
+ border-color:var(--theme-line,#63545a)!important;
+}
+body[data-launcher-theme="warm"] .warm-audio-copy small{
+ color:var(--theme-ink,#62585a)!important;opacity:.76;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentStripTitle,
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick .app-name,
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick .warm-line-icon{
+ color:var(--theme-ink,#30272a)!important;
+}
+body[data-launcher-theme="warm"] .launcher-music-widget{
+ background:var(--theme-panel,#f0dbd5)!important;
+ color:var(--theme-ink,#271f24)!important;
+ border-color:var(--theme-line,#d6b9b0)!important;
+}
+body[data-launcher-theme="warm"] .music-meta small,
+body[data-launcher-theme="warm"] .music-note{
+ color:var(--theme-ink,#62585a)!important;opacity:.76;
+}
+body[data-launcher-theme="warm"] #launcherAlphaIndex{
+ background:var(--theme-panel,#e4d1c9)!important;
+ border-color:var(--theme-accent,#e9d7d0)!important;
+}
+body[data-launcher-theme="warm"] #launcherAlphaIndex button{
+ color:var(--theme-ink,#3e3137)!important;
+}
+body[data-launcher-theme="warm"] #launcherAlphaIndex button.active,
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherAlphaIndex button.active{
+ background:var(--theme-dark,#4b4146)!important;
+ color:var(--theme-accent,#f5e6e1)!important;
+}
+body[data-launcher-theme="warm"] #launcherAlphaBubble{
+ background:var(--theme-panel,#e9d7d0)!important;
+ color:var(--theme-ink,#352a2d)!important;
+}
+body[data-launcher-theme="warm"][data-home-page="apps"] #launcherAppSearch{
+ background:var(--theme-panel,#f0dfd9)!important;
+ color:var(--theme-ink,#272328)!important;
+ border-color:var(--theme-accent,#d9bfb6)!important;
+}
+body[data-launcher-theme="warm"] .launcher-settings-fab{
+ background:var(--theme-surface2,#4b4146)!important;
+ border-color:var(--theme-line,#cab1a8)!important;
+}
+body[data-launcher-theme="warm"] .warm-settings-symbol{color:var(--ds-accent)!important}
+body[data-launcher-theme="warm"] #launcherRecentQuick .launcher-folder-tile{
+ color:var(--theme-ink,#302628)!important;
+}
