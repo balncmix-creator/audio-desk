@@ -12,8 +12,10 @@ assert.match(native,/getApplicationIcon\(pkg\)/,'icons use actual installed app 
 assert.match(native,/isLaunchable\(pkg\)/,'icon requests may only target verified installed launcher apps');
 assert.match(native,/LruCache<String, ByteArray>/,'on-device icon bytes have bounded RAM caching');
 assert.match(native,/if \(theme == "pixel"\) 32 else 128/,'8-bit gets deliberately pixelated resources');
-for(const theme of ['minimal','pixel','windows','warm','original'])
+for(const theme of ['pixel','windows','warm','original'])
  assert.ok(native.includes('"'+theme+'"'),'native icon generator must recognize '+theme);
+assert.match(native,/original\|minimal\|pixel\|windows\|warm/,
+ 'native path routing covers all four themes plus original mode');
 assert.match(activity,/addPathHandler\("\/app-icons\/", appIconProvider\)/);
 assert.match(activity,/supportsAdaptiveAppIcons\(\): Boolean = true/);
 assert.match(launcher,/fun hasLaunchablePackage\(pkg: String\)/);
@@ -73,8 +75,10 @@ assert.doesNotMatch(native,/\b(?:HttpURLConnection|OkHttpClient|URL\(.*https|ret
    .evaluateAll(images=>images.map(img=>new URL(img.src).pathname));
   assert.ok(icons.every(x=>x.startsWith('/app-icons/warm/com.sample.')),
    'Warm Minimal icons are generated in warm theme, not an unrelated icon pack');
-  await page.waitForFunction(()=>[...document.querySelectorAll('#launcherAppsGrid .ad-icon-shell')]
-   .some(node=>node.classList.contains('icon-loaded')),{timeout:6000});
+  await page.locator('#launcherAppsGrid .ad-icon-image')
+   .evaluateAll(images=>images.forEach(img=>{img.loading='eager'}));
+  await page.waitForFunction(()=>document.querySelectorAll('#launcherAppsGrid .ad-icon-shell.icon-loaded').length===6,
+   null,{timeout:6000});
   assert.equal(await page.locator('#launcherAppsGrid .ad-icon-shell.icon-loaded').count(),6,
    'all valid example icons load while a bad icon falls back safely');
   assert.equal(await page.locator('#launcherAppsGrid .ad-icon-shell:not(.icon-loaded) .warm-line-icon').count(),1,
