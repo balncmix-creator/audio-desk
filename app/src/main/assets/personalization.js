@@ -103,13 +103,22 @@ function openCustomize(id){
  $(id).querySelector('.customize-panel').scrollTop=0;DeskMotion.show($(id));
  $(id).querySelector('button').focus({preventScroll:true});
 }
-function openWallpaperPicker(){renderWallpaperPicker();openCustomize("launcherWallpaperDialog")}
+function openWallpaperPicker(){
+ renderWallpaperPicker();openCustomize("launcherWallpaperDialog");
+ requestAnimationFrame(()=>{
+  const selected=$("wallpaperGrid").querySelector('[aria-pressed="true"]');
+  if(selected)selected.scrollIntoView({block:"nearest",inline:"center",behavior:"instant"});
+ });
+}
 function openClockCustomizer(){renderClockCustomizer();openCustomize("launcherClockDialog")}
 function renderWallpaperPicker(){
- $("wallpaperGrid").innerHTML=WALLPAPERS.map((wallpaper,i)=>
+ // Preserve the chosen card's position when selection changes; no gallery flash.
+ const gallery=$("wallpaperGrid"),previousScroll=gallery.scrollLeft;
+ gallery.innerHTML=WALLPAPERS.map((wallpaper,i)=>
   '<button type="button" class="wallpaper-choice" data-wallpaper="'+i+'" aria-pressed="'+(!customWallpaperSelected&&selectedWallpaper===i)+'">'+
   '<img class="wallpaper-thumb" src="'+wallpaper.thumb+'" alt="" loading="lazy" decoding="async" width="180" height="400">'+
   '<span>'+wallpaper.name+'</span><small>'+(wallpaper.motion==="none"?"Static · effects available":wallpaper.motion+" animation")+'</small></button>').join("");
+ gallery.scrollLeft=previousScroll;
  $("wallpaperEffectSelect").value=wallpaperEffectChoice;
  $("customWallpaperCrop").hidden=!customWallpaperSelected;
  $("customWallpaperPosition").value=customPosition;

@@ -2007,7 +2007,7 @@ function renderLauncherApps(){
  // A filtered search is more useful without the alphabet rail.
  $("launcherAlphaIndex").hidden=launcherPage!=="apps"||!!query||!list.length;
 }
-function launcherJumpToLetter(letter){
+function launcherJumpToLetter(letter,fromDrag=false){
  const headings=[...document.querySelectorAll("#launcherAppsGrid [data-app-group]")];
  let heading=headings.find(x=>x.dataset.appGroup===letter);
  if(!heading)heading=headings.find(x=>x.dataset.appGroup>letter);
@@ -2022,7 +2022,7 @@ function launcherJumpToLetter(letter){
   $("launcherAlphaBubble").hidden=true;
  },550);
  const top=heading.getBoundingClientRect().top+window.scrollY-($("launcherNavigation")?.offsetHeight||0)-10;
- window.scrollTo({top:Math.max(0,top),behavior:"auto"});
+ window.scrollTo({top:Math.max(0,top),behavior:fromDrag||matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
 }
 let indexDragging=false;
 $("launcherAlphaIndex").addEventListener("pointerdown",e=>{
@@ -2030,7 +2030,8 @@ $("launcherAlphaIndex").addEventListener("pointerdown",e=>{
  indexDragging=true;
  try{e.currentTarget.setPointerCapture(e.pointerId)}catch(err){}
  const element=document.elementFromPoint(e.clientX,e.clientY)?.closest("[data-launcher-letter]");
- if(element)launcherJumpToLetter(element.dataset.launcherLetter);
+ if(element)launcherJumpToLetter(element.dataset.launcherLetter,true);
+ $("launcherAlphaBubble").style.top=Math.max(18,Math.min(innerHeight-90,e.clientY-26))+"px";
  e.preventDefault();
 });
 $("launcherAlphaIndex").addEventListener("pointermove",e=>{
@@ -2038,7 +2039,8 @@ $("launcherAlphaIndex").addEventListener("pointermove",e=>{
  const candidates=[...$("launcherAlphaIndex").querySelectorAll("[data-launcher-letter]")];
  const nearest=candidates.find(x=>{const r=x.getBoundingClientRect();return e.clientY>=r.top&&e.clientY<r.bottom})||
   (e.clientY<$("launcherAlphaIndex").getBoundingClientRect().top?candidates[0]:candidates[candidates.length-1]);
- if(nearest)launcherJumpToLetter(nearest.dataset.launcherLetter);
+ if(nearest)launcherJumpToLetter(nearest.dataset.launcherLetter,true);
+ $("launcherAlphaBubble").style.top=Math.max(18,Math.min(innerHeight-90,e.clientY-26))+"px";
  e.preventDefault();
 });
 for(const event of ["pointerup","pointercancel","lostpointercapture"])
@@ -2192,16 +2194,48 @@ $("launcherShell").addEventListener("click",event=>{
 });
 renderLauncherHome();renderLauncherApps();renderLauncherRecents();
 
-/* Swipe UP on Home opens app search and Android keyboard automatically. */
-let upStart=null;
+/* The swipe-up affordance follows the finger. Animate only transforms/opacity,
+   then hand off to search, so weaker phones don't need layout or blur work. */
+let upStart=null,homeSwipeFrame=0,homeSwipeDistance=0;
+function previewHomeSwipe(distance){
+ homeSwipeDistance=Math.min(120,Math.max(0,distance));
+ if(homeSwipeFrame)return;
+ homeSwipeFrame=requestAnimationFrame(()=>{
+  homeSwipeFrame=0;
+  if(launcherPage!=="home")return;
+  const progress=homeSwipeDistance/120;
+  $("launcherFavorites").style.transform="translate3d(0,"+(-progress*20)+"px,0)";
+  $("launcherFavorites").style.opacity=String(1-progress*.28);
+  document.querySelector(".launcher-clock").style.transform="translate3d(0,"+(-progress*9)+"px,0)";
+ });
+}
+function resetHomeSwipe(immediate=false){
+ cancelAnimationFrame(homeSwipeFrame);homeSwipeFrame=0;homeSwipeDistance=0;
+ for(const node of [$("launcherFavorites"),document.querySelector(".launcher-clock")]){
+  if(!node)continue;
+  if(immediate){node.style.transition="none";node.style.removeProperty("transform");node.style.removeProperty("opacity");requestAnimationFrame(()=>node.style.removeProperty("transition"));}
+  else{node.style.transition="transform 170ms cubic-bezier(.2,.75,.25,1),opacity 170ms";node.style.removeProperty("transform");node.style.removeProperty("opacity");}
+ }
+}
 function openLauncherSearch(){
+ resetHomeSwipe(true);
  setLauncherPage("apps",false);
- DeskMotion.enter($("launcherAppsPage"),"y");
- const search=$("launcherAppSearch");
+ const page=$("launcherAppsPage"),search=$("launcherAppSearch");
  search.value="";renderLauncherApps();
- search.focus();
- if(window.AudioDesk&&typeof window.AudioDesk.requestSearchKeyboard==="function")
-  window.AudioDesk.requestSearchKeyboard();
+ DeskMotion.run(page,[
+  {opacity:.15,transform:"translate3d(0,46px,0) scale(.985)"},
+  {opacity:1,transform:"translate3d(0,0,0) scale(1)"}
+ ],290);
+ DeskMotion.run(search,[
+  {opacity:.35,transform:"translate3d(0,12px,0)"},
+  {opacity:1,transform:"translate3d(0,0,0)"}
+ ],270);
+ // Focus on the next paint: the search field exists before Android raises its IME.
+ requestAnimationFrame(()=>{
+  if(launcherPage!=="apps")return;
+  search.focus({preventScroll:true});
+  window.AudioDesk?.requestSearchKeyboard?.();
+ });
 }
 $("launcherHomePage").addEventListener("touchstart",e=>{
  if(e.touches.length!==1||hasLauncherOverlay()||e.target.closest("input,textarea,button:not(.launcher-app)"))return;
@@ -2211,16 +2245,19 @@ $("launcherHomePage").addEventListener("touchmove",e=>{
  if(!upStart||e.touches.length!==1)return;
  const t=e.touches[0],dx=t.clientX-upStart.x,dy=t.clientY-upStart.y;
  if(dy< -24&&Math.abs(dy)>Math.abs(dx)*1.4){
-  cancelHomeHold();iconSwipe=null;blockAppClickUntil=Date.now()+600;if(e.cancelable)e.preventDefault();
- }
+  cancelHomeHold();iconSwipe=null;blockAppClickUntil=Date.now()+600;
+  previewHomeSwipe(-dy-24);
+  if(e.cancelable)e.preventDefault();
+ } else if(homeSwipeDistance){resetHomeSwipe();}
 },{passive:false});
 $("launcherHomePage").addEventListener("touchend",e=>{
  const origin=upStart;upStart=null;
- if(longConsumed||!origin||!e.changedTouches.length||launcherPage!=="home")return;
+ if(longConsumed||!origin||!e.changedTouches.length||launcherPage!=="home"){resetHomeSwipe();return}
  const t=e.changedTouches[0],dx=t.clientX-origin.x,dy=t.clientY-origin.y;
  if(dy< -75&&Math.abs(dy)>Math.abs(dx)*1.4){blockAppClickUntil=Date.now()+600;iconSwipe=null;cancelHomeHold();openLauncherSearch()}
+ else resetHomeSwipe()
 },{passive:true});
-$("launcherHomePage").addEventListener("touchcancel",()=>upStart=null,{passive:true});
+$("launcherHomePage").addEventListener("touchcancel",()=>{upStart=null;resetHomeSwipe()},{passive:true});
 
 /* Swipe sideways directly on an app icon for its published shortcuts. */
 let selectedApp=null,iconSwipe=null,blockAppClickUntil=0;
