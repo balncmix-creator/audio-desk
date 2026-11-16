@@ -386,24 +386,15 @@ body[data-launcher-theme="windows"][data-home-page="home"] #launcherLiveTiles{
  -webkit-user-select:text;user-select:text;-webkit-touch-callout:default;
 }
 
-/* v3.1: themed scrim behind genuine Android status icons, including Android 15+. */
+/* v3.2: genuine edge-to-edge status bar, not a separate striped panel.
+   Wallpaper covers the top inset and native Android draws the real icons.
+   Non-Home pages keep a neutral backing so dark icons/news remain legible. */
 #launcherStatusBackplate{
  position:fixed;inset:0 0 auto;z-index:7;
  height:var(--status-top,24px);pointer-events:none;
  background:rgba(8,8,8,.96);
 }
-body[data-home-page="home"][data-launcher-theme="minimal"] #launcherStatusBackplate{
- background:linear-gradient(180deg,rgba(2,5,9,.52),rgba(2,5,9,.20));
-}
-body[data-home-page="home"][data-launcher-theme="pixel"] #launcherStatusBackplate{
- background:
-  repeating-linear-gradient(90deg,rgba(87,52,178,.19) 0 8px,rgba(24,17,52,.23) 8px 16px),
-  linear-gradient(180deg,rgba(13,8,37,.76),rgba(29,17,54,.35));
- border-bottom:2px solid rgba(159,117,255,.66);box-sizing:border-box;
-}
-body[data-home-page="home"][data-launcher-theme="windows"] #launcherStatusBackplate{
- background:#0d0d0d;border-bottom:2px solid #1684d3;box-sizing:border-box;
-}
+body[data-home-page="home"] #launcherStatusBackplate{display:none!important;}
 .wallpaper-system-lock{display:flex;align-items:center;gap:10px;margin:12px 0 7px;
  color:#d7d7d7;font:500 13px/1.4 system-ui,sans-serif;
  -webkit-user-select:none;user-select:none}

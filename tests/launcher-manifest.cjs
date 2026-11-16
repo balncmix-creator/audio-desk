@@ -14,6 +14,8 @@ assert.match(systemWall,/WallpaperManager\.FLAG_SYSTEM/);
 assert.match(systemWall,/if \(lock\) WallpaperManager\.FLAG_LOCK/,'lock changes require opt-in');
 assert.match(systemWall,/worker\.execute/,'wallpaper updates run outside the UI thread');
 assert.match(systemWall,/decodeBounded/);
+assert.match(bridge,/fun setStatusBarTheme\([\s\S]*?window\.statusBarColor = Color\.TRANSPARENT/,
+ 'all Home themes use a transparent native status bar');
 const bridge=fs.readFileSync('app/src/main/java/com/balnc/audioddesk/MainActivity.kt','utf8');
 for(const symbol of ['requestLauncherApps','launchExternalApp','requestDefaultLauncher','launcherOnResume',
  'setSystemWallpaperBundled','setSystemWallpaperCustom','audioDeskWallpaperResult'])

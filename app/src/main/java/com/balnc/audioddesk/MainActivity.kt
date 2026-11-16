@@ -290,9 +290,10 @@ class MainActivity : Activity() {
             runOnUiThread {
                 if (!destroyed) {
                     val windowsHome = theme == "windows"
-                    // Minimal and Pixel draw wallpaper behind genuine system icons;
-                    // Windows uses a dark strip and white icons without spoofing Android status data.
-                    window.statusBarColor = if (windowsHome) Color.rgb(13, 13, 13) else Color.TRANSPARENT
+                    // Wallpaper fills the entire status inset in every Home theme.
+                    // Android 15+ mandates a transparent status bar; older versions use
+                    // the same transparent behavior so no tinted band appears.
+                    window.statusBarColor = Color.TRANSPARENT
                     window.navigationBarColor = if (windowsHome) Color.rgb(13, 13, 13) else Color.rgb(8, 8, 8)
                     WindowCompat.getInsetsController(window, window.decorView)
                         .isAppearanceLightStatusBars = !windowsHome && light

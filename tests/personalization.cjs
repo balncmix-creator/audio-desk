@@ -48,13 +48,17 @@ const origin='https://appassets.androidplatform.net/assets/';
   await page.waitForFunction(()=>document.querySelector('#wallpaperImage')?.complete);
   assert.equal(await page.evaluate(()=>wallpaperNativeCalls.length),0,'startup must never overwrite Android wallpaper');
   const statusSurface=page.locator('#launcherStatusBackplate');
-  assert.equal(await statusSurface.isVisible(),true,'status icons have a themeable background');
-  await page.evaluate(()=>setLauncherTheme('windows'));
-  assert.equal(await statusSurface.evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(13, 13, 13)');
-  assert.equal(await page.evaluate(()=>wallpaperStatusCalls.at(-1).theme),'windows');
-  await page.evaluate(()=>setLauncherTheme('pixel'));
-  assert.match(await statusSurface.evaluate(el=>getComputedStyle(el).backgroundImage),/repeating-linear-gradient/);
-  await page.evaluate(()=>setLauncherTheme('minimal'));
+  assert.equal(await statusSurface.isVisible(),false,'Home never adds an unrelated status-bar panel');
+  for(const theme of ['windows','pixel','minimal']){
+   await page.evaluate(theme=>setLauncherTheme(theme),theme);
+   assert.equal(await statusSurface.isVisible(),false,theme+' must keep actual wallpaper behind status icons');
+   assert.equal(await page.locator('#wallpaperStage').evaluate(el=>el.getBoundingClientRect().top),0,
+    'selected wallpaper extends through Android status inset');
+   assert.equal(await page.evaluate(()=>wallpaperStatusCalls.at(-1).theme),theme);
+  }
+  await page.evaluate(()=>setLauncherPage('events'));
+  assert.equal(await statusSurface.isVisible(),true,'News retains an accessible dark status background');
+  await page.evaluate(()=>setLauncherPage('home'));
   assert.equal(wallpaperRequests.filter(u=>!u.includes('/thumbs/')).length,1,'only selected full-size wallpaper loads');
   assert.equal(await page.locator('#wallpaperStage').evaluate(e=>e.getBoundingClientRect().top),0,'wallpaper covers status-bar region');
   assert.equal(await page.locator('#wallpaperImage').evaluate(e=>getComputedStyle(e).objectFit),'cover');
