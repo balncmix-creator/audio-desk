@@ -2230,12 +2230,9 @@ function openLauncherSearch(){
   {opacity:.35,transform:"translate3d(0,12px,0)"},
   {opacity:1,transform:"translate3d(0,0,0)"}
  ],270);
- // Focus on the next paint: the search field exists before Android raises its IME.
- requestAnimationFrame(()=>{
-  if(launcherPage!=="apps")return;
-  search.focus({preventScroll:true});
-  window.AudioDesk?.requestSearchKeyboard?.();
- });
+ // Focus immediately so swipe-up opens a ready keyboard without a dead frame.
+ search.focus({preventScroll:true});
+ window.AudioDesk?.requestSearchKeyboard?.();
 }
 $("launcherHomePage").addEventListener("touchstart",e=>{
  if(e.touches.length!==1||hasLauncherOverlay()||e.target.closest("input,textarea,button:not(.launcher-app)"))return;
