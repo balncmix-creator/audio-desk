@@ -52,7 +52,7 @@ const assert=require('node:assert/strict');
    return route.abort();
   });
   await page.goto('https://appassets.androidplatform.net/assets/index.html');
-  await page.waitForFunction(()=>window.launcherApps?.length===7);
+  await page.waitForFunction(()=>typeof launcherApps!=='undefined'&&launcherApps.length===7);
   await page.evaluate(()=>{setLauncherTheme('warm');setLauncherPage('apps',false)});
   assert.equal(await page.evaluate(()=>document.body.dataset.appLayout),'list',
    'the existing vertical app list is still the default');
