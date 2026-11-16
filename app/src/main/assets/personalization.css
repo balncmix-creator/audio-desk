@@ -117,8 +117,8 @@ body[data-home-page="apps"] #launcherNavigation,body[data-home-page="apps"] #lau
  box-shadow:0 0 0 2px rgba(255,255,255,.25);
 }
 #launcherWallpaperDialog .wallpaper-thumb{
- display:block;width:100%;height:auto;aspect-ratio:9/16;
- max-height:min(53vh,470px);object-fit:cover;object-position:center;
+ display:block;width:100%;height:auto;aspect-ratio:9/20;
+ object-fit:cover;object-position:center;
  border-radius:8px;margin-bottom:10px;background:#131313;
 }
 #launcherWallpaperDialog .wallpaper-choice small{font:400 11px/1.5 system-ui,sans-serif;color:#aeb2b8}
