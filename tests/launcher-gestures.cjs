@@ -94,7 +94,7 @@ const assert=require('node:assert/strict');
   await gesture('#launcherHomePage',[180,660],[179,432]);
   assert.equal(await page.evaluate(()=>launcherPage),'apps');
   assert.equal(await page.locator('#launcherAppSearch').evaluate(x=>document.activeElement===x),true);
-  assert.equal(await page.evaluate(()=>window.testKeyboardRequests),1);
+  assert.equal(await page.evaluate(()=>window.testKeyboardRequests),2,'Windows search button and Minimal swipe each request keyboard once');
   assert.equal(await page.locator('#launcherAlphaIndex').isVisible(),true);
 
   // Old news content no longer has horizontal category swipe listeners.
