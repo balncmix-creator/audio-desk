@@ -42,6 +42,7 @@ class MainActivity : Activity() {
     private lateinit var sampleDemos: SampleDemoFinder
     private lateinit var launcherSupport: HomeLauncherSupport
     private lateinit var systemWallpaperInstaller: SystemWallpaperInstaller
+    private lateinit var mediaWidgetSupport: MediaWidgetSupport
     private lateinit var pixelStatusBar: PixelStatusBar
     private var pixelHomeThemeRequested = false
     private var pixelBarActive = false
@@ -154,6 +155,7 @@ class MainActivity : Activity() {
         sampleDemos = SampleDemoFinder(appWebView.settings.userAgentString)
         launcherSupport = HomeLauncherSupport(this)
         systemWallpaperInstaller = SystemWallpaperInstaller(applicationContext)
+        mediaWidgetSupport = MediaWidgetSupport(this)
         appWebView.addJavascriptInterface(AppBridge(), "AudioDesk")
         appWebView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
@@ -313,7 +315,35 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun sendMediaState(data: JSONObject) {
+        runOnUiThread {
+            if (!destroyed && ::appWebView.isInitialized)
+                appWebView.evaluateJavascript(
+                    "window.receiveAudioDeskMedia&&window.receiveAudioDeskMedia(" + data.toString() + ")", null
+                )
+        }
+    }
+
     private inner class AppBridge {
+        @JavascriptInterface fun requestMediaState() {
+            runOnUiThread {
+                if (!destroyed && ::mediaWidgetSupport.isInitialized)
+                    sendMediaState(mediaWidgetSupport.state())
+            }
+        }
+        @JavascriptInterface fun mediaCommand(action: String) {
+            if (action !in setOf("next", "previous", "toggle")) return
+            runOnUiThread {
+                if (!destroyed && ::mediaWidgetSupport.isInitialized)
+                    sendMediaState(mediaWidgetSupport.command(action))
+            }
+        }
+        @JavascriptInterface fun requestMediaAccess() {
+            runOnUiThread {
+                if (!destroyed && ::mediaWidgetSupport.isInitialized)
+                    mediaWidgetSupport.openAccessSettings()
+            }
+        }
         @JavascriptInterface fun setSystemWallpaperBundled(
             id: String, position: Int, alsoLock: Boolean, requestId: Int
         ) {
@@ -503,6 +533,7 @@ class MainActivity : Activity() {
         super.onResume()
         pixelBarSuspended = false
         applyPixelStatusMode()
+        if (::mediaWidgetSupport.isInitialized) sendMediaState(mediaWidgetSupport.state())
         // Refresh installed apps after returning from another app or installing a package.
         if (::appWebView.isInitialized && ::launcherSupport.isInitialized)
             appWebView.evaluateJavascript(

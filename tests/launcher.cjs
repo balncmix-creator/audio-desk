@@ -76,10 +76,12 @@ const demoApps=[
   assert.equal(await page.locator('#stories .story').count(),1,'news remains cached');
   assert.equal(await page.locator('#launcherFavorites .n-app-row').count(),0,'Minimal Home has no duplicate app list');
   assert.equal(await page.locator('#launcherRecentQuick .launcher-app').count(),6,'Minimal Home has six suggested rows until local history exists');
+  assert.equal(await page.locator('#launcherRecentQuick .warm-line-icon svg').count(),6,
+   'Minimal uses modern outline app symbols instead of Pixel theme sprites');
   const recentLayout=await page.locator('#launcherRecentQuick').evaluate(el=>{
    const rows=[...el.querySelectorAll('.launcher-app')];
    const a=rows[0].getBoundingClientRect(),b=rows[1].getBoundingClientRect();
-   const icon=rows[0].querySelector('.pixel-icon').getBoundingClientRect();
+   const icon=rows[0].querySelector('.warm-line-icon').getBoundingClientRect();
    return {direction:getComputedStyle(el).flexDirection,stacked:b.top>=a.bottom-1,iconOnLeft:icon.left<a.left+a.width/2};
   });
   assert.equal(recentLayout.direction,'column');
@@ -114,6 +116,15 @@ const demoApps=[
   await page.locator('#launcherThemeChoose').click();
   await page.locator('[data-launcher-theme-choice="warm"]').click();
   assert.equal(await page.evaluate(()=>launcherTheme),'warm','Warm Minimal is a fourth selectable theme');
+  assert.equal(await page.locator('#launcherMusicWidget').isVisible(),true,'all themes include the media widget');
+  assert.equal(await page.locator('#launcherMusicWidget').evaluate(el=>getComputedStyle(el).fontFamily.includes('system-ui')),true);
+  assert.equal(await page.locator('#launcherHomeOptions').isVisible(),false);
+  await page.locator('#launcherSettingsToggle').click();
+  assert.equal(await page.locator('#launcherOptionsSheet .launcher-options-heading').evaluate(el=>getComputedStyle(el).fontFamily.includes('system-ui')),true,
+   'Warm quick actions and settings use system sans, not pixel glyphs');
+  assert.equal(await page.locator('#launcherThemeChoose').textContent().then(x=>x.includes('Choose theme')),true,
+   'Warm settings use themed labels');
+  await page.locator('#launcherOptionsClose').click();
   assert.equal(await page.locator('#warmWidgets').isVisible(),true,'rounded Warm Minimal widgets display on Home');
   assert.equal(await page.locator('#launcherClock').isVisible(),false,'Warm Minimal has its own date card instead of duplicate clock');
   assert.equal(await page.locator('#launcherRecentQuick .launcher-app').count(),7,
@@ -172,6 +183,10 @@ const demoApps=[
   assert.equal(await page.locator('#launcherAppsGrid img[src*="pixel-icons"]').count(),0,
    'pixel icons do not leak into the Warm Minimal app drawer');
   assert.equal(await page.locator('#launcherAppSearch').evaluate(el=>document.activeElement===el),true);
+  assert.equal(await page.locator('#launcherAppsPage .launcher-titlebar strong').evaluate(el=>getComputedStyle(el).fontFamily.includes('system-ui')),true,
+   'Warm All Apps title uses the theme font');
+  assert.equal(await page.locator('#launcherAlphaIndex button').first().evaluate(el=>getComputedStyle(el).fontFamily.includes('system-ui')),true,
+   'Warm A–Z rail switches to the matching typeface');
   await page.evaluate(()=>setLauncherPage('home',false));
   await page.locator('#warmDateWidget').click();
   assert.equal(await page.evaluate(()=>launcherPage),'apps','date widget opens Calendar search when no Calendar is installed');

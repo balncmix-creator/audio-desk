@@ -9,8 +9,15 @@ assert.doesNotMatch(xml,/android.permission.QUERY_ALL_PACKAGES/,'do not request 
 assert.doesNotMatch(xml,/android.permission.PACKAGE_USAGE_STATS/,'no intrusive usage permission');
 assert.match(xml,/android.permission.SET_WALLPAPER/,'global Android wallpaper requires permission');
 assert.match(xml,/android.permission.ACCESS_NETWORK_STATE/,'pixel Wi-Fi status uses the public network API');
-assert.doesNotMatch(xml,/android.permission.READ_PHONE_STATE|android.permission.ACCESS_FINE_LOCATION|android.permission.BIND_NOTIFICATION_LISTENER_SERVICE/,
- 'pixel status bar must not request sensitive telephony, location or notification access');
+assert.doesNotMatch(xml,/<uses-permission[^>]*android\.permission\.(?:READ_PHONE_STATE|ACCESS_FINE_LOCATION|BIND_NOTIFICATION_LISTENER_SERVICE)/,
+ 'pixel status bar must not request broad telephony, location or notification privileges');
+assert.match(xml,/<service[^>]*AudioDeskMediaAccessService[\s\S]*?android\.permission\.BIND_NOTIFICATION_LISTENER_SERVICE/,
+ 'music session discovery is an optional user-granted Notification Listener service');
+const media=fs.readFileSync('app/src/main/java/com/balnc/audioddesk/MediaWidgetSupport.kt','utf8');
+assert.match(media,/getActiveSessions\(component\)/);
+assert.match(media,/ACTION_SKIP_TO_NEXT/,'skip obeys player-reported available actions');
+assert.match(media,/ACTION_NOTIFICATION_LISTENER_SETTINGS/,'user must explicitly grant media session access');
+assert.doesNotMatch(media,/skipAds|bypassAds|adBlock/,'no false universal ad bypass claims');
 const systemWall=fs.readFileSync('app/src/main/java/com/balnc/audioddesk/SystemWallpaperInstaller.kt','utf8');
 assert.match(systemWall,/WallpaperManager\.getInstance/);
 assert.match(systemWall,/WallpaperManager\.FLAG_SYSTEM/);

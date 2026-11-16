@@ -421,6 +421,7 @@ body[data-home-page="home"] .launcher-dots .active{color:#c9c9c9}
 
 </style>
 <link rel="stylesheet" href="personalization.css">
+<link rel="stylesheet" href="theme-system.css">
 <script>
 // One interruptible motion vocabulary for pages, sheets and touch feedback.
 const DeskMotion=(()=>{
@@ -576,7 +577,7 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
 <div id="launcherStatusBackplate" aria-hidden="true"></div>
 <div id="launcherShell">
  <section class="launcher-page" id="launcherHomePage" aria-label="Audio Desk Home">
-  <div class="launcher-clock">
+  <div class="launcher-clock" id="launcherClockWidget">
    <div class="clock" id="launcherClock">--:--</div>
    <div class="clock-date" id="launcherDate"></div>
   </div>
@@ -597,6 +598,18 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
     <span class="warm-search-hint" data-warm-decor="arrow" aria-hidden="true"></span>
    </button>
   </section>
+  <section id="launcherMusicWidget" class="launcher-music-widget" aria-label="Music controls">
+   <div class="music-head"><span class="music-symbol" aria-hidden="true">♫</span>
+    <span class="music-meta"><strong id="musicTrackTitle">Music controls</strong>
+     <small id="musicTrackArtist">Connect a compatible player</small></span></div>
+   <div class="music-buttons">
+    <button id="musicPrev" type="button" aria-label="Previous track" disabled>‹‹</button>
+    <button id="musicToggle" type="button" aria-label="Play or pause" disabled>▶</button>
+    <button id="musicNext" type="button" aria-label="Next track" disabled>››</button>
+    <button id="musicAccess" type="button" aria-label="Enable compatible music player controls">Connect</button>
+   </div>
+   <small id="musicAccessNote" class="music-note">Player-supported controls only. Ads cannot be bypassed.</small>
+  </section>
   <button id="launcherTilesSearch" type="button" aria-label="Search all installed apps">⌕ SEARCH APPS</button>
   <div id="launcherFavorites" aria-label="Favourite and frequently used applications"></div>
   <div id="launcherFavoritesEmpty" hidden>YOUR APPS WILL APPEAR HERE.</div>
@@ -605,13 +618,13 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
    <div id="launcherRecentQuick" class="launcher-recent-quick"></div>
   </section>
   <section id="launcherLiveTiles" aria-label="Live tiles" hidden>
-   <button type="button" class="launcher-live-tile live-clock" data-live-action="clock" aria-label="Live clock and clock settings">
+   <button type="button" id="liveClockWidget" class="launcher-live-tile live-clock" data-live-action="clock" aria-label="Live clock and clock settings">
     <span class="live-kicker">CLOCK</span><strong id="launcherLiveTime">--:--</strong><span class="live-footer">LOCAL TIME</span>
    </button>
-   <button type="button" class="launcher-live-tile live-calendar" data-live-action="calendar" aria-label="Live date and calendar">
+   <button type="button" id="liveCalendarWidget" class="launcher-live-tile live-calendar" data-live-action="calendar" aria-label="Live date and calendar">
     <span class="live-kicker">CALENDAR</span><strong id="launcherLiveDay">--</strong><span class="live-footer" id="launcherLiveMonth">TODAY</span>
    </button>
-   <button type="button" class="launcher-live-tile live-news" data-live-action="news" aria-label="Audio Desk live news">
+   <button type="button" id="liveNewsWidget" class="launcher-live-tile live-news" data-live-action="news" aria-label="Audio Desk live news">
     <span class="live-kicker">AUDIO DESK NEWS</span><strong id="launcherLiveHeadline">OPEN AUDIO DESK FOR HEADLINES</strong><span class="live-footer" id="launcherLiveNewsSource">LIVE FROM CACHED HEADLINES</span>
    </button>
   </section>
@@ -683,6 +696,9 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
    <button type="button" id="wallpaperApplySystem">APPLY TO ANDROID WALLPAPER</button>
    <p id="wallpaperSystemStatus" class="customize-tip" role="status">New selections apply their static image to both Android Home and Lock screens. Uncheck to change Home only. Animated effects remain in Audio Desk.</p>
    <p class="customize-tip">Your imported photo stays on this phone. Wallpaper fills the screen behind the status bar.</p>
+   <div class="theme-wallpaper-heading"><strong>Colour editions</strong><small>Saved separately for each theme</small></div>
+   <div id="themePaletteGrid" class="theme-palette-grid" role="group" aria-label="Theme colour wallpapers"></div>
+   <div class="theme-wallpaper-heading"><strong>Photo wallpapers</strong><small>Also saved for this theme</small></div>
    <div id="wallpaperGrid" class="wallpaper-grid"></div>
   </div>
  </div>
@@ -696,7 +712,7 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
   </div>
  </div>
  <section class="launcher-page" id="launcherAppsPage" aria-label="All applications" hidden>
-  <div class="launcher-titlebar"><strong>[ ALL APPLICATIONS ]</strong><span class="launcher-label">A—Z</span></div>
+  <div class="launcher-titlebar"><strong id="launcherAllAppsHeading">All applications</strong><span class="launcher-label">A–Z</span></div>
   <input id="launcherAppSearch" class="search launcher-search" type="search"
    placeholder="SEARCH INSTALLED APPS…" autocomplete="off" aria-label="Search installed apps">
   <div class="launcher-summary"><span id="launcherAppCount">CHECKING INSTALLED APPS…</span>
@@ -2055,7 +2071,7 @@ function warmAppIcon(app){
  return '<span class="warm-line-icon" aria-hidden="true">'+warmIconSvg(match?match[1]:'apps')+'</span>';
 }
 function launcherIcon(app){
- if(launcherTheme==='warm')return warmAppIcon(app);
+ if(launcherTheme!=='pixel')return warmAppIcon(app);
  const all=(app.label+" "+app.pkg).toLowerCase();
  const match=pixelCategories.find(([re])=>re.test(all));
  const face=match?'<img src="pixel-icons/'+match[1]+'.svg" alt="" decoding="async" loading="lazy">':
@@ -2518,12 +2534,14 @@ function showAppShortcuts(pkg,activity){
  if(!app)return;
  selectedApp=app;
  cancelHomeHold();upStart=null;DeskMotion.show($("launcherShortcutMenu"));
- $("launcherShortcutTitle").textContent=app.label.toUpperCase()+" · QUICK ACTIONS";
+ $("launcherShortcutTitle").textContent=launcherTheme==="pixel"?
+  app.label.toUpperCase()+" · QUICK ACTIONS":app.label+" · Quick actions";
  const pinned=launcherPins.includes(launcherAppKey(app));
  $("launcherShortcutActions").innerHTML=
-  '<button type="button" data-quick-open="1">↗ OPEN APP</button>'+
-  '<button type="button" data-quick-pin="1">'+(pinned?"★ UNPIN FROM HOME":"☆ PIN TO HOME")+'</button>';
- $("launcherShortcutNote").textContent="CHECKING ANDROID FOR PUBLISHED APP SHORTCUTS…";
+  '<button type="button" data-quick-open="1">'+(launcherTheme==="pixel"?"↗ OPEN APP":"Open app")+'</button>'+
+  '<button type="button" data-quick-pin="1">'+(launcherTheme==="pixel"?(pinned?"★ UNPIN FROM HOME":"☆ PIN TO HOME"):(pinned?"Unpin from Home":"Pin to Home"))+'</button>';
+ $("launcherShortcutNote").textContent=launcherTheme==="pixel"?"CHECKING ANDROID FOR PUBLISHED APP SHORTCUTS…":
+  "Checking published app shortcuts…";
  if(window.AudioDesk?.getAppShortcuts)window.AudioDesk.getAppShortcuts(pkg,activity);
  else $("launcherShortcutNote").textContent="SHORTCUTS REQUIRE THE INSTALLED ANDROID HOME LAUNCHER.";
 }
@@ -2533,7 +2551,7 @@ window.receiveAppShortcuts=function(pkg,activity,shortcuts){
  for(const item of Array.isArray(shortcuts)?shortcuts.slice(0,10):[]){
   if(!item||typeof item.id!=="string"||typeof item.label!=="string")continue;
   const button=document.createElement("button");button.type="button";
-  button.textContent="↗ "+item.label;button.dataset.appShortcutId=item.id;root.appendChild(button);
+  button.textContent=(launcherTheme==="pixel"?"↗ ":"")+item.label;button.dataset.appShortcutId=item.id;root.appendChild(button);
  }
  $("launcherShortcutNote").textContent=root.querySelector("[data-app-shortcut-id]")?
   "These actions are provided by the installed application.":
@@ -2779,6 +2797,7 @@ document.addEventListener("click",e=>{
 })();
 </script>
 <script src="personalization.js"></script>
+<script src="theme-system.js"></script>
 <script>
 function hasLauncherOverlay(){return ['launcherLetterPanel','launcherHomeOptions','launcherShortcutMenu','launcherThemeDialog','launcherWallpaperDialog','launcherClockDialog','gridDetail'].some(id=>!document.getElementById(id).hidden)}
 function syncRefreshAvailability(){window.AudioDesk?.setRefreshEnabled?.(launcherPage==='events'&&!hasLauncherOverlay())}

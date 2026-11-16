@@ -1,0 +1,555 @@
+/* v3.8 unified theme system — every launcher surface shares design tokens.
+   The 8-bit language applies ONLY in pixel mode. */
+body[data-launcher-theme="minimal"]{
+ --ds-bg:#0e1113;--ds-panel:#212529;--ds-panel2:#2b3034;--ds-text:#f0f2f2;
+ --ds-muted:#b2bbc0;--ds-line:#424b52;--ds-accent:#e5e8e9;
+ --ds-font:system-ui,-apple-system,"Segoe UI",sans-serif;--ds-radius:14px;
+}
+body[data-launcher-theme="pixel"]{
+ --ds-bg:#08070b;--ds-panel:#191322;--ds-panel2:#291c37;--ds-text:#fff0fc;
+ --ds-muted:#e4a6df;--ds-line:#725484;--ds-accent:#f4a5e5;
+ --ds-font:"Silkscreen",monospace;--ds-radius:2px;
+}
+body[data-launcher-theme="windows"]{
+ --ds-bg:#101820;--ds-panel:#202e3b;--ds-panel2:#294658;--ds-text:#f5f8fc;
+ --ds-muted:#c0cad3;--ds-line:#566773;--ds-accent:#53afe3;
+ --ds-font:"Segoe UI",system-ui,-apple-system,sans-serif;--ds-radius:0px;
+}
+body[data-launcher-theme="warm"]{
+ --ds-bg:#1e1b1d;--ds-panel:#302c30;--ds-panel2:#42383d;--ds-text:#f3e4e0;
+ --ds-muted:#c6b6b5;--ds-line:#665a5e;--ds-accent:#eed9d2;
+ --ds-font:system-ui,-apple-system,"Segoe UI",sans-serif;--ds-radius:19px;
+}
+/* Matching typography and geometry through Home, Apps, News navigation,
+   A–Z rail, letter picker, recent drawer, app actions and every dialog. */
+body[data-launcher-theme] #launcherNavigation{
+ background:var(--ds-bg)!important;border-color:var(--ds-line);
+ box-shadow:0 4px 18px #0002;
+}
+body[data-launcher-theme] #launcherNavigation::before{background:var(--ds-bg)!important}
+body[data-launcher-theme] .launcher-nav-inner{
+ display:flex;gap:7px;padding:8px 17px;
+}
+body[data-launcher-theme] .launcher-nav-inner button{
+ font:600 12px/1.4 var(--ds-font)!important;
+ text-transform:none!important;letter-spacing:0!important;
+ border:1px solid var(--ds-line)!important;
+ border-radius:var(--ds-radius)!important;color:var(--ds-muted)!important;
+ background:var(--ds-panel)!important;min-height:39px;padding:7px 9px!important;
+ box-shadow:none!important;
+}
+body[data-launcher-theme] .launcher-nav-inner button.active{
+ color:var(--ds-bg)!important;background:var(--ds-accent)!important;
+ border-color:var(--ds-accent)!important;
+}
+body[data-launcher-theme="pixel"] .launcher-nav-inner button{
+ font:400 10px/1.4 "Silkscreen",monospace!important;letter-spacing:.025em!important;
+}
+body[data-launcher-theme="windows"] .launcher-nav-inner button{
+ font-size:14px!important;text-align:left!important;letter-spacing:.025em!important;
+}
+body[data-launcher-theme] #launcherAppsPage{
+ background:transparent;color:var(--ds-text);min-height:calc(100dvh - 155px);
+}
+body[data-home-page="apps"][data-launcher-theme] #wallpaperStage::after{
+ background:color-mix(in srgb,var(--ds-bg) 91%,transparent)!important;
+}
+body[data-home-page="apps"][data-launcher-theme] #launcherShell{background:transparent!important}
+body[data-home-page="apps"][data-launcher-theme] .launcher-titlebar{
+ margin:10px 0 15px;padding:0 0 13px;
+ border-bottom:1px solid var(--ds-line);
+}
+body[data-launcher-theme] .launcher-titlebar strong{
+ font:700 23px/1.3 var(--ds-font)!important;
+ color:var(--ds-text)!important;letter-spacing:-.035em!important;
+}
+body[data-launcher-theme="pixel"] .launcher-titlebar strong{
+ font:400 12px/1.7 "Press Start 2P",monospace!important;letter-spacing:0!important;
+}
+body[data-launcher-theme="windows"] .launcher-titlebar strong{font-weight:300!important;font-size:34px!important}
+body[data-launcher-theme] .launcher-titlebar .launcher-label,
+body[data-launcher-theme] #launcherAppsPage .launcher-summary{
+ font:500 11px/1.4 var(--ds-font)!important;
+ color:var(--ds-muted)!important;letter-spacing:0!important;
+}
+body[data-launcher-theme] #launcherAppSearch{
+ display:block;width:100%;box-sizing:border-box;
+ background:var(--ds-panel)!important;color:var(--ds-text)!important;
+ border:1px solid var(--ds-line)!important;
+ border-radius:var(--ds-radius)!important;
+ font:500 14px/1.45 var(--ds-font)!important;
+ padding:12px 16px!important;min-height:50px!important;
+ box-shadow:none!important;outline-offset:2px;
+}
+body[data-launcher-theme] #launcherAppSearch::placeholder{
+ color:var(--ds-muted)!important;opacity:.9;
+ font:400 13px/1.4 var(--ds-font)!important;letter-spacing:0!important;
+}
+body[data-launcher-theme="pixel"] #launcherAppSearch{
+ font:400 11px "Silkscreen",monospace!important;border-width:2px!important;
+}
+body[data-launcher-theme] #launcherAppsGrid{padding-bottom:25px}
+body[data-launcher-theme] #launcherAppsGrid .n-letter-heading{
+ padding:18px 7px 10px;
+ font:700 12px/1.3 var(--ds-font)!important;
+ color:var(--ds-accent)!important;border-bottom:1px solid var(--ds-line);
+ text-transform:none!important;letter-spacing:0!important;
+}
+body[data-launcher-theme] #launcherAppsGrid .n-app-row{
+ box-sizing:border-box;display:flex;align-items:center;
+ min-height:62px;padding:4px 2px;
+ border-bottom:1px solid color-mix(in srgb,var(--ds-line) 55%,transparent)!important;
+}
+body[data-launcher-theme] #launcherAppsGrid .n-app-row .launcher-app{
+ min-height:55px;gap:14px;padding:6px 7px!important;border:0!important;
+ border-radius:var(--ds-radius);background:transparent!important;
+ color:var(--ds-text)!important;
+}
+body[data-launcher-theme] #launcherAppsGrid .n-app-row .app-name{
+ color:var(--ds-text)!important;
+ font:500 14px/1.35 var(--ds-font)!important;letter-spacing:0!important;
+ text-shadow:none!important;
+}
+body[data-launcher-theme="pixel"] #launcherAppsGrid .n-app-row .app-name{
+ font:400 12px/1.35 "Silkscreen",monospace!important;
+}
+body[data-launcher-theme] .n-app-row .n-star{
+ width:38px;min-width:38px;flex-basis:38px;height:38px;
+ border-radius:var(--ds-radius)!important;
+ color:var(--ds-muted)!important;
+ background:var(--ds-panel)!important;
+ font:400 23px/1 var(--ds-font)!important;
+}
+body[data-launcher-theme] .n-app-row .n-star[aria-pressed=true]{
+ color:var(--ds-accent)!important;
+ background:var(--ds-panel2)!important;
+}
+body[data-launcher-theme="warm"] #launcherAppsPage .n-app-row .n-star{
+ border:1px solid #d8bdb147!important;border-radius:50%!important;
+}
+body[data-launcher-theme] #launcherAlphaIndex{
+ box-sizing:border-box;
+ border:1px solid color-mix(in srgb,var(--ds-line) 80%,transparent)!important;
+ background:color-mix(in srgb,var(--ds-panel) 95%,transparent)!important;
+ border-radius:var(--ds-radius)!important;
+ width:35px!important;
+ right:max(4px,env(safe-area-inset-right))!important;
+ overflow:hidden;box-shadow:0 2px 16px #0004!important;
+}
+body[data-launcher-theme] #launcherAlphaIndex button{
+ border:0!important;border-radius:0!important;
+ font:600 clamp(10px,1.7vh,12px)/1 var(--ds-font)!important;
+ color:var(--ds-muted)!important;letter-spacing:0!important;
+ text-shadow:none!important;background:transparent!important;
+ padding:0!important;min-height:0!important;
+}
+body[data-launcher-theme="pixel"] #launcherAlphaIndex button{
+ font:400 clamp(8px,1.65vh,10px)/1 "Silkscreen",monospace!important;
+}
+body[data-launcher-theme] #launcherAlphaIndex button.active{
+ color:var(--ds-bg)!important;background:var(--ds-accent)!important;
+ opacity:1!important;
+}
+body[data-launcher-theme] #launcherAlphaBubble{
+ color:var(--ds-bg)!important;background:var(--ds-accent)!important;
+ border-radius:var(--ds-radius)!important;
+ font:700 27px/1.1 var(--ds-font)!important;box-shadow:0 6px 28px #0007;
+}
+body[data-launcher-theme] #launcherLetterPanel{
+ background:var(--ds-panel)!important;
+ color:var(--ds-text)!important;border:1px solid var(--ds-line)!important;
+ border-radius:var(--ds-radius)!important;
+}
+body[data-launcher-theme] .launcher-letter-head{
+ color:var(--ds-text)!important;
+ font:600 29px/1.3 var(--ds-font)!important;
+ border-color:var(--ds-line)!important;
+}
+body[data-launcher-theme] #launcherLetterApps .launcher-app{
+ border-color:var(--ds-line)!important;border-radius:9px!important;
+ color:var(--ds-text)!important;
+}
+body[data-launcher-theme] #launcherLetterApps .app-name{
+ color:var(--ds-text)!important;font:500 14px/1.4 var(--ds-font)!important;
+}
+body[data-launcher-theme] #launcherMoreByLetter,
+body[data-launcher-theme] #launcherLetterClose{
+ color:var(--ds-text)!important;background:var(--ds-panel2)!important;
+ font:500 12px/1.4 var(--ds-font)!important;
+ border-radius:var(--ds-radius)!important;
+}
+body[data-launcher-theme] .warm-line-icon{
+ display:flex;align-items:center;justify-content:center;
+ width:38px;height:38px;flex:0 0 38px;
+ color:var(--ds-text);background:transparent;
+}
+body[data-launcher-theme] .warm-line-icon svg{
+ stroke:currentColor;fill:none;width:25px;height:25px;
+}
+body[data-launcher-theme="windows"] #launcherFavorites .warm-line-icon{
+ width:42px;height:42px;flex-basis:42px;color:white;
+}
+body[data-launcher-theme="minimal"] .warm-line-icon{color:#f1f5f5}
+body[data-launcher-theme] #launcherOptionsSheet,
+body[data-launcher-theme] #launcherShortcutPanel,
+body[data-launcher-theme] .customize-panel{
+ background:var(--ds-panel)!important;
+ color:var(--ds-text)!important;
+ border:1px solid var(--ds-line)!important;
+ border-radius:var(--ds-radius) var(--ds-radius) 0 0!important;
+ box-shadow:0 -12px 36px #0007!important;
+ font-family:var(--ds-font)!important;
+}
+body[data-launcher-theme] .customize-head{
+ background:var(--ds-panel)!important;
+ border-color:var(--ds-line)!important;color:var(--ds-text)!important;
+ font-family:var(--ds-font)!important;
+}
+body[data-launcher-theme] .customize-head strong,
+body[data-launcher-theme] .launcher-options-heading{
+ font:700 16px/1.35 var(--ds-font)!important;
+ text-transform:none!important;letter-spacing:0!important;
+ color:var(--ds-text)!important;
+}
+body[data-launcher-theme] #launcherOptionsSheet .launcher-options-action,
+body[data-launcher-theme] #launcherOptionsSheet .n-home-shortcuts button,
+body[data-launcher-theme] #launcherOptionsSheet .launcher-setup button,
+body[data-launcher-theme] #launcherShortcutActions button,
+body[data-launcher-theme] #launcherShortcutClose,
+body[data-launcher-theme] #launcherOptionsClose,
+body[data-launcher-theme] #launcherRecentRefresh,
+body[data-launcher-theme] .theme-choice,
+body[data-launcher-theme] .wallpaper-choice,
+body[data-launcher-theme] .clock-choice,
+body[data-launcher-theme] #customWallpaperChoose,
+body[data-launcher-theme] #wallpaperApplySystem{
+ display:flex;align-items:center;gap:12px;
+ box-sizing:border-box;
+ text-align:left;color:var(--ds-text)!important;
+ background:var(--ds-panel2)!important;
+ border:1px solid var(--ds-line)!important;
+ border-radius:var(--ds-radius)!important;
+ font:500 13px/1.35 var(--ds-font)!important;
+ letter-spacing:0!important;text-transform:none!important;
+ box-shadow:none!important;
+}
+body[data-launcher-theme] #launcherOptionsSheet .launcher-options-action{
+ width:100%;min-height:49px;
+}
+body[data-launcher-theme] #launcherOptionsSheet .n-home-shortcuts button{
+ justify-content:center;padding:10px 7px!important;
+}
+body[data-launcher-theme] .launcher-options-action:active,
+body[data-launcher-theme] #launcherShortcutActions button:active{
+ background:var(--ds-accent)!important;color:var(--ds-bg)!important;
+}
+body[data-launcher-theme] .launcher-setup,
+body[data-launcher-theme] .launcher-recent-card{
+ background:var(--ds-panel2)!important;
+ border:1px solid var(--ds-line)!important;
+ border-radius:var(--ds-radius)!important;color:var(--ds-text)!important;
+ font-family:var(--ds-font)!important;
+}
+body[data-launcher-theme] .launcher-recent-name,
+body[data-launcher-theme] .launcher-recent-time,
+body[data-launcher-theme] #launcherShortcutTitle,
+body[data-launcher-theme] #launcherShortcutNote{
+ font-family:var(--ds-font)!important;
+ color:var(--ds-text)!important;
+}
+body[data-launcher-theme] #launcherRecentDrawer{border-color:var(--ds-line)!important}
+body[data-launcher-theme] #launcherShortcutPanel{
+ padding:20px!important;
+}
+body[data-launcher-theme] #launcherShortcutTitle{
+ font-size:17px!important;font-weight:700;
+}
+body[data-launcher-theme] #launcherShortcutActions{gap:10px}
+body[data-launcher-theme] .customize-tip,
+body[data-launcher-theme] #launcherWallpaperDialog .wallpaper-choice small{
+ font:400 12px/1.45 var(--ds-font)!important;
+ color:var(--ds-muted)!important;
+}
+body[data-launcher-theme] .theme-choice strong,
+body[data-launcher-theme] .theme-choice small,
+body[data-launcher-theme] .wallpaper-choice span,
+body[data-launcher-theme] .clock-choice-name{
+ font-family:var(--ds-font)!important;color:var(--ds-text)!important;
+ letter-spacing:0!important;
+}
+body[data-launcher-theme] .theme-choice[aria-pressed=true],
+body[data-launcher-theme] .wallpaper-choice[aria-pressed=true]{
+ border-color:var(--ds-accent)!important;
+}
+body[data-launcher-theme] #launcherSwipeGhost{
+ background:var(--ds-bg)!important;border-color:var(--ds-line)!important;
+}
+body[data-launcher-theme] #launcherSwipeGhost strong,
+body[data-launcher-theme] #launcherSwipeGhost p,
+body[data-launcher-theme] #launcherSwipeGhost .sub{
+ font-family:var(--ds-font)!important;color:var(--ds-text)!important;
+}
+body[data-launcher-theme] .theme-action-icon{
+ width:22px;height:22px;flex:0 0 22px;display:grid;place-items:center;
+ color:var(--ds-accent);
+}
+body[data-launcher-theme] .theme-action-icon svg{width:21px;height:21px}
+body[data-launcher-theme] .launcher-setup p,
+body[data-launcher-theme] .launcher-summary{
+ color:var(--ds-muted)!important;font-family:var(--ds-font)!important;
+}
+body[data-launcher-theme="pixel"] #launcherAppsPage,
+body[data-launcher-theme="pixel"] .launcher-options-heading,
+body[data-launcher-theme="pixel"] #launcherShortcutTitle{
+ font-family:"Silkscreen",monospace!important;
+}
+body[data-launcher-theme="windows"] #launcherOptionsSheet,
+body[data-launcher-theme="windows"] #launcherShortcutPanel,
+body[data-launcher-theme="windows"] .customize-panel{
+ border-radius:0!important;
+}
+body[data-launcher-theme="warm"] #launcherAlphaIndex{
+ background:rgba(228,209,201,.94)!important;border-color:#e9d7d0!important;
+ border-radius:20px!important;
+}
+body[data-launcher-theme="warm"] #launcherAlphaIndex button{
+ color:#3e3137!important;text-shadow:none!important;
+}
+body[data-launcher-theme="warm"] #launcherAlphaIndex button.active{
+ color:#f5e6e1!important;background:#4b4146!important;
+}
+body[data-launcher-theme="warm"] #launcherAlphaBubble{
+ color:#352a2d!important;background:#e9d7d0!important;
+}
+body[data-launcher-theme="warm"][data-home-page="apps"] #launcherAppSearch{
+ background:#f0dfd9!important;color:#272328!important;
+ border-color:#d9bfb6!important;
+}
+body[data-launcher-theme="warm"][data-home-page="apps"] #launcherAppSearch::placeholder{
+ color:#796b6c!important;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentStrip{
+ background:var(--theme-panel,#eedbd4)!important;
+}
+body[data-launcher-theme="warm"][data-home-page="home"] #launcherRecentStripTitle,
+body[data-launcher-theme="warm"][data-home-page="home"] #launcherRecentQuick .app-name{
+ color:#252126!important;
+}
+body[data-launcher-theme="warm"][data-home-page="home"] #launcherRecentQuick .warm-line-icon{
+ color:#252126!important;
+}
+body[data-launcher-theme="warm"] .launcher-settings-fab{
+ background:#4b4146!important;border-color:#cab1a8!important;
+}
+body[data-launcher-theme="warm"] #launcherHomeOptions button{
+ font-family:var(--ds-font)!important;
+}
+/* Theme wallpaper collection: colour variants are genuine independent
+   options, not a one-off tint applied across every launcher theme. */
+.theme-wallpaper-heading{
+ display:flex;align-items:center;justify-content:space-between;
+ margin:20px 0 10px;gap:8px;color:var(--ds-text);
+ font:600 13px/1.35 var(--ds-font);
+}
+.theme-wallpaper-heading small{
+ color:var(--ds-muted);font:400 10px/1.3 var(--ds-font);
+}
+.theme-palette-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.theme-palette-choice{
+ padding:8px!important;background:var(--ds-panel2)!important;
+ border:1px solid var(--ds-line)!important;
+ border-radius:var(--ds-radius)!important;
+ box-shadow:none!important;color:var(--ds-text)!important;
+ font:500 13px/1.35 var(--ds-font)!important;
+ text-align:left;min-width:0;
+}
+.theme-palette-choice[aria-pressed=true]{
+ outline:2px solid var(--ds-accent);outline-offset:1px;
+}
+.theme-palette-swatch{
+ position:relative;display:block;width:100%;height:92px;
+ background:linear-gradient(152deg,var(--swatch-dark),var(--swatch-mid));
+ border-radius:max(0px,calc(var(--ds-radius) - 6px));margin-bottom:8px;
+ overflow:hidden;
+}
+.theme-palette-swatch::after{
+ content:"";position:absolute;right:-30px;top:-30px;
+ width:120px;height:120px;
+ background:radial-gradient(circle,var(--swatch-accent) 0%,transparent 70%);
+ opacity:.26;
+}
+body[data-theme-palette]:not([data-theme-palette=""]) #wallpaperStage{
+ background:var(--theme-wallpaper)!important;
+}
+body[data-theme-palette]:not([data-theme-palette=""]) #wallpaperStage #wallpaperImage{
+ opacity:0!important;
+}
+body[data-theme-palette]:not([data-theme-palette=""]) #wallpaperStage::after{
+ background:transparent!important;
+}
+body[data-theme-palette]:not([data-theme-palette=""])[data-launcher-theme="warm"] #wallpaperStage::after{
+ background:transparent!important;
+}
+body[data-theme-palette]:not([data-theme-palette=""]) #wallpaperEffect{
+ display:none!important;
+}
+/* Media widget: themed transport controls, never a fake ad blocker. */
+.launcher-music-widget{
+ box-sizing:border-box;display:flex;flex-direction:column;gap:11px;
+ width:min(100%,420px);max-width:420px;
+ padding:14px 16px;margin:14px 0;
+ min-height:118px;
+ border:1px solid var(--ds-line);
+ border-radius:var(--ds-radius);
+ background:var(--ds-panel);color:var(--ds-text);
+ box-shadow:0 6px 22px #0002;
+ font-family:var(--ds-font);
+}
+.music-head{display:flex;align-items:center;gap:12px;min-width:0}
+.music-symbol{
+ flex:0 0 39px;width:39px;height:39px;border-radius:var(--ds-radius);
+ background:var(--ds-panel2);color:var(--ds-accent);
+ display:grid;place-items:center;font-size:23px;
+}
+.music-meta{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px}
+.music-meta strong{font:600 14px/1.25 var(--ds-font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.music-meta small{font:400 11px/1.35 var(--ds-font);color:var(--ds-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.music-buttons{display:flex;align-items:center;justify-content:center;gap:9px}
+.music-buttons button{
+ display:grid;place-items:center;flex:0 0 40px;width:40px;height:34px;
+ padding:0;border:1px solid var(--ds-line);box-shadow:none;
+ border-radius:var(--ds-radius);color:var(--ds-text);
+ background:var(--ds-panel2);
+ font:600 18px/1 var(--ds-font);
+}
+.music-buttons button:disabled{opacity:.42}
+.music-buttons #musicAccess{flex:1;width:auto;padding:0 14px;font-size:12px}
+.music-buttons #musicAccess[hidden]{display:none!important}
+.music-note{font:400 10px/1.4 var(--ds-font);color:var(--ds-muted)}
+body[data-launcher-theme="pixel"] .launcher-music-widget{
+ border-width:2px;box-shadow:3px 3px 0 #5d376a;
+}
+body[data-launcher-theme="pixel"] .music-symbol{border-radius:0}
+body[data-launcher-theme="windows"] .launcher-music-widget{
+ background:#245b7b;border:0;border-radius:0;box-shadow:none;
+}
+body[data-launcher-theme="warm"] .launcher-music-widget{
+ margin-top:13px!important;margin-bottom:10px!important;
+ width:calc(100% - 32px);max-width:400px;
+ background:#f0dbd5;color:#271f24;
+ border-color:#d6b9b0;
+}
+body[data-launcher-theme="warm"] .music-meta small,
+body[data-launcher-theme="warm"] .music-note{color:#6a5c5d}
+body[data-launcher-theme="warm"] .music-symbol,
+body[data-launcher-theme="warm"] .music-buttons button{
+ background:#3c3539;color:#f4e4df;border-color:#63545a;
+}
+body[data-launcher-theme="warm"] #launcherRecentStrip{
+ margin-top:13px!important;
+}
+/* Resize controls: two distinct handles, clear affordance and restrained animation. */
+[data-widget-resizable]{position:relative;
+ width:min(100%,var(--user-widget-width,100%))!important;
+ min-height:var(--user-widget-height,initial)!important;
+ transition:width 170ms cubic-bezier(.2,.8,.2,1),min-height 170ms cubic-bezier(.2,.8,.2,1);
+}
+body.widget-dragging [data-widget-resizable]{transition:none!important}
+body[data-launcher-theme="warm"] .warm-widget[data-widget-resizable]{
+ width:min(100%,var(--user-widget-width,100%))!important;
+}
+body[data-launcher-theme="warm"] #launcherRecentStrip[data-widget-resizable]{
+ width:min(79vw,var(--user-widget-width,330px))!important;
+}
+.widget-editing{z-index:19!important;outline:2px solid var(--ds-accent)!important;outline-offset:2px}
+.widget-resize-frame{
+ position:absolute;inset:0;z-index:60;pointer-events:none;
+ border:2px solid var(--ds-accent);border-radius:inherit;
+ box-sizing:border-box;
+}
+.widget-resize-label{
+ position:absolute;top:0;left:0;
+ background:var(--ds-accent);color:var(--ds-bg);
+ padding:5px 10px;border-radius:0 0 9px 0;
+ font:600 10px/1.2 var(--ds-font);
+}
+.widget-resize-done{
+ pointer-events:auto!important;position:absolute;right:7px;top:6px;
+ background:var(--ds-accent)!important;color:var(--ds-bg)!important;
+ border:0!important;box-shadow:none!important;
+ padding:5px 8px!important;min-height:24px;
+ border-radius:var(--ds-radius)!important;font:600 10px var(--ds-font)!important;
+}
+.widget-resize-handle{
+ pointer-events:auto;touch-action:none;position:absolute;right:-11px;bottom:-11px;
+ width:25px;height:25px;border-radius:7px;
+ border:3px solid var(--ds-panel);
+ background:var(--ds-accent);
+ box-shadow:0 2px 10px #0006;
+ cursor:nwse-resize;
+}
+.widget-resize-handle::after{
+ content:"";position:absolute;inset:5px;
+ border-right:2px solid var(--ds-bg);border-bottom:2px solid var(--ds-bg);
+}
+@media(prefers-reduced-motion:reduce){
+ [data-widget-resizable]{transition:none!important}
+}
+@media(max-width:350px){
+ .theme-palette-grid{gap:7px}
+ .launcher-music-widget{padding:11px 12px}
+ body[data-launcher-theme] .launcher-nav-inner{padding:6px 10px}
+ body[data-launcher-theme] #launcherAlphaIndex{width:29px!important}
+}
+/* News, sources, searches and toolbars participate in the chosen theme, too. */
+body[data-launcher-theme] header,
+body[data-launcher-theme] #swipeMain,
+body[data-launcher-theme] nav.bottom-dock,
+body[data-launcher-theme] #gridDetailCard{
+ color:var(--ds-text);font-family:var(--ds-font)!important;
+}
+body[data-launcher-theme] header .brand,
+body[data-launcher-theme] header .sub,
+body[data-launcher-theme] header .edition,
+body[data-launcher-theme] .bottom-dock .toolbar button,
+body[data-launcher-theme] #swipeMain h2,
+body[data-launcher-theme] #swipeMain h3,
+body[data-launcher-theme] #swipeMain .story,
+body[data-launcher-theme] #swipeMain .story h2,
+body[data-launcher-theme] #gridDetailBody h2,
+body[data-launcher-theme] #swipeMain .resource-title,
+body[data-launcher-theme] #swipeMain .sample-release-title{
+ font-family:var(--ds-font)!important;
+ letter-spacing:0!important;
+}
+body[data-launcher-theme] nav.bottom-dock{
+ background:var(--ds-bg)!important;
+ border-top:1px solid var(--ds-line)!important;
+}
+body[data-launcher-theme] nav.bottom-dock button,
+body[data-launcher-theme] .dock-search,
+body[data-launcher-theme] #swipeMain .search,
+body[data-launcher-theme] #swipeMain select,
+body[data-launcher-theme] #swipeMain textarea{
+ border-color:var(--ds-line)!important;
+ border-radius:var(--ds-radius)!important;
+ color:var(--ds-text)!important;
+ background:var(--ds-panel)!important;
+ font-family:var(--ds-font)!important;
+}
+body[data-launcher-theme] #swipeMain .story,
+body[data-launcher-theme] #swipeMain .sample-release-card,
+body[data-launcher-theme] #swipeMain .resource-card,
+body[data-launcher-theme] #swipeMain .panel{
+ border-color:var(--ds-line)!important;
+ border-radius:var(--ds-radius)!important;
+}
+body[data-launcher-theme="warm"] header .brand,
+body[data-launcher-theme="warm"] #swipeMain h2,
+body[data-launcher-theme="warm"] .bottom-dock button{
+ font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important;
+}
+body[data-launcher-theme="pixel"] header .brand,
+body[data-launcher-theme="pixel"] #swipeMain .story h2{
+ font-family:"Silkscreen",monospace!important;
+}
