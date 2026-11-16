@@ -2503,7 +2503,10 @@ function openLauncherSearch(){
 $("launcherHomePage").addEventListener("touchstart",e=>{
  // Tiles must scroll freely: swipe-up search belongs only to Minimal and Pixel.
  if(launcherTheme==="windows"){upStart=null;return}
- if(e.touches.length!==1||hasLauncherOverlay()||e.target.closest("input,textarea,button:not(.launcher-app)"))return;
+ if(e.touches.length!==1||hasLauncherOverlay()||
+   e.target.closest("#launcherFavorites,#launcherRecentStrip,input,textarea,button:not(.launcher-app)")){
+   upStart=null;return;
+  }
  const t=e.touches[0];upStart={x:t.clientX,y:t.clientY};
 },{passive:true});
 $("launcherHomePage").addEventListener("touchmove",e=>{
@@ -2628,7 +2631,9 @@ document.addEventListener("touchstart",e=>{
  const t=e.touches[0],x=t.clientX;
  const edge=x<34||x>window.innerWidth-34;
  // News→Home works from anywhere on the feed, never only its outer edge.
- if(e.target.closest("#launcherAlphaIndex,.launcher-app,button,a,input,textarea,select,audio,video,iframe,[contenteditable]"))return;
+ const appListRow=launcherPage==="apps"&&!!e.target.closest("#launcherAppsGrid .launcher-app");
+  if(e.target.closest("#launcherAlphaIndex,input,textarea,select,audio,video,iframe,[contenteditable]"))return;
+  if(e.target.closest(".launcher-app,button,a")&&!appListRow)return;
  launcherGesture={x,y:t.clientY,lastX:x,locked:false,edge};
 },{capture:true,passive:true});
 document.addEventListener("touchmove",e=>{
@@ -2641,6 +2646,8 @@ document.addEventListener("touchmove",e=>{
   const idx=launcherPages.indexOf(launcherPage),target=idx-Math.sign(dx);
   if(target<0||target>=launcherPages.length){launcherGesture=null;return}
   g.locked=true;g.target=launcherPages[target];
+  // A drag starting on an Apps-list row must never launch that app on release.
+  if(launcherPage==="apps")blockAppClickUntil=Date.now()+850;
   cancelHomeHold();upStart=null;iconSwipe=null;
   if(typeof clearTabSwipe==="function")clearTabSwipe();
  }
