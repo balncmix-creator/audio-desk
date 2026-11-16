@@ -2,9 +2,19 @@
 
 **A one-handed Android Home launcher for people who make sound, inspired by minimalist Niagara-style app access and Nokia N9 swipe navigation, without replacing Audio Desk's original retro design.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk Launcher v3.3 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v3.3/Audio-Desk-Launcher-v3.3.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk Launcher v3.4 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v3.4/Audio-Desk-Launcher-v3.4.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
+
+## v3.4 — real native pixel status bar on 8-bit Home
+
+**8-Bit mode now renders a native Android pixel-style status bar**, not just a colored WebView background. Only on 8-bit Home, Audio Desk hides Android's original status bar and draws time in the bundled Silkscreen pixel font, a square battery graphic with the **actual battery percentage and charging state**, and pixel indicators for the **active Wi-Fi or cellular data connection**. Values come directly from Android's battery intent, clock format preference, and public network capabilities. Battery and time update on a minute-aligned schedule; network changes use a foreground-only callback, and all listeners stop while the launcher is hidden.
+
+**Original Android status bar returns automatically** on Minimal Home, Windows Tiles, All Apps, News, external article browsing, and when Audio Desk moves into the background. The status and navigation gestures remain Android-controlled; a swipe from the very top can reveal the temporary system status bar. Selected wallpaper still extends edge-to-edge behind the native pixel indicators.
+
+**Important limits:** No notification contents or icons are manufactured. Reproducing third-party notification symbols requires separately granted Notification Access and is not part of v3.4. True per-SIM cellular signal strength likewise requires additional Android access; the current cellular indicator reports only an active cellular data connection, not signal bars or signal strength. Pixel styling does not change Android's system-wide Quick Settings, other apps, or lock-screen status icons.
+
+Android compilation, browser UI regressions, screenshot capture, edition packaging, and wallpaper checks passed; actual device testing is still required to assess notch layouts, notification gestures, and power consumption.
 
 ## v3.3 — Home and Lock screen wallpapers match by default
 
@@ -138,7 +148,7 @@ The wallpaper fills the screen behind the Android status bar. Custom photos and 
 
 ## Install on Android
 
-1. Open the [v3.3 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v3.3/Audio-Desk-Launcher-v3.3.apk) on your Android phone. **This is an APK, not a ZIP.**
+1. Open the [v3.4 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v3.4/Audio-Desk-Launcher-v3.4.apk) on your Android phone. **This is an APK, not a ZIP.**
 2. Open the downloaded file and, if Android asks, allow installations from the browser or file manager you used.
 3. Launch **Audio Desk Launcher**. Tap the **bottom-right settings icon → Set Home** if you want it to become your default Android launcher. Your existing Audio Desk bookmarks and cached feeds remain available.
 
