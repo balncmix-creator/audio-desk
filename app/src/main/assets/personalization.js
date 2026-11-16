@@ -16,13 +16,15 @@ let customPosition=loadPersonalInt("ar_wallpaper_position_v2",35,100);
 let nativeWallpaperActive=true;
 function syncWallpaperMotion(){
  const effect=wallpaperEffectChoice==="auto"?(customWallpaperSelected?"stars":WALLPAPERS[selectedWallpaper].motion):wallpaperEffectChoice;
- const paused=document.hidden||!nativeWallpaperActive||launcherPage!=="home"||motionPreference.matches;
+ const saver=document.body.classList.contains("low-power")&&wallpaperEffectChoice==="auto";
+ const paused=document.hidden||!nativeWallpaperActive||launcherPage!=="home"||motionPreference.matches||saver;
  document.body.dataset.motionPaused=String(paused);
  document.body.dataset.wallpaperMotion=effect==="none"?"":effect;
  if(window.AudioDesk&&typeof window.AudioDesk.setWallpaperTone==="function")
   window.AudioDesk.setWallpaperTone(launcherPage==="home"&&document.body.dataset.wallpaperStatusLight==="true");
  const status=$("wallpaperMotionStatus");
  if(status)status.textContent=motionPreference.matches?"Animations paused by your phone’s reduced-motion setting.":
+  saver?"Low-power mode keeps the wallpaper still. Choose an animation manually to enable it.":
   effect==="none"?"Static wallpaper. Choose an effect to animate it.":"Live "+effect+" effect · pauses when Home is hidden.";
 }
 window.launcherWallpaperActive=function(active){nativeWallpaperActive=active;syncWallpaperMotion()};
@@ -95,14 +97,29 @@ function decodeWallpaperImage(image){
  return new Promise((resolve,reject)=>{if(image.complete){image.naturalWidth?resolve():reject(new Error('Image unavailable'));return}image.onload=resolve;image.onerror=reject});
 }
 function closeCustomize(immediate=false){
- for(const id of ["launcherWallpaperDialog","launcherClockDialog"])DeskMotion.hide($(id),immediate===true);
+ for(const id of ["launcherThemeDialog","launcherWallpaperDialog","launcherClockDialog"])DeskMotion.hide($(id),immediate===true);
 }
 function openCustomize(id){
  closeHomeOptions(true);cancelHomeHold();upStart=null;
- for(const other of ["launcherWallpaperDialog","launcherClockDialog"])DeskMotion.hide($(other),true);
+ for(const other of ["launcherThemeDialog","launcherWallpaperDialog","launcherClockDialog"])DeskMotion.hide($(other),true);
  $(id).querySelector('.customize-panel').scrollTop=0;DeskMotion.show($(id));
  $(id).querySelector('button').focus({preventScroll:true});
 }
+function openThemePicker(){
+ for(const button of $("launcherThemeGrid").querySelectorAll("[data-launcher-theme-choice]"))
+  button.setAttribute("aria-pressed",String(button.dataset.launcherThemeChoice===launcherTheme));
+ openCustomize("launcherThemeDialog");
+}
+$("launcherThemeChoose").onclick=openThemePicker;
+$("themeClose").onclick=()=>closeCustomize();
+$("launcherThemeGrid").addEventListener("click",e=>{
+ const button=e.target.closest("[data-launcher-theme-choice]");
+ if(!button)return;
+ setLauncherTheme(button.dataset.launcherThemeChoice);
+ for(const item of $("launcherThemeGrid").querySelectorAll("[data-launcher-theme-choice]"))
+  item.setAttribute("aria-pressed",String(item===button));
+ closeCustomize();
+});
 function openWallpaperPicker(){
  renderWallpaperPicker();openCustomize("launcherWallpaperDialog");
  requestAnimationFrame(()=>{
@@ -234,7 +251,7 @@ $("customWallpaperPosition").oninput=e=>{
 };
 $("launcherWallpaperChoose").onclick=openWallpaperPicker;$("launcherClockChoose").onclick=openClockCustomizer;
 $("wallpaperClose").onclick=()=>closeCustomize();$("clockClose").onclick=()=>closeCustomize();
-for(const id of ["launcherWallpaperDialog","launcherClockDialog"]){$(id).addEventListener("click",e=>{if(e.target===$(id))closeCustomize()})}
+for(const id of ["launcherThemeDialog","launcherWallpaperDialog","launcherClockDialog"]){$(id).addEventListener("click",e=>{if(e.target===$(id))closeCustomize()})}
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeCustomize()});
 let longHold=0,longStart=null,longConsumed=false;
 function cancelHomeHold(){clearTimeout(longHold);longHold=0;longStart=null}

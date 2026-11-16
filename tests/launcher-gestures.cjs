@@ -48,6 +48,9 @@ const assert=require('node:assert/strict');
   await page.goto('https://appassets.androidplatform.net/assets/index.html');
   await page.waitForFunction(()=>launcherApps.length===2);
   assert.equal(await page.evaluate(()=>launcherPage),'home');
+  assert.equal(await page.locator('#launcherFavorites .launcher-app').count(),0);
+  assert.equal(await page.locator('#launcherAlphaIndex').isVisible(),true);
+  await page.evaluate(()=>setLauncherTheme('windows'));
   const pay=page.locator('#launcherFavorites .launcher-app').filter({hasText:'Google Pay'});
   assert.equal(await pay.locator('img[src*="credit-card.svg"]').count(),1,
    'real pixel icon pack is used for Google Pay');
@@ -78,6 +81,7 @@ const assert=require('node:assert/strict');
    pkg:'com.google.android.apps.nbu.paisa.user',activity:'GPayHome',id:'scan_qr'
   });
   await page.locator('#launcherShortcutMenu').waitFor({state:'hidden'});
+  await page.evaluate(()=>setLauncherTheme('minimal'));
   // Swipe up from the home surface (away from app buttons).
   await gesture('#launcherHomePage',[180,660],[179,432]);
   assert.equal(await page.evaluate(()=>launcherPage),'apps');

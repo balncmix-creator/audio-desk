@@ -58,6 +58,8 @@ const html=fs.readFileSync(path.join(__dirname,'../app/src/main/assets/index.htm
    assert.equal(await page.locator('#launcherClockDialog').isVisible(),true,'old closing callbacks cannot hide a reopened sheet');
    await page.evaluate(()=>window.launcherGoHome());
    assert.equal(await page.locator('#launcherClockDialog').isVisible(),false,'Home dismisses sheets even while already Home');
+   // Windows tiles expose shortcuts, while Minimal keeps Home free of an app list.
+   await page.evaluate(()=>setLauncherTheme('windows'));
    // Directional app gestures: right opens quick actions, left opens All Apps.
    await swipe('#launcherFavorites .launcher-app',[70,320],[280,320]);
    assert.equal(await page.locator('#launcherShortcutMenu').isVisible(),true);
@@ -69,9 +71,10 @@ const html=fs.readFileSync(path.join(__dirname,'../app/src/main/assets/index.htm
    assert.equal(await page.evaluate(()=>document.body.dataset.motionPaused),'true','drawer wallpaper stays static to save power');
    await swipe('#launcherAppsGrid .launcher-app',[280,320],[70,320]);
    assert.equal(await page.locator('#launcherShortcutMenu').isVisible(),false,'left swipe never opens quick actions');
-   await page.evaluate(()=>window.launcherGoHome());
-   // Swiping up on an app row used to do nothing (or launch the app).
-   await swipe('#launcherFavorites .launcher-app',[170,450],[170,210]);
+   await page.evaluate(()=>{window.launcherGoHome();setLauncherTheme('minimal')});
+   assert.equal(await page.locator('#launcherFavorites .launcher-app').count(),0);
+   // Swiping up on empty Home opens All Apps and focuses the keyboard immediately.
+   await swipe('#launcherHomePage',[170,450],[170,210]);
    assert.equal(await page.evaluate(()=>launcherPage),'apps');
    assert.equal(await page.locator('#launcherAppSearch').evaluate(el=>el===document.activeElement),true);
    assert.equal(await page.evaluate(()=>appLaunches),0);

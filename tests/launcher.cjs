@@ -74,8 +74,13 @@ const demoApps=[
    'Home list has no distracting pin icons');
   assert.equal(await page.locator('header').isVisible(),false);
   assert.equal(await page.locator('#stories .story').count(),1,'news remains cached');
-  assert.equal(await page.locator('#launcherFavorites .n-app-row').count(),8);
-  assert.match(await page.locator('#launcherFavorites .n-app-row').first().textContent(),/Recorder/);
+  assert.equal(await page.locator('#launcherFavorites .n-app-row').count(),0,'Minimal Home has no duplicate app list');
+  assert.equal(await page.locator('#launcherAlphaIndex').isVisible(),true,'Home shows quick alphabetical rail');
+  await page.locator('#launcherAlphaIndex [data-launcher-letter="R"]').click();
+  assert.equal(await page.locator('#launcherLetterPanel').isVisible(),true);
+  assert.match(await page.locator('#launcherLetterApps').textContent(),/Recorder|REAPER Remote/);
+  await page.locator('#launcherLetterClose').click();
+  assert.equal(await page.locator('#launcherLetterPanel').isVisible(),false);
   assert.equal(await page.locator('[data-home-nav="home"].active').count(),1);
   assert.match(await page.locator('#densityHint').textContent(),/PINCH IN/);
 
@@ -94,7 +99,11 @@ const demoApps=[
   await page.locator('#launcherAppsGrid .n-star').click();
   await page.locator('#launcherAppSearch').fill('');
   await page.locator('[data-home-nav="home"]').click();
-  assert.match(await page.locator('#launcherFavorites .n-app-row').first().textContent(),/REAPER Remote/,'pinning takes priority');
+  await page.locator('#launcherSettingsToggle').click();
+  await page.locator('#launcherThemeChoose').click();
+  await page.locator('[data-launcher-theme-choice="windows"]').click();
+  assert.equal(await page.evaluate(()=>launcherTheme),'windows');
+  assert.match(await page.locator('#launcherFavorites .n-app-row').first().textContent(),/REAPER Remote/,'pinned Windows tile takes priority');
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('ar_launcher_pins')).length),1);
   await page.locator('#launcherFavorites .launcher-app').first().click();
   await page.waitForFunction(()=>window.appLaunchCalls.length===1);
@@ -156,9 +165,9 @@ const demoApps=[
   }));
   assert.ok(metrics.bodyWidth<=metrics.viewport+1,'minimal Home avoids horizontal overflow on narrow Android');
   assert.ok(metrics.clockSize>=50,'clock is a prominent part of Home');
-  assert.equal(metrics.firstBorder,'0px','Home app rows have no dividers');
+  assert.equal(metrics.firstBorder,'0px','Windows tiles have no list dividers');
   assert.equal(metrics.homeNav,'none','no visible navbar on Home');
   assert.deepEqual(errors,[],'no launcher errors');
-  console.log('PASS: favorite home, frequent rank, pins, alphabetical rail, search, app launch, local recents, default Home and both swipe directions');
+  console.log('PASS: minimal Home without list, Niagara-style A-Z rail and panel, Windows tiles, pins, search, launches, recents and swipe navigation');
  }finally{await browser.close()}
 })().catch(err=>{console.error(err);process.exit(1)});

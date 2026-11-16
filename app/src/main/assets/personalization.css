@@ -137,3 +137,131 @@ body[data-home-page="home"] .launcher-clock{
  body[data-home-page="home"] #launcherFavorites,
  body[data-home-page="home"] .launcher-clock{transition:none!important}
 }
+
+/* v2.8 — light, switchable Home layouts. No images or continuous JS loops. */
+body[data-home-page="home"]:not([data-launcher-theme="windows"]) #launcherFavorites,
+body[data-home-page="home"] #launcherFavoritesEmpty{display:none!important}
+body[data-home-page="home"] #launcherAlphaIndex{
+ background:transparent;border:0;right:3px;top:15%;bottom:12%;width:31px;
+}
+body[data-home-page="home"] #launcherAlphaIndex button{
+ background:transparent;color:rgba(245,245,245,.84);
+ font:600 clamp(9px,1.65vh,12px)/1 system-ui,sans-serif;
+ text-shadow:0 1px 4px #000d;min-height:0;border-radius:4px;
+}
+body[data-home-page="home"] #launcherAlphaIndex button[data-available="false"]{opacity:.43}
+body[data-home-page="home"] #launcherAlphaIndex button.active{
+ color:#111;background:#f0f0f0;text-shadow:none;opacity:1;
+}
+body[data-home-page="home"][data-wallpaper-light="true"] #launcherAlphaIndex button{color:#1b2630;text-shadow:0 1px 3px #fff9}
+body[data-home-page="home"][data-wallpaper-light="true"] #launcherAlphaIndex button.active{color:#fff;background:#17222c;text-shadow:none}
+#launcherLetterPanel[hidden]{display:none!important}
+#launcherLetterPanel{
+ position:fixed;z-index:11;top:23%;bottom:calc(90px + var(--system-bottom,0px));
+ right:42px;width:min(310px,calc(100vw - 72px));
+ overflow:hidden;display:flex;flex-direction:column;
+ border:1px solid #414141;border-radius:14px;
+ background:rgba(16,18,21,.96);color:#f7f7f7;
+ box-shadow:0 10px 36px #0008;
+}
+.launcher-letter-head{
+ flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
+ padding:12px 16px;border-bottom:1px solid #ffffff25;
+ font:600 32px/1 system-ui,sans-serif;
+}
+#launcherLetterClose{border:0;box-shadow:none;background:transparent;font:400 25px system-ui;padding:0 7px}
+#launcherLetterApps{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:5px 8px 12px}
+#launcherLetterApps .launcher-app{
+ display:flex;align-items:center;gap:13px;width:100%;min-height:54px;
+ box-shadow:none;border:0;border-bottom:1px solid #ffffff14;
+ background:transparent;padding:8px;color:#fff;text-transform:none;text-align:left;
+}
+#launcherLetterApps .launcher-app .app-name{
+ font:500 15px/1.4 system-ui,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#launcherLetterApps .pixel-icon{width:30px;height:30px;flex:0 0 30px;background:transparent;border:0}
+#launcherLetterApps .pixel-icon img{width:25px!important;height:25px!important;filter:invert(.95)}
+#launcherLetterApps .pixel-letter{font:700 16px Silkscreen,monospace;color:white}
+#launcherMoreByLetter{border:0;box-shadow:none;width:100%;margin-top:7px;padding:12px 6px;font-size:10px}
+body[data-launcher-theme="pixel"][data-home-page="home"] .launcher-clock .clock{
+ font-family:"Silkscreen",monospace!important;font-weight:700!important;
+ letter-spacing:-.06em!important;text-shadow:3px 3px 0 #0007;
+}
+body[data-launcher-theme="pixel"][data-home-page="home"] #launcherAlphaIndex button{
+ font-family:Silkscreen,monospace;
+}
+body[data-launcher-theme="windows"][data-home-page="home"] #wallpaperStage::after{
+ content:"";position:absolute;inset:0;background:rgba(0,0,0,.78);
+}
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherHomePage{
+ padding-left:19px;padding-right:49px;padding-top:calc(var(--status-top,24px) + 24px);
+}
+body[data-launcher-theme="windows"][data-home-page="home"] .launcher-clock{
+ padding-bottom:16px;
+}
+body[data-launcher-theme="windows"][data-home-page="home"] .launcher-clock .clock{
+ color:#fff;font:300 clamp(50px,15vw,75px)/1.1 "Segoe UI",system-ui,sans-serif;
+ letter-spacing:-2px;
+}
+body[data-launcher-theme="windows"][data-home-page="home"] .launcher-clock .clock-date{
+ color:#e5e5e5;text-transform:uppercase;letter-spacing:.07em;
+}
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherFavorites{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
+ max-width:460px;margin-top:9px;margin-bottom:65px;
+}
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherFavorites .n-app-row{
+ display:flex;align-items:stretch;min-height:118px;height:118px;
+ border:0;padding:0;min-width:0;
+ background:#0678cb;
+}
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherFavorites .n-app-row:nth-child(4n+2){background:#6939b2}
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherFavorites .n-app-row:nth-child(4n+3){background:#087e7b}
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherFavorites .n-app-row:nth-child(4n+4){background:#b44343}
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherFavorites .n-app-row:nth-child(3),
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherFavorites .n-app-row:nth-child(6){
+ grid-column:span 2;
+}
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherFavorites .launcher-app{
+ flex:1;width:100%;height:100%;min-height:0;min-width:0;
+ flex-direction:column;align-items:flex-start;justify-content:space-between;
+ gap:7px;padding:13px 11px;color:white;text-align:left;border:0;
+}
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherFavorites .launcher-app .app-name{
+ color:white!important;text-shadow:none;font:500 13px/1.2 "Segoe UI",system-ui,sans-serif;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;
+}
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherFavorites .pixel-icon{
+ width:42px;height:42px;flex:0 0 42px;
+}
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherFavorites .pixel-icon img{
+ width:36px!important;height:36px!important;filter:invert(1)!important;
+}
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherFavorites .pixel-letter{color:white!important;font-size:26px}
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherAlphaIndex button{
+ color:#fff;text-shadow:none;
+}
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherAlphaIndex button.active{color:#101010}
+.theme-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.theme-choice{
+ display:flex;flex-direction:column;gap:7px;text-align:left;
+ min-width:0;padding:7px;background:#191919;border:1px solid #444;
+ box-shadow:none;border-radius:12px;text-transform:none;
+}
+.theme-choice[aria-pressed="true"]{border:2px solid #f2f2f2;padding:6px}
+.theme-choice strong{font:600 12px/1.25 system-ui,sans-serif}
+.theme-choice small{color:#bdbdbd;font:400 10px/1.35 system-ui,sans-serif}
+.theme-visual{width:100%;aspect-ratio:3/4;display:flex;justify-content:space-between;padding:8px;box-sizing:border-box;border-radius:7px}
+.theme-visual i{font:700 clamp(13px,3.5vw,23px) system-ui,sans-serif;font-style:normal}
+.theme-visual em{font:600 11px/1.35 system-ui,sans-serif;font-style:normal}
+.minimal-preview{background:linear-gradient(140deg,#303944,#080a0b);color:white}
+.pixel-preview{background:linear-gradient(140deg,#44317c,#131126);color:#eee}
+.pixel-preview i,.pixel-preview em{font-family:Silkscreen,monospace}
+.windows-preview{background:#080808;color:#fff}
+.windows-preview em{font:700 19px/1.1 system-ui,sans-serif;background:#0678cb;padding:5px}
+@media(max-width:350px){.theme-grid{gap:6px}.theme-choice{padding:5px}.theme-choice small{font-size:9px}}
+@media(prefers-reduced-motion:reduce){
+ #launcherLetterPanel,#launcherAlphaIndex button,.theme-choice{animation:none!important;transition:none!important}
+}
+
+@supports(content-visibility:auto){body[data-home-page="apps"] #launcherAppsGrid .n-app-row{content-visibility:auto;contain-intrinsic-size:auto 56px}}

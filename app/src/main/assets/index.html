@@ -581,6 +581,10 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
   </div>
   <div id="launcherFavorites" aria-label="Favourite and frequently used applications"></div>
   <div id="launcherFavoritesEmpty" hidden>YOUR APPS WILL APPEAR HERE.</div>
+  <aside id="launcherLetterPanel" aria-label="Apps by letter" hidden>
+   <div class="launcher-letter-head"><strong id="launcherLetterTitle">A</strong><button type="button" id="launcherLetterClose" aria-label="Close app letters">×</button></div>
+   <div id="launcherLetterApps"></div>
+  </aside>
   <div class="launcher-dots" aria-hidden="true"><span>·</span> <span class="active">●</span> <span>·</span></div>
   <button id="launcherSettingsToggle" class="launcher-settings-fab" type="button"
    aria-label="Launcher options" aria-expanded="false" aria-controls="launcherHomeOptions">
@@ -595,7 +599,8 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
      <button type="button" id="launcherAllApps">▦ ALL APPS</button>
      <button type="button" id="launcherOpenNews">◂ AUDIO NEWS</button>
     </div>
-    <button id="launcherFavoritesEdit" type="button" class="launcher-options-action">☆ EDIT FAVORITES</button>
+    <button id="launcherThemeChoose" type="button" class="launcher-options-action">▤ HOME THEME</button>
+    <button id="launcherFavoritesEdit" type="button" class="launcher-options-action">☆ MANAGE APP TILES</button>
      <button type="button" id="launcherWallpaperChoose" class="launcher-options-action">▧ WALLPAPERS & ANIMATION</button>
      <button type="button" id="launcherClockChoose" class="launcher-options-action">◷ CLOCK STYLE & SIZE</button>
     <div id="launcherHomeSetup" class="launcher-setup">
@@ -614,6 +619,17 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
   </div>
  </section>
 
+ <div id="launcherThemeDialog" class="customize-overlay" role="dialog" aria-modal="true" aria-label="Choose launcher theme" hidden>
+  <div class="customize-panel">
+   <div class="customize-head"><strong>HOME SCREEN THEME</strong><button type="button" id="themeClose" aria-label="Close themes">×</button></div>
+   <div id="launcherThemeGrid" class="theme-grid" role="group" aria-label="Launcher themes">
+    <button type="button" class="theme-choice" data-launcher-theme-choice="minimal" aria-pressed="true"><span class="theme-visual minimal-preview"><i>12:48</i><em>A<br>B<br>C<br>D</em></span><strong>Minimal A–Z</strong><small>Wallpaper, clock and right-hand letters</small></button>
+    <button type="button" class="theme-choice" data-launcher-theme-choice="pixel" aria-pressed="false"><span class="theme-visual pixel-preview"><i>12:48</i><em>A<br>B<br>C<br>D</em></span><strong>8-Bit</strong><small>Pixel styling and quick app letters</small></button>
+    <button type="button" class="theme-choice" data-launcher-theme-choice="windows" aria-pressed="false"><span class="theme-visual windows-preview"><i>12:48</i><em>▣ ▪<br>▪ ▣</em></span><strong>Windows Tiles</strong><small>Bold, colorful live-style app tiles</small></button>
+   </div>
+   <p class="customize-tip">All three themes keep swipe-up search and the A–Z edge rail. Tile colors use CSS, not extra images.</p>
+  </div>
+ </div>
  <div id="launcherWallpaperDialog" class="customize-overlay" role="dialog" aria-modal="true" aria-label="Choose wallpaper" hidden>
   <div class="customize-panel">
    <div class="customize-head"><strong>PIXEL WALLPAPERS</strong><button id="wallpaperClose" type="button" aria-label="Close wallpapers">×</button></div>
@@ -1892,6 +1908,19 @@ swipeMain.addEventListener("touchcancel",endPinch,{capture:true,passive:true});
 /* MeeGo-style Home planes: EVENTS preserves the original Audio Desk news UI,
    APPLICATIONS uses real installed Android apps, OPEN APPS lists local launches. */
 const launcherPages=["events","home","apps"];
+const LAUNCHER_THEMES=["minimal","pixel","windows"];
+let launcherTheme=deskStorage.getItem("ad_launcher_theme_v1")||"minimal";
+if(!LAUNCHER_THEMES.includes(launcherTheme))launcherTheme="minimal";
+document.body.dataset.launcherTheme=launcherTheme;
+function setLauncherTheme(theme){
+ if(!LAUNCHER_THEMES.includes(theme))return;
+ launcherTheme=theme;
+ document.body.dataset.launcherTheme=theme;
+ deskStorage.setItem("ad_launcher_theme_v1",theme);
+ renderLauncherHome();
+ if(typeof fitClock==="function")fitClock();
+}
+
 const LOW_POWER_DEVICE=(navigator.deviceMemory&&navigator.deviceMemory<=2)||
  (navigator.hardwareConcurrency&&navigator.hardwareConcurrency<=4)||
  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1963,11 +1992,14 @@ function launcherSuggestedApps(){
  return [...pinned,...mostUsed].slice(0,8);
 }
 function renderLauncherHome(){
- const featured=launcherSuggestedApps();
- $("launcherFavorites").innerHTML=featured.map(renderFavoriteRow).join("");
- $("launcherFavoritesEmpty").hidden=!!featured.length;
+ // Keep Minimal/Pixel screens almost empty: no app buttons are rendered until
+ // Windows Tiles is selected. This also minimizes startup DOM work.
+ const tiles=launcherTheme==="windows"?launcherSuggestedApps():[];
+ $("launcherFavorites").innerHTML=tiles.map(renderFavoriteRow).join("");
+ $("launcherFavoritesEmpty").hidden=true;
  $("launcherFavoritesEdit").textContent=launcherPins.length?
-  "★ "+launcherPins.length+" PINNED":"☆ EDIT";
+  "★ "+launcherPins.length+" PINNED · MANAGE TILES":"☆ MANAGE TILES / PINS";
+ syncLauncherAlphabet();
 }
 function setLauncherPin(pkg,activity){
  const key=pkg+"/"+activity;
@@ -1982,12 +2014,53 @@ function appLetter(app){
  return /^[A-Z]$/.test(letter)?letter:"#";
 }
 const ALL_LETTERS="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-function renderLauncherAlphabet(){
- const alphabet=$("launcherAlphaIndex"),valid=new Set(launcherApps.map(appLetter));
- alphabet.innerHTML=ALL_LETTERS.map(letter=>
-  '<button type="button" data-launcher-letter="'+letter+'" aria-label="Jump to '+letter+'">'+letter+'</button>'
- ).join("");
+let launcherGroups=new Map(),selectedLauncherLetter="";
+function rebuildLauncherGroups(){
+ launcherGroups=new Map();
+ for(const app of launcherApps){
+  const letter=appLetter(app);
+  if(!launcherGroups.has(letter))launcherGroups.set(letter,[]);
+  launcherGroups.get(letter).push(app);
+ }
 }
+function syncLauncherAlphabet(){
+ $("launcherAlphaIndex").hidden=launcherPage==="events"||
+  (launcherPage==="apps"&&!!$("launcherAppSearch").value.trim())||!launcherApps.length;
+}
+function renderLauncherAlphabet(){
+ const alphabet=$("launcherAlphaIndex");
+ alphabet.innerHTML=ALL_LETTERS.map(letter=>
+  '<button type="button" data-launcher-letter="'+letter+'" data-available="'+launcherGroups.has(letter)+'" aria-label="Browse apps starting with '+letter+'">'+letter+'</button>'
+ ).join("");
+ syncLauncherAlphabet();
+}
+function closeLauncherLetterPanel(){
+ selectedLauncherLetter="";
+ $("launcherLetterPanel").hidden=true;
+ for(const button of $("launcherAlphaIndex").querySelectorAll(".active"))button.classList.remove("active");
+}
+function showLauncherLetter(letter){
+ if(launcherPage!=="home")return;
+ const resolved=launcherGroups.has(letter)?letter:
+  (ALL_LETTERS.find(l=>l>=letter&&launcherGroups.has(l))||
+   [...ALL_LETTERS].reverse().find(l=>launcherGroups.has(l)));
+ if(!resolved)return;
+ if(selectedLauncherLetter===resolved&&!$("launcherLetterPanel").hidden)return;
+ selectedLauncherLetter=resolved;
+ $("launcherLetterTitle").textContent=resolved;
+ const list=launcherGroups.get(resolved)||[];
+ $("launcherLetterApps").innerHTML=list.slice(0,80).map(app=>launchAppButton(app,"launcher-app")).join("")+
+  (list.length>80?'<button type="button" id="launcherMoreByLetter">SEARCH ALL APPLICATIONS</button>':"");
+ $("launcherLetterPanel").hidden=false;
+}
+$("launcherLetterClose").onclick=closeLauncherLetterPanel;
+$("launcherLetterApps").addEventListener("click",e=>{
+ if(e.target.closest("#launcherMoreByLetter"))openLauncherSearch();
+});
+document.addEventListener("click",e=>{
+ if(!$("launcherLetterPanel").hidden&&
+   !e.target.closest("#launcherLetterPanel,#launcherAlphaIndex"))closeLauncherLetterPanel();
+});
 function renderLauncherApps(){
  const query=$("launcherAppSearch").value.toLocaleLowerCase().trim();
  const list=launcherApps.filter(app=>!query||app.label.toLocaleLowerCase().includes(query)||
@@ -2004,10 +2077,21 @@ function renderLauncherApps(){
  $("launcherAppsEmpty").textContent=!launcherNativeLoaded
   ?"OPEN AUDIO DESK ON ANDROID TO ACCESS INSTALLED APPS."
   :launcherApps.length?"NO APPLICATIONS MATCH YOUR SEARCH.":"NO LAUNCHABLE APPLICATIONS FOUND ON THIS DEVICE.";
- // A filtered search is more useful without the alphabet rail.
- $("launcherAlphaIndex").hidden=launcherPage!=="apps"||!!query||!list.length;
+ // Search filters the long drawer; Home's letter rail remains available.
+ syncLauncherAlphabet();
 }
 function launcherJumpToLetter(letter,fromDrag=false){
+ if(launcherPage!=="apps"&&launcherPage!=="home")return;
+ if(launcherPage==="home"){
+  showLauncherLetter(letter);
+  for(const button of $("launcherAlphaIndex").querySelectorAll("button"))
+   button.classList.toggle("active",button.dataset.launcherLetter===letter);
+  $("launcherAlphaBubble").textContent=selectedLauncherLetter||letter;
+  $("launcherAlphaBubble").hidden=false;
+  clearTimeout(launcherJumpToLetter.resetTimer);
+  launcherJumpToLetter.resetTimer=setTimeout(()=>$("launcherAlphaBubble").hidden=true,350);
+  return;
+ }
  const headings=[...document.querySelectorAll("#launcherAppsGrid [data-app-group]")];
  let heading=headings.find(x=>x.dataset.appGroup===letter);
  if(!heading)heading=headings.find(x=>x.dataset.appGroup>letter);
@@ -2026,7 +2110,7 @@ function launcherJumpToLetter(letter,fromDrag=false){
 }
 let indexDragging=false;
 $("launcherAlphaIndex").addEventListener("pointerdown",e=>{
- if(launcherPage!=="apps")return;
+ if(launcherPage!=="apps"&&launcherPage!=="home")return;
  indexDragging=true;
  try{e.currentTarget.setPointerCapture(e.pointerId)}catch(err){}
  const element=document.elementFromPoint(e.clientX,e.clientY)?.closest("[data-launcher-letter]");
@@ -2072,11 +2156,15 @@ window.receiveLauncherApps=function(apps,recents,isDefault){
  if(!Array.isArray(apps)||!Array.isArray(recents))return;
  // Only data received directly from the Android package manager is rendered.
  launcherApps=apps.filter(a=>a&&typeof a.pkg==="string"&&typeof a.activity==="string"&&
-  typeof a.label==="string").slice(0,4000);
+  typeof a.label==="string").slice(0,4000).sort((a,b)=>a.label.localeCompare(b.label));
  launcherRecents=recents.filter(a=>a&&typeof a.pkg==="string"&&typeof a.activity==="string"&&
   typeof a.label==="string").slice(0,16);
  launcherNativeLoaded=true;
+ rebuildLauncherGroups();
  renderLauncherAlphabet();
+ if(selectedLauncherLetter&&!$("launcherLetterPanel").hidden){
+  const letter=selectedLauncherLetter;selectedLauncherLetter="";showLauncherLetter(letter);
+ }
  renderLauncherHome();if(launcherPage==="apps")renderLauncherApps();renderLauncherRecents();updateHomeRole(isDefault);
 };
 function requestLauncherApps(force=false){
@@ -2099,7 +2187,7 @@ window.launcherLaunchResult=function(opened){
  }
 };
 function setLauncherPage(page,animate=true){
- if(page!=="home"){closeHomeOptions(true);if(typeof closeCustomize==="function")closeCustomize(true);}
+ if(page!=="home"){closeLauncherLetterPanel();closeHomeOptions(true);if(typeof closeCustomize==="function")closeCustomize(true);}
  if(page!=="apps"){const search=$("launcherAppSearch");search.blur();window.AudioDesk?.hideSearchKeyboard?.()}
  if(page!=="events"){pauseSampleDemos();closeGridDetails(true)}
  closeAppShortcuts(true);
@@ -2121,7 +2209,7 @@ function setLauncherPage(page,animate=true){
  $("launcherHomePage").hidden=page!=="home";
  if(page==="home")renderLauncherHome();
  if(page==="apps")renderLauncherApps();
- $("launcherAlphaIndex").hidden=page!=="apps"||!!$("launcherAppSearch").value.trim();
+ syncLauncherAlphabet();
  if(page!=="events"){
   formatLauncherClock();
   requestLauncherApps();
@@ -2133,12 +2221,13 @@ function setLauncherPage(page,animate=true){
  if(animate)DeskMotion.enter(homePanel(page),'x',launcherPages.indexOf(page)>launcherPages.indexOf(previous)?1:-1);
 }
 window.launcherGoHome=function(){
- closeHomeOptions(true);closeCustomize(true);closeAppShortcuts(true);closeGridDetails(true);
+ closeLauncherLetterPanel();closeHomeOptions(true);closeCustomize(true);closeAppShortcuts(true);closeGridDetails(true);
  $("launcherRecentDrawer").hidden=true;$("launcherShowRecents").textContent="▣ RECENTLY OPENED APPS";
  cancelHomeHold();upStart=null;iconSwipe=null;resetLauncherGesture();setLauncherPage("home",true);formatLauncherClock();
 };
 window.launcherBack=function(){
- if(!$("launcherWallpaperDialog").hidden||!$("launcherClockDialog").hidden){closeCustomize();return}
+ if(!$("launcherThemeDialog").hidden||!$("launcherWallpaperDialog").hidden||!$("launcherClockDialog").hidden){closeCustomize();return}
+ if(!$("launcherLetterPanel").hidden){closeLauncherLetterPanel();return}
  if(!$("launcherHomeOptions").hidden){closeHomeOptions();return}
  if(!$("launcherShortcutMenu").hidden){closeAppShortcuts();return}
  if(!$("gridDetail").hidden){closeGridDetails();return}
@@ -2530,9 +2619,9 @@ document.addEventListener("click",e=>{
 </script>
 <script src="personalization.js"></script>
 <script>
-function hasLauncherOverlay(){return ['launcherHomeOptions','launcherShortcutMenu','launcherWallpaperDialog','launcherClockDialog','gridDetail'].some(id=>!document.getElementById(id).hidden)}
+function hasLauncherOverlay(){return ['launcherLetterPanel','launcherHomeOptions','launcherShortcutMenu','launcherThemeDialog','launcherWallpaperDialog','launcherClockDialog','gridDetail'].some(id=>!document.getElementById(id).hidden)}
 function syncRefreshAvailability(){window.AudioDesk?.setRefreshEnabled?.(launcherPage==='events'&&!hasLauncherOverlay())}
-for(const id of ['launcherHomeOptions','launcherShortcutMenu','launcherWallpaperDialog','launcherClockDialog','gridDetail']){
+for(const id of ['launcherLetterPanel','launcherHomeOptions','launcherShortcutMenu','launcherThemeDialog','launcherWallpaperDialog','launcherClockDialog','gridDetail']){
  new MutationObserver(()=>{syncRefreshAvailability();if(hasLauncherOverlay()){cancelHomeHold();upStart=null;if(launcherGesture)resetLauncherGesture()}}).observe($(id),{attributes:true,attributeFilter:['hidden']});
 }
 window.addEventListener('launcher-page-changed',syncRefreshAvailability);syncRefreshAvailability();
