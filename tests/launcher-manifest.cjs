@@ -11,7 +11,9 @@ assert.match(xml,/android.permission.SET_WALLPAPER/,'global Android wallpaper re
 const systemWall=fs.readFileSync('app/src/main/java/com/balnc/audioddesk/SystemWallpaperInstaller.kt','utf8');
 assert.match(systemWall,/WallpaperManager\.getInstance/);
 assert.match(systemWall,/WallpaperManager\.FLAG_SYSTEM/);
-assert.match(systemWall,/if \(lock\) WallpaperManager\.FLAG_LOCK/,'lock changes require opt-in');
+assert.match(systemWall,/if \(lock\) \{/,'lock changes respect the saved Home-only choice');
+assert.match(systemWall,/manager\.setBitmap\(bitmap, crop, false, WallpaperManager\.FLAG_LOCK\)/,
+ 'Android Lock wallpaper is written independently when matching is enabled');
 assert.match(systemWall,/worker\.execute/,'wallpaper updates run outside the UI thread');
 assert.match(systemWall,/decodeBounded/);
 const bridge=fs.readFileSync('app/src/main/java/com/balnc/audioddesk/MainActivity.kt','utf8');

@@ -12,7 +12,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * Applies a user-selected, static image to Android's actual system Home wallpaper.
+ * Applies a user-selected, static image to Android's real Home and optionally Lock wallpaper.
  * This runs off the UI thread, never polls, and drops superseded selections.
  * Animation effects are intentionally local to the launcher WebView; Android live
  * wallpaper needs a separate WallpaperService implementation.
@@ -72,10 +72,21 @@ class SystemWallpaperInstaller(private val context: Context) {
                         throw SecurityException("System wallpaper changes are disabled on this device.")
                     val crop = cropForPhone(bitmap, position)
                     if (Build.VERSION.SDK_INT >= 24) {
-                        val flags = WallpaperManager.FLAG_SYSTEM or
-                            (if (lock) WallpaperManager.FLAG_LOCK else 0)
-                        if (manager.setBitmap(bitmap, crop, false, flags) == 0)
-                            throw IOException("Android did not accept the image.")
+                        // Apply Home first; some OEM implementations do not update a
+                        // separately configured lock wallpaper when flags are combined.
+                        if (manager.setBitmap(bitmap, crop, false, WallpaperManager.FLAG_SYSTEM) == 0)
+                            throw IOException("Android rejected the Home wallpaper.")
+                        if (lock) {
+                            try {
+                                if (manager.setBitmap(bitmap, crop, false, WallpaperManager.FLAG_LOCK) == 0)
+                                    throw IOException("Android rejected the Lock wallpaper.")
+                            } catch (error: Exception) {
+                                throw IOException(
+                                    "Home wallpaper applied, but Lock wallpaper was not changed: " +
+                                        (error.message ?: "Device restrictions."), error
+                                )
+                            }
+                        }
                     } else {
                         // Android 6 has no separate FLAG_SYSTEM / FLAG_LOCK API.
                         manager.setBitmap(bitmap)

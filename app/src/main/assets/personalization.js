@@ -124,8 +124,10 @@ $("launcherThemeGrid").addEventListener("click",e=>{
   item.setAttribute("aria-pressed",String(item===button));
  closeCustomize();
 });
+const lockWallpaperPref="ad_apply_lock_wallpaper_v1";
 function openWallpaperPicker(){
- $("wallpaperApplyLock").checked=false;
+ // New users default to both screens. Respect a deliberate opt-out across sessions.
+ $("wallpaperApplyLock").checked=deskStorage.getItem(lockWallpaperPref)!=="false";
  renderWallpaperPicker();openCustomize("launcherWallpaperDialog");
  requestAnimationFrame(()=>{
   const selected=$("wallpaperGrid").querySelector('[aria-pressed="true"]');
@@ -161,12 +163,19 @@ $("wallpaperGrid").addEventListener("click",e=>{
  applySystemWallpaper();
 });
 /* The system wallpaper changes only after explicit user selection, never at boot. */
-let systemWallpaperRequest=0;
+let systemWallpaperRequest=0,systemWallpaperPendingLock=false;
+$("wallpaperApplyLock").addEventListener("change",event=>{
+ const enabled=event.target.checked;
+ deskStorage.setItem(lockWallpaperPref,String(enabled));
+ $("wallpaperSystemStatus").textContent=enabled?
+  "Next selection will update Android Home and Lock screens.":
+  "Next selection will update Android Home only.";
+});
 window.audioDeskWallpaperResult=function(id,ok,message){
  if(Number(id)!==systemWallpaperRequest)return;
  $("wallpaperSystemStatus").textContent=ok?
-  "Android wallpaper updated"+($("wallpaperApplyLock").checked?" (Home and Lock).":" (Home)."):
-  "Android wallpaper could not be changed: "+String(message||"Check device wallpaper restrictions.");
+  "Android wallpaper updated"+(systemWallpaperPendingLock?" (Home and Lock).":" (Home)."):
+  "Android wallpaper update failed: "+String(message||"Check device wallpaper restrictions.");
 };
 function customPhotoDataUrl(blob){
  return new Promise((resolve,reject)=>{
@@ -183,6 +192,7 @@ async function applySystemWallpaper(){
   return;
  }
  const request=++systemWallpaperRequest,alsoLock=$("wallpaperApplyLock").checked;
+ systemWallpaperPendingLock=alsoLock;
  status.textContent="Applying to Android "+(alsoLock?"Home and Lock":"Home")+" wallpaper…";
  try{
   if(customWallpaperSelected&&customWallpaper?.blob){

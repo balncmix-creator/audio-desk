@@ -64,17 +64,25 @@ const origin='https://appassets.androidplatform.net/assets/';
   assert.equal(await page.locator('#wallpaperImage').evaluate(e=>getComputedStyle(e).objectFit),'cover');
   await page.evaluate(()=>openWallpaperPicker());
   assert.equal(await page.locator('.wallpaper-choice').count(),16);
+  assert.equal(await page.locator('#wallpaperApplyLock').isChecked(),true,
+   'wallpaper picker defaults to matching Android Home and Lock backgrounds');
   await page.locator('[data-wallpaper="1"]').click();
   assert.deepEqual(await page.evaluate(()=>wallpaperNativeCalls.at(-1)),
-   {kind:'bundled',id:'rainy-neon',position:35,lock:false},
-   'gallery selection applies real system Home wallpaper');
-  assert.match(await page.locator('#wallpaperSystemStatus').textContent(),/Android wallpaper updated/);
-  await page.locator('#wallpaperApplyLock').check();
+   {kind:'bundled',id:'rainy-neon',position:35,lock:true},
+   'gallery selection applies Android Home and Lock wallpapers by default');
+  assert.match(await page.locator('#wallpaperSystemStatus').textContent(),/Home and Lock/);
+  await page.locator('#wallpaperApplyLock').uncheck();
   await page.locator('#wallpaperApplySystem').click();
   assert.deepEqual(await page.evaluate(()=>wallpaperNativeCalls.at(-1)),
-   {kind:'bundled',id:'rainy-neon',position:35,lock:true},
-   'lock wallpaper is touched only after explicit opt-in');
-  await page.locator('#wallpaperApplyLock').uncheck();
+   {kind:'bundled',id:'rainy-neon',position:35,lock:false},
+   'a deliberate opt-out updates Android Home only');
+  await page.evaluate(()=>{closeCustomize(true);openWallpaperPicker()});
+  assert.equal(await page.locator('#wallpaperApplyLock').isChecked(),false,
+   'reopening the picker retains the opt-out instead of resetting it');
+  await page.locator('#wallpaperApplyLock').check();
+  await page.evaluate(()=>{closeCustomize(true);openWallpaperPicker()});
+  assert.equal(await page.locator('#wallpaperApplyLock').isChecked(),true,
+   'reopening the picker remembers opt-in to updating both screens');
   await page.waitForFunction(()=>document.querySelector('#wallpaperImage').src.endsWith('/rainy-neon.webp'));
   assert.equal(await page.locator('#wallpaperStage .wallpaper-image').count(),1,'one resident image');
   const full=wallpaperRequests.filter(u=>!u.includes('/thumbs/'));
@@ -84,6 +92,7 @@ const origin='https://appassets.androidplatform.net/assets/';
   await page.reload();
   await page.waitForFunction(()=>document.querySelector('#wallpaperImage')?.src.endsWith('/arcade-afterhours.webp'));
   await page.evaluate(()=>openWallpaperPicker());
+  assert.equal(await page.locator('#wallpaperApplyLock').isChecked(),true,'lock wallpaper preference persists across reload');
   assert.equal(await page.locator('[data-wallpaper="15"]').getAttribute('aria-pressed'),'true','new wallpaper indices above nine persist after restart');
   await page.locator('[data-wallpaper="1"]').click();
   await page.waitForFunction(()=>document.querySelector('#wallpaperImage').src.endsWith('/rainy-neon.webp'));
@@ -110,7 +119,7 @@ const origin='https://appassets.androidplatform.net/assets/';
   await page.waitForFunction(()=>wallpaperNativeCalls.some(x=>x.kind==='custom'));
   const customSystem=await page.evaluate(()=>wallpaperNativeCalls.filter(x=>x.kind==='custom').at(-1));
   assert.match(customSystem.prefix,/^data:image\/webp;base64/);
-  assert.equal(customSystem.lock,false);
+  assert.equal(customSystem.lock,true,'imported photos also apply to the Lock screen when enabled');
   assert.ok(customSystem.bytes>200,'custom photos are delivered to the Android wallpaper bridge');
   assert.equal(await page.locator('#wallpaperImage').evaluate(e=>e.src.startsWith('blob:')),true);
   await page.locator('#customWallpaperPosition').fill('70');
