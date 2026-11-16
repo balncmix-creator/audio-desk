@@ -35,14 +35,72 @@ const key=theme=>"ad_wallpaper_by_theme_v2_"+theme;
 let paletteId=null;
 let switching=false;
 const activePalette=()=>palettes[launcherTheme].find(p=>p[0]===paletteId);
+// One wallpaper-derived palette drives all Warm surfaces, not only the picker.
+const colorRgb=hex=>{
+ const m=/^#([0-9a-f]{6})$/i.exec(hex||"");
+ return m?[0,2,4].map(i=>parseInt(m[1].slice(i,i+2),16)):null;
+};
+const rgbHex=rgb=>"#"+rgb.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,"0")).join("");
+const mixColor=(a,b,t)=>rgbHex(a.map((v,i)=>v*(1-t)+b[i]*t));
+function setWallpaperColors(accent,panel,dark){
+ const a=colorRgb(accent),p=colorRgb(panel),d=colorRgb(dark);
+ if(!a||!p||!d)return;
+ const root=document.documentElement.style;
+ const panelLuma=(p[0]*.2126+p[1]*.7152+p[2]*.0722)/255;
+ root.setProperty("--theme-accent",accent);
+ root.setProperty("--theme-panel",panel);
+ root.setProperty("--theme-ink",panelLuma>.56?"#292529":"#f9f4f2");
+ root.setProperty("--theme-dark",dark);
+ root.setProperty("--theme-surface",mixColor(d,[82,74,80],.42));
+ root.setProperty("--theme-surface2",mixColor(d,[111,101,107],.48));
+ root.setProperty("--theme-line",mixColor(d,a,.40));
+ root.setProperty("--theme-muted",mixColor(a,[177,173,176],.40));
+ root.setProperty("--theme-glass",mixColor(p,[244,240,238],.18));
+}
+function refreshWallpaperColors(){
+ const p=activePalette();
+ if(p){setWallpaperColors(p[4],p[5],p[2]);return}
+ if(document.body.dataset.audioWallpaper)return;
+ const img=byId("wallpaperImage");
+ if(!img?.naturalWidth){setWallpaperColors("#eedbd4","#f0dad3","#1b181a");return}
+ try{
+  const canvas=document.createElement("canvas");canvas.width=32;canvas.height=32;
+  const ctx=canvas.getContext("2d",{willReadFrequently:true});
+  ctx.drawImage(img,0,0,32,32);
+  const pixels=ctx.getImageData(0,0,32,32).data;
+  const sum=[0,0,0];let weight=0;
+  for(let i=0;i<pixels.length;i+=4){
+   const r=pixels[i],g=pixels[i+1],b=pixels[i+2];
+   const saturation=(Math.max(r,g,b)-Math.min(r,g,b))/255;
+   const w=.5+saturation*1.75;
+   sum[0]+=r*w;sum[1]+=g*w;sum[2]+=b*w;weight+=w;
+  }
+  const avg=sum.map(x=>x/weight);
+  const accent=mixColor(avg,[242,238,235],.42);
+  const panel=mixColor(avg,[240,234,231],.72);
+  const dark=mixColor(avg,[22,20,24],.82);
+  setWallpaperColors(accent,panel,dark);
+ }catch{setWallpaperColors("#eedbd4","#f0dad3","#1b181a")}
+}
+// The wallpaper picker and imported images all pass through this decoded-image path.
+const originalApplyWallpaper=applyWallpaper;
+applyWallpaper=async function(){
+ await originalApplyWallpaper();
+ if(!activePalette())refreshWallpaperColors();
+};
+window.audioDeskApplyWallpaperColors=(accent,dark)=>{
+ const a=colorRgb(accent);if(!a||!colorRgb(dark))return;
+ setWallpaperColors(mixColor(a,[250,243,239],.18),
+  mixColor(a,[240,233,229],.60),dark);
+};
+window.audioDeskRefreshWallpaperColors=refreshWallpaperColors;
 function setPalette(id){
  paletteId=palettes[launcherTheme].some(p=>p[0]===id)?id:null;
  const p=activePalette();
  document.body.dataset.themePalette=paletteId||"";
  const root=document.documentElement.style;
  root.setProperty("--theme-wallpaper",p?"linear-gradient(152deg,"+p[2]+"," +p[3]+ " 64%,"+p[2]+")":"none");
- root.setProperty("--theme-accent",p?.[4]||"#ededed");
- root.setProperty("--theme-panel",p?.[5]||"#f0dad3");
+ refreshWallpaperColors();
  if(p){
   document.body.dataset.wallpaperLight="false";
   document.body.dataset.wallpaperStatusLight="false";
