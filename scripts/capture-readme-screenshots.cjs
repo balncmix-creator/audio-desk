@@ -149,6 +149,11 @@ const assert=require('node:assert/strict');
    return {inside:i.left>=r.left&&i.right<=r.right&&i.top>=r.top&&i.bottom<=r.bottom};
   });
   assert.equal(firstGeometry.inside,true,'warm screenshot has no clipped first icon');
+  assert.equal(await page.locator('#launcherRecentStrip').evaluate(el=>el.getBoundingClientRect().bottom>=innerHeight),
+   true,'screenshot cream panel extends to the viewport bottom');
+  assert.ok(await page.evaluate(()=>document.getElementById('launcherAlphaIndex').getBoundingClientRect().left-
+   document.getElementById('warmAudioWidget').getBoundingClientRect().right>=8),
+   'screenshot widgets do not collide with A–Z letters');
   await page.screenshot({path:path.join(output,'launcher-warm-minimal.png')});
   await page.evaluate(()=>setLauncherTheme('minimal'));
   await page.evaluate(()=>setLauncherPage('apps',false));

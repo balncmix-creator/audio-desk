@@ -144,6 +144,14 @@ const demoApps=[
   assert.ok(warmPanel.icon[0]>=warmPanel.panel[0]&&warmPanel.icon[1]<=warmPanel.panel[1]
    &&warmPanel.icon[2]>=warmPanel.panel[2],
    'first app icon is never masked by a color boundary');
+  assert.ok(warmPanel.panel[3]>=await page.evaluate(()=>innerHeight),
+   'straight cream panel continues to the device bottom without a dark gap');
+  const alphaGap=await page.evaluate(()=>{
+   const card=document.getElementById('warmAudioWidget').getBoundingClientRect();
+   const rail=document.getElementById('launcherAlphaIndex').getBoundingClientRect();
+   return rail.left-card.right;
+  });
+  assert.ok(alphaGap>=8,'top widgets leave breathing room for the A–Z rail');
   assert.equal(await page.locator('#launcherRecentQuick .warm-line-icon svg').count(),7,
    'every Warm Minimal app uses a native-looking line icon');
   assert.equal(await page.locator('#launcherRecentQuick img[src*="pixel-icons"]').count(),0,

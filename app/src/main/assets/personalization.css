@@ -722,3 +722,18 @@ body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentQuick .pi
   min-height:calc(100dvh - 325px);
  }
 }
+
+/* v3.7: keep the widget edge clear of A–Z, and continue the solid cream
+   rectangle through the bottom of the viewport without a horizontal seam. */
+body[data-home-page="home"][data-launcher-theme="warm"] .warm-widgets{
+ box-sizing:border-box;width:calc(100% - 29px)!important;
+ max-width:400px!important;margin:0 29px 0 0!important;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentStrip{
+ min-height:calc(100dvh - 230px)!important;
+}
+@media(max-height:725px){
+ body[data-home-page="home"][data-launcher-theme="warm"] #launcherRecentStrip{
+  min-height:calc(100dvh - 210px)!important;
+ }
+}
