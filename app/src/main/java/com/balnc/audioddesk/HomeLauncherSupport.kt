@@ -8,15 +8,10 @@ import android.content.Intent
 import android.content.pm.ResolveInfo
 import android.content.pm.LauncherApps
 import android.os.Process
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.drawable.Drawable
 import android.os.Build
 import android.provider.Settings
-import android.util.Base64
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.ByteArrayOutputStream
 import java.util.concurrent.Executors
 
 /**
@@ -27,6 +22,7 @@ internal class HomeLauncherSupport(private val activity: Activity) {
     internal data class App(val pkg: String, val activityName: String, val label: String, val icon: String)
     private val prefs = activity.getSharedPreferences("audio_desk_home", Context.MODE_PRIVATE)
     private val executor = Executors.newSingleThreadExecutor()
+    private val iconDesigner = ThemeIconRenderer(activity)
     @Volatile private var knownApps: List<App> = emptyList()
     @Volatile private var lastScanAt = 0L
 
@@ -46,23 +42,29 @@ internal class HomeLauncherSupport(private val activity: Activity) {
             if (!used.add(pkg + "/" + cls)) continue
             val name = try { resolve.loadLabel(pm)?.toString().orEmpty().ifBlank { pkg } }
                 catch (_: Exception) { pkg }
-            // No eager per-app bitmap decoding or PNG→Base64 marshaling.
-            // All launcher icons use local 24x24 MIT pixel artwork.
+            // Real icon artwork is resolved lazily for visible apps only, never
+            // decoded or attached to this potentially thousands-row app list.
             result.add(App(pkg, cls, name.take(100), ""))
         }
         return result.sortedBy { it.label.lowercase() }
     }
 
-    private fun makeIcon(drawable: Drawable): String {
-        val target = 76
-        val bmp = Bitmap.createBitmap(target, target, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bmp)
-        drawable.setBounds(0, 0, target, target)
-        drawable.draw(canvas)
-        val stream = ByteArrayOutputStream()
-        bmp.compress(Bitmap.CompressFormat.PNG, 85, stream)
-        bmp.recycle()
-        return "data:image/png;base64," + Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+    /**
+     * Generate a locally themed icon only for launchable activities included in
+     * our known HOME list. Rendering and file I/O are serialized off the UI
+     * thread; the four theme palettes are processed independently and cached.
+     */
+    fun icon(pkg: String, activityName: String, theme: String, callback: (String?) -> Unit) {
+        if (theme !in setOf("minimal", "pixel", "windows", "warm") ||
+            pkg.length !in 3..255 || activityName.length !in 2..300 ||
+            knownApps.none { it.pkg == pkg && it.activityName == activityName }) {
+            callback(null)
+            return
+        }
+        executor.execute {
+            callback(try { iconDesigner.render(pkg, activityName, theme) }
+                catch (_: Exception) { null })
+        }
     }
 
     fun load(forceRefresh: Boolean = false, callback: (JSONArray, JSONArray) -> Unit) {

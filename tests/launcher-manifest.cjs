@@ -52,6 +52,16 @@ for(const symbol of ['requestLauncherApps','launchExternalApp','requestDefaultLa
  'setSystemWallpaperBundled','setSystemWallpaperCustom','audioDeskWallpaperResult'])
  assert.ok(bridge.includes(symbol),'missing bridge '+symbol);
 const native=fs.readFileSync('app/src/main/java/com/balnc/audioddesk/HomeLauncherSupport.kt','utf8');
+const iconDesigner=fs.readFileSync('app/src/main/java/com/balnc/audioddesk/ThemeIconRenderer.kt','utf8');
+assert.match(native,/fun icon\(/,'launcher resolves only visible icons lazily');
+assert.match(native,/knownApps\.none/,'icon API accepts only already-discovered launchable apps');
+assert.match(iconDesigner,/getActivityIcon/,'the engine uses the app-defined Android icon');
+assert.match(iconDesigner,/getApplicationIcon/,'fallback to Android application icons');
+assert.match(iconDesigner,/cacheDir/,'native rendered icons cache privately without a network');
+assert.match(iconDesigner,/6L \* 1024 \* 1024/,'disk icon cache has a size limit');
+assert.match(iconDesigner,/theme == "pixel"/,'8-bit style renders from actual icons');
+assert.match(bridge,/fun requestLauncherIcon\(/,'JavaScript can request icons on demand');
+assert.doesNotMatch(native,/makeIcon\(resolve\.loadIcon\(pm\)\)/,'never decode thousands of icons during app list scan');
 assert.match(native,/getShortcuts\(/,'app shortcuts use LauncherApps');
 assert.match(native,/hasShortcutHostPermission/,'shortcut access checks host permission');
 assert.match(native,/startShortcut\(/,'shortcuts launch through official Android API');
