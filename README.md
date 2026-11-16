@@ -2,9 +2,21 @@
 
 **A one-handed Android Home launcher for people who make sound, inspired by minimalist Niagara-style app access and Nokia N9 swipe navigation, without replacing Audio Desk's original retro design.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk Launcher v3.0 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v3.0/Audio-Desk-Launcher-v3.0.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk Launcher v3.1 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v3.1/Audio-Desk-Launcher-v3.1.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
+
+## v3.1 — real Android wallpaper and visible status-bar themes
+
+**Wallpaper selection now updates Android's actual system Home wallpaper.** The bundled HD wallpapers and imported photos use native Android `WallpaperManager` rather than remaining only as an image in the WebView. Selecting a wallpaper in the gallery applies its static image; the dedicated **Apply to Android Wallpaper** button can reapply the current selection. Importing a custom photo also applies it automatically, and releasing the crop slider updates the native wallpaper crop. These operations run off the launcher UI thread to keep inexpensive devices responsive.
+
+By default, **the lock-screen wallpaper stays unchanged** on Android 7+; use the explicit **Also apply to Android lock screen** checkbox if desired. Some Android 6 versions or manufacturer policies may handle system and lock wallpapers together or prevent the change entirely; the wallpaper picker reports errors. Previously selected images are not applied system-wide on update until you select or explicitly apply them.
+
+**Animated rain, stars, aurora, ocean and studio-light effects remain inside Audio Desk**. Applying a static Android wallpaper is not equivalent to installing a system-wide `WallpaperService` live wallpaper.
+
+**Status bar:** The theme now draws a lightweight, dedicated background **behind the genuine Android status icons**, including Android 15+ where changing the system status-bar color is ignored. Minimal uses a subtle translucent dark scrim, 8-Bit adds a faint purple pixel pattern, and Windows Tiles uses an opaque dark strip with a blue edge. Android still controls the shape and content of battery, signal, notification and time icons. This styling applies to Audio Desk, not other applications or the whole operating system.
+
+Browser regressions, APK compilation, package verification, wallpaper resolution checks, and screenshot captures passed in CI. Physical Android device testing remains worthwhile, particularly for OS-specific wallpaper restrictions and low-memory performance.
 
 ## v3.0 — vertical recents, free-scrolling tiles and matching status bar
 
@@ -114,7 +126,7 @@ The wallpaper fills the screen behind the Android status bar. Custom photos and 
 
 ## Install on Android
 
-1. Open the [v3.0 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v3.0/Audio-Desk-Launcher-v3.0.apk) on your Android phone. **This is an APK, not a ZIP.**
+1. Open the [v3.1 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v3.1/Audio-Desk-Launcher-v3.1.apk) on your Android phone. **This is an APK, not a ZIP.**
 2. Open the downloaded file and, if Android asks, allow installations from the browser or file manager you used.
 3. Launch **Audio Desk Launcher**. Tap the **bottom-right settings icon → Set Home** if you want it to become your default Android launcher. Your existing Audio Desk bookmarks and cached feeds remain available.
 
