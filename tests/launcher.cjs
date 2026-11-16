@@ -122,7 +122,7 @@ const demoApps=[
   assert.equal(await page.locator('#launcherRecentQuick').evaluate(el=>getComputedStyle(el).flexDirection),'column');
   assert.equal(await page.locator('#warmDateLabel').textContent(),
    new Date().toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}));
-  assert.match(await page.locator('#warmTimeLabel').textContent(),/^\\d{2}:\\d{2}$/);
+  assert.match(await page.locator('#warmTimeLabel').textContent(),/^\d{2}:\d{2}$/);
   assert.ok(await page.locator('#launcherHomePage').evaluate(el=>getComputedStyle(el,'::before').clipPath.includes('polygon')),
    'Warm Minimal uses the cream diagonal panel from the reference');
   assert.equal(await page.locator('#launcherAlphaIndex').isVisible(),true,'the A–Z rail remains usable');
