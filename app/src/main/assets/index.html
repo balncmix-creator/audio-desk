@@ -579,6 +579,7 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
    <div class="clock" id="launcherClock">--:--</div>
    <div class="clock-date" id="launcherDate"></div>
   </div>
+  <button id="launcherTilesSearch" type="button" aria-label="Search all installed apps">⌕ SEARCH APPS</button>
   <div id="launcherFavorites" aria-label="Favourite and frequently used applications"></div>
   <div id="launcherFavoritesEmpty" hidden>YOUR APPS WILL APPEAR HERE.</div>
   <section id="launcherRecentStrip" aria-label="Recently opened app shortcuts" hidden>
@@ -1935,6 +1936,8 @@ function setLauncherTheme(theme){
  document.body.dataset.launcherTheme=theme;
  deskStorage.setItem("ad_launcher_theme_v1",theme);
  renderLauncherHome();
+ if(theme==="windows"&&typeof resetHomeSwipe==="function")resetHomeSwipe(true);
+ if(typeof syncWallpaperMotion==="function")syncWallpaperMotion();
  if(typeof fitClock==="function")fitClock();
 }
 
@@ -2022,11 +2025,11 @@ function launcherSuggestedApps(){
 function renderLauncherHome(){
  const windows=launcherTheme==="windows";
  // Only the selected Windows theme mounts app tiles. Minimal and Pixel mount
- // at most four compact shortcuts, never the full installed-app list.
+ // a short vertical list of up to six recent or suggested app shortcuts.
  const tiles=windows?launcherSuggestedApps():[];
  $("launcherFavorites").innerHTML=tiles.map(renderFavoriteRow).join("");
- const recents=launcherRecents.slice(0,4);
- const quick=recents.length?recents:launcherSuggestedApps().slice(0,4);
+ const recents=launcherRecents.slice(0,6);
+ const quick=recents.length?recents:launcherSuggestedApps().slice(0,6);
  $("launcherRecentStrip").hidden=windows||!quick.length;
  if(!windows){
   $("launcherRecentStripTitle").textContent=recents.length?"RECENTLY OPENED":"SUGGESTED APPS";
@@ -2335,6 +2338,7 @@ $("launcherShowRecents").onclick=()=>{
 };
 
 $("launcherAppSearch").addEventListener("input",renderLauncherApps);
+$("launcherTilesSearch").onclick=openLauncherSearch;
 $("launcherMakeDefault").onclick=()=>{
  if(window.AudioDesk&&typeof window.AudioDesk.requestDefaultLauncher==="function")
   window.AudioDesk.requestDefaultLauncher();
@@ -2395,11 +2399,13 @@ function openLauncherSearch(){
  window.AudioDesk?.requestSearchKeyboard?.();
 }
 $("launcherHomePage").addEventListener("touchstart",e=>{
+ // Tiles must scroll freely: swipe-up search belongs only to Minimal and Pixel.
+ if(launcherTheme==="windows"){upStart=null;return}
  if(e.touches.length!==1||hasLauncherOverlay()||e.target.closest("input,textarea,button:not(.launcher-app)"))return;
  const t=e.touches[0];upStart={x:t.clientX,y:t.clientY};
 },{passive:true});
 $("launcherHomePage").addEventListener("touchmove",e=>{
- if(!upStart||e.touches.length!==1)return;
+ if(launcherTheme==="windows"||!upStart||e.touches.length!==1)return;
  const t=e.touches[0],dx=t.clientX-upStart.x,dy=t.clientY-upStart.y;
  if(dy< -24&&Math.abs(dy)>Math.abs(dx)*1.4){
   cancelHomeHold();iconSwipe=null;blockAppClickUntil=Date.now()+600;
@@ -2408,6 +2414,7 @@ $("launcherHomePage").addEventListener("touchmove",e=>{
  } else if(homeSwipeDistance){resetHomeSwipe();}
 },{passive:false});
 $("launcherHomePage").addEventListener("touchend",e=>{
+ if(launcherTheme==="windows"){upStart=null;return}
  const origin=upStart;upStart=null;
  if(longConsumed||!origin||!e.changedTouches.length||launcherPage!=="home"){resetHomeSwipe();return}
  const t=e.changedTouches[0],dx=t.clientX-origin.x,dy=t.clientY-origin.y;

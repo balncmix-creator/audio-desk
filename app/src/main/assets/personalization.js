@@ -20,8 +20,12 @@ function syncWallpaperMotion(){
  const paused=document.hidden||!nativeWallpaperActive||launcherPage!=="home"||motionPreference.matches||saver;
  document.body.dataset.motionPaused=String(paused);
  document.body.dataset.wallpaperMotion=effect==="none"?"":effect;
- if(window.AudioDesk&&typeof window.AudioDesk.setWallpaperTone==="function")
-  window.AudioDesk.setWallpaperTone(launcherPage==="home"&&document.body.dataset.wallpaperStatusLight==="true");
+ const home=launcherPage==="home";
+ const light=home&&launcherTheme!=="windows"&&document.body.dataset.wallpaperStatusLight==="true";
+ if(window.AudioDesk&&typeof window.AudioDesk.setStatusBarTheme==="function")
+  window.AudioDesk.setStatusBarTheme(home?launcherTheme:"apps",light);
+ else if(window.AudioDesk&&typeof window.AudioDesk.setWallpaperTone==="function")
+  window.AudioDesk.setWallpaperTone(light);
  const status=$("wallpaperMotionStatus");
  if(status)status.textContent=motionPreference.matches?"Animations paused by your phone’s reduced-motion setting.":
   saver?"Low-power mode keeps the wallpaper still. Choose an animation manually to enable it.":

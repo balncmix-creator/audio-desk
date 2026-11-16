@@ -75,7 +75,15 @@ const demoApps=[
   assert.equal(await page.locator('header').isVisible(),false);
   assert.equal(await page.locator('#stories .story').count(),1,'news remains cached');
   assert.equal(await page.locator('#launcherFavorites .n-app-row').count(),0,'Minimal Home has no duplicate app list');
-  assert.equal(await page.locator('#launcherRecentQuick .launcher-app').count(),4,'Minimal Home has four suggested shortcuts until local history exists');
+  assert.equal(await page.locator('#launcherRecentQuick .launcher-app').count(),6,'Minimal Home has six suggested rows until local history exists');
+  const recentLayout=await page.locator('#launcherRecentQuick').evaluate(el=>{
+   const rows=[...el.querySelectorAll('.launcher-app')];
+   const a=rows[0].getBoundingClientRect(),b=rows[1].getBoundingClientRect();
+   const icon=rows[0].querySelector('.pixel-icon').getBoundingClientRect();
+   return {direction:getComputedStyle(el).flexDirection,stacked:b.top>=a.bottom-1,iconOnLeft:icon.left<a.left+a.width/2};
+  });
+  assert.equal(recentLayout.direction,'column');
+  assert.ok(recentLayout.stacked&&recentLayout.iconOnLeft,'recent app shortcuts are vertical icon-and-label rows');
   assert.match(await page.locator('#launcherRecentStripTitle').textContent(),/SUGGESTED APPS/);
   assert.equal(await page.locator('#launcherAlphaIndex').isVisible(),true,'Home shows quick alphabetical rail');
   await page.locator('#launcherAlphaIndex [data-launcher-letter="R"]').click();
@@ -88,6 +96,7 @@ const demoApps=[
 
   await page.locator('#launcherSettingsToggle').click();
   assert.equal(await page.locator('#launcherHomeOptions').isVisible(),true);
+  assert.equal(await page.locator('#launcherHomeOptions').evaluate(el=>getComputedStyle(el).userSelect),'none','long-pressing options should not select menu text');
   await page.locator('#launcherAllApps').click();
   assert.equal(await page.locator('#launcherHomeOptions').isVisible(),false);
   assert.equal(await page.evaluate(()=>launcherPage),'apps');
@@ -105,6 +114,7 @@ const demoApps=[
   await page.locator('#launcherThemeChoose').click();
   await page.locator('[data-launcher-theme-choice="windows"]').click();
   assert.equal(await page.evaluate(()=>launcherTheme),'windows');
+  assert.equal(await page.locator('#launcherTilesSearch').isVisible(),true);
   assert.equal(await page.locator('#launcherLiveTiles').isVisible(),true,'Clock, date and news live tiles are visible in Windows theme');
   assert.equal(await page.locator('#launcherLiveTime').textContent()!== "--:--",true);
   assert.equal(await page.locator('#launcherLiveDay').textContent(),String(new Date().getDate()));

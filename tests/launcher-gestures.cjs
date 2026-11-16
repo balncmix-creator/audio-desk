@@ -50,6 +50,7 @@ const assert=require('node:assert/strict');
   assert.equal(await page.evaluate(()=>launcherPage),'home');
   assert.equal(await page.locator('#launcherFavorites .launcher-app').count(),0);
   assert.equal(await page.locator('#launcherRecentQuick .launcher-app').count(),2);
+  assert.equal(await page.locator('#launcherRecentQuick').evaluate(el=>getComputedStyle(el).flexDirection),'column');
   assert.equal(await page.locator('#launcherAlphaIndex').isVisible(),true);
   await page.evaluate(()=>setLauncherTheme('windows'));
   const pay=page.locator('#launcherFavorites .launcher-app').filter({hasText:'Google Pay'});
@@ -83,7 +84,12 @@ const assert=require('node:assert/strict');
    pkg:'com.google.android.apps.nbu.paisa.user',activity:'GPayHome',id:'scan_qr'
   });
   await page.locator('#launcherShortcutMenu').waitFor({state:'hidden'});
-  await page.evaluate(()=>setLauncherTheme('minimal'));
+  await gesture('#launcherHomePage',[180,640],[178,220]);
+  assert.equal(await page.evaluate(()=>launcherPage),'home','swipe up scrolls Windows tiles instead of opening app search');
+  assert.equal(await page.locator('#launcherTilesSearch').isVisible(),true);
+  await page.locator('#launcherTilesSearch').click();
+  assert.equal(await page.evaluate(()=>launcherPage),'apps','Windows theme has explicit search action');
+  await page.evaluate(()=>{window.launcherGoHome();setLauncherTheme('minimal')});
   // Swipe up from the home surface (away from app buttons).
   await gesture('#launcherHomePage',[180,660],[179,432]);
   assert.equal(await page.evaluate(()=>launcherPage),'apps');

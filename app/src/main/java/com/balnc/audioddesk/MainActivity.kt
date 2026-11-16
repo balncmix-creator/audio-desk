@@ -257,6 +257,19 @@ class MainActivity : Activity() {
                 }
             }
         }
+        @JavascriptInterface fun setStatusBarTheme(theme: String, light: Boolean) {
+            runOnUiThread {
+                if (!destroyed) {
+                    val windowsHome = theme == "windows"
+                    // Minimal and Pixel draw wallpaper behind genuine system icons;
+                    // Windows uses a dark strip and white icons without spoofing Android status data.
+                    window.statusBarColor = if (windowsHome) Color.rgb(13, 13, 13) else Color.TRANSPARENT
+                    window.navigationBarColor = if (windowsHome) Color.rgb(13, 13, 13) else Color.rgb(8, 8, 8)
+                    WindowCompat.getInsetsController(window, window.decorView)
+                        .isAppearanceLightStatusBars = !windowsHome && light
+                }
+            }
+        }
         @JavascriptInterface fun requestSearchKeyboard() {
             runOnUiThread {
                 if (!destroyed && ::appWebView.isInitialized) {

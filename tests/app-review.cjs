@@ -50,6 +50,7 @@ const html=fs.readFileSync(path.join(__dirname,'../app/src/main/assets/index.htm
    },{selector,from,to});
    // A customization sheet must own all drags, including non-control space.
    await page.evaluate(()=>openClockCustomizer());
+   assert.equal(await page.locator('#launcherClockDialog').evaluate(el=>getComputedStyle(el).userSelect),'none');
    await swipe('#launcherClockDialog .customize-panel',[300,250],[30,251]);
    assert.equal(await page.evaluate(()=>launcherPage),'home');
    assert.equal(await page.locator('#launcherClockDialog').isVisible(),true);
