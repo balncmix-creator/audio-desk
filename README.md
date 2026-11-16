@@ -2,9 +2,19 @@
 
 **A one-handed Android Home launcher for people who make sound, inspired by minimalist Niagara-style app access and Nokia N9 swipe navigation, without replacing Audio Desk's original retro design.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk Launcher v2.6 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v2.6/Audio-Desk-Launcher-v2.6.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk Launcher v2.8 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v2.8/Audio-Desk-Launcher-v2.8.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
+
+## v2.8 — A–Z Home, 3 themes and lightweight rendering
+
+**Minimal A–Z (default):** Home keeps the clock and selected wallpaper, with no duplicate app list. Touch or drag the A–Z letters along the right edge to reveal matching installed apps in a compact panel. **Swipe up** anywhere on Home to open the full searchable app drawer with the keyboard ready.
+
+**8-Bit:** The same fast, list-free navigation with pixel clock styling and pixel alphabet. **Windows Tiles:** A Windows Phone-inspired, colorful two-column layout showing up to eight pinned or often-used app tiles. In all themes, the A–Z rail, swipe-up search, real Android app shortcuts and wallpaper customization remain available.
+
+Open **Home options → Home Theme** to switch between themes. Theme choice is stored locally. The layout uses CSS colors rather than extra wallpaper-sized assets, delays creating app tiles until the tile theme is selected, renders the A–Z letter panel on demand, applies offscreen containment where WebView supports it and keeps auto wallpaper effects paused on low-power devices. Performance is designed for inexpensive phones, but it has not been established as the fastest launcher in comparative device benchmarks.
+
+CI validates browser interactions, screenshots, Android package assembly and wallpaper quality. Physical-device launch latency, responsiveness and battery use still require testing.
 
 ## v2.6 interaction fixes
 
@@ -26,13 +36,13 @@ The wallpaper fills the screen behind the Android status bar. Custom photos and 
 
 ## One-handed home launcher
 
-**Home is now deliberately minimal:** just a large clock, date, and a spacious vertical list of apps—no borders, no headings, no navigation bar. A single small settings icon in the bottom-right reveals options when needed. This is inspired by the simplicity of the supplied launcher reference while preserving Audio Desk's dark-grey identity and 8-bit icons. The interface still has three horizontal spaces:
+**Home is now deliberately minimal:** by default it shows the clock, wallpaper and a right-edge A–Z letter rail, instead of a permanently visible app list. The 8-bit theme uses pixel lettering and the Windows Phone-inspired theme adds colorful app tiles. A small bottom-right settings button opens theme, wallpaper, clock and other controls. Three horizontal spaces remain:
 
 - **Swipe left-to-right → AUDIO NEWS:** all original Audio Desk stories, filters, REAPER and post-production headlines, bookmarks, sample previews, and pinch-grid options.
-- **HOME (center):** a big clock and a single vertical list of your most-opened apps, with one-tap launching. Star any app from the alphabetized list to pin it at the top.
+- **HOME (center):** clock and right-edge alphabetical rail. Tap/drag a letter to browse apps without opening the drawer. Windows Tiles shows up to eight pinned/commonly launched app tiles; pin apps from the All Apps view.
 - **Swipe right-to-left → ALL APPS:** every app visible to Android's launcher, in an alphabetical vertical list with quick A–Z navigation along the right edge and search.
 
-The list becomes personalized as you open apps from Audio Desk. **Swipe up on Home to open app search and the keyboard automatically.** **Usage counts are local to Audio Desk launches**, not Android's restricted global usage history. New installations initially show suggested apps until local launch counts develop. Favorite pins are stored locally.
+**Swipe up on Home to open app search and the keyboard automatically.** Windows Tiles becomes personalized based on locally counted Audio Desk launches; those usage counts are not Android's restricted global usage history. Pinned apps and chosen theme are stored locally. Minimal and Pixel keep Home free of app rows.
 
 **App shortcuts:** swipe left-to-right on an app icon to reveal actions published by the installed app. Google Pay's QR scan appears only if Google Pay exposes that shortcut to Android; Audio Desk does not invent or replicate payment functionality. The **Recently Opened** section is still accessible directly from Home. It shows apps opened through Audio Desk, not privileged Android running-task screenshots. The navigation strip remains accessible in News and the app list, but is hidden on Home to keep it clean.
 
@@ -40,9 +50,11 @@ The list becomes personalized as you open apps from Audio Desk. **Swipe up on Ho
 
 ## Screenshots
 
-| Home · Most opened | A–Z app list |
-|:--:|:--:|
-| ![Audio Desk one-handed Home with frequently used apps](docs/screenshots/launcher-home.png) | ![Audio Desk vertical alphabetical application list and index](docs/screenshots/launcher-applications.png) |
+| Minimal A–Z Home | Windows Tiles | 8-Bit Home |
+|:--:|:--:|:--:|
+| ![Minimal Home with right-hand app letters](docs/screenshots/launcher-home.png) | ![Windows Phone-inspired colorful app tiles](docs/screenshots/launcher-windows-tiles.png) | ![Pixel 8-bit clock theme](docs/screenshots/launcher-pixel-theme.png) |
+
+![Audio Desk alphabetical All Apps drawer](docs/screenshots/launcher-applications.png)
 
 ![Recent apps launched from Audio Desk shown on Home](docs/screenshots/launcher-open-apps.png)
 
@@ -74,7 +86,7 @@ The list becomes personalized as you open apps from Audio Desk. **Swipe up on Ho
 
 ## Install on Android
 
-1. Open the [v2.5 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v2.6/Audio-Desk-Launcher-v2.6.apk) on your Android phone. **This is an APK, not a ZIP.**
+1. Open the [v2.8 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v2.8/Audio-Desk-Launcher-v2.8.apk) on your Android phone. **This is an APK, not a ZIP.**
 2. Open the downloaded file and, if Android asks, allow installations from the browser or file manager you used.
 3. Launch **Audio Desk Launcher**. Tap the **bottom-right settings icon → Set Home** if you want it to become your default Android launcher. Your existing Audio Desk bookmarks and cached feeds remain available.
 
