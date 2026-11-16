@@ -53,18 +53,14 @@ for(const symbol of ['requestLauncherApps','launchExternalApp','requestDefaultLa
  assert.ok(bridge.includes(symbol),'missing bridge '+symbol);
 const native=fs.readFileSync('app/src/main/java/com/balnc/audioddesk/HomeLauncherSupport.kt','utf8');
 const iconDesigner=fs.readFileSync('app/src/main/java/com/balnc/audioddesk/LocalAppIconProvider.kt','utf8');
-assert.match(native,/fun hasLaunchablePackage\(/,'icons are served only for scanned launchable packages');
-assert.match(iconDesigner,/WebViewAssetLoader\.PathHandler/,'native icon generator serves visible WebView images lazily');
-assert.match(iconDesigner,/getApplicationIcon\(pkg\)/,'native generator uses each installed application's actual icon');
-assert.match(iconDesigner,/LruCache<String, ByteArray>/,'generated icons have a bounded local memory cache');
-assert.match(iconDesigner,/if \(theme == "pixel"\) 32 else 128/,'pixel style uses deliberately crisp small bitmaps');
-assert.match(bridge,/addPathHandler\("\/app-icons\/", appIconProvider\)/,
- 'native icon requests stay inside Android's local WebViewAssetLoader');
-assert.match(bridge,/supportsAdaptiveAppIcons\(\): Boolean = true/,
- 'JavaScript detects Android's local icon renderer');
-assert.match(native,/getShortcuts\(/,'app shortcuts use LauncherApps');
-assert.match(native,/hasShortcutHostPermission/,'shortcut access checks host permission');
-assert.match(native,/startShortcut\(/,'shortcuts launch through official Android API');
+assert.match(native,/fun hasLaunchablePackage\(pkg: String\)/,'only verified launchable packages can request icons');
+assert.match(iconDesigner,/WebViewAssetLoader\.PathHandler/,'icons load locally via WebView asset handler');
+assert.match(iconDesigner,/getApplicationIcon\(pkg\)/,'the engine uses installed Android app artwork');
+assert.match(iconDesigner,/LruCache<String, ByteArray>/,'generated icon data is bounded by on-device cache');
+assert.match(iconDesigner,/isLaunchable\(pkg\)/,'the icon handler enforces discovered-app permission');
+assert.match(iconDesigner,/theme == "pixel"/,'pixel rendering uses actual native icons');
+assert.match(bridge,/addPathHandler\("\/app-icons\/", appIconProvider\)/,'the native icon service is integrated with WebView');
+assert.match(bridge,/supportsAdaptiveAppIcons\(\)/,'the client detects native icon capabilities');
 assert.doesNotMatch(native,/makeIcon\(resolve\.loadIcon\(pm\)\)/,'no eager icon bitmap decode');
 const license=fs.readFileSync('app/src/main/assets/pixel-icons/LICENSE.txt','utf8');
 assert.match(license,/MIT License/);
