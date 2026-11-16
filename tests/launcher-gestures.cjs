@@ -49,6 +49,7 @@ const assert=require('node:assert/strict');
   await page.waitForFunction(()=>launcherApps.length===2);
   assert.equal(await page.evaluate(()=>launcherPage),'home');
   assert.equal(await page.locator('#launcherFavorites .launcher-app').count(),0);
+  assert.equal(await page.locator('#launcherRecentQuick .launcher-app').count(),2);
   assert.equal(await page.locator('#launcherAlphaIndex').isVisible(),true);
   await page.evaluate(()=>setLauncherTheme('windows'));
   const pay=page.locator('#launcherFavorites .launcher-app').filter({hasText:'Google Pay'});

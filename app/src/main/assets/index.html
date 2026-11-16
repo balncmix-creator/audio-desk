@@ -581,6 +581,21 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
   </div>
   <div id="launcherFavorites" aria-label="Favourite and frequently used applications"></div>
   <div id="launcherFavoritesEmpty" hidden>YOUR APPS WILL APPEAR HERE.</div>
+  <section id="launcherRecentStrip" aria-label="Recently opened app shortcuts" hidden>
+   <div id="launcherRecentStripTitle" class="launcher-recent-title">RECENTLY OPENED</div>
+   <div id="launcherRecentQuick" class="launcher-recent-quick"></div>
+  </section>
+  <section id="launcherLiveTiles" aria-label="Live tiles" hidden>
+   <button type="button" class="launcher-live-tile live-clock" data-live-action="clock" aria-label="Live clock and clock settings">
+    <span class="live-kicker">CLOCK</span><strong id="launcherLiveTime">--:--</strong><span class="live-footer">LOCAL TIME</span>
+   </button>
+   <button type="button" class="launcher-live-tile live-calendar" data-live-action="calendar" aria-label="Live date and calendar">
+    <span class="live-kicker">CALENDAR</span><strong id="launcherLiveDay">--</strong><span class="live-footer" id="launcherLiveMonth">TODAY</span>
+   </button>
+   <button type="button" class="launcher-live-tile live-news" data-live-action="news" aria-label="Audio Desk live news">
+    <span class="live-kicker">AUDIO DESK NEWS</span><strong id="launcherLiveHeadline">OPEN AUDIO DESK FOR HEADLINES</strong><span class="live-footer" id="launcherLiveNewsSource">LIVE FROM CACHED HEADLINES</span>
+   </button>
+  </section>
   <aside id="launcherLetterPanel" aria-label="Apps by letter" hidden>
    <div class="launcher-letter-head"><strong id="launcherLetterTitle">A</strong><button type="button" id="launcherLetterClose" aria-label="Close app letters">×</button></div>
    <div id="launcherLetterApps"></div>
@@ -625,7 +640,7 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
    <div id="launcherThemeGrid" class="theme-grid" role="group" aria-label="Launcher themes">
     <button type="button" class="theme-choice" data-launcher-theme-choice="minimal" aria-pressed="true"><span class="theme-visual minimal-preview"><i>12:48</i><em>A<br>B<br>C<br>D</em></span><strong>Minimal A–Z</strong><small>Wallpaper, clock and right-hand letters</small></button>
     <button type="button" class="theme-choice" data-launcher-theme-choice="pixel" aria-pressed="false"><span class="theme-visual pixel-preview"><i>12:48</i><em>A<br>B<br>C<br>D</em></span><strong>8-Bit</strong><small>Pixel styling and quick app letters</small></button>
-    <button type="button" class="theme-choice" data-launcher-theme-choice="windows" aria-pressed="false"><span class="theme-visual windows-preview"><i>12:48</i><em>▣ ▪<br>▪ ▣</em></span><strong>Windows Tiles</strong><small>Bold, colorful live-style app tiles</small></button>
+    <button type="button" class="theme-choice" data-launcher-theme-choice="windows" aria-pressed="false"><span class="theme-visual windows-preview"><i>12:48</i><em>▣ ▪<br>▪ ▣</em></span><strong>Windows Live Tiles</strong><small>Real clock, date, headlines and app activity</small></button>
    </div>
    <p class="customize-tip">All three themes keep swipe-up search and the A–Z edge rail. Tile colors use CSS, not extra images.</p>
   </div>
@@ -1360,6 +1375,8 @@ function render(){
  watchVisibleStories();
  wireSampleDemoButtons($("stories"));
  updateDensityTargets();
+ if(document.body.dataset.homePage==="home"&&document.body.dataset.launcherTheme==="windows")
+  window.dispatchEvent(new Event("audio-desk-news-updated"));
  document.querySelectorAll("[data-save]").forEach(b=>b.onclick=()=>{let k=b.dataset.save;saved=saved.includes(k)?saved.filter(v=>v!==k):[...saved,k];rememberSaved();render()});
 }
 // Publisher feed discovery is bounded, opt-out aware, and only checks curated sites.
@@ -1937,6 +1954,12 @@ function formatLauncherClock(){
  const now=new Date();
  $("launcherClock").textContent=now.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",hour12:false});
  $("launcherDate").textContent=now.toLocaleDateString([], {weekday:"short",month:"short",day:"numeric"});
+ if(document.body.dataset.launcherTheme==="windows"&&document.body.dataset.homePage==="home"){
+  const liveClock=$("launcherLiveTime"),liveDay=$("launcherLiveDay"),liveMonth=$("launcherLiveMonth");
+  if(liveClock){liveClock.textContent=now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:false});
+   liveDay.textContent=String(now.getDate());
+   liveMonth.textContent=now.toLocaleDateString([],{weekday:"short",month:"short",year:"numeric"}).toUpperCase();}
+ }
  launcherClockTimer=setTimeout(formatLauncherClock,60000-Date.now()%60000+25);
 }
 formatLauncherClock();
@@ -1972,7 +1995,12 @@ if(!Array.isArray(launcherPins))launcherPins=[];
 function launcherAppKey(app){return app.pkg+"/"+app.activity}
 function renderFavoriteRow(app){
  const pinned=launcherPins.includes(launcherAppKey(app));
+ const recent=launcherRecents.find(item=>launcherAppKey(item)===launcherAppKey(app));
+ const activity=recent&&Number(recent.opened)>0?
+   "OPENED "+new Date(Number(recent.opened)).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):
+   Number(app.uses)>0?"OPENED "+Number(app.uses)+"×":"";
  return '<div class="n-app-row">'+launchAppButton(app,"launcher-app")+
+  (launcherTheme==="windows"&&activity?'<small class="tile-activity">'+esc(activity)+'</small>':"")+
   '<button type="button" class="n-star" data-star-pkg="'+esc(app.pkg)+
   '" data-star-activity="'+esc(app.activity)+'" aria-label="'+
   (pinned?"Unpin ":"Pin ")+esc(app.label)+'" aria-pressed="'+pinned+'">'+
@@ -1992,15 +2020,56 @@ function launcherSuggestedApps(){
  return [...pinned,...mostUsed].slice(0,8);
 }
 function renderLauncherHome(){
- // Keep Minimal/Pixel screens almost empty: no app buttons are rendered until
- // Windows Tiles is selected. This also minimizes startup DOM work.
- const tiles=launcherTheme==="windows"?launcherSuggestedApps():[];
+ const windows=launcherTheme==="windows";
+ // Only the selected Windows theme mounts app tiles. Minimal and Pixel mount
+ // at most four compact shortcuts, never the full installed-app list.
+ const tiles=windows?launcherSuggestedApps():[];
  $("launcherFavorites").innerHTML=tiles.map(renderFavoriteRow).join("");
+ const recents=launcherRecents.slice(0,4);
+ const quick=recents.length?recents:launcherSuggestedApps().slice(0,4);
+ $("launcherRecentStrip").hidden=windows||!quick.length;
+ if(!windows){
+  $("launcherRecentStripTitle").textContent=recents.length?"RECENTLY OPENED":"SUGGESTED APPS";
+  const fingerprint=(recents.length?"r":"s")+":"+quick.map(launcherAppKey).join("|");
+  if($("launcherRecentQuick").dataset.fingerprint!==fingerprint){
+   $("launcherRecentQuick").innerHTML=quick.map(app=>launchAppButton(app,"launcher-app launcher-recent-app")).join("");
+   $("launcherRecentQuick").dataset.fingerprint=fingerprint;
+  }
+ }
+ $("launcherLiveTiles").hidden=!windows;
+ if(windows)updateLauncherLiveTiles();
  $("launcherFavoritesEmpty").hidden=true;
  $("launcherFavoritesEdit").textContent=launcherPins.length?
   "★ "+launcherPins.length+" PINNED · MANAGE TILES":"☆ MANAGE TILES / PINS";
  syncLauncherAlphabet();
 }
+function updateLauncherLiveTiles(){
+ // Real, locally available data only. No invented third-party notification counts.
+ if(launcherTheme!=="windows")return;
+ const now=new Date();
+ $("launcherLiveTime").textContent=now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:false});
+ $("launcherLiveDay").textContent=String(now.getDate());
+ $("launcherLiveMonth").textContent=now.toLocaleDateString([],{weekday:"short",month:"short",year:"numeric"}).toUpperCase();
+ const story=Array.isArray(items)&&items.length?
+  items.filter(x=>x&&typeof x.title==="string"&&x.title.trim()&&x.link&&/^https:\/\//.test(x.link))
+   .reduce((best,x)=>!best||(Date.parse(x.date)||0)>(Date.parse(best.date)||0)?x:best,null):null;
+ $("launcherLiveHeadline").textContent=story?story.title:"NO CACHED HEADLINES YET";
+ $("launcherLiveNewsSource").textContent=story?String(story.source||"AUDIO DESK").slice(0,64):"OPEN NEWS TO FETCH HEADLINES";
+}
+window.addEventListener("audio-desk-news-updated",updateLauncherLiveTiles);
+$("launcherLiveTiles").addEventListener("click",event=>{
+ const action=event.target.closest("[data-live-action]")?.dataset.liveAction;
+ if(action==="news"){setLauncherPage("events");return}
+ if(action==="clock"){if(typeof openClockCustomizer==="function")openClockCustomizer();return}
+ if(action==="calendar"){
+  const app=launcherApps.find(x=>/calendar/i.test(x.label+" "+x.pkg));
+  if(app&&window.AudioDesk?.launchExternalApp)window.AudioDesk.launchExternalApp(app.pkg,app.activity);
+  else{
+   openLauncherSearch();
+   $("launcherAppSearch").value="calendar";renderLauncherApps();
+  }
+ }
+});
 function setLauncherPin(pkg,activity){
  const key=pkg+"/"+activity;
  if(!launcherApps.some(app=>launcherAppKey(app)===key))return;
@@ -2293,14 +2362,16 @@ function previewHomeSwipe(distance){
   homeSwipeFrame=0;
   if(launcherPage!=="home")return;
   const progress=homeSwipeDistance/120;
-  $("launcherFavorites").style.transform="translate3d(0,"+(-progress*20)+"px,0)";
-  $("launcherFavorites").style.opacity=String(1-progress*.28);
+  for(const node of [$("launcherFavorites"),$("launcherRecentStrip"),$("launcherLiveTiles")]){
+   node.style.transform="translate3d(0,"+(-progress*20)+"px,0)";
+   node.style.opacity=String(1-progress*.28);
+  }
   document.querySelector(".launcher-clock").style.transform="translate3d(0,"+(-progress*9)+"px,0)";
  });
 }
 function resetHomeSwipe(immediate=false){
  cancelAnimationFrame(homeSwipeFrame);homeSwipeFrame=0;homeSwipeDistance=0;
- for(const node of [$("launcherFavorites"),document.querySelector(".launcher-clock")]){
+ for(const node of [$("launcherFavorites"),$("launcherRecentStrip"),$("launcherLiveTiles"),document.querySelector(".launcher-clock")]){
   if(!node)continue;
   if(immediate){node.style.transition="none";node.style.removeProperty("transform");node.style.removeProperty("opacity");requestAnimationFrame(()=>node.style.removeProperty("transition"));}
   else{node.style.transition="transform 170ms cubic-bezier(.2,.75,.25,1),opacity 170ms";node.style.removeProperty("transform");node.style.removeProperty("opacity");}

@@ -75,6 +75,8 @@ const demoApps=[
   assert.equal(await page.locator('header').isVisible(),false);
   assert.equal(await page.locator('#stories .story').count(),1,'news remains cached');
   assert.equal(await page.locator('#launcherFavorites .n-app-row').count(),0,'Minimal Home has no duplicate app list');
+  assert.equal(await page.locator('#launcherRecentQuick .launcher-app').count(),4,'Minimal Home has four suggested shortcuts until local history exists');
+  assert.match(await page.locator('#launcherRecentStripTitle').textContent(),/SUGGESTED APPS/);
   assert.equal(await page.locator('#launcherAlphaIndex').isVisible(),true,'Home shows quick alphabetical rail');
   await page.locator('#launcherAlphaIndex [data-launcher-letter="R"]').click();
   assert.equal(await page.locator('#launcherLetterPanel').isVisible(),true);
@@ -103,10 +105,21 @@ const demoApps=[
   await page.locator('#launcherThemeChoose').click();
   await page.locator('[data-launcher-theme-choice="windows"]').click();
   assert.equal(await page.evaluate(()=>launcherTheme),'windows');
+  assert.equal(await page.locator('#launcherLiveTiles').isVisible(),true,'Clock, date and news live tiles are visible in Windows theme');
+  assert.equal(await page.locator('#launcherLiveTime').textContent()!== "--:--",true);
+  assert.equal(await page.locator('#launcherLiveDay').textContent(),String(new Date().getDate()));
+  assert.match(await page.locator('#launcherLiveHeadline').textContent(),/REAPER editing script/);
   assert.match(await page.locator('#launcherFavorites .n-app-row').first().textContent(),/REAPER Remote/,'pinned Windows tile takes priority');
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('ar_launcher_pins')).length),1);
   await page.locator('#launcherFavorites .launcher-app').first().click();
   await page.waitForFunction(()=>window.appLaunchCalls.length===1);
+  await page.waitForFunction(()=>launcherRecents.length===1);
+  await page.evaluate(()=>setLauncherTheme('minimal'));
+  assert.match(await page.locator('#launcherRecentStripTitle').textContent(),/RECENTLY OPENED/);
+  assert.equal(await page.locator('#launcherRecentQuick .launcher-app').count(),1);
+  assert.match(await page.locator('#launcherRecentQuick .launcher-app').first().textContent(),/REAPER Remote/);
+  await page.evaluate(()=>setLauncherTheme('windows'));
+  assert.equal(await page.locator('#launcherLiveTiles').isVisible(),true);
   assert.deepEqual((await page.evaluate(()=>window.appLaunchCalls))[0],[
    'com.example.reaper','com.example.reaper.Main'
   ]);
