@@ -2,9 +2,17 @@
 
 **A one-handed Android Home launcher for people who make sound, inspired by minimalist Niagara-style app access and Nokia N9 swipe navigation, without replacing Audio Desk's original retro design.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk Launcher v3.5 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v3.5/Audio-Desk-Launcher-v3.5.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk Launcher v3.6 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v3.6/Audio-Desk-Launcher-v3.6.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
+
+## v3.6 — Straight Warm Minimal panel and non-pixel visuals
+
+Based on a real-device screenshot, Warm Minimal no longer cuts its wallpaper backdrop into a diagonal **7-shaped wedge**. The cream-colored favorites panel now has a **straight edge** and encloses the heading and every app row, so the first app icon cannot end up on an uncovered dark section.
+
+Every Warm Minimal app icon, including **Favorites**, the **A–Z list**, **All Apps** and **Recent Apps**, now uses original anti-aliased vector line art rather than the 8-bit Pixelarticons set. The date, Audio Desk, search and settings controls also use vector symbols, and Warm Minimal typography uses regular system sans-serif instead of pixel fonts. Other launcher themes and the 8-bit icon pack remain intact.
+
+The Android v3.6 APK passed UI/gesture tests, screenshot rendering, native compilation, package checks, and wallpaper quality validation. Physical-device layout should still be verified on individual screen sizes.
 
 ## v3.5 — Warm Minimal: a fourth selectable launcher Home
 
@@ -164,7 +172,7 @@ The wallpaper fills the screen behind the Android status bar. Custom photos and 
 
 ## Install on Android
 
-1. Open the [v3.5 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v3.5/Audio-Desk-Launcher-v3.5.apk) on your Android phone. **This is an APK, not a ZIP.**
+1. Open the [v3.6 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v3.6/Audio-Desk-Launcher-v3.6.apk) on your Android phone. **This is an APK, not a ZIP.**
 2. Open the downloaded file and, if Android asks, allow installations from the browser or file manager you used.
 3. Launch **Audio Desk Launcher**. Tap the **bottom-right settings icon → Set Home** if you want it to become your default Android launcher. Your existing Audio Desk bookmarks and cached feeds remain available.
 
