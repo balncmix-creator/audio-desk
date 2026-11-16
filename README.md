@@ -2,9 +2,17 @@
 
 **A one-handed Android Home launcher for people who make sound, inspired by minimalist Niagara-style app access and Nokia N9 swipe navigation, without replacing Audio Desk's original retro design.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk Launcher v3.6 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v3.6/Audio-Desk-Launcher-v3.6.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk Launcher v3.7 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v3.7/Audio-Desk-Launcher-v3.7.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
+
+## v3.7 — Warm Minimal spacing and full-height finish
+
+The straight cream favorites panel now continues to the bottom of the screen, removing the dark gap visible below its previous edge. The rounded date, Audio Desk and search widgets leave a safe margin before the alphabetical A–Z rail. Both improvements are checked automatically in a real Chromium screenshot, alongside app icon geometry, scroll behavior and theme switching.
+
+All Warm Minimal app icons remain consistent anti-aliased modern SVG outlines with system typography, including the app drawer, settings button and search widget. No pixel fonts or 8-bit app icons carry into this theme. Minimal A–Z, 8-Bit and Windows Tiles retain their existing functionality.
+
+The published v3.7 APK passed the automated interaction tests, screenshot capture, native Android compilation, packaging and wallpaper quality checks. Individual OEM status bars and display insets still need on-device verification.
 
 ## v3.6 — Straight Warm Minimal panel and non-pixel visuals
 
@@ -16,7 +24,7 @@ The Android v3.6 APK passed UI/gesture tests, screenshot rendering, native compi
 
 ## v3.5 — Warm Minimal: a fourth selectable launcher Home
 
-The new **Warm Minimal** theme follows the reference's warm peach/cream and charcoal split: an original diagonal color panel, elegant rounded cards at the top and a crisp one-column app list. It adds **no heavyweight wallpaper assets or continuous animation loops**. Choose it via **Home options → Home Theme → Warm Minimal**; the choice persists after restarting.
+The new **Warm Minimal** theme follows the reference's warm peach/cream and charcoal split: a straight cream panel, elegant rounded cards at the top and a crisp one-column app list. It adds **no heavyweight wallpaper assets or continuous animation loops**. Choose it via **Home options → Home Theme → Warm Minimal**; the choice persists after restarting.
 
 These are real controls rather than a nonfunctional picture:
 - The **date/time card** updates with your device's clock and opens your calendar when available (or searches for Calendar).
@@ -172,7 +180,7 @@ The wallpaper fills the screen behind the Android status bar. Custom photos and 
 
 ## Install on Android
 
-1. Open the [v3.6 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v3.6/Audio-Desk-Launcher-v3.6.apk) on your Android phone. **This is an APK, not a ZIP.**
+1. Open the [v3.7 launcher APK download](https://github.com/balncmix-creator/audio-desk/releases/download/v3.7/Audio-Desk-Launcher-v3.7.apk) on your Android phone. **This is an APK, not a ZIP.**
 2. Open the downloaded file and, if Android asks, allow installations from the browser or file manager you used.
 3. Launch **Audio Desk Launcher**. Tap the **bottom-right settings icon → Set Home** if you want it to become your default Android launcher. Your existing Audio Desk bookmarks and cached feeds remain available.
 
