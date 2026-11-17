@@ -149,8 +149,14 @@ const assert=require('node:assert/strict');
    return {inside:i.left>=r.left&&i.right<=r.right&&i.top>=r.top&&i.bottom<=r.bottom};
   });
   assert.equal(firstGeometry.inside,true,'warm screenshot has no clipped first icon');
-  assert.equal(await page.locator('#launcherRecentStrip').evaluate(el=>el.getBoundingClientRect().bottom>=innerHeight),
-   true,'screenshot cream panel extends to the viewport bottom');
+  const cornerRadii=await page.locator('#launcherRecentStrip').evaluate(el=>{
+   const style=getComputedStyle(el);
+   return [style.borderTopLeftRadius,style.borderTopRightRadius,
+    style.borderBottomRightRadius,style.borderBottomLeftRadius]
+    .map(value=>parseFloat(value));
+  });
+  assert.ok(cornerRadii.every(radius=>radius>=12),
+   'Warm Favourites & Recents should round all four corners: '+cornerRadii.join(','));
   assert.ok(await page.evaluate(()=>document.getElementById('launcherAlphaIndex').getBoundingClientRect().left-
    document.getElementById('warmAudioWidget').getBoundingClientRect().right>=8),
    'screenshot widgets do not collide with A–Z letters');
