@@ -689,3 +689,66 @@ body[data-launcher-theme="warm"] .warm-settings-symbol{color:var(--ds-accent)!im
 body[data-launcher-theme="warm"] #launcherRecentQuick .launcher-folder-tile{
  color:var(--theme-ink,#302628)!important;
 }
+
+/* v4.2 — the selected wallpaper, not an edition's old fixed accent, owns
+   the shared color tokens. Preserve the type, spacing and pixel geometry. */
+body[data-launcher-theme]{
+ --ds-bg:var(--theme-dark,#101016);
+ --ds-panel:var(--theme-surface,#26252c);
+ --ds-panel2:var(--theme-surface2,#37313c);
+ --ds-text:var(--theme-text,#f4f3f4);
+ --ds-muted:var(--theme-muted,#d5cdd5);
+ --ds-line:var(--theme-line,#5d5362);
+ --ds-accent:var(--theme-accent,#e0d9e0);
+}
+body[data-launcher-theme] .launcher-nav-inner button.active,
+body[data-launcher-theme] #launcherAlphaIndex button.active,
+body[data-launcher-theme] .launcher-options-action:active,
+body[data-launcher-theme] #launcherShortcutActions button:active{
+ color:var(--theme-accent-ink,#161419)!important;
+}
+body[data-launcher-theme="pixel"] #launcherRecentStrip,
+body[data-launcher-theme="pixel"] #launcherFavorites{
+ border-color:var(--ds-line)!important;
+}
+body[data-launcher-theme="pixel"] #launcherRecentStripTitle,
+body[data-launcher-theme="pixel"] .launcher-clock .clock-date,
+body[data-launcher-theme="pixel"] #launcherFavorites .pixel-letter{
+ color:var(--ds-accent)!important;
+}
+body[data-launcher-theme="pixel"] #launcherRecentQuick .app-name,
+body[data-launcher-theme="pixel"] #launcherRecentQuick .pixel-letter{
+ color:var(--ds-text)!important;
+}
+body[data-launcher-theme="pixel"] .launcher-music-widget{
+ box-shadow:3px 3px 0 var(--ds-line)!important;
+}
+body[data-launcher-theme="warm"] #launcherAppSearch::placeholder{
+ color:var(--theme-ink,#292529)!important;opacity:.72;
+}
+body[data-launcher-theme="warm"] #launcherRecentQuick .pixel-letter,
+body[data-launcher-theme="warm"] #launcherRecentQuick .folder-count,
+body[data-launcher-theme="warm"] #launcherRecentStripTitle{
+ color:var(--theme-ink,#292529)!important;
+}
+body[data-launcher-theme="warm"] #launcherRecentQuick .launcher-app:active{
+ background:color-mix(in srgb,var(--theme-accent) 14%,transparent)!important;
+}
+body[data-launcher-theme="warm"] #launcherLetterApps .warm-line-icon,
+body[data-launcher-theme="warm"] #launcherAppsGrid .warm-line-icon{
+ color:var(--ds-accent)!important;border-color:var(--ds-line)!important;
+}
+body[data-launcher-theme="warm"] #launcherRecentQuick .warm-line-icon svg,
+body[data-launcher-theme="warm"] #launcherRecentQuick .app-name{
+ color:var(--theme-ink,#292529)!important;
+}
+body[data-launcher-theme] .launcher-settings-fab,
+body[data-launcher-theme] #launcherHomeOptions,
+body[data-launcher-theme] .customize-panel,
+body[data-launcher-theme] #launcherShortcutPanel,
+body[data-launcher-theme] #launcherLetterPanel{
+ border-color:var(--ds-line)!important;
+}
+body[data-launcher-theme] .widget-editing{
+ outline-color:var(--ds-accent)!important;
+}
