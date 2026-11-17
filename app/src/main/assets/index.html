@@ -426,6 +426,7 @@ body[data-home-page="home"] .launcher-dots .active{color:#c9c9c9}
 <link rel="stylesheet" href="audio-wallpapers.css">
 <link rel="stylesheet" href="native-icons.css">
 <link rel="stylesheet" href="windows-live-tiles.css">
+<link rel="stylesheet" href="music-spectrum.css">
 <script>
 // One interruptible motion vocabulary for pages, sheets and touch feedback.
 const DeskMotion=(()=>{
@@ -2815,6 +2816,7 @@ document.addEventListener("click",e=>{
 <script src="audio-wallpapers.js"></script>
 <script src="native-icons.js"></script>
 <script src="windows-live-tiles.js"></script>
+<script src="music-spectrum.js"></script>
 <script>
 function hasLauncherOverlay(){return ['launcherLetterPanel','launcherHomeOptions','launcherShortcutMenu','launcherThemeDialog','launcherWallpaperDialog','launcherClockDialog','gridDetail'].some(id=>!document.getElementById(id).hidden)}
 function syncRefreshAvailability(){window.AudioDesk?.setRefreshEnabled?.(launcherPage==='events'&&!hasLauncherOverlay())}
