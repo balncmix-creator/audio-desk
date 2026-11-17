@@ -21,7 +21,7 @@ internal class AudioSpectrumSupport(
     private val deliver: (JSONObject) -> Unit
 ) {
     private var visualizer: Visualizer? = null
-    private var active = false
+    @Volatile private var active = false
     private var lastWaveAt = 0L
 
     fun hasPermission(): Boolean =
@@ -81,8 +81,8 @@ internal class AudioSpectrumSupport(
         return false
     }
 
-    private fun deliverWave(samples: FloatArray) {
-        if (!active) return
+    private fun deliverWave(samples: FloatArray, fromProjection: Boolean = false) {
+        if (!active && !fromProjection) return
         val sum = samples.sumOf { it.toDouble() * it.toDouble() } / samples.size
         val rms = sqrt(sum).coerceIn(0.0, 1.0)
         // Silence stays silence: the client must never generate random motion.
@@ -93,7 +93,7 @@ internal class AudioSpectrumSupport(
             .put("rms", rms).put("samples", array))
     }
 
-    fun deliverProjection(samples: FloatArray) = deliverWave(samples)
+    fun deliverProjection(samples: FloatArray) = deliverWave(samples, true)
 
     fun signal(state: String) {
         deliver(JSONObject().put("state", state))
