@@ -97,6 +97,25 @@ const assert=require('node:assert/strict');
    'Warm Minimal remembers its own glass preference');
   await page.locator('#launcherOptionsClose').click();
   await page.locator('#launcherHomeOptions').waitFor({state:'hidden'});
+  // A physical touch hold on a widget must open ONLY its layout editor.
+  // The Home long-press listener must not also open Audio Desk settings.
+  await page.evaluate(()=>{
+   const widget=document.getElementById('warmDateWidget');
+   const point={clientX:90,clientY:165,screenX:90,screenY:165};
+   widget.dispatchEvent(new PointerEvent('pointerdown',{
+    bubbles:true,pointerId:41,pointerType:'touch',isPrimary:true,button:0,...point
+   }));
+   const touch=new Touch({identifier:41,target:widget,...point});
+   widget.dispatchEvent(new TouchEvent('touchstart',{
+    bubbles:true,cancelable:true,touches:[touch],targetTouches:[touch],changedTouches:[touch]
+   }));
+  });
+  await page.waitForTimeout(650);
+  assert.equal(await page.locator('#widgetLayoutOverlay').isVisible(),true,
+   'holding a widget opens its eight-handle editor');
+  assert.equal(await page.locator('#launcherHomeOptions').isVisible(),false,
+   'widget hold never opens Audio Desk settings at the same time');
+  await page.locator('#widgetLayoutOverlay [data-layout-control="done"]').click();
   // Folders created from quick actions appear on Home and can be edited by holding.
   await page.evaluate(()=>window.audioDeskFolderCreate());
   await page.locator('#folderNameInput').fill('Games');
@@ -135,6 +154,19 @@ const assert=require('node:assert/strict');
    await page.evaluate(theme=>setLauncherTheme(theme),theme);
    assert.equal(await page.locator('#audioWallpaperGrid .audio-art-choice').count(),4,
     'each theme has its own four-image audio collection');
+  }
+  // Pixel and Warm accents are tied to the actual selected wallpaper.
+  for(const [theme,colors] of [['pixel',['blue','violet']],['warm',['grey','blush']]]){
+   await page.evaluate(theme=>{closeCustomize(true);setLauncherTheme(theme)},theme);
+   await page.evaluate(()=>openWallpaperPicker());
+   const borders=[];
+   for(const color of colors){
+    await page.locator('[data-palette="'+color+'"]').click();
+    borders.push(await page.locator('#launcherAlphaIndex').evaluate(el=>getComputedStyle(el).borderTopColor));
+    const token=await page.evaluate(()=>document.documentElement.style.getPropertyValue('--theme-accent'));
+    assert.ok(/^#[0-9a-f]{6}$/i.test(token),'wallpaper supplies a real accent');
+   }
+   assert.notEqual(borders[0],borders[1],theme+' A-Z index border must follow wallpaper color');
   }
   await page.evaluate(()=>setLauncherTheme('warm'));
   await page.locator('#audioWallpaperGrid .audio-art-choice').first().click();
