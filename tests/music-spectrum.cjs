@@ -11,6 +11,8 @@ const manifest=fs.readFileSync('app/src/main/AndroidManifest.xml','utf8');
 assert.match(native,/Visualizer\(0\)/,'global output-mix source must use real Android PCM');
 assert.match(native,/onWaveFormDataCapture/,'wave samples must originate in real output audio');
 assert.match(native,/RECORD_AUDIO/,'audio visualization requires runtime permission');
+assert.match(native,/measuredRms = capturedRms/,
+ 'RMS must be calculated from the full native PCM buffer, not decimated points');
 assert.match(manifest,/android\.permission\.RECORD_AUDIO/);
 assert.match(manifest,/android\.permission\.MODIFY_AUDIO_SETTINGS/);
 assert.match(manifest,/android\.permission\.FOREGROUND_SERVICE_MEDIA_PROJECTION/);
@@ -100,13 +102,25 @@ assert.doesNotMatch(projection,/MediaRecorder\.AudioSource\.MIC/,'do not fake pl
   });
   await page.waitForFunction(()=>window.audioDeskSpectrum.active());
   const response=await page.evaluate(()=>window.audioDeskSpectrum.smoothing());
-  assert.equal(response.riseMs,420,'real waveform uses a slow liquid attack');
-  assert.equal(response.releaseMs,1050,'real waveform glides to rest');
-  assert.ok(response.level<response.targetLevel*.7,
-   'the waveform must not jump instantly to the captured signal amplitude');
-  await page.waitForTimeout(250);
+  assert.equal(response.riseMs,95,'RMS meter responds quickly to real audio attacks');
+  assert.equal(response.releaseMs,340,'RMS energy decays smoothly without one-second lag');
+  assert.ok(response.targetLevel>.9,
+   'strong actual RMS must produce a clearly visible near-full-height wave');
+  await page.waitForTimeout(240);
   const eased=await page.evaluate(()=>window.audioDeskSpectrum.smoothing());
-  assert.ok(eased.level>=0,'waveform energy stays nonnegative');
+  assert.ok(eased.level>.35,
+   'RMS level should rise visibly within a fraction of a second');
+  assert.ok(eased.maxWaveHeight>.35,
+   'the spectrum itself must have visible height rather than only an RMS label');
+  assert.match(await page.locator('#musicSpectrumStatus').textContent(),/RMS .* dBFS/,
+   'the widget should display actual measured RMS');
+  await page.evaluate(()=>{
+   const samples=Array.from({length:96},(_,i)=>Math.sin(i*.37)*.13);
+   window.receiveAudioDeskSpectrum({state:'capturing',rms:.04,samples});
+  });
+  const quiet=await page.evaluate(()=>window.audioDeskSpectrum.smoothing());
+  assert.ok(quiet.targetLevel<response.targetLevel,
+   'quiet real PCM must drive a smaller wave than louder real PCM');
   const drawing=await page.locator('#musicSpectrumCanvas').evaluate(el=>
    Array.from(el.getContext('2d').getImageData(0,0,el.width,el.height).data)
     .filter((v,i)=>i%4===3&&v>0).length);
