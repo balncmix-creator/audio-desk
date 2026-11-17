@@ -105,9 +105,9 @@ class SpectrumProjectionService : Service() {
                     val now = SystemClock.uptimeMillis()
                     if (now - sent < 32L) continue
                     sent = now
-                    val samples = FloatArray(96) { i ->
-                        wave[(i * n / 96).coerceIn(0, n - 1)] / 32768f
-                    }
+                    // Do not decimate the PCM before FFT: that discards
+                    // high frequencies and makes the spectrum look static.
+                    val samples = FloatArray(n) { i -> wave[i] / 32768f }
                     observer?.invoke(samples)
                 }
             }, "AudioDesk-playback-visualizer").apply {
