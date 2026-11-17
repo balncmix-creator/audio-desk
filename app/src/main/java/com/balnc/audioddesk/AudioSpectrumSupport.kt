@@ -73,8 +73,12 @@ internal class AudioSpectrumSupport(
                         if (!active || fft == null || fft.size < 32) return
                         val now = android.os.SystemClock.uptimeMillis()
                         if (now - lastFftAt < 30L) return
-                        lastFftAt = now
                         val bands = SpectrumBands.fromVisualizerFft(fft, samplingRate)
+                        // Some OEM output-mix implementations deliver a
+                        // callback but no usable FFT magnitudes. Keep the
+                        // PCM-derived spectrum as a fallback in that case.
+                        if (SpectrumBands.isSilent(bands) && latestRms > .012) return
+                        lastFftAt = now
                         deliverSpectrum(latestRms, bands, "android-fft")
                     }
                 }, Visualizer.getMaxCaptureRate().coerceAtMost(30000), true, true)
