@@ -14,11 +14,17 @@ let wanted=deskStorage.getItem(key)==="true";
 let active=false,hasData=false,frameAt=0;
 let listeningAt=0,idleTimer=0;
 const RESOLUTION=64;
-// Frames come exclusively from native Android PCM; no synthetic movements.
+// Responsive RMS meter: the wave HEIGHT follows measured PCM energy, and
+// its horizontal ripples show a sliding history of actual RMS measurements.
+// No oscillator, random samples, synthetic beats or microphone substitution.
+const ATTACK_SECONDS=.095,RELEASE_SECONDS=.34;
+const RMS_REFERENCE=.16,RMS_EXPONENT=.52;
 const target=new Float32Array(RESOLUTION);
 const smooth=new Float32Array(RESOLUTION);
-let history=[],pendingFrame=0,previousTick=0,lastDraw=0,historyTick=0;
-let level=0,targetLevel=0;
+const rmsHistory=new Float32Array(RESOLUTION);
+let historyInitialized=false;
+let history=[],pendingFrame=0,previousTick=0,lastDraw=0,historyTick=0,lastRmsLabelAt=0;
+let level=0,targetLevel=0,rawRms=0;
 const head=widget.querySelector(".music-head"),buttons=widget.querySelector(".music-buttons");
 const shell=document.createElement("div");
 shell.id="musicSpectrum";
@@ -55,8 +61,9 @@ function updateButtons(){
 function resetWave(){
  cancelAnimationFrame(pendingFrame);pendingFrame=0;
  previousTick=0;lastDraw=0;historyTick=0;
- hasData=false;frameAt=0;level=0;targetLevel=0;
- target.fill(0);smooth.fill(0);history=[];
+ hasData=false;frameAt=0;level=0;targetLevel=0;rawRms=0;
+ target.fill(0);smooth.fill(0);rmsHistory.fill(0);
+ historyInitialized=false;history=[];
  resizeCanvas();draw();
 }
 function resizeCanvas(){
@@ -70,36 +77,38 @@ function resizeCanvas(){
   canvas.width=width;canvas.height=height;draw();
  }
 }
-// Convert actual signed PCM into a time-windowed local RMS contour. Using
-// smoothed energy instead of instantaneous phase prevents high-frequency
-// samples from snapping/jittering between adjacent capture frames.
-function pcmContour(samples){
- const raw=new Float32Array(RESOLUTION),out=new Float32Array(RESOLUTION);
- for(let i=0;i<RESOLUTION;i++){
-  const middle=Math.round(i*(samples.length-1)/(RESOLUTION-1));
-  let total=0,n=0;
-  for(let j=Math.max(0,middle-3);j<=Math.min(samples.length-1,middle+3);j++){
-   const sample=Math.max(-1,Math.min(1,Number(samples[j])||0));
-   total+=sample*sample;n++;
-  }
-  raw[i]=Math.sqrt(total/Math.max(1,n));
+// The Native bridge supplies real root-mean-square PCM levels. Map RMS to
+// visually useful height with a compressive curve (without a fake amplitude
+// floor), so quiet music remains legible while louder hits can fill the band.
+function rmsHeight(rms){
+ if(rms<=.006)return 0;
+ return Math.min(.98,Math.pow(Math.min(1,rms/RMS_REFERENCE),RMS_EXPONENT));
+}
+function pushRms(rms){
+ const height=rmsHeight(rms);
+ if(!historyInitialized){
+  // First visible shape may only use the real first audio measurement.
+  rmsHistory.fill(height);
+  historyInitialized=true;
+ }else{
+  rmsHistory.copyWithin(0,1);
+  rmsHistory[RESOLUTION-1]=height;
  }
- // A second, spatially-local smoothing pass makes the ripples rounded like
- // liquid, without inventing any amplitudes absent from the real PCM.
+ // Round the contour over ~five *real* RMS readings so it flows like water.
+ // Do not draw the last sample as a sharp vertical edge.
  for(let i=0;i<RESOLUTION;i++){
-  const left2=raw[Math.max(0,i-2)],left=raw[Math.max(0,i-1)];
-  const right=raw[Math.min(RESOLUTION-1,i+1)];
-  const right2=raw[Math.min(RESOLUTION-1,i+2)];
-  out[i]=(left2+2*left+3*raw[i]+2*right+right2)/9;
+  target[i]=(rmsHistory[Math.max(0,i-2)]+
+   rmsHistory[Math.max(0,i-1)]*2+rmsHistory[i]*3+
+   rmsHistory[Math.min(RESOLUTION-1,i+1)]*2+
+   rmsHistory[Math.min(RESOLUTION-1,i+2)])/9;
  }
- return out;
 }
 function curve(points,offset,gain,w,h,polarity){
  const count=points.length;
  if(count<2)return;
  const y=i=>{
   const edge=Math.pow(Math.sin(Math.PI*i/(count-1)),.58);
-  return h*.5+offset+polarity*points[i]*edge*h*.31*gain;
+  return h*.5+offset+polarity*points[i]*edge*h*.425*gain;
  };
  context.beginPath();context.moveTo(0,y(0));
  for(let i=0;i<count-1;i++){
@@ -131,7 +140,9 @@ function draw(){
   const wave=i===0?smooth:history[Math.min(i-1,history.length-1)]||smooth;
   const polarity=i%2===0?1:-1;
   const offset=i===0?0:(i%2?1:-1)*Math.floor((i+1)/2)*Math.min(h*.022,1.6);
-  const gain=(.37+level*.98)*(1+i*.07);
+  // RMS is already encoded in wave height; don't square the energy by
+  // multiplying it by a second low-RMS factor (the previous tiny-wave bug).
+  const gain=(.90+level*.08)*(1+i*.035);
   curve(wave,offset,gain,w,h,polarity);
   context.strokeStyle=i===0?accent:(i%3===0?pale:accent);
   context.lineWidth=(i===0?2.1:1.05)*Math.min(1.5,window.devicePixelRatio||1);
@@ -148,19 +159,19 @@ function tick(now){
   Math.max(.008,Math.min(.07,(now-previousTick)/1000)):.016;
  previousTick=now;
  // When input stops, ease to silence; don't fabricate a looping wave.
- if(frameAt&&now-frameAt>160){
+ if(frameAt&&now-frameAt>190){
   target.fill(0);targetLevel=0;
  }
- // Water-like movement: ~420ms rise and ~1050ms decay, time-based so it
- // remains consistent on both 30Hz budget phones and fast 120Hz screens.
+ // Responsive, controlled ballistics: 95ms RMS attack and 340ms release.
+ // Time based, so 30/60/120Hz devices feel similar without frantic jitter.
  for(let i=0;i<RESOLUTION;i++){
-  const tau=target[i]>smooth[i] ? .42 : 1.05;
+  const tau=target[i]>smooth[i] ? ATTACK_SECONDS : RELEASE_SECONDS;
   const blend=1-Math.exp(-seconds/tau);
   smooth[i]+=(target[i]-smooth[i])*blend;
  }
- const levelTau=targetLevel>level ? .42 : 1.05;
+ const levelTau=targetLevel>level ? ATTACK_SECONDS : RELEASE_SECONDS;
  level+=(targetLevel-level)*(1-Math.exp(-seconds/levelTau));
- if(!historyTick||now-historyTick>=105){
+ if(!historyTick||now-historyTick>=65){
   historyTick=now;
   history.unshift(Float32Array.from(smooth));
   if(history.length>7)history.length=7;
@@ -239,15 +250,19 @@ window.receiveAudioDeskSpectrum=function(data){
  }
  if(state!=="capturing"||!Array.isArray(data.samples)||data.samples.length<16)return;
  const rms=Math.min(1,Math.max(0,Number(data.rms)||0));
- if(rms>.009){
+ rawRms=rms;
+ if(rms>.006){
   active=true;hasData=true;frameAt=performance.now();
-  target.set(pcmContour(data.samples));
-  targetLevel=Math.min(1,rms*2.1);
-  if(status.textContent!=="Live · real audio, smoothed")
-   setStatus("Live · real audio, smoothed");
+  pushRms(rms);
+  targetLevel=rmsHeight(rms);
+  // A real RMS meter in dBFS, throttled to prevent heavy WebView DOM work.
+  if(performance.now()-lastRmsLabelAt>220){
+   lastRmsLabelAt=performance.now();
+   setStatus("LIVE RMS "+(20*Math.log10(rms)).toFixed(1)+" dBFS");
+  }
   showProjection(false);
  }else{
-  // Silence falls away gently; do not immediately erase a real last wave.
+  // Digital silence is zero RMS. Release naturally to the center line.
   target.fill(0);targetLevel=0;
   if(level<.006)setStatus("Silent or paused · waveform at rest");
  }
@@ -284,7 +299,9 @@ if(wanted&&window.AudioDesk?.setSpectrumActive)sync();
 window.audioDeskSpectrum={
  active:()=>active,enabled:()=>wanted,
  redraw:draw,
- smoothing:()=>({level,targetLevel,riseMs:420,releaseMs:1050}),
+ smoothing:()=>({level,targetLevel,rawRms,riseMs:95,releaseMs:340,
+  currentWaveHeight:smooth[Math.floor(RESOLUTION/2)],
+  maxWaveHeight:Math.max(...smooth)}),
  stop:()=>{wanted=false;deskStorage.setItem(key,"false");sync()}
 };
 })();
