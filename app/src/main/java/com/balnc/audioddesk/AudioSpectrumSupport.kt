@@ -46,7 +46,7 @@ internal class AudioSpectrumSupport(
                     ) {
                         if (!active || waveform == null || waveform.isEmpty()) return
                         val now = android.os.SystemClock.uptimeMillis()
-                        if (now - lastWaveAt < 45L) return
+                        if (now - lastWaveAt < 30L) return
                         lastWaveAt = now
                         val samples = FloatArray(96) { i ->
                             val index = (i.toLong() * waveform.size / 96).toInt()
@@ -67,7 +67,7 @@ internal class AudioSpectrumSupport(
                     override fun onFftDataCapture(
                         visualizer: Visualizer?, fft: ByteArray?, samplingRate: Int
                     ) { /* The displayed wave uses REAL PCM; never synthetic FFT motion. */ }
-                }, Visualizer.getMaxCaptureRate().coerceAtMost(18000), true, false)
+                }, Visualizer.getMaxCaptureRate().coerceAtMost(30000), true, false)
                 active = true
                 v.enabled = true
                 visualizer = v
