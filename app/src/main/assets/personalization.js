@@ -318,14 +318,14 @@ let longHold=0,longStart=null,longConsumed=false;
 function cancelHomeHold(){clearTimeout(longHold);longHold=0;longStart=null}
 $("launcherHomePage").addEventListener("touchstart",e=>{
  if(e.touches.length!==1||launcherPage!=="home")return;
- const target=e.target;if(target.closest("button,input,textarea,.launcher-app,.customize-overlay,#launcherHomeOptions"))return;
+ const target=e.target;if(target.closest("[data-widget-resizable],#widgetLayoutOverlay,button,input,textarea,.launcher-app,.customize-overlay,#launcherHomeOptions"))return;
  const clock=!!target.closest(".launcher-clock"),t=e.touches[0];longStart={x:t.clientX,y:t.clientY};longConsumed=false;
  clearTimeout(longHold);longHold=setTimeout(()=>{longConsumed=true;upStart=null;longStart=null;if(clock)openClockCustomizer();else $("launcherSettingsToggle").click()},520);
 },{passive:true});
 $("launcherHomePage").addEventListener("touchmove",e=>{if(!longStart||e.touches.length!==1)return;const t=e.touches[0];if(Math.hypot(t.clientX-longStart.x,t.clientY-longStart.y)>14)cancelHomeHold()},{passive:true});
 $("launcherHomePage").addEventListener("touchend",cancelHomeHold,{passive:true});
 $("launcherHomePage").addEventListener("touchcancel",cancelHomeHold,{passive:true});
-$("launcherHomePage").addEventListener("contextmenu",e=>{if(e.target.closest(".launcher-app,button,.customize-overlay"))return;e.preventDefault();if(e.target.closest(".launcher-clock"))openClockCustomizer();else $("launcherSettingsToggle").click()});
+$("launcherHomePage").addEventListener("contextmenu",e=>{if(e.target.closest("[data-widget-resizable],#widgetLayoutOverlay,.launcher-app,button,.customize-overlay"))return;e.preventDefault();if(e.target.closest(".launcher-clock"))openClockCustomizer();else $("launcherSettingsToggle").click()});
 applyClockDesign();syncWallpaperMotion();
 // Show a bundled portrait immediately; a blocked photo database cannot blank Home.
 applyWallpaper();
