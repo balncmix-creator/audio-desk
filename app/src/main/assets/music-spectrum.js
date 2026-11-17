@@ -154,11 +154,11 @@ function tick(now){
  // Water-like movement: ~420ms rise and ~1050ms decay, time-based so it
  // remains consistent on both 30Hz budget phones and fast 120Hz screens.
  for(let i=0;i<RESOLUTION;i++){
-  const tau=target[i]>smooth[i]?.42:1.05;
+  const tau=target[i]>smooth[i] ? .42 : 1.05;
   const blend=1-Math.exp(-seconds/tau);
   smooth[i]+=(target[i]-smooth[i])*blend;
  }
- const levelTau=targetLevel>level?.42:1.05;
+ const levelTau=targetLevel>level ? .42 : 1.05;
  level+=(targetLevel-level)*(1-Math.exp(-seconds/levelTau));
  if(!historyTick||now-historyTick>=105){
   historyTick=now;
@@ -173,6 +173,7 @@ function tick(now){
   pendingFrame=requestAnimationFrame(tick);
  }else{
   level=0;hasData=false;target.fill(0);smooth.fill(0);history=[];
+  if(wanted&&activeHome()&&active)setStatus("Silent or paused · waveform at rest");
   draw();
  }
 }
