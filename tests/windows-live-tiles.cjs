@@ -106,7 +106,7 @@ const origin='https://appassets.androidplatform.net/assets/';
   assert.equal(await whatsapp.locator('.win-tile-badge').textContent(),'3');
   assert.equal(await whatsapp.locator('.win-tile-back-primary').textContent(),'3');
   assert.equal(await whatsapp.locator('.win-tile-back-detail').textContent(),'ACTIVE NOTIFICATIONS');
-  assert.equal(await whatsapp.locator('.win-tile-back').textContent().includes('message text'),false);
+  assert.equal((await whatsapp.locator('.win-tile-back').textContent()).includes('message text'),false);
   await page.evaluate(()=>window.receiveAudioDeskLiveTileCounts({enabled:true,counts:{}}));
   assert.equal(await whatsapp.getAttribute('data-tile-info'),'',
    'cleared Android notifications clear the animated badge');
