@@ -100,7 +100,7 @@ const assert=require('node:assert/strict');
   // A physical touch hold on a widget must open ONLY its layout editor.
   // The Home long-press listener must not also open Audio Desk settings.
   await page.evaluate(()=>{
-   const widget=document.getElementById('warmDateWidget');
+   const widget=document.getElementById('launcherRecentStrip');
    const point={clientX:90,clientY:165,screenX:90,screenY:165};
    widget.dispatchEvent(new PointerEvent('pointerdown',{
     bubbles:true,pointerId:41,pointerType:'touch',isPrimary:true,button:0,...point
