@@ -2,7 +2,11 @@ package com.balnc.audioddesk
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.Manifest
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.media.projection.MediaProjectionManager
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -43,6 +47,11 @@ class MainActivity : Activity() {
     private lateinit var launcherSupport: HomeLauncherSupport
     private lateinit var systemWallpaperInstaller: SystemWallpaperInstaller
     private lateinit var mediaWidgetSupport: MediaWidgetSupport
+    private lateinit var spectrumSupport: AudioSpectrumSupport
+    private var spectrumVisible = false
+    private var projectionInUse = false
+    private val spectrumPermissionRequest = 6209
+    private val spectrumProjectionRequest = 6210
     private lateinit var pixelStatusBar: PixelStatusBar
     private var pixelHomeThemeRequested = false
     private var pixelBarActive = false
@@ -160,6 +169,7 @@ class MainActivity : Activity() {
         launcherSupport = HomeLauncherSupport(this)
         systemWallpaperInstaller = SystemWallpaperInstaller(applicationContext)
         mediaWidgetSupport = MediaWidgetSupport(this)
+        spectrumSupport = AudioSpectrumSupport(this, ::sendSpectrum)
         appWebView.addJavascriptInterface(AppBridge(), "AudioDesk")
         appWebView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
@@ -328,8 +338,74 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun sendSpectrum(data: JSONObject) {
+        runOnUiThread {
+            if (!destroyed && ::appWebView.isInitialized)
+                appWebView.evaluateJavascript(
+                    "window.receiveAudioDeskSpectrum&&window.receiveAudioDeskSpectrum(" +
+                        data.toString() + ")", null)
+        }
+    }
+
+    private fun requestSpectrumCapture() {
+        spectrumVisible = true
+        if (!::spectrumSupport.isInitialized) return
+        if (spectrumSupport.hasPermission()) {
+            if (!projectionInUse) spectrumSupport.start()
+        } else {
+            requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO),
+                spectrumPermissionRequest)
+        }
+    }
+
+    private fun requestPlaybackProjection() {
+        if (Build.VERSION.SDK_INT < 29) {
+            spectrumSupport.signal("unsupported")
+            return
+        }
+        if (!spectrumSupport.hasPermission()) {
+            requestSpectrumCapture()
+            return
+        }
+        val manager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        try {
+            @Suppress("DEPRECATION")
+            startActivityForResult(manager.createScreenCaptureIntent(), spectrumProjectionRequest)
+        } catch (_: Exception) {
+            spectrumSupport.signal("unsupported")
+        }
+    }
+
+    private fun stopSpectrumProjection() {
+        SpectrumProjectionService.observer = null
+        if (projectionInUse) {
+            projectionInUse = false
+            try { stopService(Intent(this, SpectrumProjectionService::class.java)) }
+            catch (_: Exception) {}
+        }
+    }
+
     private inner class AppBridge {
         @JavascriptInterface fun supportsAdaptiveAppIcons(): Boolean = true
+
+        @JavascriptInterface fun requestSpectrumCapture() {
+            runOnUiThread { if (!destroyed) this@MainActivity.requestSpectrumCapture() }
+        }
+        @JavascriptInterface fun requestSpectrumProjection() {
+            runOnUiThread { if (!destroyed) this@MainActivity.requestPlaybackProjection() }
+        }
+        @JavascriptInterface fun setSpectrumActive(visible: Boolean) {
+            runOnUiThread {
+                if (destroyed || !::spectrumSupport.isInitialized) return@runOnUiThread
+                spectrumVisible = visible
+                if (visible && spectrumSupport.hasPermission() && !projectionInUse)
+                    spectrumSupport.start()
+                else if (!visible) {
+                    spectrumSupport.stop()
+                    stopSpectrumProjection()
+                }
+            }
+        }
 
         @JavascriptInterface fun requestMediaState() {
             runOnUiThread {
@@ -585,6 +661,8 @@ class MainActivity : Activity() {
         pixelBarSuspended = false
         applyPixelStatusMode()
         if (::mediaWidgetSupport.isInitialized) sendMediaState(mediaWidgetSupport.state())
+        if (::spectrumSupport.isInitialized && spectrumVisible &&
+            spectrumSupport.hasPermission() && !projectionInUse) spectrumSupport.start()
         // Refresh installed apps after returning from another app or installing a package.
         if (::appWebView.isInitialized && ::launcherSupport.isInitialized)
             appWebView.evaluateJavascript(
@@ -593,6 +671,8 @@ class MainActivity : Activity() {
     }
 
     override fun onPause() {
+        if (::spectrumSupport.isInitialized) spectrumSupport.stop()
+        stopSpectrumProjection()
         pixelBarSuspended = true
         applyPixelStatusMode()
         if (::appWebView.isInitialized && !destroyed) appWebView.evaluateJavascript(
@@ -601,9 +681,47 @@ class MainActivity : Activity() {
         super.onPause()
     }
 
+    @Deprecated("Runtime permission callback compatibility")
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == spectrumPermissionRequest && ::spectrumSupport.isInitialized) {
+            if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED &&
+                spectrumVisible) spectrumSupport.start()
+            else spectrumSupport.signal("permission")
+        }
+    }
+
     @Deprecated("Activity result compatibility for minSdk 23")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == spectrumProjectionRequest) {
+            if (resultCode == RESULT_OK && data != null && spectrumVisible &&
+                Build.VERSION.SDK_INT >= 29) {
+                spectrumSupport.stop()
+                projectionInUse = true
+                SpectrumProjectionService.observer = { samples ->
+                    if (!destroyed && projectionInUse && spectrumVisible)
+                        spectrumSupport.deliverProjection(samples)
+                }
+                val service = Intent(this, SpectrumProjectionService::class.java).apply {
+                    action = SpectrumProjectionService.ACTION_START
+                    putExtra(SpectrumProjectionService.EXTRA_RESULT, resultCode)
+                    putExtra(SpectrumProjectionService.EXTRA_DATA, data)
+                }
+                try {
+                    startForegroundService(service)
+                    spectrumSupport.signal("listening")
+                } catch (_: Exception) {
+                    stopSpectrumProjection()
+                    spectrumSupport.signal("unsupported")
+                }
+            } else {
+                spectrumSupport.signal("unsupported")
+            }
+            return
+        }
         if (requestCode != wallpaperFileRequest) return
         val callback = wallpaperFileCallback
         wallpaperFileCallback = null
@@ -663,6 +781,8 @@ class MainActivity : Activity() {
         if (::feedDiscovery.isInitialized) feedDiscovery.close()
         if (::sampleDemos.isInitialized) sampleDemos.close()
         if (::launcherSupport.isInitialized) launcherSupport.close()
+        stopSpectrumProjection()
+        if (::spectrumSupport.isInitialized) spectrumSupport.close()
         if (::systemWallpaperInstaller.isInitialized) systemWallpaperInstaller.close()
         refreshHandler.removeCallbacks(refreshFailsafe)
         if (::browserWebView.isInitialized) browserWebView.destroy()
