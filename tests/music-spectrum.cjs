@@ -102,6 +102,16 @@ assert.doesNotMatch(projection,/MediaRecorder\.AudioSource\.MIC/,'do not fake pl
   assert.equal(await dialog.isVisible(),true,
    'a settings sheet is accessible directly from the music widget');
   let settings=await page.evaluate(()=>window.audioDeskSpectrum.settings());
+  assert.equal(settings.mode,'spectrum',
+   'single-sided Pro-Q-style spectrum is the default, not the mirror');
+  assert.equal(await page.locator('[data-spectrum-mode="spectrum"]').getAttribute('aria-pressed'),
+   'true','Spectrum tab is selected');
+  await page.locator('[data-spectrum-mode="wave"]').click();
+  assert.equal((await page.evaluate(()=>window.audioDeskSpectrum.displayGeometry())).mode,
+   'wave','existing mirrored wave is still available');
+  await page.locator('[data-spectrum-mode="spectrum"]').click();
+  assert.equal((await page.evaluate(()=>window.audioDeskSpectrum.displayGeometry())).mode,
+   'spectrum','spectrum can be restored without restarting audio');
   assert.deepEqual([settings.speed,settings.attackMs,settings.releaseMs],
    [5,18,115],'Fast is the new default response preset');
   await page.locator('#spec-setting-speed').evaluate(input=>{
@@ -125,6 +135,7 @@ assert.doesNotMatch(projection,/MediaRecorder\.AudioSource\.MIC/,'do not fake pl
   settings=await page.evaluate(()=>window.audioDeskSpectrum.settings());
   assert.equal(settings.speed,8,'stored speed survives an app reload');
   assert.equal(settings.releaseMs,70,'stored release survives an app reload');
+  assert.equal(settings.mode,'spectrum','analyzer mode persists on restart');
   await page.locator('#musicSpectrumSettingsToggle').click();
   await page.locator('[data-spectrum-preset="fluid"]').click();
   settings=await page.evaluate(()=>window.audioDeskSpectrum.settings());
@@ -173,6 +184,16 @@ assert.doesNotMatch(projection,/MediaRecorder\.AudioSource\.MIC/,'do not fake pl
    'strong actual RMS must produce a clearly visible near-full-height wave');
   await page.waitForTimeout(240);
   const eased=await page.evaluate(()=>window.audioDeskSpectrum.smoothing());
+  const graph=await page.evaluate(()=>window.audioDeskSpectrum.displayGeometry());
+  assert.equal(graph.mode,'spectrum','single-sided spectrum mode draws real FFT');
+  assert.equal(graph.points.length,64);
+  const baseline=Math.max(...graph.points.map(p=>p.y));
+  assert.ok(graph.points.every(p=>p.y<=baseline&&p.y>=0),
+   'the frequency analyzer only rises from its bottom baseline');
+  assert.ok(Math.min(...graph.points.map(p=>p.y)) < baseline*.85,
+   'frequency content creates raised spectrum peaks');
+  assert.ok(graph.points.every((p,i)=>i===0||p.x>graph.points[i-1].x),
+   'frequency progresses one direction from bass to treble');
   assert.ok(eased.level>.35,
    'RMS level should rise visibly within a fraction of a second');
   assert.ok(eased.maxWaveHeight>.35,
