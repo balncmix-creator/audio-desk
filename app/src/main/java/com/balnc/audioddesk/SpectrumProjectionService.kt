@@ -103,7 +103,7 @@ class SpectrumProjectionService : Service() {
                     } catch (_: RuntimeException) { break }
                     if (n <= 0) break
                     val now = SystemClock.uptimeMillis()
-                    if (now - sent < 48L) continue
+                    if (now - sent < 32L) continue
                     sent = now
                     val samples = FloatArray(96) { i ->
                         wave[(i * n / 96).coerceIn(0, n - 1)] / 32768f
