@@ -3,6 +3,12 @@
     <!-- Connectivity type only; no location, Wi-Fi scan, or sensitive phone state. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
+    <!-- Explicitly user-enabled real output-mix visualization, never microphone fallback. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- Android 10+ consent-backed playback capture uses an ongoing foreground notification. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <!-- Only launchable activities are visible on Android 11+. -->
     <queries>
         <intent>
@@ -24,6 +30,8 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+        <service android:name=".SpectrumProjectionService"
+            android:exported="false" android:foregroundServiceType="mediaProjection" />
         <activity android:name=".MainActivity" android:launchMode="singleTask"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="true">
