@@ -19,7 +19,7 @@ import kotlin.math.sqrt
  */
 internal object SpectrumBands {
     const val COUNT = 28
-    private const val LOW_HZ = 75.0
+    private const val LOW_HZ = 42.0
     private const val HIGH_HZ = 10500.0
 
     private fun bandForFrequency(hz: Double): Int {
