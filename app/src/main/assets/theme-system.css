@@ -752,3 +752,24 @@ body[data-launcher-theme] #launcherLetterPanel{
 body[data-launcher-theme] .widget-editing{
  outline-color:var(--ds-accent)!important;
 }
+
+/* Home surfaces keep their edition geometry while matching the wallpaper. */
+body[data-launcher-theme="pixel"] .launcher-clock .clock,
+body[data-launcher-theme="pixel"] .launcher-dots .active,
+body[data-launcher-theme="pixel"] .launcher-settings-fab .warm-settings-symbol{
+ color:var(--ds-accent)!important;
+}
+body[data-launcher-theme="pixel"] #launcherRecentStrip,
+body[data-launcher-theme="pixel"] #launcherFavorites,
+body[data-launcher-theme="pixel"] .pixel-icon{
+ background-color:var(--ds-panel)!important;
+ border-color:var(--ds-line)!important;
+}
+body[data-launcher-theme="pixel"] .launcher-settings-fab{
+ background:var(--ds-panel2)!important;
+ border-color:var(--ds-line)!important;
+ color:var(--ds-accent)!important;
+}
+body[data-launcher-theme="pixel"] .launcher-app:focus-visible{
+ outline:2px solid var(--ds-accent)!important;
+}
