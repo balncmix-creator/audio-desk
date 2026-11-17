@@ -53,7 +53,16 @@ internal class AudioSpectrumSupport(
                                 .coerceIn(0, waveform.lastIndex)
                             (((waveform[index].toInt() and 255) - 128) / 128f)
                         }
-                        deliverWave(samples)
+                        // Compute RMS from the FULL native capture buffer,
+                        // not only the 96 decimated points used for contours.
+                        // This avoids underreading frequency-rich music.
+                        var sumSquares = 0.0
+                        for (value in waveform) {
+                            val pcm = ((value.toInt() and 255) - 128) / 128.0
+                            sumSquares += pcm * pcm
+                        }
+                        val capturedRms = sqrt(sumSquares / waveform.size)
+                        deliverWave(samples, measuredRms = capturedRms)
                     }
                     override fun onFftDataCapture(
                         visualizer: Visualizer?, fft: ByteArray?, samplingRate: Int
@@ -81,10 +90,14 @@ internal class AudioSpectrumSupport(
         return false
     }
 
-    private fun deliverWave(samples: FloatArray, fromProjection: Boolean = false) {
+    private fun deliverWave(
+        samples: FloatArray,
+        fromProjection: Boolean = false,
+        measuredRms: Double? = null
+    ) {
         if (!active && !fromProjection) return
         val sum = samples.sumOf { it.toDouble() * it.toDouble() } / samples.size
-        val rms = sqrt(sum).coerceIn(0.0, 1.0)
+        val rms = (measuredRms ?: sqrt(sum)).coerceIn(0.0, 1.0)
         // Silence stays silence: the client must never generate random motion.
         val array = JSONArray()
         if (rms < .006) repeat(samples.size) { array.put(0.0) }
