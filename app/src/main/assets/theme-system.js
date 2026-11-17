@@ -278,8 +278,14 @@ window.receiveAudioDeskMedia=function(data){
   (data.enabled?"Open your music player":"Connect a compatible player");
  byId("musicPrev").disabled=!available||!data.canPrevious;
  byId("musicNext").disabled=!available||!data.canNext;
- byId("musicToggle").disabled=!available||!data.canToggle;
- byId("musicToggle").textContent=data.playing?"Ⅱ":"▶";
+ const toggle=byId("musicToggle");
+ toggle.disabled=!available||!data.canToggle;
+ // The icon describes the action: pause while playing, play while paused.
+ const isPlaying=available&&data.playing===true;
+ toggle.textContent=isPlaying?"❚❚":"▶";
+ toggle.setAttribute("aria-label",isPlaying?"Pause playback":"Play playback");
+ toggle.title=isPlaying?"Pause":"Play";
+ toggle.dataset.playing=String(isPlaying);
  byId("musicAccess").hidden=!!data.enabled;
  byId("musicAccessNote").textContent=available?
   (data.canNext?"Skip follows the player’s Next permission. Ads are not bypassed.":
@@ -297,6 +303,9 @@ function refreshMedia(){
 }
 window.addEventListener("launcher-page-changed",refreshMedia);
 document.addEventListener("visibilitychange",refreshMedia);
+// Player state may change outside Audio Desk; refresh only while Home is
+// visible and avoid aggressive polling on low-end devices.
+setInterval(refreshMedia,3500);
 const origResume=window.launcherOnResume;
 window.launcherOnResume=function(){origResume?.();refreshMedia()};
 refreshMedia();
