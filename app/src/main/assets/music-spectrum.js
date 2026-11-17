@@ -11,9 +11,14 @@ const widget=byId("launcherMusicWidget");
 if(!widget)return;
 const key="ad_real_spectrum_optin_v1";
 let wanted=deskStorage.getItem(key)==="true";
-let active=false, hasData=false, frameAt=0, lastDraw=0;
-let listeningAt=0, idleTimer=0;
-let trail=[],pendingFrame=0, amplitude=0, liveRms=0;
+let active=false,hasData=false,frameAt=0;
+let listeningAt=0,idleTimer=0;
+const RESOLUTION=64;
+// Frames come exclusively from native Android PCM; no synthetic movements.
+const target=new Float32Array(RESOLUTION);
+const smooth=new Float32Array(RESOLUTION);
+let history=[],pendingFrame=0,previousTick=0,lastDraw=0,historyTick=0;
+let level=0,targetLevel=0;
 const head=widget.querySelector(".music-head"),buttons=widget.querySelector(".music-buttons");
 const shell=document.createElement("div");
 shell.id="musicSpectrum";
@@ -48,8 +53,11 @@ function updateButtons(){
  }else actions.classList.add("spectrum-running");
 }
 function resetWave(){
- hasData=false;amplitude=0;liveRms=0;trail=[];
- scheduleDraw();
+ cancelAnimationFrame(pendingFrame);pendingFrame=0;
+ previousTick=0;lastDraw=0;historyTick=0;
+ hasData=false;frameAt=0;level=0;targetLevel=0;
+ target.fill(0);smooth.fill(0);history=[];
+ resizeCanvas();draw();
 }
 function resizeCanvas(){
  if(!context)return;
@@ -62,14 +70,41 @@ function resizeCanvas(){
   canvas.width=width;canvas.height=height;draw();
  }
 }
-function curve(points,offset,gain,w,h){
- const count=points.length;if(count<2)return;
- const y=i=>h*.5+offset+points[i]*h*.31*gain;
- context.beginPath();
- context.moveTo(0,y(0));
+// Convert actual signed PCM into a time-windowed local RMS contour. Using
+// smoothed energy instead of instantaneous phase prevents high-frequency
+// samples from snapping/jittering between adjacent capture frames.
+function pcmContour(samples){
+ const raw=new Float32Array(RESOLUTION),out=new Float32Array(RESOLUTION);
+ for(let i=0;i<RESOLUTION;i++){
+  const middle=Math.round(i*(samples.length-1)/(RESOLUTION-1));
+  let total=0,n=0;
+  for(let j=Math.max(0,middle-3);j<=Math.min(samples.length-1,middle+3);j++){
+   const sample=Math.max(-1,Math.min(1,Number(samples[j])||0));
+   total+=sample*sample;n++;
+  }
+  raw[i]=Math.sqrt(total/Math.max(1,n));
+ }
+ // A second, spatially-local smoothing pass makes the ripples rounded like
+ // liquid, without inventing any amplitudes absent from the real PCM.
+ for(let i=0;i<RESOLUTION;i++){
+  const left2=raw[Math.max(0,i-2)],left=raw[Math.max(0,i-1)];
+  const right=raw[Math.min(RESOLUTION-1,i+1)];
+  const right2=raw[Math.min(RESOLUTION-1,i+2)];
+  out[i]=(left2+2*left+3*raw[i]+2*right+right2)/9;
+ }
+ return out;
+}
+function curve(points,offset,gain,w,h,polarity){
+ const count=points.length;
+ if(count<2)return;
+ const y=i=>{
+  const edge=Math.pow(Math.sin(Math.PI*i/(count-1)),.58);
+  return h*.5+offset+polarity*points[i]*edge*h*.31*gain;
+ };
+ context.beginPath();context.moveTo(0,y(0));
  for(let i=0;i<count-1;i++){
-  const a=(i+.5)*w/(count-1),b=i*w/(count-1);
-  context.quadraticCurveTo(b,y(i),a,(y(i)+y(i+1))*.5);
+  const middle=(i+.5)*w/(count-1),left=i*w/(count-1);
+  context.quadraticCurveTo(left,y(i),middle,(y(i)+y(i+1))*.5);
  }
  context.lineTo(w,y(count-1));
 }
@@ -80,41 +115,69 @@ function draw(){
  context.clearRect(0,0,w,h);
  const accent=fontColor();
  const pale=getComputedStyle(widget).getPropertyValue("--theme-text").trim()||accent;
- // The stationary line is legitimate silence, never an idle/simulated wave.
+ // Transparent canvas: no inner square. The center line is real silence.
  context.save();
- context.strokeStyle=accent;context.globalAlpha=.22;
- context.lineWidth=Math.max(1,w/370);
+ context.strokeStyle=accent;context.globalAlpha=.15;
+ context.lineWidth=Math.max(1,w/420);
  context.beginPath();context.moveTo(2,h/2);context.lineTo(w-2,h/2);
  context.stroke();context.restore();
- if(!active||!hasData||amplitude<.006||!trail.length)return;
+ if(!active||!hasData||level<.006)return;
  context.save();
  const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches||
   document.body.classList.contains("low-power");
  const layers=reduced?3:7;
  context.globalCompositeOperation="screen";
  for(let i=layers-1;i>=0;i--){
-  const wave=trail[Math.min(i,trail.length-1)];
-  if(!wave)continue;
-  const sign=i%2===0?1:-1;
-  const offset=sign*Math.floor(i/2+1)*Math.min(h*.028,2.3);
-  const scale=(1+i*.065)*Math.min(1.4,.48+amplitude*1.55);
-  curve(wave,offset,scale,w,h);
-  const outer=i===0?accent:(i%3===0?pale:accent);
-  context.strokeStyle=outer;
-  context.lineWidth=(i===0?2.2:1.1)*Math.min(1.5,window.devicePixelRatio||1);
-  context.globalAlpha=i===0?.95:Math.max(.11,.66-i*.09);
+  const wave=i===0?smooth:history[Math.min(i-1,history.length-1)]||smooth;
+  const polarity=i%2===0?1:-1;
+  const offset=i===0?0:(i%2?1:-1)*Math.floor((i+1)/2)*Math.min(h*.022,1.6);
+  const gain=(.37+level*.98)*(1+i*.07);
+  curve(wave,offset,gain,w,h,polarity);
+  context.strokeStyle=i===0?accent:(i%3===0?pale:accent);
+  context.lineWidth=(i===0?2.1:1.05)*Math.min(1.5,window.devicePixelRatio||1);
+  context.globalAlpha=i===0?.94:Math.max(.10,.60-i*.075);
   context.shadowColor=accent;
-  context.shadowBlur=reduced?0:(i===0?14:9)*Math.min(1.6,window.devicePixelRatio||1);
+  context.shadowBlur=reduced?0:(i===0?15:11)*Math.min(1.6,window.devicePixelRatio||1);
   context.stroke();
  }
  context.restore();
 }
-function scheduleDraw(){
- if(pendingFrame)return;
- pendingFrame=requestAnimationFrame(()=>{pendingFrame=0;resizeCanvas();draw()});
+function tick(now){
+ pendingFrame=0;
+ const seconds=previousTick?
+  Math.max(.008,Math.min(.07,(now-previousTick)/1000)):.016;
+ previousTick=now;
+ // When input stops, ease to silence; don't fabricate a looping wave.
+ if(frameAt&&now-frameAt>160){
+  target.fill(0);targetLevel=0;
+ }
+ // Water-like movement: ~420ms rise and ~1050ms decay, time-based so it
+ // remains consistent on both 30Hz budget phones and fast 120Hz screens.
+ for(let i=0;i<RESOLUTION;i++){
+  const tau=target[i]>smooth[i]?.42:1.05;
+  const blend=1-Math.exp(-seconds/tau);
+  smooth[i]+=(target[i]-smooth[i])*blend;
+ }
+ const levelTau=targetLevel>level?.42:1.05;
+ level+=(targetLevel-level)*(1-Math.exp(-seconds/levelTau));
+ if(!historyTick||now-historyTick>=105){
+  historyTick=now;
+  history.unshift(Float32Array.from(smooth));
+  if(history.length>7)history.length=7;
+ }
+ const lowPower=document.body.classList.contains("low-power");
+ if(now-lastDraw>=(lowPower?50:32)){
+  lastDraw=now;resizeCanvas();draw();
+ }
+ if(targetLevel>.001||level>.006||(frameAt&&now-frameAt<160)){
+  pendingFrame=requestAnimationFrame(tick);
+ }else{
+  level=0;hasData=false;target.fill(0);smooth.fill(0);history=[];
+  draw();
+ }
 }
-function shouldCapture(){
- return activeHome()&&!!window.AudioDesk?.setSpectrumActive;
+function scheduleDraw(){
+ if(!pendingFrame)pendingFrame=requestAnimationFrame(tick);
 }
 function sync(){
  const home=activeHome();
@@ -174,29 +237,27 @@ window.receiveAudioDeskSpectrum=function(data){
   return;
  }
  if(state!=="capturing"||!Array.isArray(data.samples)||data.samples.length<16)return;
- const wave=data.samples.map(v=>Math.max(-1,Math.min(1,Number(v)||0)));
  const rms=Math.min(1,Math.max(0,Number(data.rms)||0));
- // PCM mean-square energy and every contour point originate in the native
- // audio stream. Trails preserve previous REAL frames; never add randomness.
  if(rms>.009){
-  active=true;hasData=true;frameAt=Date.now();
-  liveRms=liveRms*.72+rms*.28;
-  amplitude=Math.min(1,Math.max(.018,liveRms*2.2));
-  trail.unshift(wave);trail.length=Math.min(7,trail.length);
-  setStatus("Live · actual playback signal");
+  active=true;hasData=true;frameAt=performance.now();
+  target.set(pcmContour(data.samples));
+  targetLevel=Math.min(1,rms*2.1);
+  if(status.textContent!=="Live · real audio, smoothed")
+   setStatus("Live · real audio, smoothed");
   showProjection(false);
  }else{
-  liveRms*=.35;amplitude*=.35;
-  if(amplitude<.01){resetWave();setStatus("Silent or paused · waveform at rest")}
+  // Silence falls away gently; do not immediately erase a real last wave.
+  target.fill(0);targetLevel=0;
+  if(level<.006)setStatus("Silent or paused · waveform at rest");
  }
  scheduleDraw();
 };
 const stateHandler=window.receiveAudioDeskMedia;
 window.receiveAudioDeskMedia=function(data){
  stateHandler?.(data);
- if(!data?.playing&&active&&Date.now()-frameAt>1000){
-  resetWave();
-  setStatus("Paused · waveform at rest");
+ if(!data?.playing&&active&&performance.now()-frameAt>450){
+  target.fill(0);targetLevel=0;scheduleDraw();
+  setStatus("Paused · smoothly returning to rest");
  }
 };
 function checkInput(){
@@ -222,6 +283,7 @@ if(wanted&&window.AudioDesk?.setSpectrumActive)sync();
 window.audioDeskSpectrum={
  active:()=>active,enabled:()=>wanted,
  redraw:draw,
+ smoothing:()=>({level,targetLevel,riseMs:420,releaseMs:1050}),
  stop:()=>{wanted=false;deskStorage.setItem(key,"false");sync()}
 };
 })();
