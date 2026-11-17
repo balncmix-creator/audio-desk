@@ -11,7 +11,7 @@ const presets={
  fluid:{speed:2,attackMs:115,releaseMs:450,sensitivity:125,height:90,glow:85,trails:7}
 };
 const controls=[
- ["speed","Wave speed",1,8,1,"×","How quickly real RMS readings move across the wave"],
+ ["speed","Wave speed",1,8,1,"×","How quickly real frequency peaks follow the music"],
  ["attackMs","Attack",8,240,1," ms","How quickly the visualizer rises on a beat"],
  ["releaseMs","Release",40,850,10," ms","How long energy fades after each beat"],
  ["sensitivity","RMS sensitivity",50,400,5,"%","How prominently quiet music appears"],
