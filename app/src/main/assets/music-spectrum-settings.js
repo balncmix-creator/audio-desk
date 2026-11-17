@@ -34,20 +34,20 @@ overlay.hidden=true;
 overlay.innerHTML=`
  <section id="musicSpectrumTuningDialog" class="music-spectrum-tuning"
   role="dialog" aria-modal="true" aria-label="Music visualizer settings">
-  <header class="spectrum-tuning-header">
+  <div class="spectrum-tuning-header">
    <div><strong>Visualizer settings</strong><small>Adjust response while listening</small></div>
    <button type="button" id="musicSpectrumTuningClose" aria-label="Close visualizer settings">×</button>
-  </header>
+  </div>
   <div class="spectrum-tuning-presets" role="group" aria-label="Visualizer presets">
    <button type="button" data-spectrum-preset="fast">Fast</button>
    <button type="button" data-spectrum-preset="balanced">Balanced</button>
    <button type="button" data-spectrum-preset="fluid">Fluid</button>
   </div>
   <div id="musicSpectrumTuningControls" class="spectrum-tuning-controls"></div>
-  <footer>
+  <div class="spectrum-tuning-footer">
    <small>Updates immediately · saved automatically on this phone. Audio data stays on-device.</small>
    <button type="button" id="musicSpectrumTuningReset">Reset</button>
-  </footer>
+  </div>
  </section>`;
 document.body.appendChild(overlay);
 const closeButton=document.getElementById("musicSpectrumTuningClose");
