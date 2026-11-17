@@ -11,8 +11,15 @@ const manifest=fs.readFileSync('app/src/main/AndroidManifest.xml','utf8');
 assert.match(native,/Visualizer\(0\)/,'global output-mix source must use real Android PCM');
 assert.match(native,/onWaveFormDataCapture/,'wave samples must originate in real output audio');
 assert.match(native,/RECORD_AUDIO/,'audio visualization requires runtime permission');
-assert.match(native,/measuredRms = capturedRms/,
- 'RMS must be calculated from the full native PCM buffer, not decimated points');
+assert.match(native,/latestRms = sqrt\(sumSquares \/ waveform.size\)/,
+ 'RMS must be calculated from the entire native capture buffer');
+assert.match(native,/onFftDataCapture/,'Android real FFT callback is enabled');
+assert.match(native,/true, true\)/,
+ 'Android visualizer must request both waveform and frequency data');
+const dsp=fs.readFileSync('app/src/main/java/com/balnc/audioddesk/SpectrumBands.kt','utf8');
+assert.match(dsp,/fromVisualizerFft/);
+assert.match(dsp,/fromPcm/);
+assert.match(projection,/FloatArray\(n\)/,'projection must retain entire PCM buffer for FFT');
 assert.match(native,/getMaxCaptureRate\(\)\.coerceAtMost\(30000\)/,
  'native capture should request up to 30Hz to give responsive RMS motion');
 assert.match(projection,/now - sent < 32L/,
@@ -144,10 +151,20 @@ assert.doesNotMatch(projection,/MediaRecorder\.AudioSource\.MIC/,'do not fake pl
   assert.equal(await page.locator('#musicToggle').textContent(),'❚❚');
   assert.equal(await page.locator('#musicToggle').getAttribute('aria-label'),'Pause playback');
   await page.evaluate(()=>window.receiveAudioDeskSpectrum({state:'listening'}));
-  await page.evaluate(()=>{
-   const samples=Array.from({length:96},(_,i)=>Math.sin(i*.37)*.7);
-   window.receiveAudioDeskSpectrum({state:'capturing',rms:.4,samples});
-  });
+  const bassBands=Array.from({length:28},(_,i)=>i>=3&&i<=7?.75:.025);
+  const trebleBands=Array.from({length:28},(_,i)=>i>=19&&i<=23?.75:.025);
+  await page.evaluate(bands=>{
+   window.receiveAudioDeskSpectrum({state:'capturing',rms:.4,bands,source:'android-fft'});
+  },bassBands);
+  const bassState=await page.evaluate(()=>window.audioDeskSpectrum.frequencyState());
+  assert.ok(bassState.target[11]>bassState.target[50],
+   'bass-rich audio creates a low-frequency peak, not a static oval');
+  await page.evaluate(bands=>{
+   window.receiveAudioDeskSpectrum({state:'capturing',rms:.4,bands,source:'android-fft'});
+  },trebleBands);
+  const trebleState=await page.evaluate(()=>window.audioDeskSpectrum.frequencyState());
+  assert.ok(trebleState.target[50]>trebleState.target[11],
+   'same RMS but different frequencies must produce a DIFFERENT spectrum shape');
   await page.waitForFunction(()=>window.audioDeskSpectrum.active());
   const response=await page.evaluate(()=>window.audioDeskSpectrum.smoothing());
   assert.equal(response.riseMs,18,'Fast preset responds quickly to beats');
@@ -160,15 +177,24 @@ assert.doesNotMatch(projection,/MediaRecorder\.AudioSource\.MIC/,'do not fake pl
    'RMS level should rise visibly within a fraction of a second');
   assert.ok(eased.maxWaveHeight>.35,
    'the spectrum itself must have visible height rather than only an RMS label');
-  assert.match(await page.locator('#musicSpectrumStatus').textContent(),/RMS .* dBFS/,
+  assert.match(await page.locator('#musicSpectrumStatus').textContent(),/FFT \+ RMS .* dBFS/,
    'the widget should display actual measured RMS');
-  await page.evaluate(()=>{
-   const samples=Array.from({length:96},(_,i)=>Math.sin(i*.37)*.13);
-   window.receiveAudioDeskSpectrum({state:'capturing',rms:.04,samples});
-  });
+  await page.evaluate(bands=>{
+   window.receiveAudioDeskSpectrum({state:'capturing',rms:.04,bands,source:'projection-fft'});
+  },trebleBands);
   const quiet=await page.evaluate(()=>window.audioDeskSpectrum.smoothing());
   assert.ok(quiet.targetLevel<response.targetLevel,
    'quiet real PCM must drive a smaller wave than louder real PCM');
+  // No FFT means NO invented oval, even if native sends a loud RMS level.
+  await page.evaluate(()=>window.receiveAudioDeskSpectrum({state:'capturing',rms:.55}));
+  const unavailable=await page.evaluate(()=>window.audioDeskSpectrum.frequencyState());
+  assert.ok(unavailable.target.every(value=>value===0),
+   'RMS-only input cannot fake frequency contours');
+  assert.match(await page.locator('#musicSpectrumStatus').textContent(),/no frequency data/,
+   'RMS-only capture is clearly identified');
+  await page.evaluate(bands=>{
+   window.receiveAudioDeskSpectrum({state:'capturing',rms:.2,bands,source:'pcm-fft'});
+  },bassBands);
   const drawing=await page.locator('#musicSpectrumCanvas').evaluate(el=>
    Array.from(el.getContext('2d').getImageData(0,0,el.width,el.height).data)
     .filter((v,i)=>i%4===3&&v>0).length);
