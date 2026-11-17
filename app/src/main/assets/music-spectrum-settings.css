@@ -112,3 +112,23 @@ body[data-launcher-theme="windows"] .music-spectrum-tuning button{
 @media(prefers-reduced-motion:reduce){
  .music-spectrum-tuning-overlay,.music-spectrum-tuning{transition:none!important}
 }
+
+/* Two deliberate display modes: frequency spectrum is the default.
+   Keep the styling edition-aware without drawing a frame around the graph. */
+.spectrum-tuning-modes{
+ display:grid;grid-template-columns:1fr 1fr;gap:7px;
+}
+.spectrum-tuning-modes button[aria-pressed="true"]{
+ background:var(--ds-accent,#ddd)!important;
+ border-color:var(--ds-accent,#ddd)!important;
+ color:var(--theme-accent-ink,#14151a)!important;
+}
+.spectrum-mode-hint{
+ display:block;
+ font:400 10px/1.35 var(--ds-font,system-ui,sans-serif);
+ color:var(--ds-muted,#bdbdbd);margin-top:-7px;
+}
+body[data-launcher-theme="pixel"] .spectrum-tuning-modes button,
+body[data-launcher-theme="windows"] .spectrum-tuning-modes button{
+ border-radius:0!important;
+}
