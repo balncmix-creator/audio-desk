@@ -344,6 +344,32 @@ class MainActivity : Activity() {
                     sendMediaState(mediaWidgetSupport.command(action))
             }
         }
+        /**
+         * Live Tiles: opt-in active notification counts. Only verified installed
+         * launcher packages are accepted; no notification text crosses the bridge.
+         * The WebView never requests this until the user enables the feature.
+         */
+        @JavascriptInterface fun requestLiveTileCounts(packagesJson: String) {
+            if (packagesJson.length > 4096) return
+            runOnUiThread {
+                if (destroyed || !::mediaWidgetSupport.isInitialized ||
+                    !::launcherSupport.isInitialized || !::appWebView.isInitialized) return@runOnUiThread
+                val requested = try {
+                    val json = org.json.JSONArray(packagesJson)
+                    (0 until minOf(json.length(), 24))
+                        .mapNotNull { json.optString(it).takeIf { pkg ->
+                            pkg.length in 4..180 && pkg.matches(Regex("[A-Za-z0-9_.]+")) &&
+                                launcherSupport.hasLaunchablePackage(pkg)
+                        } }.toSet()
+                } catch (_: Exception) { emptySet<String>() }
+                val data = mediaWidgetSupport.liveTileCounts(requested)
+                appWebView.evaluateJavascript(
+                    "window.receiveAudioDeskLiveTileCounts&&window.receiveAudioDeskLiveTileCounts(" +
+                        data.toString() + ")", null
+                )
+            }
+        }
+
         @JavascriptInterface fun requestMediaAccess() {
             runOnUiThread {
                 if (!destroyed && ::mediaWidgetSupport.isInitialized)
