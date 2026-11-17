@@ -47,14 +47,18 @@ function setWallpaperColors(accent,panel,dark){
  if(!a||!p||!d)return;
  const root=document.documentElement.style;
  const panelLuma=(p[0]*.2126+p[1]*.7152+p[2]*.0722)/255;
- root.setProperty("--theme-accent",accent);
+ const darkLuma=(d[0]*.2126+d[1]*.7152+d[2]*.0722)/255;
+ const tint=mixColor(a,[255,255,255],.10);
+ root.setProperty("--theme-accent",tint);
+ root.setProperty("--theme-accent-ink",darkLuma>.58?"#181719":"#121419");
  root.setProperty("--theme-panel",panel);
- root.setProperty("--theme-ink",panelLuma>.56?"#292529":"#f9f4f2");
+ root.setProperty("--theme-ink",panelLuma>.56?"#25252b":"#f9f7f6");
  root.setProperty("--theme-dark",dark);
- root.setProperty("--theme-surface",mixColor(d,[82,74,80],.42));
- root.setProperty("--theme-surface2",mixColor(d,[111,101,107],.48));
- root.setProperty("--theme-line",mixColor(d,a,.40));
- root.setProperty("--theme-muted",mixColor(a,[177,173,176],.40));
+ root.setProperty("--theme-text",darkLuma>.58?"#17171a":mixColor(a,[250,250,250],.82));
+ root.setProperty("--theme-surface",mixColor(d,a,.16));
+ root.setProperty("--theme-surface2",mixColor(d,a,.28));
+ root.setProperty("--theme-line",mixColor(d,a,.49));
+ root.setProperty("--theme-muted",mixColor(a,[240,239,240],.64));
  root.setProperty("--theme-glass",mixColor(p,[244,240,238],.18));
 }
 function refreshWallpaperColors(){
@@ -68,18 +72,28 @@ function refreshWallpaperColors(){
   const ctx=canvas.getContext("2d",{willReadFrequently:true});
   ctx.drawImage(img,0,0,32,32);
   const pixels=ctx.getImageData(0,0,32,32).data;
-  const sum=[0,0,0];let weight=0;
+  const sum=[0,0,0],chromatic=[0,0,0];let weight=0,colorWeight=0;
   for(let i=0;i<pixels.length;i+=4){
    const r=pixels[i],g=pixels[i+1],b=pixels[i+2];
-   const saturation=(Math.max(r,g,b)-Math.min(r,g,b))/255;
-   const w=.5+saturation*1.75;
+   const max=Math.max(r,g,b),min=Math.min(r,g,b);
+   const saturation=(max-min)/255;
+   const visibility=max/255;
+   const w=.3+saturation*.9;
    sum[0]+=r*w;sum[1]+=g*w;sum[2]+=b*w;weight+=w;
+   // A small, saturated area should set the accent on dark audio wallpapers;
+   // averaging the entire frame otherwise turns every accent grey or pink.
+   const chromaWeight=saturation*saturation*visibility*visibility;
+   if(chromaWeight>.014){
+    chromatic[0]+=r*chromaWeight;chromatic[1]+=g*chromaWeight;
+    chromatic[2]+=b*chromaWeight;colorWeight+=chromaWeight;
+   }
   }
   const avg=sum.map(x=>x/weight);
-  const accent=mixColor(avg,[242,238,235],.42);
-  const panel=mixColor(avg,[240,234,231],.72);
-  const dark=mixColor(avg,[22,20,24],.82);
-  setWallpaperColors(accent,panel,dark);
+  const dominant=colorWeight>.3?chromatic.map(x=>x/colorWeight):avg;
+  const accent=mixColor(dominant,[250,250,250],.22);
+  const panel=mixColor(avg,[242,240,241],.70);
+  const dark=mixColor(avg,[15,15,20],.83);
+  setWallpaperColors(rgbHex(accent),panel,dark);
  }catch{setWallpaperColors("#eedbd4","#f0dad3","#1b181a")}
 }
 // The wallpaper picker and imported images all pass through this decoded-image path.
@@ -90,8 +104,8 @@ applyWallpaper=async function(){
 };
 window.audioDeskApplyWallpaperColors=(accent,dark)=>{
  const a=colorRgb(accent);if(!a||!colorRgb(dark))return;
- setWallpaperColors(mixColor(a,[250,243,239],.18),
-  mixColor(a,[240,233,229],.60),dark);
+ setWallpaperColors(accent,
+  mixColor(a,[241,240,242],.66),dark);
 };
 window.audioDeskRefreshWallpaperColors=refreshWallpaperColors;
 function setPalette(id){
