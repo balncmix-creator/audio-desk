@@ -143,14 +143,22 @@ input.addEventListener("change",()=>{
  }
 });
 updateSetting();
-// Put the real clock/calendar/news data first, so they're visible before
-// the arbitrary app shortcuts. Keep the standalone music controls below tiles.
-fav.before(tiles);
-fav.after(byId("launcherMusicWidget"));
+// Windows places live content ahead of app tiles. Other editions retain
+// their original widget arrangement and saved per-theme layout positions.
+function arrange(){
+ const music=byId("launcherMusicWidget");
+ if(launcherTheme==="windows"){
+  fav.before(tiles);
+  fav.after(music);
+ }else{
+  byId("launcherTilesSearch").before(music);
+  byId("launcherRecentStrip").after(tiles);
+ }
+}
 const originalRender=renderLauncherHome;
-renderLauncherHome=function(){originalRender();decorate();poll()};
+renderLauncherHome=function(){originalRender();arrange();decorate();poll()};
 const originalTheme=setLauncherTheme;
-setLauncherTheme=function(theme){originalTheme(theme);decorate();poll()};
+setLauncherTheme=function(theme){originalTheme(theme);arrange();decorate();poll()};
 window.addEventListener("audio-desk-news-updated",update);
 window.addEventListener("launcher-page-changed",()=>{decorate();poll()});
 window.addEventListener("focus",poll);
@@ -164,6 +172,6 @@ setInterval(()=>{
  updateLauncherLiveTiles();
  update();poll();
 },60000);
-decorate();poll();
+arrange();decorate();poll();
 window.audioDeskWindowsTiles={refresh:update,optedIn:()=>notificationsOn};
 })();
