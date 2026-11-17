@@ -17,14 +17,48 @@ const RESOLUTION=64;
 // Responsive RMS meter: the wave HEIGHT follows measured PCM energy, and
 // its horizontal ripples show a sliding history of actual RMS measurements.
 // No oscillator, random samples, synthetic beats or microphone substitution.
-const ATTACK_SECONDS=.095,RELEASE_SECONDS=.34;
+const SETTINGS_KEY="ad_visualizer_tuning_v1";
+const PRESETS={
+ fast:{speed:5,attackMs:18,releaseMs:115,sensitivity:175,height:95,glow:70,trails:6},
+ balanced:{speed:3,attackMs:55,releaseMs:240,sensitivity:145,height:88,glow:65,trails:6},
+ fluid:{speed:2,attackMs:115,releaseMs:450,sensitivity:125,height:90,glow:85,trails:7}
+};
+const LIMITS={speed:[1,8],attackMs:[8,240],releaseMs:[40,850],
+ sensitivity:[50,400],height:[40,100],glow:[0,100],trails:[1,7]};
+function loadTuning(){
+ const settings={...PRESETS.fast};
+ try{
+  const saved=JSON.parse(deskStorage.getItem(SETTINGS_KEY)||"null");
+  if(saved&&typeof saved==="object")for(const name of Object.keys(LIMITS)){
+   if(Number.isFinite(Number(saved[name]))&&saved[name]!=null){
+    const [lo,hi]=LIMITS[name];
+    settings[name]=Math.max(lo,Math.min(hi,Math.round(Number(saved[name]))));
+   }
+  }
+ }catch{}
+ return settings;
+}
+const tuning=loadTuning();
+function configureTuning(patch){
+ if(!patch||typeof patch!=="object")return;
+ for(const name of Object.keys(LIMITS)){
+  if(!Object.prototype.hasOwnProperty.call(patch,name)||!Number.isFinite(Number(patch[name])))continue;
+  const [lo,hi]=LIMITS[name];
+  tuning[name]=Math.max(lo,Math.min(hi,Math.round(Number(patch[name]))));
+ }
+ deskStorage.setItem(SETTINGS_KEY,JSON.stringify(tuning));
+ scheduleDraw();
+}
+function applyPreset(name){
+ if(Object.prototype.hasOwnProperty.call(PRESETS,name))configureTuning(PRESETS[name]);
+}
 const RMS_REFERENCE=.16,RMS_EXPONENT=.52;
 const target=new Float32Array(RESOLUTION);
 const smooth=new Float32Array(RESOLUTION);
 const rmsHistory=new Float32Array(RESOLUTION);
 let historyInitialized=false;
 let history=[],pendingFrame=0,previousTick=0,lastDraw=0,historyTick=0,lastRmsLabelAt=0;
-let level=0,targetLevel=0,rawRms=0;
+let level=0,targetLevel=0,rawRms=0,lastHistoryValue=0;
 const head=widget.querySelector(".music-head"),buttons=widget.querySelector(".music-buttons");
 const shell=document.createElement("div");
 shell.id="musicSpectrum";
@@ -61,7 +95,7 @@ function updateButtons(){
 function resetWave(){
  cancelAnimationFrame(pendingFrame);pendingFrame=0;
  previousTick=0;lastDraw=0;historyTick=0;
- hasData=false;frameAt=0;level=0;targetLevel=0;rawRms=0;
+ hasData=false;frameAt=0;level=0;targetLevel=0;rawRms=0;lastHistoryValue=0;
  target.fill(0);smooth.fill(0);rmsHistory.fill(0);
  historyInitialized=false;history=[];
  resizeCanvas();draw();
@@ -82,18 +116,23 @@ function resizeCanvas(){
 // floor), so quiet music remains legible while louder hits can fill the band.
 function rmsHeight(rms){
  if(rms<=.006)return 0;
- return Math.min(.98,Math.pow(Math.min(1,rms/RMS_REFERENCE),RMS_EXPONENT));
+ return Math.min(.98,Math.pow(Math.min(1,rms/(RMS_REFERENCE/(tuning.sensitivity/100))),RMS_EXPONENT));
 }
 function pushRms(rms){
  const height=rmsHeight(rms);
  if(!historyInitialized){
-  // First visible shape may only use the real first audio measurement.
   rmsHistory.fill(height);
   historyInitialized=true;
  }else{
-  rmsHistory.copyWithin(0,1);
-  rmsHistory[RESOLUTION-1]=height;
+  // Speed controls horizontal travel; intermediate values interpolate TWO
+  // genuine measurements, never introduce synthetic beats.
+  for(let i=1;i<=tuning.speed;i++){
+   rmsHistory.copyWithin(0,1);
+   rmsHistory[RESOLUTION-1]=lastHistoryValue+
+    (height-lastHistoryValue)*i/tuning.speed;
+  }
  }
+ lastHistoryValue=height;
  // Round the contour over ~five *real* RMS readings so it flows like water.
  // Do not draw the last sample as a sharp vertical edge.
  for(let i=0;i<RESOLUTION;i++){
@@ -134,7 +173,7 @@ function draw(){
  context.save();
  const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches||
   document.body.classList.contains("low-power");
- const layers=reduced?3:7;
+ const layers=Math.min(tuning.trails,reduced?3:7);
  context.globalCompositeOperation="screen";
  for(let i=layers-1;i>=0;i--){
   const wave=i===0?smooth:history[Math.min(i-1,history.length-1)]||smooth;
@@ -142,13 +181,14 @@ function draw(){
   const offset=i===0?0:(i%2?1:-1)*Math.floor((i+1)/2)*Math.min(h*.022,1.6);
   // RMS is already encoded in wave height; don't square the energy by
   // multiplying it by a second low-RMS factor (the previous tiny-wave bug).
-  const gain=(.90+level*.08)*(1+i*.035);
+  const gain=(.90+level*.08)*(1+i*.035)*(tuning.height/100);
   curve(wave,offset,gain,w,h,polarity);
   context.strokeStyle=i===0?accent:(i%3===0?pale:accent);
   context.lineWidth=(i===0?2.1:1.05)*Math.min(1.5,window.devicePixelRatio||1);
   context.globalAlpha=i===0?.94:Math.max(.10,.60-i*.075);
   context.shadowColor=accent;
-  context.shadowBlur=reduced?0:(i===0?15:11)*Math.min(1.6,window.devicePixelRatio||1);
+  context.shadowBlur=reduced?0:(i===0?15:11)*Math.min(1.6,window.devicePixelRatio||1)*
+   tuning.glow/70;
   context.stroke();
  }
  context.restore();
@@ -162,14 +202,13 @@ function tick(now){
  if(frameAt&&now-frameAt>190){
   target.fill(0);targetLevel=0;
  }
- // Responsive, controlled ballistics: 95ms RMS attack and 340ms release.
- // Time based, so 30/60/120Hz devices feel similar without frantic jitter.
+ // Adjustable true RMS ballistics, time-based for all display refresh rates.
  for(let i=0;i<RESOLUTION;i++){
-  const tau=target[i]>smooth[i] ? ATTACK_SECONDS : RELEASE_SECONDS;
+  const tau=(target[i]>smooth[i]?tuning.attackMs:tuning.releaseMs)/1000;
   const blend=1-Math.exp(-seconds/tau);
   smooth[i]+=(target[i]-smooth[i])*blend;
  }
- const levelTau=targetLevel>level ? ATTACK_SECONDS : RELEASE_SECONDS;
+ const levelTau=(targetLevel>level?tuning.attackMs:tuning.releaseMs)/1000;
  level+=(targetLevel-level)*(1-Math.exp(-seconds/levelTau));
  if(!historyTick||now-historyTick>=65){
   historyTick=now;
@@ -299,9 +338,10 @@ if(wanted&&window.AudioDesk?.setSpectrumActive)sync();
 window.audioDeskSpectrum={
  active:()=>active,enabled:()=>wanted,
  redraw:draw,
- smoothing:()=>({level,targetLevel,rawRms,riseMs:95,releaseMs:340,
+ smoothing:()=>({level,targetLevel,rawRms,riseMs:tuning.attackMs,releaseMs:tuning.releaseMs,
   currentWaveHeight:smooth[Math.floor(RESOLUTION/2)],
   maxWaveHeight:Math.max(...smooth)}),
+ settings:()=>({...tuning}),configure:configureTuning,preset:applyPreset,
  stop:()=>{wanted=false;deskStorage.setItem(key,"false");sync()}
 };
 })();
