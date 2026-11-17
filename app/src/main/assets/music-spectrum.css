@@ -1,0 +1,142 @@
+/* Responsive, real-signal glowing music waveform. The canvas NEVER
+   participates in touch/resize hit testing or overlaps transport buttons. */
+#launcherMusicWidget{
+ box-sizing:border-box;
+ display:flex!important;
+ flex-direction:column!important;
+ gap:7px!important;
+ min-height:202px!important;
+ max-height:none;
+ overflow:hidden!important;
+ isolation:isolate;
+}
+#launcherMusicWidget .music-head{
+ display:flex;align-items:center;gap:11px;
+ flex:0 0 auto;min-width:0;position:relative;z-index:1;
+}
+#launcherMusicWidget .music-meta{min-width:0;max-width:100%;overflow:hidden}
+#launcherMusicWidget #musicTrackTitle,
+#launcherMusicWidget #musicTrackArtist{
+ max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.music-spectrum-shell{
+ position:relative;box-sizing:border-box;
+ width:100%;height:67px;min-height:40px;
+ flex:1 1 67px;
+ overflow:hidden;isolation:isolate;
+ pointer-events:none;
+ border-radius:max(3px,calc(var(--ds-radius) - 7px));
+ background:color-mix(in srgb,var(--theme-dark,var(--ds-bg)) 82%,transparent);
+ box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ds-line) 35%,transparent);
+}
+.music-spectrum-shell canvas{
+ display:block;width:100%;height:100%;
+ pointer-events:none;
+ image-rendering:auto;
+}
+#launcherMusicWidget .music-buttons{
+ flex:0 0 auto;display:flex;align-items:center;
+ justify-content:center;gap:8px;min-width:0;
+ position:relative;z-index:2;
+ isolation:isolate;
+}
+#launcherMusicWidget .music-buttons button{
+ box-sizing:border-box;
+ min-width:38px;min-height:35px;
+ display:grid;place-items:center;
+ font-variant-numeric:tabular-nums;
+ line-height:1!important;
+ flex:1 1 43px;
+ max-width:90px;
+ padding:0 5px!important;
+ text-align:center;
+}
+#launcherMusicWidget .music-buttons #musicToggle{
+ font-size:18px!important;
+ font-family:system-ui,sans-serif!important;
+}
+#launcherMusicWidget .music-buttons #musicToggle[data-playing="true"]{
+ letter-spacing:-.23em;padding-right:9px!important;
+}
+#launcherMusicWidget .music-buttons #musicAccess{
+ min-width:74px;max-width:125px;
+ width:auto;flex:1 1 80px;
+}
+#launcherMusicWidget .music-note{
+ flex:0 0 auto;line-height:1.35;
+ font-size:9px!important;
+ overflow-wrap:anywhere;
+}
+.music-spectrum-actions{
+ flex:0 0 auto;
+ display:flex;align-items:center;flex-wrap:wrap;
+ gap:5px 9px;min-width:0;
+ font-family:var(--ds-font);
+}
+.music-spectrum-actions button{
+ flex:0 1 auto;
+ border:1px solid var(--ds-line)!important;
+ border-radius:var(--ds-radius)!important;
+ padding:5px 8px!important;min-height:28px!important;
+ background:var(--ds-panel2)!important;
+ color:var(--ds-accent)!important;
+ box-shadow:none!important;
+ font:600 10px/1.2 var(--ds-font)!important;
+ cursor:pointer;
+}
+.music-spectrum-actions button[hidden]{display:none!important}
+.music-spectrum-actions small{
+ min-width:0;flex:1 1 120px;
+ color:var(--ds-muted);font:400 9px/1.4 var(--ds-font);
+ white-space:normal;overflow-wrap:anywhere;
+}
+body[data-launcher-theme="pixel"] .music-spectrum-shell,
+body[data-launcher-theme="pixel"] .music-spectrum-actions button,
+body[data-launcher-theme="windows"] .music-spectrum-shell,
+body[data-launcher-theme="windows"] .music-spectrum-actions button{
+ border-radius:0!important;
+}
+body[data-launcher-theme="warm"] .music-spectrum-shell{
+ background:color-mix(in srgb,var(--theme-dark,#26232b) 87%,transparent)!important;
+}
+body[data-launcher-theme="warm"] .music-spectrum-actions small{
+ color:var(--theme-ink,#30282e)!important;opacity:.8;
+}
+body[data-launcher-theme="windows"] #launcherMusicWidget{
+ min-height:202px!important;
+ width:100%!important;
+ max-width:460px!important;
+ padding:12px 13px!important;
+ margin:9px 0 16px!important;
+ background:var(--ds-panel)!important;
+ border:1px solid var(--ds-line)!important;
+}
+body[data-launcher-theme="windows"] .music-spectrum-shell{
+ flex-basis:57px;
+}
+body[data-launcher-theme="pixel"] .music-spectrum-shell canvas{
+ image-rendering:auto!important;
+}
+#launcherMusicWidget[data-layout-sized="true"]{
+ min-height:202px!important;
+ height:max(202px,var(--user-widget-height,202px))!important;
+ overflow:hidden!important;
+}
+body[data-launcher-theme="warm"] #launcherMusicWidget[data-layout-sized="true"]{
+ min-height:202px!important;
+ height:max(202px,var(--user-widget-height,202px))!important;
+ overflow:hidden!important;
+}
+@media(max-width:360px){
+ #launcherMusicWidget{padding:10px 11px!important;gap:5px!important}
+ #launcherMusicWidget .music-buttons{gap:5px!important}
+ #launcherMusicWidget .music-buttons button{
+  min-width:30px;min-height:32px;flex-basis:34px;padding:0 3px!important;
+ }
+ .music-spectrum-shell{min-height:35px;flex-basis:49px}
+ .music-spectrum-actions small{font-size:8px}
+}
+@media(prefers-reduced-motion:reduce){
+ .music-spectrum-shell,
+ .music-spectrum-shell canvas{transition:none!important;animation:none!important}
+}
