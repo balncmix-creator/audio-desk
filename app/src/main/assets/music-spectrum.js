@@ -275,7 +275,7 @@ function tick(now){
   Math.max(.008,Math.min(.07,(now-previousTick)/1000)):.016;
  previousTick=now;
  // When input stops, ease to silence; don't fabricate a looping wave.
- if(frameAt&&now-frameAt>190){
+ if(frameAt&&now-frameAt>360){
   target.fill(0);targetLevel=0;
  }
  // Adjustable true RMS ballistics, time-based for all display refresh rates.
@@ -297,7 +297,7 @@ function tick(now){
  if(now-lastDraw>=(lowPower?50:32)){
   lastDraw=now;resizeCanvas();draw();
  }
- if(targetLevel>.001||level>.006||(frameAt&&now-frameAt<160)){
+ if(targetLevel>.001||level>.006||(frameAt&&now-frameAt<360)){
   pendingFrame=requestAnimationFrame(tick);
  }else{
   level=0;hasData=false;target.fill(0);smooth.fill(0);history=[];
