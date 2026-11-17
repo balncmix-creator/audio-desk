@@ -14,9 +14,9 @@ let wanted=deskStorage.getItem(key)==="true";
 let active=false,hasData=false,frameAt=0;
 let listeningAt=0,idleTimer=0;
 const RESOLUTION=64;
-// Responsive RMS meter: the wave HEIGHT follows measured PCM energy, and
-// its horizontal ripples show a sliding history of actual RMS measurements.
-// No oscillator, random samples, synthetic beats or microphone substitution.
+// The wave shape comes from actual FFT magnitudes (28 frequency bands).
+// RMS controls the energy envelope. Equal-RMS signals with DIFFERENT
+// frequency content must look different; a constant oval is not a spectrum.
 const SETTINGS_KEY="ad_visualizer_tuning_v1";
 const PRESETS={
  fast:{speed:5,attackMs:18,releaseMs:115,sensitivity:175,height:95,glow:70,trails:6},
@@ -55,10 +55,8 @@ function applyPreset(name){
 const RMS_REFERENCE=.16,RMS_EXPONENT=.52;
 const target=new Float32Array(RESOLUTION);
 const smooth=new Float32Array(RESOLUTION);
-const rmsHistory=new Float32Array(RESOLUTION);
-let historyInitialized=false;
 let history=[],pendingFrame=0,previousTick=0,lastDraw=0,historyTick=0,lastRmsLabelAt=0;
-let level=0,targetLevel=0,rawRms=0,lastHistoryValue=0;
+let level=0,targetLevel=0,rawRms=0,lastSource="";
 const head=widget.querySelector(".music-head"),buttons=widget.querySelector(".music-buttons");
 const shell=document.createElement("div");
 shell.id="musicSpectrum";
@@ -95,9 +93,8 @@ function updateButtons(){
 function resetWave(){
  cancelAnimationFrame(pendingFrame);pendingFrame=0;
  previousTick=0;lastDraw=0;historyTick=0;
- hasData=false;frameAt=0;level=0;targetLevel=0;rawRms=0;lastHistoryValue=0;
- target.fill(0);smooth.fill(0);rmsHistory.fill(0);
- historyInitialized=false;history=[];
+ hasData=false;frameAt=0;level=0;targetLevel=0;rawRms=0;lastSource="";
+ target.fill(0);smooth.fill(0);history=[];
  resizeCanvas();draw();
 }
 function resizeCanvas(){
@@ -118,29 +115,30 @@ function rmsHeight(rms){
  if(rms<=.006)return 0;
  return Math.min(.98,Math.pow(Math.min(1,rms/(RMS_REFERENCE/(tuning.sensitivity/100))),RMS_EXPONENT));
 }
-function pushRms(rms){
- const height=rmsHeight(rms);
- if(!historyInitialized){
-  rmsHistory.fill(height);
-  historyInitialized=true;
- }else{
-  // Speed controls horizontal travel; intermediate values interpolate TWO
-  // genuine measurements, never introduce synthetic beats.
-  for(let i=1;i<=tuning.speed;i++){
-   rmsHistory.copyWithin(0,1);
-   rmsHistory[RESOLUTION-1]=lastHistoryValue+
-    (height-lastHistoryValue)*i/tuning.speed;
-  }
- }
- lastHistoryValue=height;
- // Round the contour over ~five *real* RMS readings so it flows like water.
- // Do not draw the last sample as a sharp vertical edge.
+function pushBands(bands,rms){
+ // Log-frequency energy from Android FFT or FFT of permitted PCM. The
+ // previous code plotted a time-history of ONE RMS value and became an oval.
+ const n=bands.length;
+ if(n<8)return false;
+ const gain=rmsHeight(rms);
+ const raw=new Float32Array(RESOLUTION);
+ const peak=Math.max(...bands.map(value=>Math.max(0,Number(value)||0)));
+ if(peak<.005||gain<=0)return false;
  for(let i=0;i<RESOLUTION;i++){
-  target[i]=(rmsHistory[Math.max(0,i-2)]+
-   rmsHistory[Math.max(0,i-1)]*2+rmsHistory[i]*3+
-   rmsHistory[Math.min(RESOLUTION-1,i+1)]*2+
-   rmsHistory[Math.min(RESOLUTION-1,i+2)])/9;
+  const position=i*(n-1)/(RESOLUTION-1);
+  const lo=Math.floor(position),hi=Math.min(n-1,lo+1);
+  const fraction=position-lo;
+  const low=Math.max(0,Math.min(1,Number(bands[lo])||0));
+  const high=Math.max(0,Math.min(1,Number(bands[hi])||0));
+  // A little local smoothing yields flowing curves without inventing peaks.
+  raw[i]=(low*(1-fraction)+high*fraction)*gain;
  }
+ for(let i=0;i<RESOLUTION;i++){
+  const before=raw[Math.max(0,i-1)];
+  const after=raw[Math.min(RESOLUTION-1,i+1)];
+  target[i]=(.18*before+.64*raw[i]+.18*after);
+ }
+ return true;
 }
 function curve(points,offset,gain,w,h,polarity){
  const count=points.length;
@@ -179,9 +177,8 @@ function draw(){
   const wave=i===0?smooth:history[Math.min(i-1,history.length-1)]||smooth;
   const polarity=i%2===0?1:-1;
   const offset=i===0?0:(i%2?1:-1)*Math.floor((i+1)/2)*Math.min(h*.022,1.6);
-  // RMS is already encoded in wave height; don't square the energy by
-  // multiplying it by a second low-RMS factor (the previous tiny-wave bug).
-  const gain=(.90+level*.08)*(1+i*.035)*(tuning.height/100);
+  // Band heights already include RMS; do not multiply energy twice.
+  const gain=(.92+i*.035)*(tuning.height/100);
   curve(wave,offset,gain,w,h,polarity);
   context.strokeStyle=i===0?accent:(i%3===0?pale:accent);
   context.lineWidth=(i===0?2.1:1.05)*Math.min(1.5,window.devicePixelRatio||1);
@@ -204,11 +201,13 @@ function tick(now){
  }
  // Adjustable true RMS ballistics, time-based for all display refresh rates.
  for(let i=0;i<RESOLUTION;i++){
-  const tau=(target[i]>smooth[i]?tuning.attackMs:tuning.releaseMs)/1000;
+  const tau=(target[i]>smooth[i]?tuning.attackMs:tuning.releaseMs)/
+   (1000*(.65+tuning.speed/7));
   const blend=1-Math.exp(-seconds/tau);
   smooth[i]+=(target[i]-smooth[i])*blend;
  }
- const levelTau=(targetLevel>level?tuning.attackMs:tuning.releaseMs)/1000;
+ const levelTau=(targetLevel>level?tuning.attackMs:tuning.releaseMs)/
+  (1000*(.65+tuning.speed/7));
  level+=(targetLevel-level)*(1-Math.exp(-seconds/levelTau));
  if(!historyTick||now-historyTick>=65){
   historyTick=now;
@@ -287,23 +286,26 @@ window.receiveAudioDeskSpectrum=function(data){
   setStatus("Listening to real playback…");
   return;
  }
- if(state!=="capturing"||!Array.isArray(data.samples)||data.samples.length<16)return;
+ if(state!=="capturing")return;
  const rms=Math.min(1,Math.max(0,Number(data.rms)||0));
- rawRms=rms;
- if(rms>.006){
-  active=true;hasData=true;frameAt=performance.now();
-  pushRms(rms);
+ rawRms=rms;frameAt=performance.now();
+ if(rms>.006 && Array.isArray(data.bands) && data.bands.length>=8){
+  active=true;
+  hasData=pushBands(data.bands,rms);
   targetLevel=rmsHeight(rms);
-  // A real RMS meter in dBFS, throttled to prevent heavy WebView DOM work.
-  if(performance.now()-lastRmsLabelAt>220){
+  lastSource=String(data.source||"frequency-fft").slice(0,30);
+  if(performance.now()-lastRmsLabelAt>240){
    lastRmsLabelAt=performance.now();
-   setStatus("LIVE RMS "+(20*Math.log10(rms)).toFixed(1)+" dBFS");
+   setStatus("LIVE FFT + RMS "+(20*Math.log10(rms)).toFixed(1)+" dBFS");
   }
   showProjection(false);
  }else{
-  // Digital silence is zero RMS. Release naturally to the center line.
   target.fill(0);targetLevel=0;
-  if(level<.006)setStatus("Silent or paused · waveform at rest");
+  if(rms>.006){
+   // Preserve the truthful RMS meter, but never draw a made-up spectrum.
+   setStatus("Audio RMS detected · no frequency data from this player");
+   showProjection(true);
+  }else if(level<.006)setStatus("Silent or paused · waveform at rest");
  }
  scheduleDraw();
 };
@@ -342,6 +344,7 @@ window.audioDeskSpectrum={
   currentWaveHeight:smooth[Math.floor(RESOLUTION/2)],
   maxWaveHeight:Math.max(...smooth)}),
  settings:()=>({...tuning}),configure:configureTuning,preset:applyPreset,
+ frequencyState:()=>({target:Array.from(target),smooth:Array.from(smooth),lastSource}),
  stop:()=>{wanted=false;deskStorage.setItem(key,"false");sync()}
 };
 })();
