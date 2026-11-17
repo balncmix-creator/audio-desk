@@ -42,7 +42,7 @@ const origin='https://appassets.androidplatform.net/assets/';
      body:fs.readFileSync(path.join(__dirname,'../app/src/main/assets/index.html'))});
    if(new URL(u).pathname.startsWith('/app-icons/'))
     return route.fulfill({contentType:'image/png',body:png});
-   if(serve(route))return serve(route);
+   const local=serve(route);if(local)return local;
    if(u.includes('github.com')||u.includes('rss2json.com'))
     return route.fulfill({json:{status:'ok',items:[]}});
    return route.abort();
