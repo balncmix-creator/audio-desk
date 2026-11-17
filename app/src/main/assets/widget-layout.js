@@ -40,7 +40,7 @@ function applySizes(){
   delete el.dataset.layoutSized;
   if(!g||![g.w,g.h,g.x,g.y].every(Number.isFinite))return;
   const width=limit(g.w,100,Math.max(110,innerWidth-18));
-  const height=limit(g.h,48,Math.max(320,innerHeight*.8));
+  const height=limit(g.h,id==="launcherMusicWidget"?202:48,Math.max(320,innerHeight*.8));
   el.style.setProperty("--user-widget-width",Math.round(width)+"px");
   el.style.setProperty("--user-widget-height",Math.round(height)+"px");
   el.style.setProperty("--widget-x",limit(g.x,-innerWidth*.7,innerWidth*.7)+"px");
@@ -127,10 +127,11 @@ function resizeDimensions(start,edge,dx,dy){
  if(edge.includes("n"))t+=dy;
  if(edge.includes("s"))b+=dy;
  const minimumWidth=chosen?.id==="launcherMusicWidget"?175:106;
+ const minimumHeight=chosen?.id==="launcherMusicWidget"?202:49;
  if(r-l<minimumWidth){if(edge.includes("w"))l=r-minimumWidth;else r=l+minimumWidth}
- if(b-t<49){if(edge.includes("n"))t=b-49;else b=t+49}
+ if(b-t<minimumHeight){if(edge.includes("n"))t=b-minimumHeight;else b=t+minimumHeight}
  l=limit(l,0,innerWidth-70);r=limit(r,l+minimumWidth,innerWidth);
- t=limit(t,0,innerHeight-45);b=limit(b,t+49,Math.max(innerHeight,document.documentElement.scrollHeight));
+ t=limit(t,0,innerHeight-45);b=limit(b,t+minimumHeight,Math.max(innerHeight,document.documentElement.scrollHeight));
  const sx=snapDimension(l,r-l,[t,b],"x",chosen);
  if(sx.match){
   if(edge.includes("w"))l=sx.coordinate;
