@@ -25,9 +25,12 @@
  flex:1 1 67px;
  overflow:hidden;isolation:isolate;
  pointer-events:none;
- border-radius:max(3px,calc(var(--ds-radius) - 7px));
- background:color-mix(in srgb,var(--theme-dark,var(--ds-bg)) 82%,transparent);
- box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ds-line) 35%,transparent);
+ /* The canvas is an invisible clipping region, not another card/tile. */
+ border:0!important;
+ outline:0!important;
+ border-radius:0!important;
+ background:transparent!important;
+ box-shadow:none!important;
 }
 .music-spectrum-shell canvas{
  display:block;width:100%;height:100%;
@@ -96,8 +99,10 @@ body[data-launcher-theme="windows"] .music-spectrum-shell,
 body[data-launcher-theme="windows"] .music-spectrum-actions button{
  border-radius:0!important;
 }
-body[data-launcher-theme="warm"] .music-spectrum-shell{
- background:color-mix(in srgb,var(--theme-dark,#26232b) 87%,transparent)!important;
+/* Never restore a dark square in Warm, 8-bit, or Windows variants. */
+body[data-launcher-theme] .music-spectrum-shell{
+ background:transparent!important;border:0!important;
+ outline:0!important;box-shadow:none!important;
 }
 body[data-launcher-theme="warm"] .music-spectrum-actions small{
  color:var(--theme-ink,#30282e)!important;opacity:.8;
