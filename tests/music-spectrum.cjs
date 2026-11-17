@@ -62,9 +62,16 @@ assert.doesNotMatch(projection,/MediaRecorder\.AudioSource\.MIC/,'do not fake pl
     return {widget:{left:widget.left,right:widget.right,top:widget.top,bottom:widget.bottom},
      wave:{left:wave.left,right:wave.right,top:wave.top,bottom:wave.bottom},
      controls:{left:controls.left,right:controls.right,top:controls.top,bottom:controls.bottom},
-     noteBottom:note.bottom,overflow:css.overflow};
+     noteBottom:note.bottom,overflow:css.overflow,background:css.backgroundColor,
+     border:css.borderTopWidth,shadow:css.boxShadow};
    });
    assert.equal(measure.overflow,'hidden',theme+' spectrum is clipped');
+   assert.equal(measure.background,'rgba(0, 0, 0, 0)',
+    theme+' visualizer must be transparent without an inner square');
+   assert.equal(measure.shadow,'none',
+    theme+' visualizer must not draw a rectangular inset shadow');
+   assert.equal(measure.border,'0px',
+    theme+' visualizer must not have an inner box border');
    assert.ok(measure.wave.left>=measure.widget.left-1&&measure.wave.right<=measure.widget.right+1,
     theme+' waveform must remain within widget width');
    assert.ok(measure.wave.bottom<=measure.controls.top+1,
@@ -92,6 +99,14 @@ assert.doesNotMatch(projection,/MediaRecorder\.AudioSource\.MIC/,'do not fake pl
    window.receiveAudioDeskSpectrum({state:'capturing',rms:.4,samples});
   });
   await page.waitForFunction(()=>window.audioDeskSpectrum.active());
+  const response=await page.evaluate(()=>window.audioDeskSpectrum.smoothing());
+  assert.equal(response.riseMs,420,'real waveform uses a slow liquid attack');
+  assert.equal(response.releaseMs,1050,'real waveform glides to rest');
+  assert.ok(response.level<response.targetLevel*.7,
+   'the waveform must not jump instantly to the captured signal amplitude');
+  await page.waitForTimeout(250);
+  const eased=await page.evaluate(()=>window.audioDeskSpectrum.smoothing());
+  assert.ok(eased.level>=0,'waveform energy stays nonnegative');
   const drawing=await page.locator('#musicSpectrumCanvas').evaluate(el=>
    Array.from(el.getContext('2d').getImageData(0,0,el.width,el.height).data)
     .filter((v,i)=>i%4===3&&v>0).length);
