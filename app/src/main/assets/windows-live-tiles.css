@@ -1,0 +1,169 @@
+/* Windows Phone-style Start. No illustrated square backplates:
+   icons are transparent foreground glyphs rendered by Android. */
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherLiveTiles{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:7px;width:100%;max-width:460px;margin:5px 0 7px!important;
+}
+body[data-launcher-theme="windows"] #launcherLiveTiles .launcher-live-tile{
+ min-height:118px;padding:11px 12px;overflow:hidden;
+ font-family:"Segoe UI",system-ui,sans-serif;
+}
+body[data-launcher-theme="windows"] #launcherLiveTiles .live-news{
+ grid-column:span 2;min-height:94px;
+}
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherFavorites{
+ margin:0 0 9px!important;
+}
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherFavorites .n-app-row{
+ overflow:hidden;border:0!important;outline:0;
+}
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherFavorites .n-star,
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherFavorites .tile-activity{
+ display:none!important;
+}
+body[data-launcher-theme="windows"][data-home-page="home"] #launcherFavorites .launcher-app.win-live-app{
+ position:relative;display:block;overflow:hidden;
+ width:100%;height:100%;min-height:0;padding:0!important;
+ border:0!important;border-radius:0!important;background:transparent!important;
+ color:white!important;isolation:isolate;
+}
+body[data-launcher-theme="windows"] .win-tile-front,
+body[data-launcher-theme="windows"] .win-tile-back{
+ position:absolute;inset:0;box-sizing:border-box;
+ display:flex;flex-direction:column;align-items:flex-start;
+ justify-content:space-between;padding:13px 12px;
+ color:white;backface-visibility:hidden;
+}
+body[data-launcher-theme="windows"] .win-tile-front{
+ opacity:1;
+}
+body[data-launcher-theme="windows"] .win-tile-title{
+ margin-top:auto;width:100%;max-width:100%;
+}
+body[data-launcher-theme="windows"] .win-tile-title .app-name{
+ color:#fff!important;font:500 13px/1.3 "Segoe UI",system-ui,sans-serif!important;
+ letter-spacing:0!important;text-align:left!important;
+ max-width:100%;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;
+}
+body[data-launcher-theme="windows"] .win-tile-back{
+ opacity:0;justify-content:flex-start;gap:4px;
+ background:color-mix(in srgb,#000 10%,transparent);
+}
+body[data-launcher-theme="windows"] .win-tile-back-kicker{
+ font:700 9px/1.25 "Segoe UI",system-ui,sans-serif;letter-spacing:.09em;
+ opacity:.86;text-transform:uppercase;
+}
+body[data-launcher-theme="windows"] .win-tile-back-primary{
+ display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+ overflow:hidden;overflow-wrap:anywhere;
+ font:400 clamp(18px,5.5vw,28px)/1.15 "Segoe UI",system-ui,sans-serif;
+ letter-spacing:-.035em;max-width:100%;
+}
+body[data-launcher-theme="windows"] .win-live-app[data-tile-info="count"] .win-tile-back-primary,
+body[data-launcher-theme="windows"] .win-live-app[data-tile-info="date"] .win-tile-back-primary{
+ font-size:clamp(33px,10vw,52px);letter-spacing:-.06em;
+}
+body[data-launcher-theme="windows"] .win-tile-back-detail{
+ display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+ overflow:hidden;font:500 10px/1.35 "Segoe UI",system-ui,sans-serif;opacity:.92;
+}
+body[data-launcher-theme="windows"] .win-tile-back-label{
+ margin-top:auto;font:500 12px/1.3 "Segoe UI",system-ui,sans-serif;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
+}
+body[data-launcher-theme="windows"] .win-tile-badge{
+ position:absolute;right:9px;top:9px;
+ display:grid;place-items:center;min-width:23px;height:23px;
+ border-radius:50%;padding:0 4px;box-sizing:border-box;
+ color:#161d25;background:#fff;font:700 12px/1 system-ui,sans-serif;
+}
+body[data-launcher-theme="windows"] .win-tile-badge[hidden]{display:none!important}
+body[data-launcher-theme="windows"] #launcherFavorites .ad-icon-shell{
+ border:0!important;border-radius:0!important;background:transparent!important;
+ box-shadow:none!important;outline:0!important;overflow:visible!important;
+ margin:4px 0 auto!important;padding:0!important;
+ width:54px!important;height:54px!important;flex:0 0 54px!important;
+}
+body[data-launcher-theme="windows"] #launcherFavorites .ad-icon-image{
+ width:100%!important;height:100%!important;padding:0!important;
+ max-height:100%!important;max-width:100%!important;
+ object-fit:contain!important;
+ filter:none!important;
+}
+body[data-launcher-theme="windows"] #launcherFavorites .ad-icon-fallback,
+body[data-launcher-theme="windows"] #launcherFavorites .warm-line-icon{
+ background:transparent!important;border:0!important;box-shadow:none!important;
+ color:#fff!important;
+}
+body[data-launcher-theme="windows"] #launcherFavorites .warm-line-icon svg{
+ width:43px!important;height:43px!important;
+ stroke:white!important;
+}
+body[data-launcher-theme="windows"] #launcherFavorites .pixel-icon{
+ background:transparent!important;border:0!important;
+}
+body[data-launcher-theme="windows"] #launcherFavorites .ad-icon-shell.icon-loaded .ad-icon-fallback{
+ display:none!important;
+}
+/* Flip/peek from static glyph to actual data with long readable holds. */
+@keyframes windows-tile-peek-front{
+ 0%,42%{opacity:1;transform:translateY(0)}
+ 49%,92%{opacity:0;transform:translateY(-12px)}
+ 100%{opacity:1;transform:translateY(0)}
+}
+@keyframes windows-tile-peek-back{
+ 0%,42%{opacity:0;transform:translateY(12px)}
+ 49%,92%{opacity:1;transform:translateY(0)}
+ 100%{opacity:0;transform:translateY(-12px)}
+}
+body[data-launcher-theme="windows"] .win-tile-animated .win-tile-front{
+ animation:windows-tile-peek-front 12s ease-in-out infinite both;
+}
+body[data-launcher-theme="windows"] .win-tile-animated .win-tile-back{
+ animation:windows-tile-peek-back 12s ease-in-out infinite both;
+}
+/* A half-size Metro tile displays a plain glyph; data needs larger space. */
+body[data-launcher-theme="windows"] #launcherFavorites .n-app-row:nth-child(3) .win-tile-front,
+body[data-launcher-theme="windows"] #launcherFavorites .n-app-row:nth-child(6) .win-tile-front{
+ padding:15px 16px;
+}
+body[data-launcher-theme="windows"] #launcherMusicWidget{
+ margin:5px 0 18px!important;width:100%!important;max-width:460px!important;
+ min-height:90px!important;
+ background:var(--ds-panel)!important;
+ border:1px solid var(--ds-line)!important;
+ padding:10px 12px!important;gap:6px;
+}
+body[data-launcher-theme="windows"] #launcherMusicWidget .music-symbol{
+ width:30px;height:30px;flex-basis:30px;font-size:18px;
+}
+body[data-launcher-theme="windows"] #launcherMusicWidget .music-note{
+ font-size:9px;line-height:1.2;
+}
+.windows-live-setting{
+ display:flex;gap:12px;align-items:center;
+ color:var(--ds-text);font:500 13px/1.35 var(--ds-font);
+ margin:11px 0 4px;padding:10px 0;
+}
+.windows-live-setting input{
+ width:18px;height:18px;flex:0 0 18px;accent-color:var(--ds-accent);
+}
+.windows-live-setting-note{
+ display:block;color:var(--ds-muted);
+ font:400 11px/1.4 var(--ds-font);padding:0 2px 14px;
+}
+@media(max-width:350px){
+ body[data-launcher-theme="windows"] .win-tile-front,
+ body[data-launcher-theme="windows"] .win-tile-back{padding:10px}
+ body[data-launcher-theme="windows"] #launcherFavorites .ad-icon-shell{
+  width:42px!important;height:42px!important;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ body[data-launcher-theme="windows"] .win-tile-animated .win-tile-front{
+  animation:none!important;opacity:0!important;
+ }
+ body[data-launcher-theme="windows"] .win-tile-animated .win-tile-back{
+  animation:none!important;opacity:1!important;transform:none!important;
+ }
+}
