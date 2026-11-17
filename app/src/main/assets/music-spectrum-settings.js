@@ -17,7 +17,7 @@ const controls=[
  ["sensitivity","RMS sensitivity",50,400,5,"%","How prominently quiet music appears"],
  ["height","Wave height",40,100,5,"%","How tall the wave grows inside the widget"],
  ["glow","Glow",0,100,5,"%","Soft halo around the waveform lines"],
- ["trails","Wave layers",1,7,1,"","Number of overlapping glowing lines"]
+ ["trails","Wave layers",1,7,1,"","Number of glowing lines in Mirrored wave mode"]
 ];
 const button=document.createElement("button");
 button.id="musicSpectrumSettingsToggle";
@@ -38,6 +38,11 @@ overlay.innerHTML=`
    <div><strong>Visualizer settings</strong><small>Adjust response while listening</small></div>
    <button type="button" id="musicSpectrumTuningClose" aria-label="Close visualizer settings">×</button>
   </div>
+  <div class="spectrum-tuning-modes" role="group" aria-label="Visualizer display mode">
+   <button type="button" data-spectrum-mode="spectrum" aria-pressed="true">Spectrum</button>
+   <button type="button" data-spectrum-mode="wave" aria-pressed="false">Mirrored wave</button>
+  </div>
+  <small class="spectrum-mode-hint">Spectrum: single-sided bass → treble, with a logarithmic frequency axis.</small>
   <div class="spectrum-tuning-presets" role="group" aria-label="Visualizer presets">
    <button type="button" data-spectrum-preset="fast">Fast</button>
    <button type="button" data-spectrum-preset="balanced">Balanced</button>
@@ -68,6 +73,14 @@ for(const [key,label,min,max,step,unit,helper] of controls){
 }
 function update(){
  const values=spectrum.settings();
+ overlay.querySelectorAll("[data-spectrum-mode]").forEach(button=>{
+  button.setAttribute("aria-pressed",String(values.mode===button.dataset.spectrumMode));
+ });
+ const modeHint=overlay.querySelector(".spectrum-mode-hint");
+ modeHint.textContent=values.mode==="spectrum"?
+  "Spectrum: single-sided FFT peaks from bass to treble on a logarithmic frequency scale.":
+  "Mirrored wave: glowing layered lines above and below the centre.";
+
  for(const [key,,min,max,step,unit] of controls){
   const input=document.getElementById("spec-setting-"+key);
   input.value=values[key];
@@ -97,6 +110,12 @@ window.addEventListener("keydown",event=>{
  if(!overlay.hidden&&event.key==="Escape"){event.preventDefault();close()}
 });
 window.addEventListener("launcher-page-changed",close);
+overlay.querySelectorAll("[data-spectrum-mode]").forEach(button=>{
+ button.addEventListener("click",()=>{
+  spectrum.configure({mode:button.dataset.spectrumMode});
+  update();
+ });
+});
 overlay.querySelectorAll("[data-spectrum-preset]").forEach(preset=>{
  preset.addEventListener("click",()=>{
   spectrum.preset(preset.dataset.spectrumPreset);
