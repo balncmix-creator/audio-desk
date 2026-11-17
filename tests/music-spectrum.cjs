@@ -13,6 +13,10 @@ assert.match(native,/onWaveFormDataCapture/,'wave samples must originate in real
 assert.match(native,/RECORD_AUDIO/,'audio visualization requires runtime permission');
 assert.match(native,/measuredRms = capturedRms/,
  'RMS must be calculated from the full native PCM buffer, not decimated points');
+assert.match(native,/getMaxCaptureRate\(\)\.coerceAtMost\(30000\)/,
+ 'native capture should request up to 30Hz to give responsive RMS motion');
+assert.match(projection,/now - sent < 32L/,
+ 'permitted-playback PCM capture refreshes on a responsive cadence');
 assert.match(manifest,/android\.permission\.RECORD_AUDIO/);
 assert.match(manifest,/android\.permission\.MODIFY_AUDIO_SETTINGS/);
 assert.match(manifest,/android\.permission\.FOREGROUND_SERVICE_MEDIA_PROJECTION/);
@@ -84,6 +88,50 @@ assert.doesNotMatch(projection,/MediaRecorder\.AudioSource\.MIC/,'do not fake pl
     theme+' details stay inside widget');
   }
   await page.evaluate(()=>setLauncherTheme('minimal'));
+  // User-owned settings, persistent between launches and live-updateable.
+  const settingsButton=page.locator('#musicSpectrumSettingsToggle');
+  await settingsButton.click();
+  const dialog=page.locator('#musicSpectrumTuningDialog');
+  assert.equal(await dialog.isVisible(),true,
+   'a settings sheet is accessible directly from the music widget');
+  let settings=await page.evaluate(()=>window.audioDeskSpectrum.settings());
+  assert.deepEqual([settings.speed,settings.attackMs,settings.releaseMs],
+   [5,18,115],'Fast is the new default response preset');
+  await page.locator('#spec-setting-speed').evaluate(input=>{
+   input.value='8';input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  await page.locator('#spec-setting-attackMs').evaluate(input=>{
+   input.value='12';input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  await page.locator('#spec-setting-releaseMs').evaluate(input=>{
+   input.value='70';input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  settings=await page.evaluate(()=>window.audioDeskSpectrum.settings());
+  assert.deepEqual([settings.speed,settings.attackMs,settings.releaseMs],[8,12,70],
+   'sliders update actual meter behavior without restarting playback');
+  assert.equal(await page.locator('#spec-value-attackMs').textContent(),'12 ms');
+  const persisted=await page.evaluate(()=>JSON.parse(
+   deskStorage.getItem('ad_visualizer_tuning_v1')));
+  assert.equal(persisted.attackMs,12,'settings are stored on-device');
+  await page.reload();
+  await page.waitForFunction(()=>!!window.audioDeskSpectrum);
+  settings=await page.evaluate(()=>window.audioDeskSpectrum.settings());
+  assert.equal(settings.speed,8,'stored speed survives an app reload');
+  assert.equal(settings.releaseMs,70,'stored release survives an app reload');
+  await page.locator('#musicSpectrumSettingsToggle').click();
+  await page.locator('[data-spectrum-preset="fluid"]').click();
+  settings=await page.evaluate(()=>window.audioDeskSpectrum.settings());
+  assert.deepEqual([settings.speed,settings.attackMs,settings.releaseMs],
+   [2,115,450],'Fluid preset selects independently slower dynamics');
+  await page.locator('[data-spectrum-preset="balanced"]').click();
+  settings=await page.evaluate(()=>window.audioDeskSpectrum.settings());
+  assert.equal(settings.attackMs,55,'Balanced preset is available');
+  await page.locator('[data-spectrum-preset="fast"]').click();
+  assert.equal(await page.locator('[data-spectrum-preset="fast"]').getAttribute('aria-pressed'),
+   'true','selected preset has accessible pressed state');
+  await page.locator('#musicSpectrumTuningClose').click();
+  assert.equal(await page.locator('#musicSpectrumTuningOverlay').isVisible(),false,
+   'settings are dismissed without covering playback');
   assert.equal(await page.evaluate(()=>window.nativeSpectrumOn.filter(Boolean).length),0,
    'no automatic capture before consent');
   await page.locator('#musicSpectrumEnable').click();
@@ -102,8 +150,8 @@ assert.doesNotMatch(projection,/MediaRecorder\.AudioSource\.MIC/,'do not fake pl
   });
   await page.waitForFunction(()=>window.audioDeskSpectrum.active());
   const response=await page.evaluate(()=>window.audioDeskSpectrum.smoothing());
-  assert.equal(response.riseMs,95,'RMS meter responds quickly to real audio attacks');
-  assert.equal(response.releaseMs,340,'RMS energy decays smoothly without one-second lag');
+  assert.equal(response.riseMs,18,'Fast preset responds quickly to beats');
+  assert.equal(response.releaseMs,115,'Fast preset settles without perceptible lag');
   assert.ok(response.targetLevel>.9,
    'strong actual RMS must produce a clearly visible near-full-height wave');
   await page.waitForTimeout(240);
