@@ -89,11 +89,11 @@ body[data-launcher-theme="windows"] #musicSpectrumSettingsToggle{
 .spectrum-tuning-row small{
  display:block;color:var(--ds-muted,#bbb);font-size:10px;line-height:1.4;
 }
-.music-spectrum-tuning footer{
+.music-spectrum-tuning .spectrum-tuning-footer{
  display:flex;align-items:center;gap:10px;justify-content:space-between;
  border-top:1px solid var(--ds-line,#555);padding-top:9px;
 }
-.music-spectrum-tuning footer small{
+.music-spectrum-tuning .spectrum-tuning-footer small{
  flex:1 1 auto;font-size:10px;line-height:1.4;color:var(--ds-muted,#bbb);
 }
 .music-spectrum-tuning #musicSpectrumTuningReset{
