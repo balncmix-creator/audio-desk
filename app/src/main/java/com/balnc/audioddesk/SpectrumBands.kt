@@ -11,14 +11,14 @@ import kotlin.math.sqrt
 
 /**
  * Real frequency energy for a multi-line music spectrum.
- * 28 logarithmic 80–10000Hz bands, not a single RMS-filled oval.
+ * 48 logarithmic frequency bands, not a single RMS-filled oval.
  *
  * Visualizer(0) supplies Android's packed real/imag FFT (8-bit).
  * Projection supplies genuine PCM from which an FFT is calculated locally.
  * Both paths are deliberately silence-preserving.
  */
 internal object SpectrumBands {
-    const val COUNT = 28
+    const val COUNT = 48
     private const val LOW_HZ = 42.0
     private const val HIGH_HZ = 10500.0
 
