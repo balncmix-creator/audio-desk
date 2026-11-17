@@ -93,7 +93,7 @@ function refreshWallpaperColors(){
   const accent=mixColor(dominant,[250,250,250],.22);
   const panel=mixColor(avg,[242,240,241],.70);
   const dark=mixColor(avg,[15,15,20],.83);
-  setWallpaperColors(rgbHex(accent),panel,dark);
+  setWallpaperColors(accent,panel,dark);
  }catch{setWallpaperColors("#eedbd4","#f0dad3","#1b181a")}
 }
 // The wallpaper picker and imported images all pass through this decoded-image path.
