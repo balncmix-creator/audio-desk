@@ -96,7 +96,7 @@ const origin='https://appassets.androidplatform.net/assets/';
   assert.equal(await consent.isChecked(),false,'notification content is opt-in');
   await consent.check();
   assert.equal(await page.evaluate(()=>window.notificationSettingOpens),1,
-   'the user's explicit opt-in opens Android access settings');
+   "the user's explicit opt-in opens Android access settings");
   assert.ok(await page.evaluate(()=>window.liveTilePolls.length>0),
    'only visible installed app packages are polled for active counts');
   await page.evaluate(()=>window.receiveAudioDeskLiveTileCounts({
