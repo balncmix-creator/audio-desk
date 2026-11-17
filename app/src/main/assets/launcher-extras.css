@@ -267,3 +267,19 @@ body[data-launcher-theme="warm"][data-glass-mode]:not([data-glass-mode="opaque"]
 @media(prefers-reduced-motion:reduce){
  [data-widget-resizable],#widgetLayoutOverlay .layout-outline{transition:none!important}
 }
+
+/* Glass, folders and translucent widgets use the same wallpaper palette. */
+body[data-launcher-theme="minimal"],
+body[data-launcher-theme="pixel"],
+body[data-launcher-theme="windows"]{
+ --glass-ink:var(--theme-text,#f2f2f4);
+ --glass-base:color-mix(in srgb,var(--theme-surface,#282733) 70%,transparent);
+ --glass-strong:color-mix(in srgb,var(--theme-surface2,#373440) 88%,transparent);
+}
+body[data-launcher-theme="warm"] #launcherRecentQuick .folder-count{
+ color:var(--theme-ink,#292529);
+}
+body[data-launcher-theme="warm"][data-glass-mode]:not([data-glass-mode="opaque"]) #launcherRecentStrip .app-name,
+body[data-launcher-theme="warm"][data-glass-mode]:not([data-glass-mode="opaque"]) #launcherRecentStrip .warm-line-icon{
+ color:var(--glass-ink)!important;
+}
