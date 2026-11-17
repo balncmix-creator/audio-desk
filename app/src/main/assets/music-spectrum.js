@@ -26,21 +26,25 @@ const PRESETS={
 const LIMITS={speed:[1,8],attackMs:[8,240],releaseMs:[40,850],
  sensitivity:[50,400],height:[40,100],glow:[0,100],trails:[1,7]};
 function loadTuning(){
- const settings={...PRESETS.fast};
+ const settings={...PRESETS.fast,mode:"spectrum"};
  try{
   const saved=JSON.parse(deskStorage.getItem(SETTINGS_KEY)||"null");
-  if(saved&&typeof saved==="object")for(const name of Object.keys(LIMITS)){
+  if(saved&&typeof saved==="object"){
+  if(saved.mode==="wave"||saved.mode==="spectrum")settings.mode=saved.mode;
+  for(const name of Object.keys(LIMITS)){
    if(Number.isFinite(Number(saved[name]))&&saved[name]!=null){
     const [lo,hi]=LIMITS[name];
     settings[name]=Math.max(lo,Math.min(hi,Math.round(Number(saved[name]))));
    }
   }
+ }
  }catch{}
  return settings;
 }
 const tuning=loadTuning();
 function configureTuning(patch){
  if(!patch||typeof patch!=="object")return;
+ if(patch.mode==="wave"||patch.mode==="spectrum")tuning.mode=patch.mode;
  for(const name of Object.keys(LIMITS)){
   if(!Object.prototype.hasOwnProperty.call(patch,name)||!Number.isFinite(Number(patch[name])))continue;
   const [lo,hi]=LIMITS[name];
@@ -140,6 +144,76 @@ function pushBands(bands,rms){
  }
  return true;
 }
+// Single-sided analyzer: frequency runs left-to-right on a logarithmic
+// axis and levels rise from the BOTTOM only. No reflection around center.
+function spectrumPlot(){
+ const w=canvas.width,h=canvas.height;
+ const bottom=h-Math.max(12,Math.min(18,h*.18));
+ const top=Math.max(4,h*.055);
+ const range=Math.max(1,bottom-top);
+ const amplitude=(tuning.height/100)*.95;
+ return Array.from(smooth,(value,i)=>({
+  x:(i/(RESOLUTION-1))*w,
+  y:Math.max(top,Math.min(bottom,bottom-Math.max(0,value)*range*amplitude))
+ }));
+}
+function drawSpectrum(accent,reduced){
+ if(!context)return;
+ const w=canvas.width,h=canvas.height;
+ const points=spectrumPlot();
+ const bottom=h-Math.max(12,Math.min(18,h*.18));
+ const dpr=canvas.width/Math.max(1,shell.clientWidth);
+ const ticks=[["50",50],["100",100],["200",200],["500",500],
+  ["1k",1000],["2k",2000],["5k",5000],["10k",10000]];
+ const left=Math.log(42),span=Math.log(10500)-left;
+ context.save();
+ context.lineWidth=Math.max(.6,dpr*.5);
+ context.textAlign="center";context.textBaseline="bottom";
+ context.font=Math.max(8,Math.min(11,h*.115))+"px system-ui, sans-serif";
+ for(let j=1;j<=3;j++){
+  const y=bottom-j*(bottom-3)/4;
+  context.beginPath();context.moveTo(0,y);context.lineTo(w,y);
+  context.strokeStyle=accent;context.globalAlpha=.055;context.stroke();
+ }
+ for(const [name,frequency] of ticks){
+  const x=(Math.log(frequency)-left)/span*w;
+  if(x<12||x>w-12)continue;
+  context.beginPath();context.moveTo(x,3);context.lineTo(x,bottom);
+  context.strokeStyle=accent;context.globalAlpha=.095;context.stroke();
+  context.fillStyle=accent;context.globalAlpha=.60;context.fillText(name,x,h-1);
+ }
+ context.beginPath();context.moveTo(0,bottom);
+ context.lineTo(w,bottom);
+ context.strokeStyle=accent;context.globalAlpha=.26;context.stroke();
+ if(active&&hasData&&level>.006&&points.length>=2){
+  context.beginPath();context.moveTo(points[0].x,bottom);
+  context.lineTo(points[0].x,points[0].y);
+  for(let i=1;i<points.length-1;i++){
+   const a=points[i],b=points[i+1];
+   context.quadraticCurveTo(a.x,a.y,(a.x+b.x)/2,(a.y+b.y)/2);
+  }
+  const last=points[points.length-1];
+  context.lineTo(last.x,last.y);
+  context.lineTo(w,bottom);
+  context.closePath();
+  const fill=context.createLinearGradient(0,0,0,bottom);
+  fill.addColorStop(0,accent);
+  fill.addColorStop(1,accent);
+  context.fillStyle=fill;context.globalAlpha=.17;context.fill();
+  context.beginPath();context.moveTo(points[0].x,points[0].y);
+  for(let i=1;i<points.length-1;i++){
+   const a=points[i],b=points[i+1];
+   context.quadraticCurveTo(a.x,a.y,(a.x+b.x)/2,(a.y+b.y)/2);
+  }
+  context.lineTo(last.x,last.y);
+  context.globalAlpha=.92;context.lineWidth=Math.max(1.15,dpr*1.4);
+  context.strokeStyle=accent;
+  context.shadowColor=accent;
+  context.shadowBlur=reduced?0:Math.min(18,9*dpr)*(tuning.glow/70);
+  context.stroke();
+ }
+ context.restore();
+}
 function curve(points,offset,gain,w,h,polarity){
  const count=points.length;
  if(count<2)return;
@@ -161,6 +235,13 @@ function draw(){
  context.clearRect(0,0,w,h);
  const accent=fontColor();
  const pale=getComputedStyle(widget).getPropertyValue("--theme-text").trim()||accent;
+ const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches||
+  document.body.classList.contains("low-power");
+ if(tuning.mode==="spectrum"){
+  drawSpectrum(accent,reduced);
+  return;
+ }
+ // Mirrored "Wave" view is the alternative style, not the default.
  // Transparent canvas: no inner square. The center line is real silence.
  context.save();
  context.strokeStyle=accent;context.globalAlpha=.15;
@@ -169,8 +250,6 @@ function draw(){
  context.stroke();context.restore();
  if(!active||!hasData||level<.006)return;
  context.save();
- const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches||
-  document.body.classList.contains("low-power");
  const layers=Math.min(tuning.trails,reduced?3:7);
  context.globalCompositeOperation="screen";
  for(let i=layers-1;i>=0;i--){
@@ -344,6 +423,7 @@ window.audioDeskSpectrum={
   currentWaveHeight:smooth[Math.floor(RESOLUTION/2)],
   maxWaveHeight:Math.max(...smooth)}),
  settings:()=>({...tuning}),configure:configureTuning,preset:applyPreset,
+ displayGeometry:()=>({mode:tuning.mode,points:spectrumPlot()}),
  frequencyState:()=>({target:Array.from(target),smooth:Array.from(smooth),lastSource}),
  stop:()=>{wanted=false;deskStorage.setItem(key,"false");sync()}
 };
