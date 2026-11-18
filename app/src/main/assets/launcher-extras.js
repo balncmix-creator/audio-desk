@@ -74,8 +74,7 @@ function folderEdit(id){
  body.__folderPicks=picks;
  function renderChoices(){
   const q=byId("folderAppSearch").value.toLocaleLowerCase().trim();
-  const list=launcherApps.filter(a=>!q||
-   (a.label+" "+a.pkg).toLocaleLowerCase().includes(q)).slice(0,220);
+  const list=rankedLauncherApps(q).slice(0,220);
   byId("folderAppChoices").innerHTML=list.map(a=>{
    const k=launcherAppKey(a);
    return '<label class="folder-app-choice"><input type="checkbox" data-folder-key="'+esc(k)+
