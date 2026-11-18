@@ -80,9 +80,18 @@ actions.innerHTML='<button id="musicSpectrumEnable" type="button">Enable real sp
 shell.after(actions);
 const enable=byId("musicSpectrumEnable"),projection=byId("musicSpectrumProjection");
 const status=byId("musicSpectrumStatus"),context=canvas.getContext("2d",{alpha:true});
-function fontColor(){return getComputedStyle(widget).getPropertyValue("--ds-accent").trim()||"#dddddd"}
-function activeHome(){return wanted&&launcherPage==="home"&&!document.hidden&&!widget.hasAttribute("data-widget-removed")}
-function setStatus(text){status.textContent=text}
+let cachedAccent="",cachedPale="",lastPaletteAt=0,nativeActive=null;
+const reducedMotion=matchMedia("(prefers-reduced-motion: reduce)");
+const rawScratch=new Float32Array(RESOLUTION);
+function refreshSpectrumPalette(){
+ const style=getComputedStyle(widget);
+ cachedAccent=style.getPropertyValue("--ds-accent").trim()||"#dddddd";
+ cachedPale=style.getPropertyValue("--theme-text").trim()||cachedAccent;
+ lastPaletteAt=performance.now();
+}
+function fontColor(){if(!cachedAccent||performance.now()-lastPaletteAt>700)refreshSpectrumPalette();return cachedAccent}
+function activeHome(){return wanted&&launcherPage==="home"&&!document.hidden&&window.audioDeskForeground!==false&&!widget.hasAttribute("data-widget-removed")}
+function setStatus(text){if(status.textContent!==text)status.textContent=text}
 function showProjection(allow){
  projection.hidden=!allow||typeof window.AudioDesk?.requestSpectrumProjection!=="function";
 }
@@ -125,7 +134,7 @@ function pushBands(bands,rms){
  const n=bands.length;
  if(n<8)return false;
  const gain=rmsHeight(rms);
- const raw=new Float32Array(RESOLUTION);
+ const raw=rawScratch;
  const peak=Math.max(...bands.map(value=>Math.max(0,Number(value)||0)));
  if(peak<.005||gain<=0)return false;
  for(let i=0;i<RESOLUTION;i++){
@@ -234,8 +243,8 @@ function draw(){
  if(!w||!h)return;
  context.clearRect(0,0,w,h);
  const accent=fontColor();
- const pale=getComputedStyle(widget).getPropertyValue("--theme-text").trim()||accent;
- const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches||
+ const pale=cachedPale||accent;
+ const reduced=reducedMotion.matches||
   document.body.classList.contains("low-power");
  if(tuning.mode==="spectrum"){
   drawSpectrum(accent,reduced);
@@ -263,7 +272,7 @@ function draw(){
   context.lineWidth=(i===0?2.1:1.05)*Math.min(1.5,window.devicePixelRatio||1);
   context.globalAlpha=i===0?.94:Math.max(.10,.60-i*.075);
   context.shadowColor=accent;
-  context.shadowBlur=reduced?0:(i===0?15:11)*Math.min(1.6,window.devicePixelRatio||1)*
+  context.shadowBlur=reduced||i!==0?0:15*Math.min(1.6,window.devicePixelRatio||1)*
    tuning.glow/70;
   context.stroke();
  }
@@ -271,6 +280,7 @@ function draw(){
 }
 function tick(now){
  pendingFrame=0;
+ if(!activeHome()){resetWave();return;}
  const seconds=previousTick?
   Math.max(.008,Math.min(.07,(now-previousTick)/1000)):.016;
  previousTick=now;
@@ -288,14 +298,14 @@ function tick(now){
  const levelTau=(targetLevel>level?tuning.attackMs:tuning.releaseMs)/
   (1000*(.65+tuning.speed/7));
  level+=(targetLevel-level)*(1-Math.exp(-seconds/levelTau));
- if(!historyTick||now-historyTick>=65){
+ if(tuning.mode==="wave"&&(!historyTick||now-historyTick>=65)){
   historyTick=now;
   history.unshift(Float32Array.from(smooth));
   if(history.length>7)history.length=7;
  }
  const lowPower=document.body.classList.contains("low-power");
  if(now-lastDraw>=(lowPower?50:32)){
-  lastDraw=now;resizeCanvas();draw();
+  lastDraw=now;draw();
  }
  if(targetLevel>.001||level>.006||(frameAt&&now-frameAt<360)){
   pendingFrame=requestAnimationFrame(tick);
@@ -312,7 +322,9 @@ function sync(){
  const home=activeHome();
  // The native backend stops immediately when Home is hidden or Android loses
  // foreground focus. We do not capture while other activities are displayed.
- try{window.AudioDesk?.setSpectrumActive?.(home)}catch{}
+ if(nativeActive!==home){
+  nativeActive=home;try{window.AudioDesk?.setSpectrumActive?.(home)}catch{}
+ }
  if(!home){
   active=false;resetWave();
   if(wanted)setStatus("Paused · Home not visible");
@@ -324,6 +336,7 @@ function sync(){
 }
 enable.onclick=()=>{
  wanted=true;
+ manageSpectrumTimer();
  deskStorage.setItem(key,"true");
  updateButtons();
  if(!window.AudioDesk?.requestSpectrumCapture){
@@ -365,7 +378,7 @@ window.receiveAudioDeskSpectrum=function(data){
   setStatus("Listening to real playback…");
   return;
  }
- if(state!=="capturing")return;
+ if(state!=="capturing"||!activeHome())return;
  const rms=Math.min(1,Math.max(0,Number(data.rms)||0));
  rawRms=rms;frameAt=performance.now();
  if(rms>.006 && Array.isArray(data.bands) && data.bands.length>=8){
@@ -405,7 +418,14 @@ function checkInput(){
   showProjection(true);
  }
 }
-idleTimer=setInterval(checkInput,1200);
+function manageSpectrumTimer(){
+ clearInterval(idleTimer);
+ idleTimer=activeHome()?setInterval(checkInput,2000):0;
+}
+window.addEventListener("audio-desk-foreground",()=>{sync();manageSpectrumTimer()});
+window.addEventListener("audio-desk-widget-visibility",manageSpectrumTimer);
+window.addEventListener("launcher-page-changed",manageSpectrumTimer);
+document.addEventListener("visibilitychange",()=>{sync();manageSpectrumTimer()});
 window.addEventListener("launcher-page-changed",sync);
 window.addEventListener("audio-desk-widget-visibility",sync);
 window.addEventListener("visibilitychange",sync);
@@ -415,7 +435,7 @@ window.launcherOnResume=function(){previousResume?.();if(wanted)sync()};
 if("ResizeObserver" in window)new ResizeObserver(resizeCanvas).observe(shell);
 else window.addEventListener("resize",resizeCanvas);
 window.addEventListener("resize",scheduleDraw);
-updateButtons();resizeCanvas();
+updateButtons();resizeCanvas();manageSpectrumTimer();
 if(wanted&&window.AudioDesk?.setSpectrumActive)sync();
 window.audioDeskSpectrum={
  active:()=>active,enabled:()=>wanted,
