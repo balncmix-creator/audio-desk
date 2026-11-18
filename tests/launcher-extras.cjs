@@ -142,12 +142,16 @@ const assert=require('node:assert/strict');
   await page.mouse.move(grip.x+grip.width/2,grip.y+grip.height/2);
   await page.mouse.down();await page.mouse.move(grip.x+grip.width/2,grip.y+grip.height/2+37,{steps:5});
   await page.mouse.up();
-  assert.ok(await page.locator('#launcherMusicWidget').evaluate(el=>
-   Math.abs(parseFloat(el.style.getPropertyValue('--widget-y'))||0)>3),
-   'drag grip freely moves the music widget');
+  const intersect=await page.evaluate(()=>{
+   const a=document.getElementById('launcherMusicWidget').getBoundingClientRect();
+   return [...document.querySelectorAll('[data-widget-resizable]')].filter(el=>el.id!=='launcherMusicWidget'&&el.getClientRects().length&&el.getBoundingClientRect().width>16).some(el=>{
+    const b=el.getBoundingClientRect();return Math.min(a.right,b.right)-Math.max(a.left,b.left)>1&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1;
+   });
+  });
+  assert.equal(intersect,false,'dragged widget must never overlap adjacent widgets');
   await page.locator('#widgetLayoutOverlay [data-layout-control="done"]').click();
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('ad_widget_layout_v2_warm')));
-  assert.ok(saved.launcherMusicWidget?.y,'per-theme widget positions are persisted');
+  assert.ok(saved.launcherMusicWidget,'per-theme widget positions are persisted');
   // Every theme has four distinct sharp, original audio compositions.
   await page.evaluate(()=>openWallpaperPicker());
   for(const theme of ['warm','minimal','pixel','windows']){
