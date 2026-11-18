@@ -67,6 +67,22 @@ const demoApps=[
    {label:'LibreTorrent',pkg:'example.nin.libre',activity:'b'},
    {label:'Ninja VPN',pkg:'example.vpn',activity:'c'}]).map(a=>a.label));
   assert.equal(ranking[0],'Ninja VPN','label prefix outranks unrelated package and substring matches');
+  assert.ok(!ranking.includes('LibreTorrent'),'package-only results are suppressed when names match');
+  const habitResult=await page.evaluate(()=>{
+   const oldApps=launcherApps,oldPins=launcherPins;
+   try{
+    launcherPins=[];
+    launcherApps=[
+     {label:'Daily music',pkg:'example.music',activity:'a',usageDays:12,habitScore:10,uses:13},
+     {label:'One-off app',pkg:'example.once',activity:'b',usageDays:1,habitScore:1.15,uses:200},
+     {label:'Daily messages',pkg:'example.messages',activity:'c',usageDays:6,habitScore:6,uses:8},
+     {label:'New app',pkg:'example.new',activity:'d',usageDays:2,habitScore:2,uses:60}
+    ];
+    return launcherSuggestedApps().map(a=>a.label);
+   }finally{launcherApps=oldApps;launcherPins=oldPins}
+  });
+  assert.deepEqual(habitResult,['Daily music','Daily messages'],
+   'habit ranking requires distinct active days and ignores one-off high launch counts');
   assert.equal(await page.evaluate(()=>launcherPage),'home','launcher must open on favorites Home');
   assert.equal(await page.locator('#launcherHomePage').isVisible(),true);
   assert.equal(await page.locator('#launcherNavigation').isVisible(),false,
