@@ -41,7 +41,7 @@ internal class AudioSpectrumSupport(
             try {
                 v.enabled = false
                 val range = Visualizer.getCaptureSizeRange()
-                v.captureSize = range[1].coerceAtMost(1024).coerceAtLeast(range[0])
+                v.captureSize = range[1].coerceAtMost(4096).coerceAtLeast(range[0])
                 v.setDataCaptureListener(object : Visualizer.OnDataCaptureListener {
                     override fun onWaveFormDataCapture(
                         visualizer: Visualizer?, waveform: ByteArray?, samplingRate: Int
@@ -106,7 +106,7 @@ internal class AudioSpectrumSupport(
 
     private fun deliverSpectrum(rms: Double, bands: FloatArray, source: String) {
         if (!active && source != "projection-fft") return
-        // No synthetic movement: silence yields 28 exact zeros.
+        // No synthetic movement: silence yields exact zeros.
         val output = JSONArray()
         for (band in bands) output.put(
             if (rms < .006) 0.0 else (band * 1000).toInt() / 1000.0
@@ -123,7 +123,7 @@ internal class AudioSpectrumSupport(
         val rms = sqrt(sum).coerceIn(0.0, 1.0)
         // Projection supplies full PCM frames. The FFT is derived from that
         // audio, so even this fallback reacts to frequencies, not RMS alone.
-        val bands = SpectrumBands.fromPcm(samples, 16000)
+        val bands = SpectrumBands.fromPcm(samples, SpectrumProjectionService.SAMPLE_RATE)
         deliverSpectrum(rms, bands, "projection-fft")
     }
 
