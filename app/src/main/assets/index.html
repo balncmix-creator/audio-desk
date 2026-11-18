@@ -1643,7 +1643,7 @@ function globalRadarFeed(spec,region){
   "&hl=en-US&gl="+region+"&ceid="+region+":en",cat:spec.cat};
 }
 async function refreshLiveRadar(force=false){
- if(liveRadarBusy||!navigator.onLine||document.visibilityState==="hidden")return;
+ if(liveRadarBusy||!navigator.onLine||document.visibilityState==="hidden"||window.audioDeskForeground===false)return;
  if(!force&&Date.now()-liveRadarLast<LIVE_RADAR_INTERVAL)return;
  liveRadarBusy=true;liveRadarLast=Date.now();
  const region=["US","GB","IN","AU"][liveRadarCycle++%4];
@@ -2013,8 +2013,19 @@ function homePanel(page){
  return page==="events"?$("swipeMain"):page==="apps"?$("launcherAppsPage"):$("launcherHomePage");
 }
 let launcherClockTimer=0;
+// Native visibility is separate from WebView document.hidden on some phones.
+window.audioDeskForeground=true;
+window.audioDeskSetForeground=function(value){
+ const next=!!value;
+ if(window.audioDeskForeground===next)return;
+ window.audioDeskForeground=next;
+ document.body.classList.toggle("desk-in-background",!next);
+ if(next)formatLauncherClock();else clearTimeout(launcherClockTimer);
+ window.dispatchEvent(new Event("audio-desk-foreground"));
+};
 function formatLauncherClock(){
  clearTimeout(launcherClockTimer);
+ if(document.hidden||!window.audioDeskForeground)return;
  const now=new Date();
  $("launcherClock").textContent=now.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",hour12:false});
  $("launcherDate").textContent=now.toLocaleDateString([], {weekday:"short",month:"short",day:"numeric"});
@@ -2144,7 +2155,12 @@ function renderLauncherHome(){
  // launches remain accessible separately in the settings drawer.
  const suggested=launcherSuggestedApps();
  const tiles=windows?suggested:[];
- $("launcherFavorites").innerHTML=tiles.map(renderFavoriteRow).join("");
+ const tileMarkup=tiles.map(renderFavoriteRow).join("");
+ const tileStamp=launcherTheme+":"+tiles.map(a=>launcherAppKey(a)+":"+a.label).join("|")+":"+launcherPins.join("|");
+ if($("launcherFavorites").dataset.habitFingerprint!==tileStamp){
+  $("launcherFavorites").innerHTML=tileMarkup;
+  $("launcherFavorites").dataset.habitFingerprint=tileStamp;
+ }
  const quick=suggested.slice(0,warm?7:6);
  const learning=launcherNativeLoaded&&!launcherApps.some(a=>Number(a.usageDays)>=3)&&
   launcherApps.some(a=>Number.isFinite(a.usageDays));
@@ -2152,7 +2168,7 @@ function renderLauncherHome(){
  if(!windows){
   $("launcherRecentStripTitle").textContent=learning&&!quick.length?"LEARNING YOUR DAILY APPS":
    warm?"FAVORITES & FREQUENT":"FREQUENTLY USED";
-  const fingerprint=launcherTheme+":"+quick.map(launcherAppKey).join("|");
+  const fingerprint=launcherTheme+":"+String(learning)+":"+quick.map(a=>launcherAppKey(a)+":"+a.label).join("|");
   if($("launcherRecentQuick").dataset.fingerprint!==fingerprint){
    $("launcherRecentQuick").innerHTML=quick.map(app=>launchAppButton(app,"launcher-app launcher-recent-app")).join("")+
     (learning&&!quick.length?'<p class="habit-learning-note">Pin your favorites now. Daily apps appear after use on three different days.</p>':"");
@@ -2387,23 +2403,24 @@ window.receiveLauncherApps=function(apps,recents,isDefault){
  }
  renderLauncherHome();if(launcherPage==="apps")renderLauncherApps();renderLauncherRecents();updateHomeRole(isDefault);
 };
-function requestLauncherApps(force=false){
+function requestLauncherApps(force=false,rescan=force){
  if(!window.AudioDesk||typeof window.AudioDesk.requestLauncherApps!=="function"){
   renderLauncherApps();return;
  }
  if(!force&&Date.now()-launcherLastRequest<15000)return;
  launcherLastRequest=Date.now();
- try{window.AudioDesk.requestLauncherApps(force)}catch(e){$("launcherAppCount").textContent="APP LIST UNAVAILABLE"}
+ try{window.AudioDesk.requestLauncherApps(rescan)}catch(e){$("launcherAppCount").textContent="APP LIST UNAVAILABLE"}
 }
 window.launcherOnResume=function(){
  formatLauncherClock();if(typeof fitClock==="function")fitClock();
- requestLauncherApps(true);
+ requestLauncherApps(true,false);
 };
 window.launcherLaunchResult=function(opened){
  if(!opened){
   $("launcherAppCount").textContent="COULD NOT OPEN THAT APP · TRY AGAIN";
  }else{
-  requestLauncherApps(true);
+  // Native caches package discovery; daily-use counters still refresh.
+  if(window.audioDeskForeground)requestLauncherApps(true,false);
  }
 };
 function setLauncherPage(page,animate=true){
