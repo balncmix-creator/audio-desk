@@ -10,6 +10,31 @@ const byId=id=>document.getElementById(id);
 const movable=()=>ids.map(byId).filter(el=>el&&!el.hidden&&el.getClientRects().length&&
   getComputedStyle(el).display!=="none"&&el.getBoundingClientRect().width>16);
 const storeKey=()=>"ad_widget_layout_v2_"+launcherTheme;
+const removedKey=()=>"ad_widget_removed_v1_"+launcherTheme;
+const labels={launcherClockWidget:"Clock",warmDateWidget:"Date",warmAudioWidget:"Audio",warmSearchWidget:"Search",
+ launcherMusicWidget:"Music player",launcherFavorites:"Favourites",launcherRecentStrip:"Recents",
+ liveClockWidget:"Live clock",liveCalendarWidget:"Live calendar",liveNewsWidget:"Live news",launcherAgendaWidget:"Agenda"};
+let removed=new Set();
+function readRemoved(){
+ try{const saved=JSON.parse(deskStorage.getItem(removedKey())||"[]");
+  return new Set(Array.isArray(saved)?saved.filter(id=>ids.includes(id)):[]);
+ }catch{return new Set()}
+}
+function applyRemoved(){
+ removed=readRemoved();
+ for(const id of ids){const node=byId(id);if(node)node.toggleAttribute("data-widget-removed",removed.has(id))}
+ renderRemoved();
+ window.dispatchEvent(new Event("audio-desk-widget-visibility"));
+}
+function setRemoved(id,value){
+ if(!ids.includes(id)||!byId(id))return false;
+ removed=readRemoved();
+ if(value)removed.add(id);else removed.delete(id);
+ deskStorage.setItem(removedKey(),JSON.stringify([...removed]));
+ applyRemoved();return true;
+}
+window.audioDeskRestoreWidget=id=>setRemoved(id,false);
+window.audioDeskWidgetRemoved=id=>readRemoved().has(id);
 const limit=(v,a,b)=>Math.min(Math.max(v,a),b);
 let chosen=null,edit=null,hold=null,gesture=null,cancelClickUntil=0,raf=0;
 let geometry={};
@@ -32,6 +57,7 @@ function save(){
 function applySizes(){
  closeEditor();
  geometry=read();
+ applyRemoved();
  ids.forEach(id=>{
   const el=byId(id);if(!el)return;
   const g=geometry[id];
@@ -60,9 +86,10 @@ const overlay=document.createElement("div");
 overlay.id="widgetLayoutOverlay";
 overlay.hidden=true;
 overlay.setAttribute("role","group");
-overlay.setAttribute("aria-label","Edit Home widget position and size");
+overlay.setAttribute("aria-label","Edit Home widget position, size or visibility");
 overlay.innerHTML='<div class="layout-outline"></div>'+
  '<div class="layout-toolbar">'+
+ '<button type="button" data-layout-control="remove">Remove</button>'+
  '<button type="button" data-layout-control="reset">Reset</button>'+
  '<button type="button" data-layout-control="done">Done</button></div>'+
  '<button type="button" class="layout-move-handle" data-layout-control="move" aria-label="Drag to move widget">⠿ Move</button>'+
@@ -177,7 +204,7 @@ function position(){
   button.style.top=limit(p[1],17,innerHeight-17)+"px";
  }
  const bar=overlay.querySelector(".layout-toolbar"),grip=overlay.querySelector(".layout-move-handle");
- bar.style.left=limit(r.left,5,Math.max(5,innerWidth-160))+"px";
+ bar.style.left=limit(r.left,5,Math.max(5,innerWidth-bar.offsetWidth-5))+"px";
  bar.style.top=limit(r.top-49,11,innerHeight-42)+"px";
  grip.style.left=limit(centerX,50,innerWidth-50)+"px";
  grip.style.top=limit(r.top+28,30,innerHeight-30)+"px";
@@ -196,6 +223,9 @@ window.audioDeskRestoreWidgetLayouts=applySizes;
 overlay.addEventListener("click",e=>{
  const action=e.target.closest("[data-layout-control]")?.dataset.layoutControl;
  if(action==="done"){save();closeEditor()}
+ if(action==="remove"&&chosen){
+  const id=chosen.id;save();closeEditor();setRemoved(id,true);
+ }
  if(action==="reset"&&chosen){
   delete geometry[chosen.id];deskStorage.setItem(storeKey(),JSON.stringify(geometry));
   const el=chosen;closeEditor();
@@ -290,5 +320,30 @@ document.addEventListener("pointerdown",e=>{
 },true);
 window.addEventListener("resize",()=>{applySizes();requestPos()});
 window.addEventListener("launcher-page-changed",closeEditor);
+const restoreToggle=document.createElement("button");
+restoreToggle.id="widgetRestoreToggle";restoreToggle.type="button";
+restoreToggle.className="launcher-options-action";
+restoreToggle.setAttribute("aria-expanded","false");
+const restoreList=document.createElement("div");
+restoreList.id="widgetRestoreList";restoreList.hidden=true;
+const anchor=byId("launcherThemeChoose");
+anchor?.after(restoreToggle,restoreList);
+restoreToggle.onclick=()=>{
+ restoreList.hidden=!restoreList.hidden;
+ restoreToggle.setAttribute("aria-expanded",String(!restoreList.hidden));
+};
+function renderRemoved(){
+ restoreToggle.textContent="▤ RESTORE WIDGETS"+(removed.size?" ("+removed.size+")":"");
+ restoreList.replaceChildren();
+ if(!removed.size){
+  const p=document.createElement("p");p.textContent="No removed widgets in this theme.";restoreList.append(p);return;
+ }
+ for(const id of removed){
+  const b=document.createElement("button");b.type="button";b.className="launcher-options-action";
+  b.dataset.restoreWidget=id;b.textContent="+ Restore "+labels[id];
+  b.onclick=()=>{setRemoved(id,false);};
+  restoreList.append(b);
+ }
+}
 applySizes();
 })();
