@@ -73,6 +73,22 @@ function applySizes(){
   el.style.setProperty("--widget-y",limit(g.y,-innerHeight*.7,innerHeight*.7)+"px");
   el.dataset.layoutSized="true";
  });
+ // Older versions permitted overlapping saved positions. Prefer original
+ // flow placement for affected widgets; retain size if that is sufficient.
+ const visible=movable();
+ for(const el of visible){
+  if(!collisions(el).length||!geometry[el.id])continue;
+  el.style.removeProperty("--widget-x");el.style.removeProperty("--widget-y");
+  if(collisions(el).length){
+   el.style.removeProperty("--user-widget-width");
+   el.style.removeProperty("--user-widget-height");delete el.dataset.layoutSized;
+  }
+  if(geometry[el.id]){
+   if(el.dataset.layoutSized){geometry[el.id].x=0;geometry[el.id].y=0}
+   else delete geometry[el.id];
+  }
+ }
+ deskStorage.setItem(storeKey(),JSON.stringify(geometry));
 }
 function closeEditor(){
  hold&&clearTimeout(hold.timer);hold=null;
@@ -172,6 +188,34 @@ function resizeDimensions(start,edge,dx,dy){
  showGuides(sx,sy);
  return {l,t,r,b};
 }
+// Edge contact is allowed; actual intersecting interiors are not.
+function overlapArea(a,b){
+ return Math.max(0,Math.min(a.r,b.r)-Math.max(a.l,b.l)-1)*
+  Math.max(0,Math.min(a.b,b.b)-Math.max(a.t,b.t)-1);
+}
+function collisions(el){
+ return movable().filter(other=>other!==el&&!other.contains(el)&&!el.contains(other))
+  .map(other=>({other,area:overlapArea(layout(el),layout(other))})).filter(x=>x.area>0);
+}
+const layoutProps=["--widget-x","--widget-y","--user-widget-width","--user-widget-height"];
+function snapshot(el){
+ return {values:layoutProps.map(name=>el.style.getPropertyValue(name)),sized:el.dataset.layoutSized};
+}
+function restoreSnapshot(el,snapshot){
+ layoutProps.forEach((name,i)=>snapshot.values[i]?el.style.setProperty(name,snapshot.values[i]):el.style.removeProperty(name));
+ if(snapshot.sized===undefined)delete el.dataset.layoutSized;else el.dataset.layoutSized=snapshot.sized;
+}
+function guardedChange(el,change){
+ const before=snapshot(el);
+ const previous=new Map(collisions(el).map(x=>[x.other,x.area]));
+ change();
+ // Check actual DOM bounds after CSS, not only requested geometry:
+ // resizing one flow item can move another item's natural position.
+ if(collisions(el).some(x=>x.area>(previous.get(x.other)||0)+1)){
+  restoreSnapshot(el,before);guides.replaceChildren();return false;
+ }
+ return true;
+}
 function setRect(rect,original){
  if(!chosen)return;
  const width=Math.round(rect.r-rect.l),height=Math.round(rect.b-rect.t);
@@ -253,12 +297,15 @@ overlay.addEventListener("pointermove",e=>{
    moveDimensions(gesture.rect,dx,dy):
    resizeDimensions(gesture.rect,gesture.edge,dx,dy);
  const naturalLeft=gesture.rect.l-gesture.initialX,naturalTop=gesture.rect.t-gesture.initialY;
- const w=Math.round(rect.r-rect.l),h=Math.round(rect.b-rect.t);
- chosen.style.setProperty("--user-widget-width",w+"px");
- chosen.style.setProperty("--user-widget-height",h+"px");
- chosen.style.setProperty("--widget-x",Math.round(rect.l-naturalLeft)+"px");
- chosen.style.setProperty("--widget-y",Math.round(rect.t-naturalTop)+"px");
- chosen.dataset.layoutSized="true";
+ guardedChange(chosen,()=>{
+  if(gesture.kind==="resize"){
+   chosen.style.setProperty("--user-widget-width",Math.round(rect.r-rect.l)+"px");
+   chosen.style.setProperty("--user-widget-height",Math.round(rect.b-rect.t)+"px");
+   chosen.dataset.layoutSized="true";
+  }
+  chosen.style.setProperty("--widget-x",Math.round(rect.l-naturalLeft)+"px");
+  chosen.style.setProperty("--widget-y",Math.round(rect.t-naturalTop)+"px");
+ });
  requestPos();
 });
 function endGesture(e){
@@ -280,11 +327,15 @@ overlay.addEventListener("keydown",e=>{
  const pos=btn.dataset.edge?resizeDimensions(r,btn.dataset.edge,dx,dy):moveDimensions(r,dx,dy);
  const oldX=Number(chosen.style.getPropertyValue("--widget-x").replace("px",""))||0;
  const oldY=Number(chosen.style.getPropertyValue("--widget-y").replace("px",""))||0;
- chosen.style.setProperty("--user-widget-width",Math.round(pos.r-pos.l)+"px");
- chosen.style.setProperty("--user-widget-height",Math.round(pos.b-pos.t)+"px");
- chosen.style.setProperty("--widget-x",Math.round(oldX+pos.l-r.l)+"px");
- chosen.style.setProperty("--widget-y",Math.round(oldY+pos.t-r.t)+"px");
- chosen.dataset.layoutSized="true";save();requestPos();
+ guardedChange(chosen,()=>{
+  if(btn.dataset.edge){
+   chosen.style.setProperty("--user-widget-width",Math.round(pos.r-pos.l)+"px");
+   chosen.style.setProperty("--user-widget-height",Math.round(pos.b-pos.t)+"px");
+   chosen.dataset.layoutSized="true";
+  }
+  chosen.style.setProperty("--widget-x",Math.round(oldX+pos.l-r.l)+"px");
+  chosen.style.setProperty("--widget-y",Math.round(oldY+pos.t-r.t)+"px");
+ });save();requestPos();
 });
 for(const id of ids){
  const el=byId(id);if(!el)continue;
