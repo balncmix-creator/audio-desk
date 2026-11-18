@@ -82,12 +82,47 @@ internal class HomeLauncherSupport(private val activity: Activity) {
         }
     }
 
-    private fun App.toJson(): JSONObject = JSONObject()
+    // Local daily buckets, bounded to 28 days. Repeated opens during one
+    // session cannot outweigh a regular daily habit. No usage-access permission.
+    private fun localDay(): Long {
+        val now = System.currentTimeMillis()
+        return Math.floorDiv(now + java.util.TimeZone.getDefault().getOffset(now), 86_400_000L)
+    }
+
+    private fun usageDays(key: String): JSONObject {
+        val old = try { JSONObject(prefs.getString("days:" + key, "{}") ?: "{}") }
+            catch (_: Exception) { JSONObject() }
+        val now = localDay()
+        val valid = JSONObject()
+        for (day in old.keys()) {
+            val date = day.toLongOrNull() ?: continue
+            if (date in (now - 27)..now)
+                valid.put(day, old.optInt(day).coerceIn(1, 4))
+        }
+        return valid
+    }
+
+    private fun App.toJson(): JSONObject {
+        val key = pkg + "/" + activityName
+        val days = usageDays(key)
+        val now = localDay()
+        var score = 0.0
+        for (day in days.keys()) {
+            val age = now - (day.toLongOrNull() ?: now)
+            // Days used dominate; launch counts provide only a small tie-break.
+            score += (1.0 + 0.05 * (days.optInt(day) - 1)) *
+                if (age < 7) 1.0 else if (age < 14) 0.75 else 0.45
+        }
+        return JSONObject()
+
         .put("pkg", pkg).put("activity", activityName)
         .put("label", label).put("icon", icon)
         // These counts cover app launches through Audio Desk only.
         // Android deliberately restricts global app-usage history without permission.
-        .put("uses", prefs.getInt("count:" + pkg + "/" + activityName, 0))
+        .put("uses", prefs.getInt("count:" + key, 0))
+        .put("usageDays", days.length())
+        .put("habitScore", score)
+    }
 
     private fun recents(apps: List<App>): JSONArray {
         val available = apps.associateBy { it.pkg + "/" + it.activityName }
@@ -132,8 +167,13 @@ internal class HomeLauncherSupport(private val activity: Activity) {
         }
         val countKey = "count:" + pkg + "/" + activityName
         val nextCount = (prefs.getInt(countKey, 0) + 1).coerceAtMost(1_000_000)
+        val key = pkg + "/" + activityName
+        val days = usageDays(key)
+        val day = localDay().toString()
+        days.put(day, (days.optInt(day, 0) + 1).coerceAtMost(4))
         prefs.edit().putString("recent", next.toString())
-            .putInt(countKey, nextCount).apply()
+            .putInt(countKey, nextCount)
+            .putString("days:" + key, days.toString()).apply()
     }
 
 
