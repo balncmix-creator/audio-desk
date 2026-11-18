@@ -3,6 +3,8 @@
     <!-- Connectivity type only; no location, Wi-Fi scan, or sensitive phone state. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
+    <!-- Optional read-only agenda; event creation opens the calendar app for confirmation. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
     <!-- Explicitly user-enabled real output-mix visualization, never microphone fallback. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
