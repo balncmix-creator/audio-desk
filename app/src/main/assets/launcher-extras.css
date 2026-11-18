@@ -285,6 +285,10 @@ body[data-launcher-theme="warm"][data-glass-mode]:not([data-glass-mode="opaque"]
 }
 
 /* A removed widget is still in the DOM so its layout and theme state survive. */
+.desk-in-background #launcherHomePage *,
+.desk-in-background #wallpaperStage *,
+.desk-in-background #swipeMain *{animation-play-state:paused!important}
+.habit-learning-note{font-size:11px;line-height:1.5;color:var(--ds-muted);padding:8px;margin:0}
 body #launcherHomePage [data-widget-removed][data-widget-resizable]{
  display:none!important;
 }
