@@ -31,6 +31,7 @@ internal object SpectrumBands {
     fun fromVisualizerFft(fft: ByteArray, rateMilliHz: Int): FloatArray {
         val out = FloatArray(COUNT)
         val size = fft.size
+        val measured = BooleanArray(COUNT)
         if (size < 32 || rateMilliHz <= 0) return out
         // Android's Visualizer FFT packing: [DC, Nyquist, re(1), im(1), ...].
         // The samplingRate callback uses milliHertz, not Hertz.
@@ -41,22 +42,42 @@ internal object SpectrumBands {
             val real = fft[bin * 2].toDouble()
             val imag = fft[bin * 2 + 1].toDouble()
             val magnitude = sqrt(real * real + imag * imag)
-            // Ignore the ADC/FFT floor and use logarithmic dynamic range.
-            val normalized = (ln(1.0 + max(0.0, magnitude - 2.0)) /
-                ln(1.0 + 90.0)).coerceIn(0.0, 1.0)
+            // Keep headroom all the way to the maximum packed complex
+            // magnitude (sqrt(128^2+128^2)). The old 90-unit ceiling
+            // flattened strong bass into a permanently saturated peak.
+            val normalized = (max(0.0, magnitude - 2.0) / 180.0)
+                .coerceIn(0.0, 1.0).pow(.55)
             val band = bandForFrequency(frequency)
             out[band] = max(out[band], normalized.toFloat())
+            measured[band] = true
         }
+        // Display interpolation ONLY between measured bins. This prevents
+        // holes on a logarithmic axis without claiming extra FFT resolution.
+        interpolateMeasuredGaps(out, measured)
         return out
+    }
+
+    private fun interpolateMeasuredGaps(out: FloatArray, measured: BooleanArray) {
+        var previous = -1
+        for (i in measured.indices) {
+            if (!measured[i]) continue
+            if (previous >= 0 && i - previous > 1) {
+                for (j in previous + 1 until i) {
+                    val t = (j - previous).toFloat() / (i - previous)
+                    out[j] = out[previous] * (1f - t) + out[i] * t
+                }
+            }
+            previous = i
+        }
     }
 
     fun fromPcm(pcm: FloatArray, sampleRate: Int): FloatArray {
         val out = FloatArray(COUNT)
         if (pcm.size < 128 || sampleRate < 8000) return out
-        val n = Integer.highestOneBit(min(2048, pcm.size))
+        val n = Integer.highestOneBit(min(8192, pcm.size))
         if (n < 128) return out
         // Decimation of the raw output is NOT used. A Hanning window prevents
-        // harsh leakage at the edges of a streaming 1024-frame record.
+        // harsh leakage at the edges of a contiguous PCM analysis window.
         val real = DoubleArray(n)
         val imag = DoubleArray(n)
         for (i in 0 until n) {
