@@ -207,11 +207,20 @@ function restoreSnapshot(el,snapshot){
 }
 function guardedChange(el,change){
  const before=snapshot(el);
- const previous=new Map(collisions(el).map(x=>[x.other,x.area]));
+ const nodes=movable();
+ function pairs(){
+  const out=new Map(),rects=nodes.map(layout);
+  for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
+   if(nodes[i].contains(nodes[j])||nodes[j].contains(nodes[i]))continue;
+   out.set(i+":"+j,overlapArea(rects[i],rects[j]));
+  }
+  return out;
+ }
+ const previous=pairs();
  change();
  // Check actual DOM bounds after CSS, not only requested geometry:
  // resizing one flow item can move another item's natural position.
- if(collisions(el).some(x=>x.area>(previous.get(x.other)||0)+1)){
+ if([...pairs()].some(([key,area])=>area>(previous.get(key)||0)+1)){
   restoreSnapshot(el,before);guides.replaceChildren();return false;
  }
  return true;
