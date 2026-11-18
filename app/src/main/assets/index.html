@@ -2426,7 +2426,9 @@ function requestLauncherApps(force=false,rescan=force){
 }
 window.launcherOnResume=function(){
  formatLauncherClock();if(typeof fitClock==="function")fitClock();
- requestLauncherApps(true,false);
+ // Refresh discovery on resume so installs/uninstalls are immediately visible.
+ // The launch-result path uses cached discovery instead of scanning twice.
+ requestLauncherApps(true);
 };
 window.launcherLaunchResult=function(opened){
  if(!opened){
