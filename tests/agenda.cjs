@@ -81,6 +81,22 @@ const origin='https://appassets.androidplatform.net/assets/';
   await page.locator('#agendaWidgetVisibility').click();
   assert.equal(await widget.isVisible(),true);
   await page.locator('#launcherOptionsClose').click();
+  // Remove via long-press editor, restore without deleting event pins, and
+  // verify the preference is isolated to the selected theme.
+  assert.equal(await page.evaluate(()=>window.audioDeskBeginWidgetResize('launcherAgendaWidget')),true);
+  await page.locator('#widgetLayoutOverlay [data-layout-control="remove"]').click();
+  assert.equal(await widget.isVisible(),false);
+  await page.evaluate(()=>setLauncherTheme('minimal'));
+  assert.equal(await widget.isVisible(),true,'removal is specific to the edited theme');
+  await page.evaluate(()=>setLauncherTheme('windows'));
+  assert.equal(await widget.isVisible(),false,'returning to the theme retains removal');
+  await page.reload();await page.waitForFunction(()=>!!window.audioDeskAgenda);
+  assert.equal(await widget.isVisible(),false,'removed state survives restart');
+  await page.locator('#launcherSettingsToggle').click();
+  await page.locator('#widgetRestoreToggle').click();
+  await page.locator('[data-restore-widget="launcherAgendaWidget"]').click();
+  assert.equal(await widget.isVisible(),true,'restore works without changing calendar pins');
+  await page.locator('#launcherOptionsClose').click();
   await page.reload();await page.waitForFunction(()=>!!window.audioDeskAgenda);
   assert.equal((await page.evaluate(()=>window.audioDeskAgenda.pins())).length,1,'pin persists');
   await page.evaluate(()=>window.receiveAudioDeskAgenda({state:'permission'}));
