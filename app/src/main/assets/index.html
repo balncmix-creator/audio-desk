@@ -428,6 +428,7 @@ body[data-home-page="home"] .launcher-dots .active{color:#c9c9c9}
 <link rel="stylesheet" href="windows-live-tiles.css">
 <link rel="stylesheet" href="music-spectrum.css">
 <link rel="stylesheet" href="music-spectrum-settings.css">
+<link rel="stylesheet" href="agenda.css">
 <script>
 // One interruptible motion vocabulary for pages, sheets and touch feedback.
 const DeskMotion=(()=>{
@@ -617,6 +618,11 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
    <small id="musicAccessNote" class="music-note">Player-supported controls only. Ads cannot be bypassed.</small>
   </section>
   <button id="launcherTilesSearch" type="button" aria-label="Search all installed apps">⌕ SEARCH APPS</button>
+  <section id="launcherAgendaWidget" aria-label="Upcoming calendar events" hidden>
+   <div class="agenda-widget-head"><button type="button" id="agendaOpen">Agenda <span aria-hidden="true">↗</span></button><button type="button" id="agendaWidgetAdd" aria-label="New calendar event">+</button></div>
+   <div id="agendaSlide" class="agenda-slide" aria-live="off"></div>
+   <div class="agenda-widget-nav"><button type="button" id="agendaPrevious" aria-label="Previous event">‹</button><span id="agendaSlidePosition"></span><button type="button" id="agendaNext" aria-label="Next event">›</button></div>
+  </section>
   <div id="launcherFavorites" aria-label="Favourite and frequently used applications"></div>
   <div id="launcherFavoritesEmpty" hidden>YOUR APPS WILL APPEAR HERE.</div>
   <section id="launcherRecentStrip" aria-label="Recently opened app shortcuts" hidden>
@@ -653,6 +659,8 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
      <button type="button" id="launcherAllApps">▦ ALL APPS</button>
      <button type="button" id="launcherOpenNews">◂ AUDIO NEWS</button>
     </div>
+    <button id="agendaSettingsOpen" type="button" class="launcher-options-action" hidden>▤ YOUR AGENDA</button>
+    <button id="agendaWidgetVisibility" type="button" class="launcher-options-action" hidden>Hide agenda widget</button>
     <button id="launcherThemeChoose" type="button" class="launcher-options-action">▤ HOME THEME</button>
     <button id="launcherFavoritesEdit" type="button" class="launcher-options-action">☆ MANAGE APP TILES</button>
      <button type="button" id="launcherWallpaperChoose" class="launcher-options-action">▧ WALLPAPERS & ANIMATION</button>
@@ -673,6 +681,14 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
   </div>
  </section>
 
+ <div id="agendaOverlay" role="dialog" aria-modal="true" aria-label="Your agenda" hidden>
+  <div class="agenda-sheet">
+   <div class="agenda-heading"><h2>Your agenda</h2><button type="button" id="agendaClose" aria-label="Close agenda">×</button></div>
+   <div class="agenda-tools"><button type="button" id="agendaAdd">+ New event</button><button type="button" id="agendaRefresh" aria-label="Refresh calendar">↻</button></div>
+   <div id="agendaNotice" role="status"></div>
+   <div id="agendaList"></div>
+  </div>
+ </div>
  <div id="launcherThemeDialog" class="customize-overlay" role="dialog" aria-modal="true" aria-label="Choose launcher theme" hidden>
   <div class="customize-panel">
    <div class="customize-head"><strong>HOME SCREEN THEME</strong><button type="button" id="themeClose" aria-label="Close themes">×</button></div>
@@ -2507,7 +2523,7 @@ $("launcherHomePage").addEventListener("touchstart",e=>{
  // Tiles must scroll freely: swipe-up search belongs only to Minimal and Pixel.
  if(launcherTheme==="windows"){upStart=null;return}
  if(e.touches.length!==1||hasLauncherOverlay()||
-   e.target.closest("#launcherFavorites,#launcherRecentStrip,input,textarea,button:not(.launcher-app)")){
+   e.target.closest("#launcherFavorites,#launcherRecentStrip,#launcherAgendaWidget,input,textarea,button:not(.launcher-app)")){
    upStart=null;return;
   }
  const t=e.touches[0];upStart={x:t.clientX,y:t.clientY};
@@ -2636,7 +2652,7 @@ document.addEventListener("touchstart",e=>{
  const edge=x<34||x>window.innerWidth-34;
  // News→Home works from anywhere on the feed, never only its outer edge.
  const appListRow=launcherPage==="apps"&&!!e.target.closest("#launcherAppsGrid .launcher-app");
-  if(e.target.closest("#launcherAlphaIndex,input,textarea,select,audio,video,iframe,[contenteditable]"))return;
+  if(e.target.closest("#launcherAlphaIndex,#launcherAgendaWidget,#agendaOverlay,input,textarea,select,audio,video,iframe,[contenteditable]"))return;
   if(e.target.closest(".launcher-app,button,a")&&!appListRow)return;
  launcherGesture={x,y:t.clientY,lastX:x,locked:false,edge};
 },{capture:true,passive:true});
@@ -2819,10 +2835,11 @@ document.addEventListener("click",e=>{
 <script src="windows-live-tiles.js"></script>
 <script src="music-spectrum.js"></script>
 <script src="music-spectrum-settings.js"></script>
+<script src="agenda.js"></script>
 <script>
-function hasLauncherOverlay(){return ['launcherLetterPanel','launcherHomeOptions','launcherShortcutMenu','launcherThemeDialog','launcherWallpaperDialog','launcherClockDialog','gridDetail'].some(id=>!document.getElementById(id).hidden)}
+function hasLauncherOverlay(){return ['launcherLetterPanel','launcherHomeOptions','launcherShortcutMenu','launcherThemeDialog','launcherWallpaperDialog','launcherClockDialog','gridDetail','agendaOverlay'].some(id=>!document.getElementById(id).hidden)}
 function syncRefreshAvailability(){window.AudioDesk?.setRefreshEnabled?.(launcherPage==='events'&&!hasLauncherOverlay())}
-for(const id of ['launcherLetterPanel','launcherHomeOptions','launcherShortcutMenu','launcherThemeDialog','launcherWallpaperDialog','launcherClockDialog','gridDetail']){
+for(const id of ['launcherLetterPanel','launcherHomeOptions','launcherShortcutMenu','launcherThemeDialog','launcherWallpaperDialog','launcherClockDialog','gridDetail','agendaOverlay']){
  new MutationObserver(()=>{syncRefreshAvailability();if(hasLauncherOverlay()){cancelHomeHold();upStart=null;if(launcherGesture)resetLauncherGesture()}}).observe($(id),{attributes:true,attributeFilter:['hidden']});
 }
 window.addEventListener('launcher-page-changed',syncRefreshAvailability);syncRefreshAvailability();
