@@ -27,6 +27,8 @@ import android.os.SystemClock
  */
 class SpectrumProjectionService : Service() {
     companion object {
+        const val SAMPLE_RATE = 48000
+        private const val ANALYSIS_WINDOW = 8192
         const val ACTION_START = "com.balnc.audioddesk.START_SPECTRUM_PROJECTION"
         const val ACTION_STOP = "com.balnc.audioddesk.STOP_SPECTRUM_PROJECTION"
         const val EXTRA_RESULT = "resultCode"
@@ -77,12 +79,12 @@ class SpectrumProjectionService : Service() {
                 .addMatchingUsage(AudioAttributes.USAGE_GAME)
                 .addMatchingUsage(AudioAttributes.USAGE_UNKNOWN)
                 .build()
-            val min = AudioRecord.getMinBufferSize(16000, AudioFormat.CHANNEL_IN_MONO,
+            val min = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT)
             val record = AudioRecord.Builder()
                 .setAudioFormat(AudioFormat.Builder()
                     .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                    .setSampleRate(16000)
+                    .setSampleRate(SAMPLE_RATE)
                     .setChannelMask(AudioFormat.CHANNEL_IN_MONO).build())
                 .setBufferSizeInBytes(maxOf(8192, if (min > 0) min * 2 else 8192))
                 .setAudioPlaybackCaptureConfig(policy)
@@ -96,18 +98,29 @@ class SpectrumProjectionService : Service() {
             running = true
             worker = Thread({
                 val wave = ShortArray(1024)
+                val ring = FloatArray(ANALYSIS_WINDOW)
+                var cursor = 0
+                var filled = 0
                 var sent = 0L
                 while (running && !Thread.currentThread().isInterrupted) {
                     val n = try {
                         record.read(wave, 0, wave.size, AudioRecord.READ_BLOCKING)
                     } catch (_: RuntimeException) { break }
                     if (n <= 0) break
+                    // Maintain a CONTIGUOUS rolling PCM window (not stitched
+                    // snapshots). Overlapping analysis improves sub-bass
+                    // resolution while keeping frequent visual updates.
+                    for (i in 0 until n) {
+                        ring[cursor] = wave[i] / 32768f
+                        cursor = (cursor + 1) % ANALYSIS_WINDOW
+                        filled = minOf(ANALYSIS_WINDOW, filled + 1)
+                    }
                     val now = SystemClock.uptimeMillis()
-                    if (now - sent < 32L) continue
+                    if (filled < ANALYSIS_WINDOW || now - sent < 32L) continue
                     sent = now
-                    // Do not decimate the PCM before FFT: that discards
-                    // high frequencies and makes the spectrum look static.
-                    val samples = FloatArray(n) { i -> wave[i] / 32768f }
+                    val samples = FloatArray(ANALYSIS_WINDOW) { i ->
+                        ring[(cursor + i) % ANALYSIS_WINDOW]
+                    }
                     observer?.invoke(samples)
                 }
             }, "AudioDesk-playback-visualizer").apply {
