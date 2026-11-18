@@ -2277,14 +2277,25 @@ document.addEventListener("click",e=>{
 function normalizeAppSearch(value){
  return String(value||"").normalize("NFKD").replace(/\p{M}/gu,"").toLocaleLowerCase().trim().replace(/\s+/g," ");
 }
+// Cache normalized names per installed-app object. Typing never needs another
+// PackageManager scan, and diacritics/token splitting are computed once.
+const appSearchIndex=new WeakMap();
+function searchEntry(app){
+ let entry=appSearchIndex.get(app);
+ if(!entry||entry.label!==app.label||entry.packageName!==app.pkg){
+  const name=normalizeAppSearch(app.label),pkg=normalizeAppSearch(app.pkg);
+  entry={label:app.label,packageName:app.pkg,name,pkg,words:name.split(/[^\p{L}\p{N}]+/u).filter(Boolean)};
+  appSearchIndex.set(app,entry);
+ }
+ return entry;
+}
 function rankedLauncherApps(query,apps=launcherApps){
  const q=normalizeAppSearch(query);
  if(!q)return apps.slice();
  const tokens=q.split(" ");
  const matches=[];
  for(const app of apps){
-  const name=normalizeAppSearch(app.label),pkg=normalizeAppSearch(app.pkg);
-  const words=name.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  const {name,pkg,words}=searchEntry(app);
   let rank=-1;
   if(name===q)rank=0;
   else if(name.startsWith(q))rank=1;
@@ -2295,7 +2306,9 @@ function rankedLauncherApps(query,apps=launcherApps){
   else if(pkg.includes(q))rank=6;
   if(rank>=0)matches.push({app,rank});
  }
- return matches.sort((a,b)=>a.rank-b.rank||
+ // Package identifiers are a last resort, never noise above real names.
+ const labelMatches=matches.filter(m=>m.rank<6);
+ return (labelMatches.length?labelMatches:matches).sort((a,b)=>a.rank-b.rank||
   a.app.label.localeCompare(b.app.label)||launcherAppKey(a.app).localeCompare(launcherAppKey(b.app))).map(x=>x.app);
 }
 function renderLauncherApps(){
