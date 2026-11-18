@@ -35,6 +35,59 @@ const key=theme=>"ad_wallpaper_by_theme_v2_"+theme;
 let paletteId=null;
 let switching=false;
 const activePalette=()=>palettes[launcherTheme].find(p=>p[0]===paletteId);
+/* One wallpaper-controlled palette for every theme component. */
+const wallpaperTokenNames=["--ds-bg","--ds-panel","--ds-panel2","--ds-text","--ds-muted",
+ "--ds-line","--ds-accent","--warm-panel","--warm-panel2","--warm-ink",
+ "--warm-muted","--warm-search","--warm-search-ink","--theme-panel"];
+function themeRgb(color){
+ const match=/^#([\da-f]{6})$/i.exec(color||"");
+ return match?[0,2,4].map(i=>parseInt(match[1].slice(i,i+2),16)):null;
+}
+function themeHex(rgb){
+ return "#"+rgb.map(x=>Math.round(Math.max(0,Math.min(255,x))).toString(16).padStart(2,"0")).join("");
+}
+function themeMix(a,b,t){
+ const x=themeRgb(a),y=themeRgb(b);
+ return x&&y?themeHex(x.map((v,i)=>v*(1-t)+y[i]*t)):a;
+}
+function themeLuminance(color){
+ const values=themeRgb(color)||[0,0,0];
+ const [r,g,b]=values.map(v=>{v/=255;return v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4)});
+ return .2126*r+.7152*g+.0722*b;
+}
+function themeInk(surface){
+ return themeLuminance(surface)>.20?"#17191c":"#fafafa";
+}
+function applyWallpaperTokens(p,photoColor){
+ const style=document.body.style;
+ for(const key of wallpaperTokenNames)style.removeProperty(key);
+ if(!p&&!themeRgb(photoColor))return;
+ const base=p?p[2]:({minimal:"#0e1113",pixel:"#08070b",windows:"#101820",warm:"#1e1b1d"}[launcherTheme]||"#101013");
+ const middle=p?p[3]:themeMix(photoColor,base,.53);
+ const accent=p?p[4]:themeMix(photoColor,"#ffffff",themeLuminance(photoColor)<.28?.4:.08);
+ const panel=themeMix(base,middle,.75);
+ const panel2=themeMix(base,middle,.94);
+ const ink=themeInk(panel);
+ const search=themeMix(base,middle,.48);
+ const tokens={
+  "--ds-bg":base,
+  "--ds-panel":panel,
+  "--ds-panel2":panel2,
+  "--ds-text":themeInk(base),
+  "--ds-muted":themeMix(themeInk(base),base,.40),
+  "--ds-line":themeMix(middle,accent,.30),
+  "--ds-accent":accent,
+  "--warm-panel":panel2,
+  "--warm-panel2":themeMix(panel2,base,.17),
+  "--warm-ink":themeInk(panel2),
+  "--warm-muted":themeMix(themeInk(panel2),panel2,.35),
+  "--warm-search":search,
+  "--warm-search-ink":themeInk(search),
+  "--theme-panel":panel2
+ };
+ for(const [key,value] of Object.entries(tokens))style.setProperty(key,value);
+}
+
 function setPalette(id){
  paletteId=palettes[launcherTheme].some(p=>p[0]===id)?id:null;
  const p=activePalette();
@@ -43,6 +96,7 @@ function setPalette(id){
  root.setProperty("--theme-wallpaper",p?"linear-gradient(152deg,"+p[2]+"," +p[3]+ " 64%,"+p[2]+")":"none");
  root.setProperty("--theme-accent",p?.[4]||"#ededed");
  root.setProperty("--theme-panel",p?.[5]||"#f0dad3");
+ applyWallpaperTokens(p,null);
  if(p){
   document.body.dataset.wallpaperLight="false";
   document.body.dataset.wallpaperStatusLight="false";
@@ -139,6 +193,9 @@ async function restoreWallpaper(theme){
  }
  if(launcherTheme===theme)updatePaletteGrid();
 }
+window.addEventListener("audio-desk-wallpaper-tones",e=>{
+ if(!paletteId&&e.detail?.accent)applyWallpaperTokens(null,e.detail.accent);
+});
 const baseSetLauncherTheme=setLauncherTheme;
 setLauncherTheme=function(theme){
  if(!LAUNCHER_THEMES.includes(theme))return;
@@ -149,6 +206,7 @@ setLauncherTheme=function(theme){
    customWallpaperSelected?"custom":"bundled:"+selectedWallpaper);
  switching=true;
  baseSetLauncherTheme(theme);
+ setPalette(null); // Clear the previous edition's tokens before restoring wallpaper.
  closeLauncherLetterPanel();
  renderLauncherApps();
  refreshThemeChrome();
@@ -238,4 +296,5 @@ const startupWallpaper=deskStorage.getItem(key(launcherTheme));
 if(startupWallpaper||launcherTheme!=="minimal")
  restoreWallpaper(launcherTheme).catch(()=>{});
 else setPalette(null); // Already decoded once by the legacy minimal-home bootstrap.
+requestAnimationFrame(()=>{if(!paletteId)window.audioDeskSyncWallpaperAccent?.()});
 })();

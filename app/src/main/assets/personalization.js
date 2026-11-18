@@ -36,6 +36,35 @@ document.addEventListener("visibilitychange",syncWallpaperMotion);
 window.addEventListener("launcher-page-changed",syncWallpaperMotion);
 if(motionPreference.addEventListener)motionPreference.addEventListener("change",syncWallpaperMotion);
 else motionPreference.addListener(syncWallpaperMotion);
+
+/* Sample once per wallpaper/crop change, not per frame. */
+function syncWallpaperAccent(image=$("wallpaperImage")){
+ if(!image?.naturalWidth||!image.naturalHeight)return;
+ try{
+  const c=document.createElement("canvas");c.width=32;c.height=48;
+  const ctx=c.getContext("2d",{willReadFrequently:true});if(!ctx)return;
+  const w=image.naturalWidth,h=image.naturalHeight;
+  const cw=Math.min(w,h*c.width/c.height),ch=Math.min(h,w*c.height/c.width);
+  const crop=customWallpaperSelected?customPosition/100:.35;
+  ctx.drawImage(image,(w-cw)*crop,(h-ch)/2,cw,ch,0,0,c.width,c.height);
+  const d=ctx.getImageData(0,0,c.width,c.height).data;
+  let R=0,G=0,B=0,W=0;
+  for(let i=0;i<d.length;i+=16){
+   const r=d[i],g=d[i+1],b=d[i+2];
+   if(d[i+3]<128)continue;
+   const lo=Math.min(r,g,b),hi=Math.max(r,g,b);
+   if(hi<20||lo>242)continue;
+   const weight=1+2*(hi-lo)/255;
+   R+=r*weight;G+=g*weight;B+=b*weight;W+=weight;
+  }
+  if(W){
+   const accent="#"+[R/W,G/W,B/W].map(v=>Math.round(v).toString(16).padStart(2,"0")).join("");
+   window.dispatchEvent(new CustomEvent("audio-desk-wallpaper-tones",{detail:{accent}}));
+  }
+ }catch{} // Wallpaper image loading must remain independent from accent detection.
+}
+window.audioDeskSyncWallpaperAccent=syncWallpaperAccent;
+
 async function applyWallpaper(){
  const token=++wallpaperLoad,wallpaper=WALLPAPERS[selectedWallpaper];
  const custom=customWallpaperSelected&&customWallpaper;
@@ -59,6 +88,7 @@ async function applyWallpaper(){
   $("customWallpaperStatus").textContent="Wallpaper file unavailable. Choose a photo from your phone.";
  }
  syncWallpaperMotion();
+ syncWallpaperAccent(image);
 }
 // Sample the displayed crop, including its separate status-bar strip.
 function syncCustomWallpaperTone(){
@@ -76,7 +106,10 @@ function syncCustomWallpaperTone(){
  syncWallpaperMotion();
 }
 let cropFrame=0;
-function scheduleWallpaperTone(){cancelAnimationFrame(cropFrame);cropFrame=requestAnimationFrame(syncCustomWallpaperTone)}
+function scheduleWallpaperTone(){
+ cancelAnimationFrame(cropFrame);
+ cropFrame=requestAnimationFrame(()=>{syncCustomWallpaperTone();if(customWallpaperSelected)syncWallpaperAccent()});
+}
 window.addEventListener('resize',scheduleWallpaperTone);
 function fitClock(){
  const face=$("launcherClock");
