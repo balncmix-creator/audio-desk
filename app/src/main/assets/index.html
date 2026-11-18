@@ -2127,31 +2127,35 @@ function launcherSuggestedApps(){
  const present=new Map(launcherApps.map(app=>[launcherAppKey(app),app]));
  const pinned=launcherPins.map(key=>present.get(key)).filter(Boolean);
  const rest=launcherApps.filter(app=>!launcherPins.includes(launcherAppKey(app)));
- const mostUsed=rest.sort((a,b)=>{
-  const counts=(Number(b.uses)||0)-(Number(a.uses)||0);
-  if(counts)return counts;
-  const last=(Number(b.opened)||0)-(Number(a.opened)||0);
-  if(last)return last;
-  return a.label.localeCompare(b.label);
+ // Require usage on at least three distinct local days. The native score
+ // weights the past 28 days, with repeated same-day launches capped.
+ const modern=rest.some(app=>Number.isFinite(app.usageDays));
+ const learned=rest.filter(app=>modern?Number(app.usageDays)>=3:true);
+ learned.sort((a,b)=>{
+  const score=modern?(Number(b.habitScore)||0)-(Number(a.habitScore)||0):
+   (Number(b.uses)||0)-(Number(a.uses)||0);
+  return score||a.label.localeCompare(b.label)||launcherAppKey(a).localeCompare(launcherAppKey(b));
  });
- return [...pinned,...mostUsed].slice(0,8);
+ return [...pinned,...learned].slice(0,8);
 }
 function renderLauncherHome(){
  const windows=launcherTheme==="windows",warm=launcherTheme==="warm";
- // Windows is the only tiled Home. Warm Minimal uses pinned/frequently
- // launched shortcuts; Minimal and Pixel keep their recently opened list.
- const tiles=windows?launcherSuggestedApps():[];
+ // All Home editions show pinned and genuinely habitual apps. Recent
+ // launches remain accessible separately in the settings drawer.
+ const suggested=launcherSuggestedApps();
+ const tiles=windows?suggested:[];
  $("launcherFavorites").innerHTML=tiles.map(renderFavoriteRow).join("");
- const recents=launcherRecents.slice(0,6);
- const quick=warm?launcherSuggestedApps().slice(0,7):
-  (recents.length?recents:launcherSuggestedApps().slice(0,6));
- $("launcherRecentStrip").hidden=windows||!quick.length;
+ const quick=suggested.slice(0,warm?7:6);
+ const learning=launcherNativeLoaded&&!launcherApps.some(a=>Number(a.usageDays)>=3)&&
+  launcherApps.some(a=>Number.isFinite(a.usageDays));
+ $("launcherRecentStrip").hidden=windows||(!quick.length&&!learning);
  if(!windows){
-  $("launcherRecentStripTitle").textContent=warm?"FAVORITES & FREQUENT":
-   (recents.length?"RECENTLY OPENED":"SUGGESTED APPS");
-  const fingerprint=launcherTheme+":"+(warm?"w":recents.length?"r":"s")+":"+quick.map(launcherAppKey).join("|");
+  $("launcherRecentStripTitle").textContent=learning&&!quick.length?"LEARNING YOUR DAILY APPS":
+   warm?"FAVORITES & FREQUENT":"FREQUENTLY USED";
+  const fingerprint=launcherTheme+":"+quick.map(launcherAppKey).join("|");
   if($("launcherRecentQuick").dataset.fingerprint!==fingerprint){
-   $("launcherRecentQuick").innerHTML=quick.map(app=>launchAppButton(app,"launcher-app launcher-recent-app")).join("");
+   $("launcherRecentQuick").innerHTML=quick.map(app=>launchAppButton(app,"launcher-app launcher-recent-app")).join("")+
+    (learning&&!quick.length?'<p class="habit-learning-note">Pin your favorites now. Daily apps appear after use on three different days.</p>':"");
    $("launcherRecentQuick").dataset.fingerprint=fingerprint;
   }
  }
@@ -2254,15 +2258,38 @@ document.addEventListener("click",e=>{
  if(!$("launcherLetterPanel").hidden&&
    !e.target.closest("#launcherLetterPanel,#launcherAlphaIndex"))closeLauncherLetterPanel();
 });
+function normalizeAppSearch(value){
+ return String(value||"").normalize("NFKD").replace(/\p{M}/gu,"").toLocaleLowerCase().trim().replace(/\s+/g," ");
+}
+function rankedLauncherApps(query,apps=launcherApps){
+ const q=normalizeAppSearch(query);
+ if(!q)return apps.slice();
+ const tokens=q.split(" ");
+ const matches=[];
+ for(const app of apps){
+  const name=normalizeAppSearch(app.label),pkg=normalizeAppSearch(app.pkg);
+  const words=name.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  let rank=-1;
+  if(name===q)rank=0;
+  else if(name.startsWith(q))rank=1;
+  else if(words.some(w=>w.startsWith(q)))rank=2;
+  else if(tokens.length>1&&tokens.every(t=>words.some(w=>w.startsWith(t))))rank=3;
+  else if(name.includes(q))rank=4;
+  else if(tokens.every(t=>name.includes(t)))rank=5;
+  else if(pkg.includes(q))rank=6;
+  if(rank>=0)matches.push({app,rank});
+ }
+ return matches.sort((a,b)=>a.rank-b.rank||
+  a.app.label.localeCompare(b.app.label)||launcherAppKey(a.app).localeCompare(launcherAppKey(b.app))).map(x=>x.app);
+}
 function renderLauncherApps(){
- const query=$("launcherAppSearch").value.toLocaleLowerCase().trim();
- const list=launcherApps.filter(app=>!query||app.label.toLocaleLowerCase().includes(query)||
-  app.pkg.toLocaleLowerCase().includes(query));
+ const query=normalizeAppSearch($("launcherAppSearch").value);
+ const list=rankedLauncherApps(query);
  $("launcherAppCount").textContent=list.length+" APPLICATIONS";
  let previous="";
  $("launcherAppsGrid").innerHTML=list.map(app=>{
   const letter=appLetter(app);
-  const header=letter!==previous?'<div class="n-letter-heading" data-app-group="'+letter+'">'+letter+'</div>':"";
+  const header=!query&&letter!==previous?'<div class="n-letter-heading" data-app-group="'+letter+'">'+letter+'</div>':"";
   previous=letter;
   return header+renderFavoriteRow(app);
  }).join("");
