@@ -165,14 +165,18 @@ function close(){overlay.hidden=true}
 function showWidget(){
  widget.hidden=!widgetVisible;
  const b=el("agendaWidgetVisibility");
- b.textContent=widgetVisible?"Hide agenda widget":"Show agenda widget";
- b.setAttribute("aria-pressed",String(widgetVisible));
+ const visible=widgetVisible&&!widget.hasAttribute("data-widget-removed");
+ b.textContent=visible?"Hide agenda widget":"Show agenda widget";
+ b.setAttribute("aria-pressed",String(visible));
 }
 const add=()=>window.AudioDesk.newAgendaEvent?.(Math.ceil(Date.now()/3600000)*3600000);
 el("agendaOpen").onclick=open;
 el("agendaSettingsOpen").hidden=false;el("agendaSettingsOpen").onclick=open;
 el("agendaWidgetVisibility").hidden=false;el("agendaWidgetVisibility").onclick=()=>{
- widgetVisible=!widgetVisible;deskStorage.setItem(visibilityKey,String(widgetVisible));showWidget();
+ if(widget.hasAttribute("data-widget-removed")){
+  widgetVisible=true;window.audioDeskRestoreWidget?.(widget.id);
+ }else widgetVisible=!widgetVisible;
+ deskStorage.setItem(visibilityKey,String(widgetVisible));showWidget();
 };
 el("agendaWidgetAdd").onclick=add;el("agendaAdd").onclick=add;
 el("agendaClose").onclick=close;el("agendaRefresh").onclick=refresh;
@@ -211,9 +215,10 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh()}
 setInterval(()=>{if(!document.hidden&&(launcherPage==="home"||!overlay.hidden))refresh()},90000);
 setInterval(()=>{
  if(launcherPage==="home"&&overlay.hidden&&!document.hidden&&!widget.hidden&&
-  !widget.classList.contains("widget-editing")&&!gesture&&!hasLauncherOverlay()&&
+  !widget.hasAttribute("data-widget-removed")&&!widget.classList.contains("widget-editing")&&!gesture&&!hasLauncherOverlay()&&
   !matchMedia("(prefers-reduced-motion: reduce)").matches)step(1);
 },8500);
+window.addEventListener("audio-desk-widget-visibility",showWidget);
 showWidget();renderSlide();refresh();
 window.audioDeskAgenda={open,close,step,refresh,pins:()=>[...pins]};
 })();
