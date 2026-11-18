@@ -39,8 +39,11 @@ internal class AgendaSupport(private val activity: Activity,
                 }.timeInMillis
                 val end = Calendar.getInstance().apply { add(Calendar.DATE, 91) }.timeInMillis
                 val rows = JSONArray()
-                val fields = arrayOf("event_id", "begin", "end", "title", "allDay",
-                    "eventLocation", "displayColor", "eventStatus", "selfAttendeeStatus")
+                val fields = arrayOf(CalendarContract.Instances.EVENT_ID,
+                    CalendarContract.Instances.BEGIN, CalendarContract.Instances.END,
+                    CalendarContract.Events.TITLE, CalendarContract.Events.ALL_DAY,
+                    CalendarContract.Events.EVENT_LOCATION, CalendarContract.Events.DISPLAY_COLOR,
+                    CalendarContract.Events.STATUS, CalendarContract.Events.SELF_ATTENDEE_STATUS)
                 CalendarContract.Instances.query(activity.contentResolver, fields, start, end)?.use { c ->
                     while (c.moveToNext() && rows.length() < 2000) {
                         // Exclude cancelled and personally declined occurrences.
