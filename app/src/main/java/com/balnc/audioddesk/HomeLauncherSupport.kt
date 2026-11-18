@@ -86,7 +86,7 @@ internal class HomeLauncherSupport(private val activity: Activity) {
     // session cannot outweigh a regular daily habit. No usage-access permission.
     private fun localDay(): Long {
         val now = System.currentTimeMillis()
-        return Math.floorDiv(now + java.util.TimeZone.getDefault().getOffset(now), 86_400_000L)
+        return (now + java.util.TimeZone.getDefault().getOffset(now)) / 86_400_000L
     }
 
     private fun usageDays(key: String): JSONObject {
