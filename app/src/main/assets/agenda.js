@@ -144,8 +144,12 @@ function step(direction){
  if(ordered.length<2)return;
  selected=(selected+direction+ordered.length)%ordered.length;renderSlide(direction);
 }
-function refresh(){
- if(document.hidden)return;
+let lastRefreshAt=0;
+function refresh(force=false){
+ if(document.hidden||window.audioDeskForeground===false)return;
+ if(!force&&overlay.hidden&&(widget.hidden||widget.hasAttribute("data-widget-removed")||launcherPage!=="home"))return;
+ if(!force&&Date.now()-lastRefreshAt<45000)return;
+ lastRefreshAt=Date.now();
  window.AudioDesk.requestAgenda();
 }
 window.receiveAudioDeskAgenda=data=>{
@@ -158,7 +162,7 @@ window.receiveAudioDeskAgenda=data=>{
  reorder();renderList();renderSlide();
 };
 function open(){
- closeHomeOptions(true);overlay.hidden=false;renderList();refresh();
+ closeHomeOptions(true);overlay.hidden=false;renderList();refresh(true);
  el("agendaClose").focus({preventScroll:true});
 }
 function close(){overlay.hidden=true}
@@ -179,7 +183,7 @@ el("agendaWidgetVisibility").hidden=false;el("agendaWidgetVisibility").onclick=(
  deskStorage.setItem(visibilityKey,String(widgetVisible));showWidget();
 };
 el("agendaWidgetAdd").onclick=add;el("agendaAdd").onclick=add;
-el("agendaClose").onclick=close;el("agendaRefresh").onclick=refresh;
+el("agendaClose").onclick=close;el("agendaRefresh").onclick=()=>refresh(true);
 el("agendaPrevious").onclick=()=>step(-1);el("agendaNext").onclick=()=>step(1);
 overlay.onclick=e=>{if(e.target===overlay)close()};
 for(const id of ["warmDateWidget","liveCalendarWidget","launcherDate"]){
@@ -214,11 +218,12 @@ window.addEventListener("launcher-page-changed",()=>{close();if(launcherPage==="
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh()});
 setInterval(()=>{if(!document.hidden&&(launcherPage==="home"||!overlay.hidden))refresh()},90000);
 setInterval(()=>{
- if(launcherPage==="home"&&overlay.hidden&&!document.hidden&&!widget.hidden&&
+ if(launcherPage==="home"&&overlay.hidden&&!document.hidden&&window.audioDeskForeground!==false&&!widget.hidden&&
   !widget.hasAttribute("data-widget-removed")&&!widget.classList.contains("widget-editing")&&!gesture&&!hasLauncherOverlay()&&
   !matchMedia("(prefers-reduced-motion: reduce)").matches)step(1);
 },8500);
-window.addEventListener("audio-desk-widget-visibility",showWidget);
+window.addEventListener("audio-desk-widget-visibility",()=>{showWidget();refresh()});
+window.addEventListener("audio-desk-foreground",()=>refresh());
 showWidget();renderSlide();refresh();
 window.audioDeskAgenda={open,close,step,refresh,pins:()=>[...pins]};
 })();
