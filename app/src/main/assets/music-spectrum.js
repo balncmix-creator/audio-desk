@@ -81,7 +81,7 @@ shell.after(actions);
 const enable=byId("musicSpectrumEnable"),projection=byId("musicSpectrumProjection");
 const status=byId("musicSpectrumStatus"),context=canvas.getContext("2d",{alpha:true});
 function fontColor(){return getComputedStyle(widget).getPropertyValue("--ds-accent").trim()||"#dddddd"}
-function activeHome(){return wanted&&launcherPage==="home"&&!document.hidden}
+function activeHome(){return wanted&&launcherPage==="home"&&!document.hidden&&!widget.hasAttribute("data-widget-removed")}
 function setStatus(text){status.textContent=text}
 function showProjection(allow){
  projection.hidden=!allow||typeof window.AudioDesk?.requestSpectrumProjection!=="function";
@@ -407,6 +407,7 @@ function checkInput(){
 }
 idleTimer=setInterval(checkInput,1200);
 window.addEventListener("launcher-page-changed",sync);
+window.addEventListener("audio-desk-widget-visibility",sync);
 window.addEventListener("visibilitychange",sync);
 window.addEventListener("focus",()=>{if(wanted)sync()});
 const previousResume=window.launcherOnResume;
