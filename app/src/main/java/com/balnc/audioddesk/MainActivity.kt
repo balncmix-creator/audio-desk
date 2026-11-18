@@ -427,7 +427,7 @@ class MainActivity : Activity() {
             runOnUiThread {
                 if (destroyed || !::spectrumSupport.isInitialized) return@runOnUiThread
                 spectrumVisible = visible
-                if (visible && spectrumSupport.hasPermission() && !projectionInUse)
+                if (visible && !pixelBarSuspended && browserPanel.visibility != View.VISIBLE && spectrumSupport.hasPermission() && !projectionInUse)
                     spectrumSupport.start()
                 else if (!visible) {
                     spectrumSupport.stop()
@@ -695,7 +695,8 @@ class MainActivity : Activity() {
         // Refresh installed apps after returning from another app or installing a package.
         if (::appWebView.isInitialized && ::launcherSupport.isInitialized)
             appWebView.evaluateJavascript(
-                "window.launcherOnResume&&window.launcherOnResume();" +
+                "window.audioDeskSetForeground&&window.audioDeskSetForeground(" + (browserPanel.visibility != View.VISIBLE) + ");" +
+                    "window.launcherOnResume&&window.launcherOnResume();" +
                     "window.launcherWallpaperActive&&window.launcherWallpaperActive(" + (browserPanel.visibility != View.VISIBLE) + ")", null)
     }
 
@@ -705,7 +706,8 @@ class MainActivity : Activity() {
         pixelBarSuspended = true
         applyPixelStatusMode()
         if (::appWebView.isInitialized && !destroyed) appWebView.evaluateJavascript(
-            "window.launcherWallpaperActive&&window.launcherWallpaperActive(false);" +
+            "window.audioDeskSetForeground&&window.audioDeskSetForeground(false);" +
+                "window.launcherWallpaperActive&&window.launcherWallpaperActive(false);" +
                 "if(typeof pauseSampleDemos==='function')pauseSampleDemos()", null)
         super.onPause()
     }
@@ -765,7 +767,9 @@ class MainActivity : Activity() {
 
     private fun openInBrowser(url: String) {
         if (!url.startsWith("https://") && !url.startsWith("http://")) return
-        appWebView.evaluateJavascript("if(typeof pauseSampleDemos==='function')pauseSampleDemos();window.launcherWallpaperActive&&window.launcherWallpaperActive(false)", null)
+        if (::spectrumSupport.isInitialized) spectrumSupport.stop()
+        stopSpectrumProjection()
+        appWebView.evaluateJavascript("window.audioDeskSetForeground&&window.audioDeskSetForeground(false);if(typeof pauseSampleDemos==='function')pauseSampleDemos();window.launcherWallpaperActive&&window.launcherWallpaperActive(false)", null)
         swipeRefresh.isEnabled = false
         applyPixelStatusMode()
         WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = false
@@ -782,7 +786,7 @@ class MainActivity : Activity() {
         applyPixelStatusMode()
         swipeRefresh.visibility = View.VISIBLE
         swipeRefresh.isEnabled = refreshAllowed
-        appWebView.evaluateJavascript("window.launcherWallpaperActive&&window.launcherWallpaperActive(true)", null)
+        appWebView.evaluateJavascript("window.audioDeskSetForeground&&window.audioDeskSetForeground(true);window.launcherWallpaperActive&&window.launcherWallpaperActive(true)", null)
     }
 
     @Deprecated("Deprecated in Android API")
