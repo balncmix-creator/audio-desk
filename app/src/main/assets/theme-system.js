@@ -267,10 +267,13 @@ function refreshThemeChrome(){
 }
 
 // Theme-matched media controls; never skip prohibited ads or ignore player actions.
-let mediaState={enabled:false,available:false};
+let mediaState={enabled:false,available:false},mediaSignature="",mediaTimer=0;
 window.receiveAudioDeskMedia=function(data){
  if(!data||typeof data!=="object")return;
  mediaState=data;
+ const signature=JSON.stringify([data.enabled,data.available,data.playing,data.title,data.artist,data.app,data.canPrevious,data.canNext,data.canToggle]);
+ if(signature===mediaSignature)return;
+ mediaSignature=signature;
  const available=!!data.available;
  byId("musicTrackTitle").textContent=available?(data.title||"Unknown track"):
   (data.enabled?"No active player":"Music controls");
@@ -298,14 +301,17 @@ for(const [id,action] of [["musicPrev","previous"],["musicToggle","toggle"],["mu
  byId(id).onclick=()=>{if(!byId(id).disabled)window.AudioDesk?.mediaCommand?.(action)};
 }
 function refreshMedia(){
- if(document.hidden||launcherPage!=="home")return;
+ clearTimeout(mediaTimer);
+ const music=byId("launcherMusicWidget");
+ if(document.hidden||window.audioDeskForeground===false||launcherPage!=="home"||
+  (music.hasAttribute("data-widget-removed")&&launcherTheme!=="windows"))return;
  window.AudioDesk?.requestMediaState?.();
+ mediaTimer=setTimeout(refreshMedia,mediaState.playing?3500:9000);
 }
 window.addEventListener("launcher-page-changed",refreshMedia);
+window.addEventListener("audio-desk-foreground",refreshMedia);
+window.addEventListener("audio-desk-widget-visibility",refreshMedia);
 document.addEventListener("visibilitychange",refreshMedia);
-// Player state may change outside Audio Desk; refresh only while Home is
-// visible and avoid aggressive polling on low-end devices.
-setInterval(refreshMedia,3500);
 const origResume=window.launcherOnResume;
 window.launcherOnResume=function(){origResume?.();refreshMedia()};
 refreshMedia();
