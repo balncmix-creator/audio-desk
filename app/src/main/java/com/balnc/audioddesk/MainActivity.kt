@@ -48,6 +48,8 @@ class MainActivity : Activity() {
     private lateinit var systemWallpaperInstaller: SystemWallpaperInstaller
     private lateinit var mediaWidgetSupport: MediaWidgetSupport
     private lateinit var spectrumSupport: AudioSpectrumSupport
+    private lateinit var agendaSupport: AgendaSupport
+    private val agendaPermissionRequest = 6211
     private var spectrumVisible = false
     private var projectionInUse = false
     private val spectrumPermissionRequest = 6209
@@ -170,6 +172,13 @@ class MainActivity : Activity() {
         systemWallpaperInstaller = SystemWallpaperInstaller(applicationContext)
         mediaWidgetSupport = MediaWidgetSupport(this)
         spectrumSupport = AudioSpectrumSupport(this, ::sendSpectrum)
+        agendaSupport = AgendaSupport(this) { data ->
+            runOnUiThread {
+                if (!destroyed && ::appWebView.isInitialized)
+                    appWebView.evaluateJavascript("window.receiveAudioDeskAgenda&&window.receiveAudioDeskAgenda(" +
+                        data.toString() + ")", null)
+            }
+        }
         appWebView.addJavascriptInterface(AppBridge(), "AudioDesk")
         appWebView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
@@ -386,6 +395,26 @@ class MainActivity : Activity() {
     }
 
     private inner class AppBridge {
+        @JavascriptInterface fun requestAgenda() {
+            runOnUiThread { if (!destroyed && ::agendaSupport.isInitialized) agendaSupport.refresh() }
+        }
+
+        @JavascriptInterface fun enableAgenda() {
+            runOnUiThread {
+                if (destroyed || !::agendaSupport.isInitialized) return@runOnUiThread
+                if (agendaSupport.granted()) agendaSupport.refresh()
+                else requestPermissions(arrayOf(Manifest.permission.READ_CALENDAR), agendaPermissionRequest)
+            }
+        }
+
+        @JavascriptInterface fun openAgendaEvent(id: String, begin: Long, end: Long) {
+            runOnUiThread { if (!destroyed && ::agendaSupport.isInitialized) agendaSupport.openEvent(id, begin, end) }
+        }
+
+        @JavascriptInterface fun newAgendaEvent(begin: Long) {
+            runOnUiThread { if (!destroyed && ::agendaSupport.isInitialized) agendaSupport.newEvent(begin) }
+        }
+
         @JavascriptInterface fun supportsAdaptiveAppIcons(): Boolean = true
 
         @JavascriptInterface fun requestSpectrumCapture() {
@@ -686,6 +715,7 @@ class MainActivity : Activity() {
         requestCode: Int, permissions: Array<out String>, grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == agendaPermissionRequest && ::agendaSupport.isInitialized) agendaSupport.refresh()
         if (requestCode == spectrumPermissionRequest && ::spectrumSupport.isInitialized) {
             if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED &&
                 spectrumVisible) spectrumSupport.start()
@@ -781,6 +811,7 @@ class MainActivity : Activity() {
         if (::feedDiscovery.isInitialized) feedDiscovery.close()
         if (::sampleDemos.isInitialized) sampleDemos.close()
         if (::launcherSupport.isInitialized) launcherSupport.close()
+        if (::agendaSupport.isInitialized) agendaSupport.close()
         stopSpectrumProjection()
         if (::spectrumSupport.isInitialized) spectrumSupport.close()
         if (::systemWallpaperInstaller.isInitialized) systemWallpaperInstaller.close()
