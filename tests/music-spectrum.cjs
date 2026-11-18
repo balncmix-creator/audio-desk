@@ -19,7 +19,7 @@ assert.match(native,/true, true\)/,
 const dsp=fs.readFileSync('app/src/main/java/com/balnc/audioddesk/SpectrumBands.kt','utf8');
 assert.match(dsp,/fromVisualizerFft/);
 assert.match(dsp,/fromPcm/);
-assert.match(projection,/FloatArray\(n\)/,'projection must retain entire PCM buffer for FFT');
+assert.match(projection,/FloatArray\(ANALYSIS_WINDOW\)/,'projection must retain a contiguous PCM analysis window for FFT');
 assert.match(native,/getMaxCaptureRate\(\)\.coerceAtMost\(30000\)/,
  'native capture should request up to 30Hz to give responsive RMS motion');
 assert.match(projection,/now - sent < 32L/,
