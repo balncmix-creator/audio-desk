@@ -95,8 +95,11 @@ function update(){
   back.querySelector(".win-tile-back-detail").textContent=info.detail;
  }
 }
+let lastTilePoll=0;
 function poll(){
- if(!notificationsOn||launcherTheme!=="windows"||launcherPage!=="home"||document.hidden)return;
+ if(!notificationsOn||launcherTheme!=="windows"||launcherPage!=="home"||document.hidden||window.audioDeskForeground===false||fav.hasAttribute("data-widget-removed"))return;
+ if(Date.now()-lastTilePoll<15000)return;
+ lastTilePoll=Date.now();
  const packages=[...new Set(launcherSuggestedApps().map(a=>a.pkg))].slice(0,20);
  try{window.AudioDesk?.requestLiveTileCounts?.(JSON.stringify(packages))}catch{}
 }
@@ -134,7 +137,7 @@ byId("glassStyleControl")?.after(container,note);
 input.addEventListener("change",()=>{
  notificationsOn=input.checked;
  deskStorage.setItem(storageKey,String(notificationsOn));
- notificationAccess=false;activeCounts={};
+ notificationAccess=false;activeCounts={};lastTilePoll=0;
  update();updateSetting();
  if(notificationsOn){
   poll();
@@ -168,7 +171,7 @@ window.launcherOnResume=function(){oldResume?.();poll();update()};
 const motion=window.matchMedia?.("(prefers-reduced-motion: reduce)");
 if(motion?.matches)document.body.classList.add("win-static-motion");
 setInterval(()=>{
- if(document.hidden||launcherPage!=="home"||launcherTheme!=="windows")return;
+ if(document.hidden||window.audioDeskForeground===false||launcherPage!=="home"||launcherTheme!=="windows")return;
  updateLauncherLiveTiles();
  update();poll();
 },60000);
