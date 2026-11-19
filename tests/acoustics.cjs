@@ -75,9 +75,15 @@ const origin='https://appassets.androidplatform.net/assets/';
   await slot.scrollIntoViewIfNeeded();
   await page.waitForFunction(()=>window.nativeLayouts.at(-1)?.slots.some(s=>s.id===42));
   assert.equal(await slot.getAttribute('data-widget-resizable'),'true');
-  const position=await slot.locator('.native-widget-body').boundingBox();
-  const native=await page.evaluate(()=>window.nativeLayouts.at(-1).slots.find(s=>s.id===42));
-  assert.ok(Math.abs(native.x-position.x)<2&&Math.abs(native.y-position.y)<2,'native host aligns to its actual DOM bounds');
+  // The bridge is frame-coalesced; scrollIntoView may complete before its
+  // next frame. Compare the current DOM rectangle and latest bridge payload
+  // in the same evaluation and require both positions and dimensions to match.
+  await page.waitForFunction(()=>{
+   const b=document.querySelector('#nativeWidget_42 .native-widget-body').getBoundingClientRect();
+   const v=window.nativeLayouts.at(-1)?.slots.find(s=>s.id===42);
+   return !!v&&Math.abs(v.x-b.x)<2&&Math.abs(v.y-b.y)<2&&
+    Math.abs(v.w-b.width)<2&&Math.abs(v.h-b.height)<2;
+  },null,{timeout:5000});
   await slot.getByRole('button',{name:'Edit Example calendar widget'}).click();
   assert.equal(await page.locator('#widgetLayoutOverlay').isVisible(),true);
   await page.waitForFunction(()=>window.nativeLayouts.at(-1)?.home===false);
