@@ -90,7 +90,23 @@ function refreshSpectrumPalette(){
  lastPaletteAt=performance.now();
 }
 function fontColor(){if(!cachedAccent||performance.now()-lastPaletteAt>700)refreshSpectrumPalette();return cachedAccent}
-function activeHome(){return wanted&&launcherPage==="home"&&!document.hidden&&window.audioDeskForeground!==false&&!widget.hasAttribute("data-widget-removed")}
+function activeHome(){return wanted&&launcherPage==="home"&&!document.hidden&&window.audioDeskForeground!==false&&!widget.hasAttribute("data-widget-removed")&&(widget.dataset.musicLayout||"full")==="full"}
+function updateMusicLayout(){
+ const rect=widget.getBoundingClientRect();
+ if(rect.width<=0||rect.height<=0)return;
+ const w=rect.width,h=rect.height;
+ const next=w>=175&&h>=202?"full":
+  w>=210&&h<88?"horizontal":
+  w<124&&h>=132?"vertical":
+  w>=124&&h>=76?"compact":
+  w>=124?"transport":"mini";
+ const previous=widget.dataset.musicLayout;
+ widget.dataset.musicLayout=next;
+ widget.dataset.musicConnect=String(!byId("musicAccess").hidden);
+ if(previous&&previous!==next&&(previous==="full"||next==="full")){
+  sync();manageSpectrumTimer();
+ }
+}
 function setStatus(text){if(status.textContent!==text)status.textContent=text}
 function showProjection(allow){
  projection.hidden=!allow||typeof window.AudioDesk?.requestSpectrumProjection!=="function";
@@ -327,7 +343,7 @@ function sync(){
  }
  if(!home){
   active=false;resetWave();
-  if(wanted)setStatus("Paused · Home not visible");
+  if(wanted)setStatus(widget.dataset.musicLayout&&widget.dataset.musicLayout!=="full"?"Paused · compact widget":"Paused · Home not visible");
  }else if(wanted){
   listeningAt=Date.now();
   setStatus("Listening for actual audio…");
@@ -404,6 +420,7 @@ window.receiveAudioDeskSpectrum=function(data){
 const stateHandler=window.receiveAudioDeskMedia;
 window.receiveAudioDeskMedia=function(data){
  stateHandler?.(data);
+ widget.dataset.musicConnect=String(!byId("musicAccess").hidden);
  if(!data?.playing&&active&&performance.now()-frameAt>450){
   target.fill(0);targetLevel=0;scheduleDraw();
   setStatus("Paused · smoothly returning to rest");
@@ -432,10 +449,15 @@ window.addEventListener("visibilitychange",sync);
 window.addEventListener("focus",()=>{if(wanted)sync()});
 const previousResume=window.launcherOnResume;
 window.launcherOnResume=function(){previousResume?.();if(wanted)sync()};
-if("ResizeObserver" in window)new ResizeObserver(resizeCanvas).observe(shell);
-else window.addEventListener("resize",resizeCanvas);
+if("ResizeObserver" in window){
+ new ResizeObserver(resizeCanvas).observe(shell);
+ new ResizeObserver(updateMusicLayout).observe(widget);
+}else window.addEventListener("resize",()=>{updateMusicLayout();resizeCanvas()});
+window.addEventListener("audio-desk-layout-changed",updateMusicLayout);
+window.addEventListener("audio-desk-widget-visibility",updateMusicLayout);
+window.addEventListener("launcher-page-changed",updateMusicLayout);
 window.addEventListener("resize",scheduleDraw);
-updateButtons();resizeCanvas();manageSpectrumTimer();
+updateButtons();updateMusicLayout();resizeCanvas();manageSpectrumTimer();
 if(wanted&&window.AudioDesk?.setSpectrumActive)sync();
 window.audioDeskSpectrum={
  active:()=>active,enabled:()=>wanted,
