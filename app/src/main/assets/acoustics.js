@@ -5,14 +5,14 @@ if(typeof window.AudioDesk?.setAcousticActive!=="function")return;
 const spl=el("launcherSplWidget"),fft=el("launcherMicAnalyzer");
 const addedKey="ad_acoustic_widgets_v1";
 let added=[];try{const a=JSON.parse(deskStorage.getItem(addedKey)||"[]");if(Array.isArray(a))added=a}catch{}
-let splOn=false,fftOn=false,activeKey="",levels=null,bands=[],peak=[],max=-Infinity,held=false,raw=false;
+let splOn=false,fftOn=false,permissionPending=false,activeKey="",levels=null,bands=[],peak=[],max=-Infinity,held=false,raw=false;
 const weight=el("splWeight"),response=el("splResponse"),offset=el("splOffset"),range=el("micFftRange");
 function read(k,def){return deskStorage.getItem("ad_acoustic_"+k)||def}
 function save(k,v){deskStorage.setItem("ad_acoustic_"+k,String(v))}
 weight.value=read("weight","A");response.value=read("response","fast");offset.value=read("offset","");range.value=read("range","90");
 function visible(w){return !w.hidden&&!w.hasAttribute("data-widget-removed")&&launcherPage==="home"&&!document.hidden&&window.audioDeskForeground!==false}
 function sync(){
- const s=splOn&&visible(spl),f=fftOn&&visible(fft);
+ const s=!permissionPending&&splOn&&visible(spl),f=!permissionPending&&fftOn&&visible(fft);
  const k=String(s)+":"+String(f);
  if(k!==activeKey){activeKey=k;window.AudioDesk.setAcousticActive(s,f)}
  el("splStart").textContent=splOn?"Stop mic":"Start mic";
@@ -43,6 +43,7 @@ if(typeof window.AudioDesk.openNativeWidgets==="function"){
 function toggle(which){
  if(which==="spl")splOn=!splOn;else fftOn=!fftOn;
  if((which==="spl"?splOn:fftOn)){
+  permissionPending=true;
   window.AudioDesk.enableAcousticMic?.();
   sync();
  }else sync();
@@ -103,9 +104,9 @@ range.onchange=()=>{save("range",range.value);draw()};
 el("micFftPeak").onclick=()=>{held=!held;peak=[];el("micFftPeak").setAttribute("aria-pressed",String(held));draw()};
 el("micFftClear").onclick=()=>{peak=[];draw()};
 window.receiveAudioDeskAcoustics=data=>{
- if(data?.state==="granted"){activeKey="";sync();return}
+ if(data?.state==="granted"){permissionPending=false;activeKey="";sync();return}
  if(data?.state==="permission"||data?.state==="unavailable"){
-  splOn=false;fftOn=false;sync();
+  permissionPending=false;splOn=false;fftOn=false;sync();
   el("splStatus").textContent=el("micFftStatus").textContent=data.state==="permission"?"Microphone permission required":"Microphone unavailable";return
  }
  if(data?.state!=="active")return;
@@ -118,7 +119,7 @@ window.receiveAudioDeskAcoustics=data=>{
   draw();
  }
 };
-window.addEventListener("audio-desk-widget-visibility",show);
+window.addEventListener("audio-desk-widget-visibility",()=>{if(spl.hasAttribute("data-widget-removed"))splOn=false;if(fft.hasAttribute("data-widget-removed"))fftOn=false;show()});
 for(const event of ["launcher-page-changed","audio-desk-foreground"])window.addEventListener(event,()=>{activeKey="";sync();resize()});
 document.addEventListener("visibilitychange",()=>{activeKey="";sync()});
 const oldTheme=setLauncherTheme;setLauncherTheme=function(theme){oldTheme(theme);show();resize()};
