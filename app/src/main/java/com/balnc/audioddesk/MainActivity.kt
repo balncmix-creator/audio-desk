@@ -184,7 +184,7 @@ class MainActivity : Activity() {
         }
         acousticSupport = AcousticMeterSupport(this) { data ->
             runOnUiThread {
-                if (!destroyed && ::appWebView.isInitialized && !pixelBarSuspended)
+                if (!destroyed && ::appWebView.isInitialized && (!pixelBarSuspended || data.optString("state") != "active"))
                     appWebView.evaluateJavascript("window.receiveAudioDeskAcoustics&&window.receiveAudioDeskAcoustics(" + data.toString() + ")", null)
             }
         }
