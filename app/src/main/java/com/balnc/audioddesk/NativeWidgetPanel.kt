@@ -139,7 +139,7 @@ internal class NativeWidgetPanel(private val activity: Activity, private val web
     fun resume(){foreground=true;publish();js("window.audioDeskSyncNativeWidgets&&window.audioDeskSyncNativeWidgets()")}
     fun pause(){foreground=false;homeVisible=false;hide();updateListening()}
     fun close(){picker?.dismiss();pause();for(id in views.keys.toList())removeView(id)}
-    private inner class Slot(context:Context,val id:Int,val widget:AppWidgetHostView): FrameLayout(context) {
+    private inner class Slot(context:Context,private val widgetId:Int,val widget:AppWidgetHostView): FrameLayout(context) {
         private val slop=ViewConfiguration.get(context).scaledTouchSlop
         private var startX=0f;private var startY=0f
         private var tracking=false;private var consumed=false
@@ -150,7 +150,7 @@ internal class NativeWidgetPanel(private val activity: Activity, private val web
             val now=android.os.SystemClock.uptimeMillis()
             val cancel=MotionEvent.obtain(now,now,MotionEvent.ACTION_CANCEL,0f,0f,0)
             cancelChild(cancel);cancel.recycle()
-            js("window.audioDeskBeginWidgetResize&&window.audioDeskBeginWidgetResize('nativeWidget_"+id+"')")
+            js("window.audioDeskBeginWidgetResize&&window.audioDeskBeginWidgetResize('nativeWidget_"+widgetId+"')")
         }
         init {clipChildren=true;clipToPadding=true;addView(widget,LayoutParams(1,1))}
         private fun cancelChild(event:MotionEvent) { super.dispatchTouchEvent(event) }
