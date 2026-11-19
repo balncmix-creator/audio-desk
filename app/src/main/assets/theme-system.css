@@ -450,8 +450,9 @@ body[data-launcher-theme="warm"] #launcherRecentStrip{
 }
 /* Resize controls: two distinct handles, clear affordance and restrained animation. */
 [data-widget-resizable]{position:relative;
- width:min(100%,var(--user-widget-width,100%))!important;
- min-height:var(--user-widget-height,initial)!important;
+ /* Leave intrinsic/provider dimensions alone until a user actually resizes.
+    A blanket width:100%!important made narrow cards and test widgets fill
+    their parent before editing and caused reversed left-edge drags. */
  transition:width 170ms cubic-bezier(.2,.8,.2,1),min-height 170ms cubic-bezier(.2,.8,.2,1);
 }
 body.widget-dragging [data-widget-resizable]{transition:none!important}
