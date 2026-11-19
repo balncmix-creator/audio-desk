@@ -53,6 +53,7 @@ class MainActivity : Activity() {
     private lateinit var agendaSupport: AgendaSupport
     private lateinit var acousticSupport: AcousticMeterSupport
     private lateinit var nativeWidgets: NativeWidgetPanel
+    private lateinit var youtubeWidget: YouTubeWidgetPanel
     private val acousticPermissionRequest = 6212
     private val agendaPermissionRequest = 6211
     private var spectrumVisible = false
@@ -279,6 +280,7 @@ class MainActivity : Activity() {
         ))
 
         setContentView(root)
+        youtubeWidget = YouTubeWidgetPanel(this, appWebView)
         // The 8-bit bar is a *native Android View* layered over the wallpaper,
         // not HTML and not an attempt to reskin SystemUI outside this app.
         pixelStatusBar = PixelStatusBar(this)
@@ -417,6 +419,23 @@ class MainActivity : Activity() {
     }
 
     private inner class AppBridge {
+        @JavascriptInterface fun layoutYouTubeWidget(payload: String) {
+            if (payload.length > 2048) return
+            runOnUiThread {
+                if (!destroyed && ::youtubeWidget.isInitialized) {
+                    if (pixelBarSuspended || browserPanel.visibility == View.VISIBLE) youtubeWidget.hide()
+                    else youtubeWidget.layout(payload)
+                }
+            }
+        }
+
+        @JavascriptInterface fun navigateYouTubeWidget(destination: String, query: String) {
+            runOnUiThread {
+                if (!destroyed && !pixelBarSuspended && ::youtubeWidget.isInitialized)
+                    youtubeWidget.navigate(destination, query)
+            }
+        }
+
         @JavascriptInterface fun openYouTubePage(destination: String, query: String) {
             runOnUiThread {
                 if (destroyed || pixelBarSuspended) return@runOnUiThread
@@ -789,6 +808,7 @@ class MainActivity : Activity() {
     override fun onPause() {
         if (::acousticSupport.isInitialized) acousticSupport.stop()
         if (::nativeWidgets.isInitialized) nativeWidgets.pause()
+        if (::youtubeWidget.isInitialized) youtubeWidget.hide()
         if (::spectrumSupport.isInitialized) spectrumSupport.stop()
         stopSpectrumProjection()
         pixelBarSuspended = true
@@ -912,6 +932,7 @@ class MainActivity : Activity() {
         if (::agendaSupport.isInitialized) agendaSupport.close()
         if (::acousticSupport.isInitialized) acousticSupport.stop()
         if (::nativeWidgets.isInitialized) nativeWidgets.close()
+        if (::youtubeWidget.isInitialized) youtubeWidget.close()
         stopSpectrumProjection()
         if (::spectrumSupport.isInitialized) spectrumSupport.close()
         if (::systemWallpaperInstaller.isInitialized) systemWallpaperInstaller.close()

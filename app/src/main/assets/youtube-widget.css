@@ -10,3 +10,9 @@
 #ytSubscriptions{text-align:left}
 body[data-launcher-theme="warm"] #launcherYouTubeWidget{max-width:calc(100% - 32px)}
 body[data-launcher-theme="pixel"] #launcherYouTubeWidget,body[data-launcher-theme="windows"] #launcherYouTubeWidget{border-radius:0}
+
+#ytFeedSlot[hidden],#ytOpenAccount[hidden]{display:none!important}
+#ytFeedSlot{flex:1 0 220px;min-height:100px;border-radius:var(--ds-radius,8px);overflow:hidden;background:var(--ds-panel2,#222)}
+#launcherYouTubeWidget[data-layout-sized] #ytFeedSlot{flex:1 1 220px}
+#launcherYouTubeWidget.yt-compact #ytFeedSlot{display:none}
+#ytOpenAccount{text-align:left}

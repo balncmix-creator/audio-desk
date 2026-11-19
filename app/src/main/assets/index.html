@@ -645,7 +645,9 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
    <div class="yt-widget-heading"><span class="yt-widget-icon" aria-hidden="true">▶</span><strong>YouTube</strong><button type="button" id="ytHome" aria-label="Open your YouTube Home feed">Home ↗</button></div>
    <form id="ytSearchForm" role="search" aria-label="Search YouTube"><input id="ytSearchInput" type="search" maxlength="300" autocomplete="off" placeholder="Search YouTube" aria-label="Search YouTube videos" enterkeyhint="search"><button type="submit" aria-label="Search videos">Search</button></form>
    <button type="button" id="ytSubscriptions">Subscriptions ↗</button>
-   <small>Your signed-in feed and videos open in your browser.</small>
+   <button type="button" id="ytOpenAccount" hidden>My signed-in Home ↗</button>
+    <small id="ytWidgetNote">Your signed-in feed and videos open in your browser.</small>
+    <div id="ytFeedSlot" hidden aria-label="Public YouTube web preview"></div>
   </section>
   <div id="launcherFavorites" aria-label="Favourite and frequently used applications"></div>
   <div id="launcherFavoritesEmpty" hidden>YOUR APPS WILL APPEAR HERE.</div>

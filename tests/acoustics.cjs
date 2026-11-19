@@ -15,6 +15,8 @@ const origin='https://appassets.androidplatform.net/assets/';
     enableAcousticMic(){window.permissionCalls++;setTimeout(()=>window.receiveAudioDeskAcoustics({state:'granted'}),20)},
     openNativeWidgets(){window.nativeWidgetCalls++},
     openYouTubePage(destination,query){(window.youtubeCalls??=[]).push([destination,query])},
+    layoutYouTubeWidget(payload){window.youtubeLayout=JSON.parse(payload)},
+    navigateYouTubeWidget(destination,query){(window.youtubeInlineCalls??=[]).push([destination,query])},
     requestNativeWidgets(){window.receiveAudioDeskNativeWidgets(window.nativeRows)},
     layoutNativeWidgets(payload){window.nativeLayouts.push(JSON.parse(payload))},
     deleteNativeWidget(id){window.nativeRows=window.nativeRows.filter(x=>x.id!==id);window.receiveAudioDeskNativeWidgets(window.nativeRows)},
@@ -44,7 +46,12 @@ const origin='https://appassets.androidplatform.net/assets/';
   await page.locator('#ytSubscriptions').click();
   await page.locator('#ytSearchInput').fill('  REAPER sound design & mixing  ');
   await page.locator('#ytSearchForm button').click();
-  assert.deepEqual(await page.evaluate(()=>window.youtubeCalls),[['home',''],['subscriptions',''],['search','REAPER sound design & mixing']]);
+  assert.deepEqual(await page.evaluate(()=>window.youtubeCalls),[['subscriptions','']]);
+  assert.deepEqual(await page.evaluate(()=>window.youtubeInlineCalls),[['home',''],['search','REAPER sound design & mixing']]);
+  assert.equal(await page.locator('#ytFeedSlot').isVisible(),true);
+  assert.match(await page.locator('#ytWidgetNote').textContent(),/Public preview/);
+  await page.locator('#ytOpenAccount').click();
+  assert.deepEqual(await page.evaluate(()=>window.youtubeCalls.at(-1)),['home','']);
   await page.evaluate(()=>window.audioDeskBeginWidgetResize('launcherYouTubeWidget'));
   await page.locator('#widgetLayoutOverlay [data-layout-control="remove"]').click();
   assert.equal(await youtube.isVisible(),false);
