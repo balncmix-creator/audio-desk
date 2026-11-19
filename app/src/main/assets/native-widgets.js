@@ -39,7 +39,8 @@ function sync(now=performance.now()){
    if(b.top<r.bottom&&b.bottom>r.top&&r.left>b.left)right=Math.min(right,r.left-2);
   }
   if(b.left>=right||b.right<=0)continue;
-  out.push({id,x:b.left,y:b.top,w:b.width,h:b.height,left:0,top,right,bottom});
+  const radius=parseFloat(getComputedStyle(entry.body).borderTopLeftRadius)||0;
+  out.push({id,x:b.left,y:b.top,w:b.width,h:b.height,left:0,top,right,bottom,radius});
  }
  const payload=JSON.stringify({home:allowed,width:innerWidth,slots:out});
  if(payload!==lastPayload){lastPayload=payload;api.layoutNativeWidgets(payload)}
@@ -91,6 +92,9 @@ window.receiveAudioDeskNativeWidgets=data=>{
   if(!entry){entry=create({id:raw.id,label:name});changed=true}
   const {node,body,label}=entry;
   label.textContent=name;
+  const accent=String(raw.accent||"");
+  if(/^#[0-9a-f]{6}$/i.test(accent))node.style.setProperty("--native-provider-accent",accent);
+  else node.style.removeProperty("--native-provider-accent");
   const w=Math.max(100,Math.min(800,Number(raw.width)||220)),h=Math.max(70,Math.min(900,Number(raw.height)||130));
   const mw=Math.max(72,Math.min(w,Number(raw.minWidth)||w)),mh=Math.max(56,Math.min(h,Number(raw.minHeight)||h));
   node.dataset.nativeMinWidth=String(mw);node.dataset.nativeMinHeight=String(mh+28);
