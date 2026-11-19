@@ -167,35 +167,53 @@ function moveDimensions(r,deltaX,deltaY){
  showGuides(sx,sy);
  return {l:x,t:y,r:x+r.w,b:y+r.h};
 }
-function resizeDimensions(start,edge,dx,dy){
+// Only the moving edge may snap. Never compare a stationary opposite edge
+// or a center: that would make the handle stick even while the finger moves.
+function edgeSnap(point,axis,low,high,perp,neighbors,enabled){
+ const raw=limit(point,low,Math.max(low,high));
+ if(!enabled)return {coordinate:raw,match:null};
+ const screen=axis==="x"?innerWidth:innerHeight;
+ const targets=[{target:0,priority:1},{target:margin,priority:1},
+  {target:screen-margin,priority:1},{target:screen,priority:1}];
+ for(const r of neighbors){
+  const p=axis==="x"?[r.t,r.b]:[r.l,r.r];
+  const gap=Math.max(0,p[0]-perp[1],perp[0]-p[1]);
+  const a=axis==="x"?r.l:r.t,b=axis==="x"?r.r:r.b;
+  // Nearby intersections are preferred, but aligned edges on the next
+  // row/column are useful too. Offscreen neighbors are ignored.
+  if(r.b<0||r.t>innerHeight||r.r<0||r.l>innerWidth)continue;
+  targets.push({target:a,priority:gap<=26?0:2},{target:b,priority:gap<=26?0:2});
+ }
+ const valid=targets.filter(v=>v.target>=low-.01&&v.target<=high+.01&&Math.abs(v.target-raw)<=snapDistance)
+  .sort((a,b)=>Math.abs(a.target-raw)-Math.abs(b.target-raw)||a.priority-b.priority);
+ const best=valid[0];
+ return best?{coordinate:best.target,match:{axis,target:best.target}}:{coordinate:raw,match:null};
+}
+function resizeDimensions(start,edge,dx,dy,snap=true){
  let {l,t,r,b}=start;
- if(edge.includes("w"))l+=dx;
- if(edge.includes("e"))r+=dx;
- if(edge.includes("n"))t+=dy;
- if(edge.includes("s"))b+=dy;
- const minimumWidth=minWidth(chosen,chosen?.id==="launcherMusicWidget"?175:chosen?.id==="launcherAgendaWidget"?160:chosen?.id==="launcherSplWidget"||chosen?.id==="launcherMicAnalyzer"?200:106);
- const minimumHeight=minHeight(chosen,chosen?.id==="launcherMusicWidget"?202:chosen?.id==="launcherAgendaWidget"?156:chosen?.id==="launcherSplWidget"||chosen?.id==="launcherMicAnalyzer"?230:49);
- if(chosen?.dataset.nativeHorizontal==="false"){l=start.l;r=start.r}
- if(chosen?.dataset.nativeVertical==="false"){t=start.t;b=start.b}
- if(r-l<minimumWidth){if(edge.includes("w"))l=r-minimumWidth;else r=l+minimumWidth}
- if(b-t<minimumHeight){if(edge.includes("n"))t=b-minimumHeight;else b=t+minimumHeight}
- l=limit(l,0,innerWidth-70);r=limit(r,l+minimumWidth,innerWidth);
- t=limit(t,0,innerHeight-45);b=limit(b,t+minimumHeight,Math.max(innerHeight,document.documentElement.scrollHeight));
- const sx=snapDimension(l,r-l,[t,b],"x",chosen);
- if(sx.match){
-  if(edge.includes("w"))l=sx.coordinate;
-  else if(edge.includes("e"))r+=sx.coordinate-l;
+ const mw=Math.min(start.w,minWidth(chosen,chosen?.id==="launcherMusicWidget"?175:chosen?.id==="launcherAgendaWidget"?160:chosen?.id==="launcherSplWidget"||chosen?.id==="launcherMicAnalyzer"?200:106));
+ const mh=Math.min(start.h,minHeight(chosen,chosen?.id==="launcherMusicWidget"?202:chosen?.id==="launcherAgendaWidget"?156:chosen?.id==="launcherSplWidget"||chosen?.id==="launcherMicAnalyzer"?230:49));
+ const west=edge.includes("w")&&chosen?.dataset.nativeHorizontal!=="false";
+ const east=edge.includes("e")&&chosen?.dataset.nativeHorizontal!=="false";
+ const north=edge.includes("n")&&chosen?.dataset.nativeVertical!=="false";
+ const south=edge.includes("s")&&chosen?.dataset.nativeVertical!=="false";
+ const others=movable().filter(el=>el!==chosen&&!el.contains(chosen)&&!chosen.contains(el)).map(layout);
+ // Keep the original opposite edge fixed even at screen bounds. Allow
+ // document-relative vertical resizing when the Home page is scrolled.
+ const topBound=Math.min(start.t,-window.scrollY),bottomBound=Math.max(start.b,innerHeight,document.documentElement.scrollHeight-window.scrollY);
+ if(west)l=limit(start.l+dx,Math.min(0,start.l),start.r-mw);
+ if(east)r=limit(start.r+dx,start.l+mw,Math.max(innerWidth,start.r));
+ if(north)t=limit(start.t+dy,topBound,start.b-mh);
+ if(south)b=limit(start.b+dy,start.t+mh,bottomBound);
+ let sx=null,sy=null;
+ if(west||east){
+  sx=edgeSnap(west?l:r,"x",west?Math.min(0,start.l):start.l+mw,west?start.r-mw:Math.max(innerWidth,start.r),[t,b],others,snap);
+  if(west)l=sx.coordinate;else r=sx.coordinate;
  }
- const sy=snapDimension(t,b-t,[l,r],"y",chosen);
- if(sy.match){
-  if(edge.includes("n"))t=sy.coordinate;
-  else if(edge.includes("s"))b+=sy.coordinate-t;
+ if(north||south){
+  sy=edgeSnap(north?t:b,"y",north?topBound:start.t+mh,north?start.b-mh:bottomBound,[l,r],others,snap);
+  if(north)t=sy.coordinate;else b=sy.coordinate;
  }
- // Provider-fixed axes must stay fixed even after edge snapping.
- if(chosen?.dataset.nativeHorizontal==="false"){l=start.l;r=start.r}
- if(chosen?.dataset.nativeVertical==="false"){t=start.t;b=start.b}
- if(r-l<minimumWidth){if(edge.includes("w"))l=r-minimumWidth;else r=l+minimumWidth}
- if(b-t<minimumHeight){if(edge.includes("n"))t=b-minimumHeight;else b=t+minimumHeight}
  showGuides(sx,sy);
  return {l,t,r,b};
 }
@@ -236,17 +254,42 @@ function guardedChange(el,change){
  }
  return true;
 }
-function setRect(rect,original){
- if(!chosen)return;
- const width=Math.round(rect.r-rect.l),height=Math.round(rect.b-rect.t);
- const naturalLeft=original.l-Number(chosen.style.getPropertyValue("--widget-x").replace("px","")||0);
- const naturalTop=original.t-Number(chosen.style.getPropertyValue("--widget-y").replace("px","")||0);
- chosen.style.setProperty("--user-widget-width",width+"px");
- chosen.style.setProperty("--user-widget-height",height+"px");
- chosen.style.setProperty("--widget-x",Math.round(rect.l-naturalLeft)+"px");
- chosen.style.setProperty("--widget-y",Math.round(rect.t-naturalTop)+"px");
- chosen.dataset.layoutSized="true";
- requestPos();
+function offset(el,axis){return parseFloat(el.style.getPropertyValue("--widget-"+axis))||0}
+// Width/height changes may change a centered or grid-aligned widget's
+// natural origin. Read the actual rect AFTER sizing, then compensate the
+// translate to keep the requested opposite edge anchored.
+function applyRect(rect,edge){
+ const el=chosen;if(!el)return;
+ const current=layout(el);
+ if(edge){
+  if(edge.includes("w")||edge.includes("e"))
+   el.style.setProperty("--user-widget-width",Math.round(rect.r-rect.l)+"px");
+  else el.style.setProperty("--user-widget-width",Math.round(current.w)+"px");
+  if(edge.includes("n")||edge.includes("s"))
+   el.style.setProperty("--user-widget-height",Math.round(rect.b-rect.t)+"px");
+  else el.style.setProperty("--user-widget-height",Math.round(current.h)+"px");
+  el.dataset.layoutSized="true";
+ }
+ const measured=layout(el);
+ const x=edge?.includes("w")?rect.r-measured.r:rect.l-measured.l;
+ const y=edge?.includes("n")?rect.b-measured.b:rect.t-measured.t;
+ el.style.setProperty("--widget-x",Math.round(offset(el,"x")+x)+"px");
+ el.style.setProperty("--widget-y",Math.round(offset(el,"y")+y)+"px");
+}
+// A bad snap candidate should not freeze a valid raw drag. Try the exact
+// unsnapped target; if still blocked, advance toward it up to the last safe
+// boundary. Geometry is checked after CSS has actually laid out neighbors.
+function applySafeResize(rect,raw,edge){
+ if(guardedChange(chosen,()=>applyRect(rect,edge)))return;
+ if(guardedChange(chosen,()=>applyRect(raw,edge)))return;
+ const from=layout(chosen);
+ let lo=0,hi=1;
+ for(let i=0;i<7;i++){
+  const k=(lo+hi)/2;
+  const p={};for(const key of ["l","t","r","b"])p[key]=from[key]+(raw[key]-from[key])*k;
+  if(guardedChange(chosen,()=>applyRect(p,edge)))lo=k;else hi=k;
+ }
+ guides.replaceChildren();
 }
 function requestPos(){
  cancelAnimationFrame(raf);raf=requestAnimationFrame(position);
@@ -307,7 +350,7 @@ overlay.addEventListener("pointerdown",e=>{
   edge:target.dataset.edge,x:e.clientX,y:e.clientY,rect:initial,
   initialX:Number(chosen.style.getPropertyValue("--widget-x").replace("px",""))||0,
   initialY:Number(chosen.style.getPropertyValue("--widget-y").replace("px",""))||0};
- target.setPointerCapture?.(e.pointerId);
+ try{target.setPointerCapture?.(e.pointerId)}catch{}
  document.body.classList.add("widget-dragging");
 });
 overlay.addEventListener("pointermove",e=>{
@@ -317,16 +360,13 @@ overlay.addEventListener("pointermove",e=>{
  const rect=gesture.kind==="move"?
    moveDimensions(gesture.rect,dx,dy):
    resizeDimensions(gesture.rect,gesture.edge,dx,dy);
- const naturalLeft=gesture.rect.l-gesture.initialX,naturalTop=gesture.rect.t-gesture.initialY;
- guardedChange(chosen,()=>{
-  if(gesture.kind==="resize"){
-   chosen.style.setProperty("--user-widget-width",Math.round(rect.r-rect.l)+"px");
-   chosen.style.setProperty("--user-widget-height",Math.round(rect.b-rect.t)+"px");
-   chosen.dataset.layoutSized="true";
-  }
-  chosen.style.setProperty("--widget-x",Math.round(rect.l-naturalLeft)+"px");
-  chosen.style.setProperty("--widget-y",Math.round(rect.t-naturalTop)+"px");
- });
+ if(gesture.kind==="resize"){
+  // Preserve guides from the snapped proposal while computing raw fallback.
+  const savedGuides=[...guides.children];
+  const raw=resizeDimensions(gesture.rect,gesture.edge,dx,dy,false);
+  guides.replaceChildren(...savedGuides);
+  applySafeResize(rect,raw,gesture.edge);
+ }else guardedChange(chosen,()=>applyRect(rect,null));
  requestPos();
 });
 function endGesture(e){
@@ -337,6 +377,7 @@ function endGesture(e){
 }
 overlay.addEventListener("pointerup",endGesture);
 overlay.addEventListener("pointercancel",endGesture);
+overlay.addEventListener("lostpointercapture",endGesture);
 overlay.addEventListener("keydown",e=>{
  const btn=e.target.closest("[data-edge],[data-layout-control='move']");
  if(!btn||!chosen||!["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(e.key))return;
@@ -345,18 +386,10 @@ overlay.addEventListener("keydown",e=>{
  const dx=(e.key==="ArrowLeft"?-delta:e.key==="ArrowRight"?delta:0);
  const dy=(e.key==="ArrowUp"?-delta:e.key==="ArrowDown"?delta:0);
  const r=layout(chosen);
- const pos=btn.dataset.edge?resizeDimensions(r,btn.dataset.edge,dx,dy):moveDimensions(r,dx,dy);
- const oldX=Number(chosen.style.getPropertyValue("--widget-x").replace("px",""))||0;
- const oldY=Number(chosen.style.getPropertyValue("--widget-y").replace("px",""))||0;
- guardedChange(chosen,()=>{
-  if(btn.dataset.edge){
-   chosen.style.setProperty("--user-widget-width",Math.round(pos.r-pos.l)+"px");
-   chosen.style.setProperty("--user-widget-height",Math.round(pos.b-pos.t)+"px");
-   chosen.dataset.layoutSized="true";
-  }
-  chosen.style.setProperty("--widget-x",Math.round(oldX+pos.l-r.l)+"px");
-  chosen.style.setProperty("--widget-y",Math.round(oldY+pos.t-r.t)+"px");
- });save();requestPos();
+ const pos=btn.dataset.edge?resizeDimensions(r,btn.dataset.edge,dx,dy,false):moveDimensions(r,dx,dy);
+ if(btn.dataset.edge)applySafeResize(pos,pos,btn.dataset.edge);
+ else guardedChange(chosen,()=>applyRect(pos,null));
+ save();requestPos();
 });
 function registerWidget(id){
  const el=byId(id);if(!el||el.dataset.widgetResizable==="true")return;
