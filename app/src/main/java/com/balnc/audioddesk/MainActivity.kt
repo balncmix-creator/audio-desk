@@ -59,6 +59,8 @@ class MainActivity : Activity() {
     private val spectrumProjectionRequest = 6210
     private lateinit var pixelStatusBar: PixelStatusBar
     private var pixelHomeThemeRequested = false
+    private var windowsHomeThemeRequested = false
+    private var systemStatusHidden = false
     private var pixelBarActive = false
     private var pixelBarSuspended = false
     private var destroyed = false
@@ -115,7 +117,11 @@ class MainActivity : Activity() {
             val stableTop = insets.getInsetsIgnoringVisibility(
                 WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.displayCutout()
             ).top
-            val top = if (pixelBarActive) maxOf(stableTop, (24f * density).toInt()) else safe.top
+            val top = when {
+                pixelBarActive -> maxOf(stableTop, (24f * density).toInt())
+                systemStatusHidden -> insets.getInsetsIgnoringVisibility(WindowInsetsCompat.Type.displayCutout()).top
+                else -> safe.top
+            }
             statusInsetDp = (top / density).toInt()
             bottomInsetDp = (safe.bottom / density).toInt()
             if (::pixelStatusBar.isInitialized) {
@@ -294,20 +300,24 @@ class MainActivity : Activity() {
 
     private fun applyPixelStatusMode() {
         if (!::pixelStatusBar.isInitialized) return
-        val shouldShow = pixelHomeThemeRequested && !pixelBarSuspended &&
+        val homeVisible = !pixelBarSuspended &&
             !(::browserPanel.isInitialized && browserPanel.visibility == View.VISIBLE)
-        if (pixelBarActive == shouldShow) return
+        val shouldShow = pixelHomeThemeRequested && homeVisible
+        val shouldHide = homeVisible && (pixelHomeThemeRequested || windowsHomeThemeRequested)
+        if (pixelBarActive == shouldShow && systemStatusHidden == shouldHide) return
+        val pixelChanged = pixelBarActive != shouldShow
         pixelBarActive = shouldShow
+        systemStatusHidden = shouldHide
         val controller = WindowCompat.getInsetsController(window, window.decorView)
-        if (shouldShow) {
-            pixelStatusBar.visibility = View.VISIBLE
-            pixelStatusBar.startUpdates()
+        if (pixelChanged) {
+            pixelStatusBar.visibility = if (shouldShow) View.VISIBLE else View.GONE
+            if (shouldShow) pixelStatusBar.startUpdates() else pixelStatusBar.stopUpdates()
+        }
+        if (shouldHide) {
             controller.systemBarsBehavior =
                 androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             controller.hide(WindowInsetsCompat.Type.statusBars())
         } else {
-            pixelStatusBar.stopUpdates()
-            pixelStatusBar.visibility = View.GONE
             controller.show(WindowInsetsCompat.Type.statusBars())
         }
         // Retain clock and alphabet safe areas despite hiding the system bar.
@@ -548,6 +558,7 @@ class MainActivity : Activity() {
                 if (!destroyed) {
                     val windowsHome = theme == "windows"
                     pixelHomeThemeRequested = theme == "pixel"
+                    windowsHomeThemeRequested = windowsHome
                     if (::pixelStatusBar.isInitialized) pixelStatusBar.setContrast(light)
                     applyPixelStatusMode()
                     // Wallpaper fills the entire status inset in every Home theme.
