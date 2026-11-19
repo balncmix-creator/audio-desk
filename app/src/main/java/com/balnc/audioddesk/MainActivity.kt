@@ -188,7 +188,7 @@ class MainActivity : Activity() {
                     appWebView.evaluateJavascript("window.receiveAudioDeskAcoustics&&window.receiveAudioDeskAcoustics(" + data.toString() + ")", null)
             }
         }
-        nativeWidgets = NativeWidgetPanel(this)
+        nativeWidgets = NativeWidgetPanel(this, appWebView)
         appWebView.addJavascriptInterface(AppBridge(), "AudioDesk")
         appWebView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
@@ -422,6 +422,15 @@ class MainActivity : Activity() {
         }
         @JavascriptInterface fun openNativeWidgets() {
             runOnUiThread { if (!destroyed && !pixelBarSuspended) nativeWidgets.open() }
+        }
+        @JavascriptInterface fun requestNativeWidgets() {
+            runOnUiThread { if (!destroyed) nativeWidgets.publish() }
+        }
+        @JavascriptInterface fun layoutNativeWidgets(payload: String) {
+            runOnUiThread { if (!destroyed && !pixelBarSuspended && browserPanel.visibility != View.VISIBLE) nativeWidgets.layout(payload) }
+        }
+        @JavascriptInterface fun deleteNativeWidget(id: Int) {
+            runOnUiThread { if (!destroyed) nativeWidgets.delete(id) }
         }
 
         @JavascriptInterface fun requestAgenda() {
@@ -802,6 +811,7 @@ class MainActivity : Activity() {
 
     private fun openInBrowser(url: String) {
         if (!url.startsWith("https://") && !url.startsWith("http://")) return
+        if (::nativeWidgets.isInitialized) nativeWidgets.pause()
         if (::acousticSupport.isInitialized) acousticSupport.stop()
         if (::spectrumSupport.isInitialized) spectrumSupport.stop()
         stopSpectrumProjection()
@@ -819,6 +829,7 @@ class MainActivity : Activity() {
         browserWebView.stopLoading()
         browserWebView.loadUrl("about:blank")
         browserPanel.visibility = View.GONE
+        if (::nativeWidgets.isInitialized) nativeWidgets.resume()
         applyPixelStatusMode()
         swipeRefresh.visibility = View.VISIBLE
         swipeRefresh.isEnabled = refreshAllowed
