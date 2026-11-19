@@ -431,6 +431,7 @@ body[data-home-page="home"] .launcher-dots .active{color:#c9c9c9}
 <link rel="stylesheet" href="agenda.css">
 <link rel="stylesheet" href="acoustics.css">
 <link rel="stylesheet" href="native-widgets.css">
+<link rel="stylesheet" href="youtube-widget.css">
 <script>
 // One interruptible motion vocabulary for pages, sheets and touch feedback.
 const DeskMotion=(()=>{
@@ -640,6 +641,12 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
    <div class="acoustic-controls"><select id="micFftRange" aria-label="Dynamic range"><option value="90">90 dB</option><option value="120">120 dB</option><option value="60">60 dB</option></select><button id="micFftPeak" type="button" aria-pressed="false">Peak hold</button><button id="micFftClear" type="button">Clear</button></div>
    <small id="micFftStatus">Microphone off · real dBFS spectrum</small>
   </section>
+  <section id="launcherYouTubeWidget" aria-label="YouTube widget" hidden>
+   <div class="yt-widget-heading"><span class="yt-widget-icon" aria-hidden="true">▶</span><strong>YouTube</strong><button type="button" id="ytHome" aria-label="Open your YouTube Home feed">Home ↗</button></div>
+   <form id="ytSearchForm" role="search" aria-label="Search YouTube"><input id="ytSearchInput" type="search" maxlength="300" autocomplete="off" placeholder="Search YouTube" aria-label="Search YouTube videos" enterkeyhint="search"><button type="submit" aria-label="Search videos">Search</button></form>
+   <button type="button" id="ytSubscriptions">Subscriptions ↗</button>
+   <small>Your signed-in feed and videos open in your browser.</small>
+  </section>
   <div id="launcherFavorites" aria-label="Favourite and frequently used applications"></div>
   <div id="launcherFavoritesEmpty" hidden>YOUR APPS WILL APPEAR HERE.</div>
   <section id="launcherRecentStrip" aria-label="Recently opened app shortcuts" hidden>
@@ -680,6 +687,7 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
     <button id="agendaWidgetVisibility" type="button" class="launcher-options-action" hidden>Hide agenda widget</button>
     <button id="acousticAddSpl" type="button" class="launcher-options-action" hidden>+ SPL meter widget</button>
     <button id="acousticAddFft" type="button" class="launcher-options-action" hidden>+ Microphone analyzer widget</button>
+    <button id="youtubeWidgetToggle" type="button" class="launcher-options-action" hidden>+ YouTube widget</button>
     <button id="nativeWidgetsOpen" type="button" class="launcher-options-action" hidden>+ App widgets</button>
     <button id="launcherThemeChoose" type="button" class="launcher-options-action">▤ HOME THEME</button>
     <button id="launcherFavoritesEdit" type="button" class="launcher-options-action">☆ MANAGE APP TILES</button>
@@ -2917,6 +2925,7 @@ document.addEventListener("click",e=>{
 <script src="agenda.js"></script>
 <script src="acoustics.js"></script>
 <script src="native-widgets.js"></script>
+<script src="youtube-widget.js"></script>
 <script>
 function hasLauncherOverlay(){return ['launcherLetterPanel','launcherHomeOptions','launcherShortcutMenu','launcherThemeDialog','launcherWallpaperDialog','launcherClockDialog','gridDetail','agendaOverlay'].some(id=>!document.getElementById(id).hidden)}
 function syncRefreshAvailability(){window.AudioDesk?.setRefreshEnabled?.(launcherPage==='events'&&!hasLauncherOverlay())}
