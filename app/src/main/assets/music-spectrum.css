@@ -145,3 +145,42 @@ body[data-launcher-theme="warm"] #launcherMusicWidget[data-layout-sized="true"]{
  .music-spectrum-shell,
  .music-spectrum-shell canvas{transition:none!important;animation:none!important}
 }
+
+/* Responsive transport: dimensions follow the actual widget, not the screen.
+   All compact states preserve a usable Play/Pause or Connect action. */
+body[data-launcher-theme] #launcherMusicWidget[data-layout-sized="true"]{
+ width:var(--user-widget-width,100%)!important;max-width:calc(100vw - 18px)!important;
+ height:var(--user-widget-height,202px)!important;min-height:48px!important;
+ min-width:0!important;box-sizing:border-box;overflow:hidden!important;
+}
+#launcherMusicWidget[data-music-layout]:not([data-music-layout="full"]){
+ padding:5px!important;gap:4px!important;
+}
+#launcherMusicWidget[data-music-layout]:not([data-music-layout="full"]) :is(.music-spectrum-shell,.music-spectrum-actions,.music-note){display:none!important}
+#launcherMusicWidget[data-music-layout]:not([data-music-layout="full"]) .music-head{gap:4px!important;min-height:0}
+#launcherMusicWidget[data-music-layout]:not([data-music-layout="full"]) .music-symbol{display:none!important}
+#launcherMusicWidget[data-music-layout]:not([data-music-layout="full"]) .music-meta{gap:1px!important}
+#launcherMusicWidget[data-music-layout]:not([data-music-layout="full"]) #musicTrackTitle{font-size:11px!important;line-height:1.25!important}
+#launcherMusicWidget[data-music-layout]:not([data-music-layout="full"]) #musicTrackArtist{font-size:9px!important;line-height:1.2!important}
+#launcherMusicWidget[data-music-layout]:not([data-music-layout="full"]) .music-buttons{gap:3px!important;min-width:0;flex:1 1 auto}
+#launcherMusicWidget[data-music-layout]:not([data-music-layout="full"]) .music-buttons button{
+ width:auto!important;height:32px!important;min-width:0!important;min-height:30px!important;
+ max-width:none!important;flex:1 1 0!important;padding:0 2px!important;font-size:12px!important;margin:0!important;
+}
+#launcherMusicWidget[data-music-layout]:not([data-music-layout="full"]) .music-buttons #musicToggle{font-size:16px!important}
+#launcherMusicWidget[data-music-layout]:not([data-music-layout="full"]) .music-buttons #musicAccess{font-size:10px!important;min-width:0!important;white-space:normal;overflow-wrap:anywhere}
+#launcherMusicWidget[data-music-layout]:not([data-music-layout="full"])[data-music-connect="true"] :is(#musicPrev,#musicToggle,#musicNext){display:none!important}
+#launcherMusicWidget[data-music-layout="compact"] .music-buttons{max-height:38px}
+#launcherMusicWidget[data-music-layout="compact"] #musicTrackArtist{display:none}
+#launcherMusicWidget[data-music-layout="horizontal"]{flex-direction:row!important;align-items:center!important}
+#launcherMusicWidget[data-music-layout="horizontal"] .music-head{flex:1 1 0!important;min-width:0}
+#launcherMusicWidget[data-music-layout="horizontal"] .music-buttons{flex:0 0 116px!important;max-width:60%}
+#launcherMusicWidget[data-music-layout="vertical"] .music-head{flex:0 0 auto!important}
+#launcherMusicWidget[data-music-layout="vertical"] #musicTrackArtist{display:none}
+#launcherMusicWidget[data-music-layout="vertical"] .music-buttons{flex-direction:column!important;min-width:0;min-height:0;align-items:stretch!important}
+#launcherMusicWidget[data-music-layout="vertical"] .music-buttons button{flex:1 1 30px!important;max-height:42px!important;width:100%!important}
+#launcherMusicWidget[data-music-layout="transport"] .music-head,
+#launcherMusicWidget[data-music-layout="mini"] .music-head{display:none!important}
+#launcherMusicWidget[data-music-layout="mini"] :is(#musicPrev,#musicNext){display:none!important}
+#launcherMusicWidget[data-music-layout="mini"] .music-buttons{width:100%;height:100%;align-items:stretch!important}
+#launcherMusicWidget[data-music-layout="mini"] .music-buttons button{height:auto!important;max-height:none!important}
