@@ -231,6 +231,32 @@ assert.doesNotMatch(projection,/MediaRecorder\.AudioSource\.MIC/,'do not fake pl
    'Android fallback is offered if output mix is unsupported');
   await page.locator('#musicSpectrumProjection').click();
   assert.equal(await page.evaluate(()=>window.nativeProjectionRequests),1);
+  // Tiny transport variants must size with the widget, not the screen.
+  for(const [width,height,mode] of [[78,48,'mini'],[90,180,'vertical'],[250,50,'horizontal'],[160,100,'compact']]){
+   await page.evaluate(([w,h])=>{
+    const el=document.getElementById('launcherMusicWidget');
+    el.dataset.layoutSized='true';
+    el.style.setProperty('--user-widget-width',w+'px');
+    el.style.setProperty('--user-widget-height',h+'px');
+    window.dispatchEvent(new Event('audio-desk-layout-changed'));
+   },[width,height]);
+   await page.waitForFunction(mode=>document.getElementById('launcherMusicWidget').dataset.musicLayout===mode,mode);
+   assert.equal(await page.locator('#musicSpectrum').isVisible(),false);
+   assert.equal(await page.locator('#musicToggle').isVisible(),true);
+   const fits=await page.locator('#launcherMusicWidget').evaluate(el=>{
+    const r=el.getBoundingClientRect(),b=el.querySelector('#musicToggle').getBoundingClientRect();
+    return b.left>=r.left-1&&b.right<=r.right+1&&b.top>=r.top-1&&b.bottom<=r.bottom+1;
+   });
+   assert.equal(fits,true,mode+' transport must fit');
+   assert.equal(await page.evaluate(()=>window.nativeSpectrumOn.at(-1)),false);
+  }
+  await page.evaluate(()=>{
+   const el=document.getElementById('launcherMusicWidget');
+   delete el.dataset.layoutSized;
+   el.style.removeProperty('--user-widget-width');el.style.removeProperty('--user-widget-height');
+   window.dispatchEvent(new Event('audio-desk-layout-changed'));
+  });
+  await page.waitForFunction(()=>document.getElementById('launcherMusicWidget').dataset.musicLayout==='full');
   await page.evaluate(()=>setLauncherPage('apps',false));
   assert.equal((await page.evaluate(()=>window.nativeSpectrumOn)).at(-1),false,
    'real audio capture stops as soon as Home is hidden');
