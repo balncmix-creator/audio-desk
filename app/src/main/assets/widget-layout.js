@@ -54,6 +54,9 @@ function save(){
  geometry[chosen.id]=size;
  deskStorage.setItem(storeKey(),JSON.stringify(geometry));
 }
+function minWidth(el,fallback){return Math.min(innerWidth-18,Math.max(fallback,Number(el?.dataset.nativeMinWidth)||0))}
+function minHeight(el,fallback){return Math.max(fallback,Number(el?.dataset.nativeMinHeight)||0)}
+function layoutChanged(){window.dispatchEvent(new Event("audio-desk-layout-changed"))}
 function applySizes(){
  closeEditor();
  geometry=read();
@@ -65,8 +68,9 @@ function applySizes(){
    el.style.removeProperty(name);
   delete el.dataset.layoutSized;
   if(!g||![g.w,g.h,g.x,g.y].every(Number.isFinite))return;
-  const width=limit(g.w,id==="launcherAgendaWidget"?160:id==="launcherSplWidget"||id==="launcherMicAnalyzer"?200:100,Math.max(160,innerWidth-18));
-  const height=limit(g.h,id==="launcherMusicWidget"?202:id==="launcherAgendaWidget"?156:id==="launcherSplWidget"||id==="launcherMicAnalyzer"?230:48,Math.max(320,innerHeight*.8));
+  const width=limit(g.w,minWidth(el,id==="launcherAgendaWidget"?160:id==="launcherSplWidget"||id==="launcherMicAnalyzer"?200:100),Math.max(160,innerWidth-18));
+  const minimum=minHeight(el,id==="launcherMusicWidget"?202:id==="launcherAgendaWidget"?156:id==="launcherSplWidget"||id==="launcherMicAnalyzer"?230:48);
+  const height=limit(g.h,minimum,Math.max(minimum,320,innerHeight*.8));
   el.style.setProperty("--user-widget-width",Math.round(width)+"px");
   el.style.setProperty("--user-widget-height",Math.round(height)+"px");
   el.style.setProperty("--widget-x",limit(g.x,-innerWidth*.7,innerWidth*.7)+"px");
@@ -88,7 +92,7 @@ function applySizes(){
    else delete geometry[el.id];
   }
  }
- deskStorage.setItem(storeKey(),JSON.stringify(geometry));
+ deskStorage.setItem(storeKey(),JSON.stringify(geometry));layoutChanged();
 }
 function closeEditor(){
  hold&&clearTimeout(hold.timer);hold=null;
@@ -96,7 +100,7 @@ function closeEditor(){
  if(chosen){chosen.classList.remove("widget-editing");chosen=null}
  document.body.classList.remove("widget-dragging");
  document.getElementById("widgetLayoutOverlay")?.setAttribute("hidden","");
- guides.replaceChildren();
+ guides.replaceChildren();layoutChanged();
 }
 const overlay=document.createElement("div");
 overlay.id="widgetLayoutOverlay";
@@ -169,8 +173,10 @@ function resizeDimensions(start,edge,dx,dy){
  if(edge.includes("e"))r+=dx;
  if(edge.includes("n"))t+=dy;
  if(edge.includes("s"))b+=dy;
- const minimumWidth=chosen?.id==="launcherMusicWidget"?175:chosen?.id==="launcherAgendaWidget"?160:chosen?.id==="launcherSplWidget"||chosen?.id==="launcherMicAnalyzer"?200:106;
- const minimumHeight=chosen?.id==="launcherMusicWidget"?202:chosen?.id==="launcherAgendaWidget"?156:chosen?.id==="launcherSplWidget"||chosen?.id==="launcherMicAnalyzer"?230:49;
+ const minimumWidth=minWidth(chosen,chosen?.id==="launcherMusicWidget"?175:chosen?.id==="launcherAgendaWidget"?160:chosen?.id==="launcherSplWidget"||chosen?.id==="launcherMicAnalyzer"?200:106);
+ const minimumHeight=minHeight(chosen,chosen?.id==="launcherMusicWidget"?202:chosen?.id==="launcherAgendaWidget"?156:chosen?.id==="launcherSplWidget"||chosen?.id==="launcherMicAnalyzer"?230:49);
+ if(chosen?.dataset.nativeHorizontal==="false"){l=start.l;r=start.r}
+ if(chosen?.dataset.nativeVertical==="false"){t=start.t;b=start.b}
  if(r-l<minimumWidth){if(edge.includes("w"))l=r-minimumWidth;else r=l+minimumWidth}
  if(b-t<minimumHeight){if(edge.includes("n"))t=b-minimumHeight;else b=t+minimumHeight}
  l=limit(l,0,innerWidth-70);r=limit(r,l+minimumWidth,innerWidth);
@@ -242,6 +248,7 @@ function requestPos(){
 }
 function position(){
  if(!chosen||overlay.hidden)return;
+ layoutChanged();
  const r=chosen.getBoundingClientRect();
  const outline=overlay.querySelector(".layout-outline");
  Object.assign(outline.style,{left:r.left+"px",top:r.top+"px",width:r.width+"px",height:r.height+"px"});
@@ -283,7 +290,7 @@ overlay.addEventListener("click",e=>{
   delete geometry[chosen.id];deskStorage.setItem(storeKey(),JSON.stringify(geometry));
   const el=chosen;closeEditor();
   ["--widget-x","--widget-y","--user-widget-width","--user-widget-height"].forEach(x=>el.style.removeProperty(x));
-  delete el.dataset.layoutSized;
+  delete el.dataset.layoutSized;layoutChanged();
  }
 });
 overlay.addEventListener("pointerdown",e=>{
@@ -346,8 +353,8 @@ overlay.addEventListener("keydown",e=>{
   chosen.style.setProperty("--widget-y",Math.round(oldY+pos.t-r.t)+"px");
  });save();requestPos();
 });
-for(const id of ids){
- const el=byId(id);if(!el)continue;
+function registerWidget(id){
+ const el=byId(id);if(!el||el.dataset.widgetResizable==="true")return;
  el.dataset.widgetResizable="true";el.addEventListener("contextmenu",e=>e.preventDefault());
  el.addEventListener("pointerdown",e=>{
   if(e.button!==0||launcherPage!=="home"||e.target.closest(".launcher-app,.folder-tile,[data-folder-id]"))return;
@@ -365,6 +372,21 @@ for(const id of ids){
   el.addEventListener(type,()=>{if(hold){clearTimeout(hold.timer);hold=null}});
  }
 }
+for(const id of ids)registerWidget(id);
+window.audioDeskRegisterNativeWidget=(id,label)=>{
+ if(!/^nativeWidget_\d+$/.test(id)||!byId(id))return;
+ if(!ids.includes(id))ids.push(id);
+ labels[id]=String(label);registerWidget(id);
+};
+window.audioDeskUnregisterNativeWidget=id=>{
+ if(!/^nativeWidget_\d+$/.test(id))return;
+ const i=ids.indexOf(id);if(i>=0)ids.splice(i,1);delete labels[id];
+ for(const theme of ["minimal","pixel","windows","warm"]){
+  const k="ad_widget_layout_v2_"+theme,r="ad_widget_removed_v1_"+theme;
+  try{const g=JSON.parse(deskStorage.getItem(k)||"{}");delete g[id];deskStorage.setItem(k,JSON.stringify(g));}catch{}
+  try{const h=JSON.parse(deskStorage.getItem(r)||"[]");deskStorage.setItem(r,JSON.stringify(h.filter(v=>v!==id)));}catch{}
+ }
+};
 document.addEventListener("click",e=>{
  // Suppress only the matching long-pressed widget, never unrelated widgets.
  // Dismissing the editor must restore normal click actions immediately.
