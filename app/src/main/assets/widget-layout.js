@@ -206,13 +206,18 @@ function resizeDimensions(start,edge,dx,dy,snap=true){
  // Keep the original opposite edge fixed even at screen bounds. Allow
  // document-relative vertical resizing when the Home page is scrolled.
  const topBound=Math.min(start.t,-window.scrollY),bottomBound=Math.max(start.b,innerHeight,document.documentElement.scrollHeight-window.scrollY);
- if(west)l=limit(start.l+dx,Math.min(0,start.l),start.r-mw);
- if(east)r=limit(start.r+dx,start.l+mw,Math.max(innerWidth,start.r));
+ // A card already touching or extending beyond the viewport must not
+ // reverse resize direction when the CSS width cap is reached.
+ const maxW=Math.max(start.w,innerWidth);
+ const westBound=Math.min(start.l,Math.max(0,start.r-maxW));
+ const eastBound=Math.max(start.r,Math.min(innerWidth,start.l+maxW));
+ if(west)l=limit(start.l+dx,westBound,start.r-mw);
+ if(east)r=limit(start.r+dx,start.l+mw,eastBound);
  if(north)t=limit(start.t+dy,topBound,start.b-mh);
  if(south)b=limit(start.b+dy,start.t+mh,bottomBound);
  let sx=null,sy=null;
  if(west||east){
-  sx=edgeSnap(west?l:r,"x",west?Math.min(0,start.l):start.l+mw,west?start.r-mw:Math.max(innerWidth,start.r),[t,b],others,snap);
+  sx=edgeSnap(west?l:r,"x",west?westBound:start.l+mw,west?start.r-mw:eastBound,[t,b],others,snap);
   if(west)l=sx.coordinate;else r=sx.coordinate;
  }
  if(north||south){
@@ -276,8 +281,8 @@ function applyRect(rect,edge){
   el.dataset.layoutSized="true";
  }
  const measured=layout(el);
- const x=edge?.includes("w")?rect.r-measured.r:rect.l-measured.l;
- const y=edge?.includes("n")?rect.b-measured.b:rect.t-measured.t;
+ const x=edge?.includes("w")&&el.dataset.nativeHorizontal!=="false"?rect.r-measured.r:rect.l-measured.l;
+ const y=edge?.includes("n")&&el.dataset.nativeVertical!=="false"?rect.b-measured.b:rect.t-measured.t;
  el.style.setProperty("--widget-x",Math.round(offset(el,"x")+x)+"px");
  el.style.setProperty("--widget-y",Math.round(offset(el,"y")+y)+"px");
 }
