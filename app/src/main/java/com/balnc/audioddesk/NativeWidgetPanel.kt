@@ -8,6 +8,11 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProviderInfo
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Path
+import android.graphics.RectF
 import android.os.Bundle
 import android.view.MotionEvent
 import android.view.View
@@ -35,6 +40,7 @@ internal class NativeWidgetPanel(private val activity: Activity, private val web
     private var foreground = false
     private var listening = false
     private var homeVisible = false
+    private val providerAccents = mutableMapOf<String, String>()
     init {
         try {
             val arr = JSONArray(prefs.getString("ids","[]") ?: "[]")
@@ -48,6 +54,40 @@ internal class NativeWidgetPanel(private val activity: Activity, private val web
     private val density get() = activity.resources.displayMetrics.density
     private fun dp(px: Int) = (px/density).roundToInt()
     private fun js(script: String) { web.evaluateJavascript(script,null) }
+    // Sample a tiny copy of the app icon, not private RemoteViews content.
+    // Saturated hue buckets win over white/black icon backgrounds. Cached
+    // per package; never sample during scroll or widget frame updates.
+    private fun accentFor(info: AppWidgetProviderInfo): String {
+        val pkg = info.provider.packageName
+        return providerAccents.getOrPut(pkg) {
+            try {
+                val icon = activity.packageManager.getApplicationIcon(pkg)
+                val bmp = Bitmap.createBitmap(32, 32, Bitmap.Config.ARGB_8888)
+                try {
+                    icon.setBounds(0, 0, 32, 32)
+                    icon.draw(Canvas(bmp))
+                    val scores = DoubleArray(24)
+                    val colors = IntArray(24)
+                    val strengths = DoubleArray(24)
+                    val hsv = FloatArray(3)
+                    for (y in 2 until 30) for (x in 2 until 30) {
+                        val c = bmp.getPixel(x, y)
+                        if (Color.alpha(c) < 180) continue
+                        Color.colorToHSV(c, hsv)
+                        if (hsv[1] < .27f || hsv[2] < .24f) continue
+                        val bin = (hsv[0] / 15f).toInt().coerceIn(0, 23)
+                        val strength = (hsv[1] * hsv[2]).toDouble()
+                        scores[bin] += strength
+                        if (strength > strengths[bin]) {
+                            strengths[bin] = strength; colors[bin] = c
+                        }
+                    }
+                    val best = scores.indices.maxByOrNull { scores[it] } ?: 0
+                    if (scores[best] < 3) "" else String.format(java.util.Locale.US, "#%06X", colors[best] and 0xffffff)
+                } finally { bmp.recycle() }
+            } catch (_: Exception) { "" }
+        }
+    }
     fun publish() {
         val result = JSONArray()
         for (id in ids.toList()) {
@@ -60,6 +100,7 @@ internal class NativeWidgetPanel(private val activity: Activity, private val web
             val minW = if ((info.resizeMode and AppWidgetProviderInfo.RESIZE_HORIZONTAL) != 0 && info.minResizeWidth > 0) info.minResizeWidth else info.minWidth
             val minH = if ((info.resizeMode and AppWidgetProviderInfo.RESIZE_VERTICAL) != 0 && info.minResizeHeight > 0) info.minResizeHeight else info.minHeight
             result.put(JSONObject().put("id",id).put("label",info.loadLabel(activity.packageManager))
+                .put("accent",accentFor(info))
                 .put("width",dp(info.minWidth).coerceAtLeast(100)).put("height",dp(info.minHeight).coerceAtLeast(70))
                 .put("minWidth",dp(minW).coerceAtLeast(72)).put("minHeight",dp(minH).coerceAtLeast(56))
                 .put("horizontal",(info.resizeMode and AppWidgetProviderInfo.RESIZE_HORIZONTAL) != 0)
@@ -144,6 +185,8 @@ internal class NativeWidgetPanel(private val activity: Activity, private val web
         private var startX=0f;private var startY=0f
         private var tracking=false;private var consumed=false
         private var lastWidth=0;private var lastHeight=0
+        private val roundedPath = Path()
+        private var rounded = false
         private val hold=Runnable {
             if(!tracking)return@Runnable
             consumed=true;tracking=false
@@ -152,7 +195,19 @@ internal class NativeWidgetPanel(private val activity: Activity, private val web
             cancelChild(cancel);cancel.recycle()
             js("window.audioDeskBeginWidgetResize&&window.audioDeskBeginWidgetResize('nativeWidget_"+widgetId+"')")
         }
-        init {clipChildren=true;clipToPadding=true;addView(widget,LayoutParams(1,1))}
+        init {
+            clipChildren=true;clipToPadding=true
+            // Avoid a second launcher-provided margin around RemoteViews.
+            widget.setPadding(0,0,0,0)
+            addView(widget,LayoutParams(1,1))
+        }
+        override fun dispatchDraw(canvas:Canvas) {
+            if(!rounded){super.dispatchDraw(canvas);return}
+            val save=canvas.save()
+            canvas.clipPath(roundedPath)
+            super.dispatchDraw(canvas)
+            canvas.restoreToCount(save)
+        }
         private fun cancelChild(event:MotionEvent) { super.dispatchTouchEvent(event) }
         fun cancelHold(){removeCallbacks(hold);tracking=false}
         override fun dispatchTouchEvent(ev:MotionEvent):Boolean{
@@ -164,7 +219,11 @@ internal class NativeWidgetPanel(private val activity: Activity, private val web
             if(consumed)return true
             return super.dispatchTouchEvent(ev) || tracking
         }
-        fun place(x:Int,y:Int,w:Int,h:Int,fullW:Int,fullH:Int,dx:Int,dy:Int){
+        fun place(x:Int,y:Int,w:Int,h:Int,fullW:Int,fullH:Int,dx:Int,dy:Int,radius:Float){
+            rounded=radius>0f
+            roundedPath.reset()
+            if(rounded)roundedPath.addRoundRect(RectF(dx.toFloat(),dy.toFloat(),(dx+fullW).toFloat(),(dy+fullH).toFloat()),radius,radius,Path.Direction.CW)
+            invalidate()
             val outer=(layoutParams as? LayoutParams)
             if(outer==null||outer.leftMargin!=x||outer.topMargin!=y||outer.width!=w||outer.height!=h){
                 layoutParams=LayoutParams(w,h).apply{leftMargin=x;topMargin=y}
@@ -218,7 +277,8 @@ internal class NativeWidgetPanel(private val activity: Activity, private val web
                         it.visibility=View.GONE;root.addView(it,FrameLayout.LayoutParams(1,1));views[id]=it
                     }
                 }
-                slot.place(ox+x,oy+y,right-x,bottom-y,fw,fh,fx-x,fy-y)
+                val radius=(item.optDouble("radius",0.0).coerceIn(0.0,32.0)*scale).toFloat().coerceAtMost(minOf(fw,fh)/2f)
+                slot.place(ox+x,oy+y,right-x,bottom-y,fw,fh,fx-x,fy-y,radius)
                 shown.add(id)
             }catch(_:Exception){}
         }
