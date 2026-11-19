@@ -11,3 +11,24 @@
 .native-widget-manage{padding-left:8px;border-inline-start:1px solid var(--ds-line)}
 body[data-launcher-theme="warm"] .native-app-widget{max-width:calc(100% - 32px)}
 body[data-launcher-theme="pixel"] .native-app-widget,body[data-launcher-theme="windows"] .native-app-widget{border-radius:0}
+
+/* A RemoteViews widget already supplies its own surface. Do not draw a
+   second card, shadow, or line around it. App icon accent decorates the
+   edit control; the app's actual content/background stays untouched. */
+body[data-launcher-theme] .native-app-widget{
+ background:transparent!important;border:0!important;box-shadow:none!important;
+ padding:0!important;gap:3px;
+}
+.native-app-widget .native-widget-head{padding:0 3px;flex-basis:18px;color:var(--ds-muted)}
+.native-app-widget .native-widget-head button{
+ color:var(--native-provider-accent,var(--ds-accent))!important;
+ background:transparent!important;
+}
+.native-app-widget .native-widget-body{
+ border-radius:var(--ds-radius,12px);background:transparent;
+}
+.native-app-widget.widget-editing .native-widget-body{
+ background:color-mix(in srgb,var(--native-provider-accent,var(--ds-accent)) 12%,transparent);
+}
+body[data-launcher-theme="pixel"] .native-widget-body,
+body[data-launcher-theme="windows"] .native-widget-body{border-radius:0}
