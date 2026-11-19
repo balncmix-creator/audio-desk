@@ -155,6 +155,10 @@ const assert=require('node:assert/strict');
   // Exercise real edge drags on an isolated dynamic Home widget pair.
   await page.evaluate(()=>{
    const home=document.getElementById('launcherHomePage');
+   // Isolate geometry from unrelated warm Home cards (including naturally
+   // tall recents). Preserve original inline styles exactly for later tests.
+   window.savedWidgetDisplay=[...home.querySelectorAll('[data-widget-resizable]')].map(el=>[el,el.style.getPropertyValue('display'),el.style.getPropertyPriority('display')]);
+   for(const [node] of window.savedWidgetDisplay)node.style.setProperty('display','none','important');
    for(const id of ['nativeWidget_701','nativeWidget_702']){
     const node=document.createElement('div');node.id=id;
     node.style.cssText='position:fixed!important;width:140px;height:100px;left:100px;top:280px;z-index:40;box-sizing:border-box';
@@ -187,7 +191,19 @@ const assert=require('node:assert/strict');
   await drag('n',0,-35);changed=await bounds();
   assert.ok(changed.top<initial.top-15&&Math.abs(changed.bottom-initial.bottom)<2,'north edge grows with bottom fixed');
   await page.locator('#widgetLayoutOverlay [data-layout-control="done"]').click();
+  const beforeArrange=await page.evaluate(()=>localStorage.getItem('ad_widget_layout_v2_warm'));
+  await page.evaluate(()=>document.getElementById('widgetRandomize').click());
+  assert.match(await page.locator('#widgetArrangementStatus').textContent(),/Layout saved/);
+  const afterArrange=await page.evaluate(()=>localStorage.getItem('ad_widget_layout_v2_warm'));
+  assert.notEqual(afterArrange,beforeArrange,'randomized layout must change saved positions');
+  await page.evaluate(()=>document.getElementById('widgetUndoArrange').click());
+  assert.equal(await page.evaluate(()=>localStorage.getItem('ad_widget_layout_v2_warm')),beforeArrange,'undo restores original geometry');
+  await page.evaluate(()=>document.getElementById('widgetAutoArrange').click());
+  assert.match(await page.locator('#widgetArrangementStatus').textContent(),/Layout saved/);
+  await page.evaluate(()=>document.getElementById('widgetUndoArrange').click());
   await page.evaluate(()=>{
+   for(const [el,value,priority] of window.savedWidgetDisplay){if(value)el.style.setProperty('display',value,priority);else el.style.removeProperty('display')}
+   delete window.savedWidgetDisplay;
    for(const id of ['nativeWidget_701','nativeWidget_702']){
     window.audioDeskUnregisterNativeWidget(id);document.getElementById(id).remove();
    }
