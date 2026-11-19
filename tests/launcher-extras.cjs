@@ -196,16 +196,6 @@ const assert=require('node:assert/strict');
   await drag('n',0,-35);changed=await bounds();
   assert.ok(changed.top<initial.top-15&&Math.abs(changed.bottom-initial.bottom)<2,'north edge grows with bottom fixed');
   await page.locator('#widgetLayoutOverlay [data-layout-control="done"]').click();
-  const beforeArrange=await page.evaluate(()=>localStorage.getItem('ad_widget_layout_v2_warm'));
-  await page.evaluate(()=>document.getElementById('widgetRandomize').click());
-  assert.match(await page.locator('#widgetArrangementStatus').textContent(),/Layout saved/);
-  const afterArrange=await page.evaluate(()=>localStorage.getItem('ad_widget_layout_v2_warm'));
-  assert.notEqual(afterArrange,beforeArrange,'randomized layout must change saved positions');
-  await page.evaluate(()=>document.getElementById('widgetUndoArrange').click());
-  assert.equal(await page.evaluate(()=>localStorage.getItem('ad_widget_layout_v2_warm')),beforeArrange,'undo restores original geometry');
-  await page.evaluate(()=>document.getElementById('widgetAutoArrange').click());
-  assert.match(await page.locator('#widgetArrangementStatus').textContent(),/Layout saved/);
-  await page.evaluate(()=>document.getElementById('widgetUndoArrange').click());
   await page.evaluate(()=>{
    for(const [el,value,priority] of window.savedWidgetDisplay){if(value)el.style.setProperty('display',value,priority);else el.style.removeProperty('display')}
    delete window.savedWidgetDisplay;
@@ -214,6 +204,55 @@ const assert=require('node:assert/strict');
    }
    window.audioDeskRestoreWidgetLayouts();
   });
+  // Exercise actual Home cards, not a pair of detached fixed test elements.
+  // Reproduce the reported scattered original arrangement and a huge
+  // decorative recents panel. Packing must ignore the old flow positions.
+  await page.evaluate(()=>{
+   window.scrollTo(0,0);
+   const el=document.getElementById('launcherMusicWidget');
+   el.style.setProperty('--widget-y','340px');
+   const recent=document.getElementById('launcherRecentStrip');
+   recent.style.setProperty('--widget-y','180px');
+  });
+  const beforeArrange=await page.evaluate(()=>localStorage.getItem('ad_widget_layout_v2_warm'));
+  await page.evaluate(()=>document.getElementById('widgetAutoArrange').click());
+  assert.match(await page.locator('#widgetArrangementStatus').textContent(),/Layout saved/);
+  const packed=async()=>page.evaluate(()=>{
+   const home=document.getElementById('launcherHomePage'),hr=home.getBoundingClientRect();
+   const nodes=[...home.querySelectorAll('[data-widget-packed="true"]')].filter(el=>el.getClientRects().length&&el.getBoundingClientRect().height>0);
+   return {scroll:scrollY,homeHeight:hr.height,vh:innerHeight,rows:nodes.map(el=>{
+    const r=el.getBoundingClientRect();return {id:el.id,l:r.left-hr.left,t:r.top-hr.top,r:r.right-hr.left,b:r.bottom-hr.top,h:r.height};
+   })};
+  });
+  const auto=await packed();
+  assert.ok(auto.rows.length>=4,'real Home includes multiple packed widgets');
+  assert.ok(Math.min(...auto.rows.map(r=>r.t))<80,'pack begins at safe top, not old scattered position');
+  assert.equal(auto.scroll,0,'auto arrange returns to top');
+  for(const r of auto.rows)for(const q of auto.rows)if(r!==q)assert.ok(Math.min(r.r,q.r)-Math.max(r.l,q.l)<=1||Math.min(r.b,q.b)-Math.max(r.t,q.t)<=1,'no overlapping packed cards');
+  const ordered=auto.rows.slice().sort((a,b)=>a.t-b.t);
+  let frontier=ordered[0].b;
+  for(const r of ordered.slice(1)){assert.ok(r.t<=frontier+12,'no empty vertical shelf bands');frontier=Math.max(frontier,r.b)}
+  assert.ok(auto.homeHeight<=Math.max(auto.vh,frontier+102),'no unused original flow extent');
+  const recent=auto.rows.find(r=>r.id==='launcherRecentStrip');
+  assert.ok(recent&&recent.h<auto.vh*.75,'frequently used card is content-sized, not viewport-sized');
+  const afterAuto=await page.evaluate(()=>localStorage.getItem('ad_widget_layout_v2_warm'));
+  await page.evaluate(()=>window.audioDeskRestoreWidgetLayouts());
+  const reloaded=await packed();
+  assert.deepEqual(reloaded.rows,auto.rows,'packed coordinates survive layout reload');
+  await page.evaluate(()=>document.getElementById('widgetRandomize').click());
+  assert.match(await page.locator('#widgetArrangementStatus').textContent(),/Layout saved/);
+  const afterRandom=await page.evaluate(()=>localStorage.getItem('ad_widget_layout_v2_warm'));
+  assert.notEqual(afterRandom,afterAuto,'randomize changes positions');
+  await page.evaluate(()=>document.getElementById('widgetUndoArrange').click());
+  assert.equal(await page.evaluate(()=>localStorage.getItem('ad_widget_layout_v2_warm')),afterAuto,'undo restores previous packed layout');
+  // Repeat auto arrangement and undo from default/natural mode.
+  await page.evaluate(()=>{
+   localStorage.setItem('ad_widget_layout_v2_warm',JSON.stringify({}));
+   window.audioDeskRestoreWidgetLayouts();
+   document.getElementById('widgetAutoArrange').click();
+   document.getElementById('widgetUndoArrange').click();
+  });
+  assert.equal(await page.locator('#launcherHomePage').getAttribute('data-packed-layout'),null,'undo restores natural layout mode');
   // Every theme has four distinct sharp, original audio compositions.
   await page.evaluate(()=>openWallpaperPicker());
   for(const theme of ['warm','minimal','pixel','windows']){
