@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
     <!-- Optional read-only agenda; event creation opens the calendar app for confirmation. -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <!-- Android still requires the user to approve each new widget host binding. -->
+    <uses-permission android:name="android.permission.BIND_APPWIDGET" />
     <!-- Explicitly user-enabled real output-mix visualization, never microphone fallback. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
