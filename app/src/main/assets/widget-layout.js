@@ -5,7 +5,7 @@
 "use strict";
 const ids=["launcherClockWidget","warmDateWidget","warmAudioWidget","warmSearchWidget",
  "launcherMusicWidget","launcherFavorites","launcherRecentStrip",
- "liveClockWidget","liveCalendarWidget","liveNewsWidget","launcherAgendaWidget"];
+ "liveClockWidget","liveCalendarWidget","liveNewsWidget","launcherAgendaWidget","launcherSplWidget","launcherMicAnalyzer"];
 const byId=id=>document.getElementById(id);
 const movable=()=>ids.map(byId).filter(el=>el&&!el.hidden&&el.getClientRects().length&&
   getComputedStyle(el).display!=="none"&&el.getBoundingClientRect().width>16);
@@ -13,7 +13,7 @@ const storeKey=()=>"ad_widget_layout_v2_"+launcherTheme;
 const removedKey=()=>"ad_widget_removed_v1_"+launcherTheme;
 const labels={launcherClockWidget:"Clock",warmDateWidget:"Date",warmAudioWidget:"Audio",warmSearchWidget:"Search",
  launcherMusicWidget:"Music player",launcherFavorites:"Favourites",launcherRecentStrip:"Recents",
- liveClockWidget:"Live clock",liveCalendarWidget:"Live calendar",liveNewsWidget:"Live news",launcherAgendaWidget:"Agenda"};
+ liveClockWidget:"Live clock",liveCalendarWidget:"Live calendar",liveNewsWidget:"Live news",launcherAgendaWidget:"Agenda",launcherSplWidget:"SPL meter",launcherMicAnalyzer:"Mic spectrum"};
 let removed=new Set();
 function readRemoved(){
  try{const saved=JSON.parse(deskStorage.getItem(removedKey())||"[]");
@@ -65,8 +65,8 @@ function applySizes(){
    el.style.removeProperty(name);
   delete el.dataset.layoutSized;
   if(!g||![g.w,g.h,g.x,g.y].every(Number.isFinite))return;
-  const width=limit(g.w,id==="launcherAgendaWidget"?160:100,Math.max(160,innerWidth-18));
-  const height=limit(g.h,id==="launcherMusicWidget"?202:id==="launcherAgendaWidget"?156:48,Math.max(320,innerHeight*.8));
+  const width=limit(g.w,id==="launcherAgendaWidget"?160:id==="launcherSplWidget"||id==="launcherMicAnalyzer"?200:100,Math.max(160,innerWidth-18));
+  const height=limit(g.h,id==="launcherMusicWidget"?202:id==="launcherAgendaWidget"?156:id==="launcherSplWidget"||id==="launcherMicAnalyzer"?230:48,Math.max(320,innerHeight*.8));
   el.style.setProperty("--user-widget-width",Math.round(width)+"px");
   el.style.setProperty("--user-widget-height",Math.round(height)+"px");
   el.style.setProperty("--widget-x",limit(g.x,-innerWidth*.7,innerWidth*.7)+"px");
@@ -169,8 +169,8 @@ function resizeDimensions(start,edge,dx,dy){
  if(edge.includes("e"))r+=dx;
  if(edge.includes("n"))t+=dy;
  if(edge.includes("s"))b+=dy;
- const minimumWidth=chosen?.id==="launcherMusicWidget"?175:chosen?.id==="launcherAgendaWidget"?160:106;
- const minimumHeight=chosen?.id==="launcherMusicWidget"?202:chosen?.id==="launcherAgendaWidget"?156:49;
+ const minimumWidth=chosen?.id==="launcherMusicWidget"?175:chosen?.id==="launcherAgendaWidget"?160:chosen?.id==="launcherSplWidget"||chosen?.id==="launcherMicAnalyzer"?200:106;
+ const minimumHeight=chosen?.id==="launcherMusicWidget"?202:chosen?.id==="launcherAgendaWidget"?156:chosen?.id==="launcherSplWidget"||chosen?.id==="launcherMicAnalyzer"?230:49;
  if(r-l<minimumWidth){if(edge.includes("w"))l=r-minimumWidth;else r=l+minimumWidth}
  if(b-t<minimumHeight){if(edge.includes("n"))t=b-minimumHeight;else b=t+minimumHeight}
  l=limit(l,0,innerWidth-70);r=limit(r,l+minimumWidth,innerWidth);
