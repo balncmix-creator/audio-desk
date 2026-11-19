@@ -7,7 +7,11 @@ const ids=["launcherClockWidget","warmDateWidget","warmAudioWidget","warmSearchW
  "launcherMusicWidget","launcherFavorites","launcherRecentStrip","launcherTilesSearch",
  "liveClockWidget","liveCalendarWidget","liveNewsWidget","launcherAgendaWidget","launcherSplWidget","launcherMicAnalyzer"];
 const byId=id=>document.getElementById(id);
-const movable=()=>ids.map(byId).filter(el=>el&&!el.hidden&&el.getClientRects().length&&
+// Edition-specific widgets must not be packed, edited, or measured in an
+// unrelated theme, even if a stylesheet temporarily exposes their wrapper.
+const themeAllowsWidget=id=>/^warm(Date|Audio|Search)Widget$/.test(id)?launcherTheme==="warm":
+ /^(live(Clock|Calendar|News)Widget|launcherTilesSearch)$/.test(id)?launcherTheme==="windows":true;
+const movable=()=>ids.filter(themeAllowsWidget).map(byId).filter(el=>el&&!el.hidden&&el.getClientRects().length&&
   getComputedStyle(el).display!=="none"&&el.getBoundingClientRect().width>16);
 const storeKey=()=>"ad_widget_layout_v2_"+launcherTheme;
 const removedKey=()=>"ad_widget_removed_v1_"+launcherTheme;
@@ -63,6 +67,13 @@ function applySizes(){
  closeEditor();
  document.body.classList.add("widget-dragging");
  geometry=read();
+ // Recover layouts created by the earlier cross-theme wrapper leak.
+ // Discard only incorrectly included packed entries; leave the user's
+ // legitimate widgets, visibility preferences, and undo state intact.
+ let migrated=false;
+ for(const id of Object.keys(geometry)){
+  if(geometry[id]?.packed&&!themeAllowsWidget(id)){delete geometry[id];migrated=true}
+ }
  byId("launcherHomePage").toggleAttribute("data-packed-layout",Object.values(geometry).some(g=>g?.packed));
  applyRemoved();
  ids.forEach(id=>{
@@ -102,7 +113,7 @@ function applySizes(){
   }
  }
  deskStorage.setItem(storeKey(),JSON.stringify(geometry));updateHomeExtent();document.body.classList.remove("widget-dragging");layoutChanged();
- queuePackedRepair();
+ queuePackedRepair(migrated);
 }
 function closeEditor(){
  hold&&clearTimeout(hold.timer);hold=null;
@@ -596,17 +607,19 @@ function arrangeWidgets(random,recordUndo=true){
  if(recordUndo)window.scrollTo(0,0);
  return true;
 }
-let repairFrame=0;
-function queuePackedRepair(){
+let repairFrame=0,repairNeeded=false;
+function queuePackedRepair(force=false){
+ if(force===true)repairNeeded=true;
  if(repairFrame)return;
  repairFrame=requestAnimationFrame(()=>{
   repairFrame=0;
   const home=byId("launcherHomePage");
   if(launcherPage!=="home"||!home.hasAttribute("data-packed-layout")||chosen)return;
+  const forceRepair=repairNeeded;repairNeeded=false;
   const nodes=visibleHomeNodes(),hr=home.getBoundingClientRect(),bounds=packingBounds(home);
   // New or restored widgets and screen rotations must not be left in the
   // old document flow. Do not change the user's previous-layout snapshot.
-  if(nodes.some(el=>{const r=layout(el);return el.dataset.widgetPacked!=="true"||r.l<hr.left-1||r.r>hr.right+1||
+  if(forceRepair||nodes.some(el=>{const r=layout(el);return el.dataset.widgetPacked!=="true"||r.l<hr.left-1||r.r>hr.right+1||
    r.t<hr.top-1||nodes.some(o=>o!==el&&overlapArea(r,layout(o))>1)}))arrangeWidgets(false,false);
   else updateHomeExtent();
  });
