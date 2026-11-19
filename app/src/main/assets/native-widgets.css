@@ -1,0 +1,13 @@
+
+.native-app-widget{box-sizing:border-box;position:relative;display:flex;flex-direction:column;gap:4px;width:min(100%,var(--native-default-width,260px));max-width:100%;height:calc(var(--native-default-height,140px) + 28px);min-height:84px;margin:10px 0 14px;padding:4px;border:1px solid var(--ds-line,#555);background:var(--ds-panel,#282a2d);color:var(--ds-text,#fff);border-radius:var(--ds-radius,12px);overflow:hidden;font-family:var(--ds-font,system-ui,sans-serif);flex-shrink:0}
+.native-app-widget[data-layout-sized="true"]{overflow:hidden!important}
+.native-widget-head{display:flex;align-items:center;justify-content:space-between;gap:5px;flex:0 0 18px;min-width:0;font-size:11px;padding:0 4px}
+.native-widget-head span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.native-widget-head button{font-size:16px;line-height:1;color:var(--ds-accent);background:none;border:0;box-shadow:none;margin:0;padding:0 4px;flex-shrink:0}
+.native-widget-body{position:relative;flex:1 1 auto;min-height:0;min-width:0;display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--ds-muted);font-size:10px}
+.native-widget-body span{opacity:.55}
+.native-app-widget.widget-editing .native-widget-body{background:var(--ds-panel2)}
+.native-widget-manage[hidden]{display:none!important}
+.native-widget-manage{padding-left:8px;border-inline-start:1px solid var(--ds-line)}
+body[data-launcher-theme="warm"] .native-app-widget{max-width:calc(100% - 32px)}
+body[data-launcher-theme="pixel"] .native-app-widget,body[data-launcher-theme="windows"] .native-app-widget{border-radius:0}
