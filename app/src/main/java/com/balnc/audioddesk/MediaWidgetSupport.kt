@@ -35,6 +35,19 @@ class MediaWidgetSupport(private val activity: Activity) {
         }
     }
 
+    /**
+     * Only opt-in, locally displayed notification counts for verified app
+     * packages. No title, body, sender, icon or other notification data.
+     */
+    fun liveTileCounts(packages: Set<String>): JSONObject {
+        val granted = hasAccess()
+        val result = JSONObject().put("enabled", granted)
+        val counts = JSONObject()
+        if (granted) for ((pkg, count) in AudioDeskMediaAccessService.activeCounts(packages))
+            counts.put(pkg, count)
+        return result.put("counts", counts)
+    }
+
     fun openAccessSettings() {
         val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
         try { activity.startActivity(intent) }

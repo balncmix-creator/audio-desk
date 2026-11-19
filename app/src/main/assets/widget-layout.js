@@ -4,12 +4,41 @@
 (()=>{
 "use strict";
 const ids=["launcherClockWidget","warmDateWidget","warmAudioWidget","warmSearchWidget",
- "launcherMusicWidget","launcherFavorites","launcherRecentStrip",
- "liveClockWidget","liveCalendarWidget","liveNewsWidget"];
+ "launcherMusicWidget","launcherFavorites","launcherRecentStrip","launcherTilesSearch",
+ "liveClockWidget","liveCalendarWidget","liveNewsWidget","launcherAgendaWidget","launcherSplWidget","launcherMicAnalyzer","launcherYouTubeWidget"];
 const byId=id=>document.getElementById(id);
-const movable=()=>ids.map(byId).filter(el=>el&&!el.hidden&&el.getClientRects().length&&
+// Edition-specific widgets must not be packed, edited, or measured in an
+// unrelated theme, even if a stylesheet temporarily exposes their wrapper.
+const themeAllowsWidget=id=>/^warm(Date|Audio|Search)Widget$/.test(id)?launcherTheme==="warm":
+ /^(live(Clock|Calendar|News)Widget|launcherTilesSearch)$/.test(id)?launcherTheme==="windows":true;
+const movable=()=>ids.filter(themeAllowsWidget).map(byId).filter(el=>el&&!el.hidden&&el.getClientRects().length&&
   getComputedStyle(el).display!=="none"&&el.getBoundingClientRect().width>16);
 const storeKey=()=>"ad_widget_layout_v2_"+launcherTheme;
+const removedKey=()=>"ad_widget_removed_v1_"+launcherTheme;
+const labels={launcherClockWidget:"Clock",warmDateWidget:"Date",warmAudioWidget:"Audio",warmSearchWidget:"Search",
+ launcherMusicWidget:"Music player",launcherFavorites:"Favourites",launcherRecentStrip:"Recents",
+ launcherTilesSearch:"App search",liveClockWidget:"Live clock",liveCalendarWidget:"Live calendar",liveNewsWidget:"Live news",launcherAgendaWidget:"Agenda",launcherSplWidget:"SPL meter",launcherMicAnalyzer:"Mic spectrum",launcherYouTubeWidget:"YouTube"};
+let removed=new Set();
+function readRemoved(){
+ try{const saved=JSON.parse(deskStorage.getItem(removedKey())||"[]");
+  return new Set(Array.isArray(saved)?saved.filter(id=>ids.includes(id)):[]);
+ }catch{return new Set()}
+}
+function applyRemoved(){
+ removed=readRemoved();
+ for(const id of ids){const node=byId(id);if(node)node.toggleAttribute("data-widget-removed",removed.has(id))}
+ renderRemoved();
+ window.dispatchEvent(new Event("audio-desk-widget-visibility"));
+}
+function setRemoved(id,value){
+ if(!ids.includes(id)||!byId(id))return false;
+ removed=readRemoved();
+ if(value)removed.add(id);else removed.delete(id);
+ deskStorage.setItem(removedKey(),JSON.stringify([...removed]));
+ applyRemoved();return true;
+}
+window.audioDeskRestoreWidget=id=>setRemoved(id,false);
+window.audioDeskWidgetRemoved=id=>readRemoved().has(id);
 const limit=(v,a,b)=>Math.min(Math.max(v,a),b);
 let chosen=null,edit=null,hold=null,gesture=null,cancelClickUntil=0,raf=0;
 let geometry={};
@@ -19,50 +48,88 @@ function read(){
   return raw&&typeof raw==="object"?raw:{};
  }catch{return{}}
 }
+function rememberWidget(el){
+ const r=layout(el),size={natural:el.dataset.layoutSized!=="true",
+  w:Math.round(r.w),h:Math.round(r.h),x:Math.round(offset(el,"x")),y:Math.round(offset(el,"y"))};
+ if(el.dataset.widgetPacked==="true"){size.packed=true;size.left=parseFloat(el.style.getPropertyValue("--widget-pack-left"))||0;size.top=parseFloat(el.style.getPropertyValue("--widget-pack-top"))||0;}
+ geometry[el.id]=size;
+}
 function save(){
  if(!chosen)return;
- const r=chosen.getBoundingClientRect();
- const size=geometry[chosen.id]||{};
- size.w=Math.round(r.width);size.h=Math.round(r.height);
- size.x=Math.round(parseFloat(chosen.style.getPropertyValue("--widget-x"))||0);
- size.y=Math.round(parseFloat(chosen.style.getPropertyValue("--widget-y"))||0);
- geometry[chosen.id]=size;
+ rememberWidget(chosen);
  deskStorage.setItem(storeKey(),JSON.stringify(geometry));
 }
+function minWidth(el,fallback){return Math.min(innerWidth-18,Math.max(el?.id==="launcherMusicWidget"?76:el?.id==="launcherYouTubeWidget"?180:fallback,Number(el?.dataset.nativeMinWidth)||0))}
+function minHeight(el,fallback){return Math.max(el?.id==="launcherMusicWidget"?48:el?.id==="launcherYouTubeWidget"?144:fallback,Number(el?.dataset.nativeMinHeight)||0)}
+function layoutChanged(){window.dispatchEvent(new Event("audio-desk-layout-changed"))}
 function applySizes(){
  closeEditor();
+ document.body.classList.add("widget-dragging");
  geometry=read();
+ // Recover layouts created by the earlier cross-theme wrapper leak.
+ // Discard only incorrectly included packed entries; leave the user's
+ // legitimate widgets, visibility preferences, and undo state intact.
+ let migrated=false;
+ for(const id of Object.keys(geometry)){
+  if(geometry[id]?.packed&&!themeAllowsWidget(id)){delete geometry[id];migrated=true}
+ }
+ byId("launcherHomePage").toggleAttribute("data-packed-layout",Object.values(geometry).some(g=>g?.packed));
+ applyRemoved();
  ids.forEach(id=>{
   const el=byId(id);if(!el)return;
   const g=geometry[id];
   for(const name of ["--widget-x","--widget-y","--user-widget-width","--user-widget-height"])
    el.style.removeProperty(name);
-  delete el.dataset.layoutSized;
+  delete el.dataset.layoutSized;delete el.dataset.widgetPacked;
+  el.style.removeProperty("--widget-pack-left");el.style.removeProperty("--widget-pack-top");
   if(!g||![g.w,g.h,g.x,g.y].every(Number.isFinite))return;
-  const width=limit(g.w,100,Math.max(110,innerWidth-18));
-  const height=limit(g.h,48,Math.max(320,innerHeight*.8));
-  el.style.setProperty("--user-widget-width",Math.round(width)+"px");
-  el.style.setProperty("--user-widget-height",Math.round(height)+"px");
-  el.style.setProperty("--widget-x",limit(g.x,-innerWidth*.7,innerWidth*.7)+"px");
-  el.style.setProperty("--widget-y",limit(g.y,-innerHeight*.7,innerHeight*.7)+"px");
-  el.dataset.layoutSized="true";
+  const width=g.packed?limit(g.w,Math.min(g.w,innerWidth-18),innerWidth-18):limit(g.w,minWidth(el,id==="launcherAgendaWidget"?160:id==="launcherSplWidget"||id==="launcherMicAnalyzer"?200:100),Math.max(160,innerWidth-18));
+  const minimum=minHeight(el,id==="launcherMusicWidget"?202:id==="launcherAgendaWidget"?156:id==="launcherSplWidget"||id==="launcherMicAnalyzer"?230:48);
+  const height=g.packed?Math.max(1,g.h):limit(g.h,minimum,Math.max(minimum,innerHeight*4));
+  if(!g.natural){
+   el.style.setProperty("--user-widget-width",Math.round(width)+"px");
+   el.style.setProperty("--user-widget-height",Math.round(height)+"px");
+   el.dataset.layoutSized="true";
+  }
+  if(g.packed&&Number.isFinite(g.left)&&Number.isFinite(g.top)){el.dataset.widgetPacked="true";el.style.setProperty("--widget-pack-left",g.left+"px");el.style.setProperty("--widget-pack-top",g.top+"px");}
+  el.style.setProperty("--widget-x",limit(g.x,-innerWidth,innerWidth)+"px");
+  const maxOffset=Math.max(innerHeight,Math.min(40000,Math.abs(g.y)));
+  el.style.setProperty("--widget-y",limit(g.y,-maxOffset,maxOffset)+"px");
  });
+ // Older versions permitted overlapping saved positions. Prefer original
+ // flow placement for affected widgets; retain size if that is sufficient.
+ const visible=movable();
+ for(const el of visible){
+  if(el.dataset.widgetPacked==="true"||!collisions(el).length||!geometry[el.id])continue;
+  el.style.removeProperty("--widget-x");el.style.removeProperty("--widget-y");
+  if(collisions(el).length){
+   el.style.removeProperty("--user-widget-width");
+   el.style.removeProperty("--user-widget-height");delete el.dataset.layoutSized;
+  }
+  if(geometry[el.id]){
+   if(el.dataset.layoutSized){geometry[el.id].x=0;geometry[el.id].y=0}
+   else delete geometry[el.id];
+  }
+ }
+ deskStorage.setItem(storeKey(),JSON.stringify(geometry));updateHomeExtent();document.body.classList.remove("widget-dragging");layoutChanged();
+ queuePackedRepair(migrated);
 }
 function closeEditor(){
  hold&&clearTimeout(hold.timer);hold=null;
  edit=null;gesture=null;
  if(chosen){chosen.classList.remove("widget-editing");chosen=null}
- document.body.classList.remove("widget-dragging");
+ document.body.classList.remove("widget-dragging","widget-layout-editing");
  document.getElementById("widgetLayoutOverlay")?.setAttribute("hidden","");
- guides.replaceChildren();
+ guides.replaceChildren();overlay.style.removeProperty("--ds-accent");guides.style.removeProperty("--ds-accent");layoutChanged();
 }
 const overlay=document.createElement("div");
 overlay.id="widgetLayoutOverlay";
 overlay.hidden=true;
 overlay.setAttribute("role","group");
-overlay.setAttribute("aria-label","Edit Home widget position and size");
+overlay.setAttribute("aria-label","Edit Home widget position, size or visibility");
 overlay.innerHTML='<div class="layout-outline"></div>'+
  '<div class="layout-toolbar">'+
+ '<button type="button" data-layout-control="remove">Remove</button>'+
  '<button type="button" data-layout-control="reset">Reset</button>'+
  '<button type="button" data-layout-control="done">Done</button></div>'+
  '<button type="button" class="layout-move-handle" data-layout-control="move" aria-label="Drag to move widget">⠿ Move</button>'+
@@ -120,47 +187,211 @@ function moveDimensions(r,deltaX,deltaY){
  showGuides(sx,sy);
  return {l:x,t:y,r:x+r.w,b:y+r.h};
 }
-function resizeDimensions(start,edge,dx,dy){
- let {l,t,r,b}=start;
- if(edge.includes("w"))l+=dx;
- if(edge.includes("e"))r+=dx;
- if(edge.includes("n"))t+=dy;
- if(edge.includes("s"))b+=dy;
- const minimumWidth=chosen?.id==="launcherMusicWidget"?175:106;
- if(r-l<minimumWidth){if(edge.includes("w"))l=r-minimumWidth;else r=l+minimumWidth}
- if(b-t<49){if(edge.includes("n"))t=b-49;else b=t+49}
- l=limit(l,0,innerWidth-70);r=limit(r,l+minimumWidth,innerWidth);
- t=limit(t,0,innerHeight-45);b=limit(b,t+49,Math.max(innerHeight,document.documentElement.scrollHeight));
- const sx=snapDimension(l,r-l,[t,b],"x",chosen);
- if(sx.match){
-  if(edge.includes("w"))l=sx.coordinate;
-  else if(edge.includes("e"))r+=sx.coordinate-l;
+// Only the moving edge may snap. Never compare a stationary opposite edge
+// or a center: that would make the handle stick even while the finger moves.
+function edgeSnap(point,axis,low,high,perp,neighbors,enabled){
+ const raw=limit(point,low,Math.max(low,high));
+ if(!enabled)return {coordinate:raw,match:null};
+ const screen=axis==="x"?innerWidth:innerHeight;
+ const targets=[{target:0,priority:1},{target:margin,priority:1},
+  {target:screen-margin,priority:1},{target:screen,priority:1}];
+ for(const r of neighbors){
+  const p=axis==="x"?[r.t,r.b]:[r.l,r.r];
+  const gap=Math.max(0,p[0]-perp[1],perp[0]-p[1]);
+  const a=axis==="x"?r.l:r.t,b=axis==="x"?r.r:r.b;
+  // Nearby intersections are preferred, but aligned edges on the next
+  // row/column are useful too. Offscreen neighbors are ignored.
+  if(r.b<0||r.t>innerHeight||r.r<0||r.l>innerWidth)continue;
+  targets.push({target:a,priority:gap<=26?0:2},{target:b,priority:gap<=26?0:2});
  }
- const sy=snapDimension(t,b-t,[l,r],"y",chosen);
- if(sy.match){
-  if(edge.includes("n"))t=sy.coordinate;
-  else if(edge.includes("s"))b+=sy.coordinate-t;
+ const valid=targets.filter(v=>v.target>=low-.01&&v.target<=high+.01&&Math.abs(v.target-raw)<=snapDistance)
+  .sort((a,b)=>Math.abs(a.target-raw)-Math.abs(b.target-raw)||a.priority-b.priority);
+ const best=valid[0];
+ return best?{coordinate:best.target,match:{axis,target:best.target}}:{coordinate:raw,match:null};
+}
+function resizeDimensions(start,edge,dx,dy,snap=true){
+ let {l,t,r,b}=start;
+ const mw=Math.min(start.w,minWidth(chosen,chosen?.id==="launcherMusicWidget"?175:chosen?.id==="launcherAgendaWidget"?160:chosen?.id==="launcherSplWidget"||chosen?.id==="launcherMicAnalyzer"?200:106));
+ const mh=Math.min(start.h,minHeight(chosen,chosen?.id==="launcherMusicWidget"?202:chosen?.id==="launcherAgendaWidget"?156:chosen?.id==="launcherSplWidget"||chosen?.id==="launcherMicAnalyzer"?230:49));
+ const west=edge.includes("w")&&chosen?.dataset.nativeHorizontal!=="false";
+ const east=edge.includes("e")&&chosen?.dataset.nativeHorizontal!=="false";
+ const north=edge.includes("n")&&chosen?.dataset.nativeVertical!=="false";
+ const south=edge.includes("s")&&chosen?.dataset.nativeVertical!=="false";
+ const others=movable().filter(el=>el!==chosen&&!el.contains(chosen)&&!chosen.contains(el)).map(layout);
+ // Keep the original opposite edge fixed even at screen bounds. Allow
+ // document-relative vertical resizing when the Home page is scrolled.
+ const topBound=Math.min(start.t,-window.scrollY),bottomBound=Math.max(start.b,innerHeight,document.documentElement.scrollHeight-window.scrollY);
+ // A card already touching or extending beyond the viewport must not
+ // reverse resize direction when the CSS width cap is reached.
+ const maxW=Math.max(start.w,innerWidth);
+ const westBound=Math.min(start.l,Math.max(0,start.r-maxW));
+ const eastBound=Math.max(start.r,Math.min(innerWidth,start.l+maxW));
+ if(west)l=limit(start.l+dx,westBound,start.r-mw);
+ if(east)r=limit(start.r+dx,start.l+mw,eastBound);
+ if(north)t=limit(start.t+dy,topBound,start.b-mh);
+ if(south)b=limit(start.b+dy,start.t+mh,byId("launcherHomePage").contains(chosen)?Math.max(bottomBound,start.t+innerHeight*4):bottomBound);
+ let sx=null,sy=null;
+ if(west||east){
+  sx=edgeSnap(west?l:r,"x",west?westBound:start.l+mw,west?start.r-mw:eastBound,[t,b],others,snap);
+  if(west)l=sx.coordinate;else r=sx.coordinate;
+ }
+ if(north||south){
+  const reflow=south&&byId("launcherHomePage").contains(chosen);
+  const targets=reflow?others.filter(o=>o.t<start.b-1||Math.min(r,o.r)-Math.max(l,o.l)<=1):others;
+  sy=edgeSnap(north?t:b,"y",north?topBound:start.t+mh,north?start.b-mh:reflow?Math.max(bottomBound,start.t+innerHeight*4):bottomBound,[l,r],targets,snap);
+  if(north)t=sy.coordinate;else b=sy.coordinate;
  }
  showGuides(sx,sy);
  return {l,t,r,b};
 }
-function setRect(rect,original){
- if(!chosen)return;
- const width=Math.round(rect.r-rect.l),height=Math.round(rect.b-rect.t);
- const naturalLeft=original.l-Number(chosen.style.getPropertyValue("--widget-x").replace("px","")||0);
- const naturalTop=original.t-Number(chosen.style.getPropertyValue("--widget-y").replace("px","")||0);
- chosen.style.setProperty("--user-widget-width",width+"px");
- chosen.style.setProperty("--user-widget-height",height+"px");
- chosen.style.setProperty("--widget-x",Math.round(rect.l-naturalLeft)+"px");
- chosen.style.setProperty("--widget-y",Math.round(rect.t-naturalTop)+"px");
- chosen.dataset.layoutSized="true";
- requestPos();
+// Edge contact is allowed; actual intersecting interiors are not.
+function overlapArea(a,b){
+ return Math.max(0,Math.min(a.r,b.r)-Math.max(a.l,b.l)-1)*
+  Math.max(0,Math.min(a.b,b.b)-Math.max(a.t,b.t)-1);
+}
+function collisions(el){
+ return movable().filter(other=>other!==el&&!other.contains(el)&&!el.contains(other))
+  .map(other=>({other,area:overlapArea(layout(el),layout(other))})).filter(x=>x.area>0);
+}
+const layoutProps=["--widget-x","--widget-y","--user-widget-width","--user-widget-height","--widget-pack-left","--widget-pack-top"];
+function snapshot(el){
+ return {values:layoutProps.map(name=>el.style.getPropertyValue(name)),sized:el.dataset.layoutSized,packed:el.dataset.widgetPacked};
+}
+function restoreSnapshot(el,snapshot){
+ layoutProps.forEach((name,i)=>snapshot.values[i]?el.style.setProperty(name,snapshot.values[i]):el.style.removeProperty(name));
+ if(snapshot.sized===undefined)delete el.dataset.layoutSized;else el.dataset.layoutSized=snapshot.sized;
+ if(snapshot.packed===undefined)delete el.dataset.widgetPacked;else el.dataset.widgetPacked=snapshot.packed;
+}
+function guardedChange(el,change){
+ const before=snapshot(el);
+ const nodes=movable();
+ function pairs(){
+  const out=new Map(),rects=nodes.map(layout);
+  for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
+   if(nodes[i].contains(nodes[j])||nodes[j].contains(nodes[i]))continue;
+   out.set(i+":"+j,overlapArea(rects[i],rects[j]));
+  }
+  return out;
+ }
+ const previous=pairs();
+ change();
+ // Check actual DOM bounds after CSS, not only requested geometry:
+ // resizing one flow item can move another item's natural position.
+ if([...pairs()].some(([key,area])=>area>(previous.get(key)||0)+1)){
+  restoreSnapshot(el,before);guides.replaceChildren();return false;
+ }
+ return true;
+}
+function offset(el,axis){return parseFloat(el.style.getPropertyValue("--widget-"+axis))||0}
+// Width/height changes may change a centered or grid-aligned widget's
+// natural origin. Read the actual rect AFTER sizing, then compensate the
+// translate to keep the requested opposite edge anchored.
+function applyRect(rect,edge){
+ const el=chosen;if(!el)return;
+ const current=layout(el);
+ if(edge){
+  if(edge.includes("w")||edge.includes("e"))
+   el.style.setProperty("--user-widget-width",Math.round(rect.r-rect.l)+"px");
+  else el.style.setProperty("--user-widget-width",Math.round(current.w)+"px");
+  if(edge.includes("n")||edge.includes("s"))
+   el.style.setProperty("--user-widget-height",Math.round(rect.b-rect.t)+"px");
+  else el.style.setProperty("--user-widget-height",Math.round(current.h)+"px");
+  el.dataset.layoutSized="true";
+ }
+ const measured=layout(el);
+ const x=edge?.includes("w")&&el.dataset.nativeHorizontal!=="false"?rect.r-measured.r:rect.l-measured.l;
+ const y=edge?.includes("n")&&el.dataset.nativeVertical!=="false"?rect.b-measured.b:rect.t-measured.t;
+ el.style.setProperty("--widget-x",Math.round(offset(el,"x")+x)+"px");
+ el.style.setProperty("--widget-y",Math.round(offset(el,"y")+y)+"px");
+}
+// A bad snap candidate should not freeze a valid raw drag. Try the exact
+// unsnapped target; if still blocked, advance toward it up to the last safe
+// boundary. Geometry is checked after CSS has actually laid out neighbors.
+function applySafeResize(rect,raw,edge){
+ if(guardedChange(chosen,()=>applyRect(rect,edge)))return;
+ if(guardedChange(chosen,()=>applyRect(raw,edge)))return;
+ const from=layout(chosen);
+ let lo=0,hi=1;
+ for(let i=0;i<7;i++){
+  const k=(lo+hi)/2;
+  const p={};for(const key of ["l","t","r","b"])p[key]=from[key]+(raw[key]-from[key])*k;
+  if(guardedChange(chosen,()=>applyRect(p,edge)))lo=k;else hi=k;
+ }
+ guides.replaceChildren();
+}
+// Capture the complete layout once per drag, not once per motion frame.
+ // Moving dependent rows relative to that baseline avoids cumulative drift.
+function flowBaseline(){
+ if(!chosen||!byId("launcherHomePage").contains(chosen))return null;
+ const nodes=visibleHomeNodes().filter(el=>el===chosen||(!el.contains(chosen)&&!chosen.contains(el)));
+ if(!nodes.includes(chosen))return null;
+ return {items:nodes.map(el=>({el,r:layout(el),state:snapshot(el)})),rect:layout(chosen)};
+}
+function horizontalContact(a,b){return Math.min(a.r,b.r)-Math.max(a.l,b.l)>1}
+function flowPairMap(items){
+ const rects=items.map(o=>layout(o.el)),pairs=[];
+ for(let i=0;i<rects.length;i++)for(let j=i+1;j<rects.length;j++)pairs.push(overlapArea(rects[i],rects[j]));
+ return pairs;
+}
+function reflowResize(rect,edge,base){
+ const items=base.items,original=base.rect;
+ // Roll back to the previous accepted frame if the proposal fails.
+ const previous=items.map(o=>snapshot(o.el));
+ const areas=flowPairMap(items);
+ for(const o of items)restoreSnapshot(o.el,o.state);
+ applyRect(rect,edge);
+ const updated=layout(chosen),delta=updated.b-original.b;
+ const affected=new Set();
+ const others=items.filter(o=>o.el!==chosen).sort((a,b)=>a.r.t-b.r.t);
+ // Propagate through intersecting columns, not unrelated side-by-side cards.
+ const anchor={l:Math.min(original.l,updated.l),r:Math.max(original.r,updated.r),b:original.b};
+ if(Math.abs(delta)>.5){
+  const chain=[anchor];
+  for(const o of others){
+   if(chain.some(p=>o.r.t>=p.b-1&&horizontalContact(p,o.r))){affected.add(o.el);chain.push(o.r)}
+  }
+ }
+ for(const o of others){
+  const desiredTop=o.r.t+(affected.has(o.el)?delta:0);
+  const actual=layout(o.el);
+  // Compensate for natural flex/grid reflow as well as absolute packed cards.
+  // Leave sizes, style and x alignment unchanged.
+  const dx=o.r.l-actual.l,dy=desiredTop-actual.t;
+  if(Math.abs(dx)>.5)o.el.style.setProperty("--widget-x",Math.round(offset(o.el,"x")+dx)+"px");
+  if(Math.abs(dy)>.5)o.el.style.setProperty("--widget-y",Math.round(offset(o.el,"y")+dy)+"px");
+ }
+ if(flowPairMap(items).some((a,i)=>a>areas[i]+1)){
+  items.forEach((o,i)=>restoreSnapshot(o.el,previous[i]));return false;
+ }
+ return true;
+}
+function applyFlowResize(rect,raw,edge,base){
+ if(!base||!edge.includes("s")||chosen?.dataset.nativeVertical==="false"){applySafeResize(rect,raw,edge);return}
+ if(reflowResize(rect,edge,base)||reflowResize(raw,edge,base))return;
+ const from=layout(chosen);
+ let lo=0,hi=1;
+ for(let i=0;i<7;i++){
+  const t=(lo+hi)/2,p={};
+  for(const k of ["l","t","r","b"])p[k]=from[k]+(raw[k]-from[k])*t;
+  if(reflowResize(p,edge,base))lo=t;else hi=t;
+ }
+ guides.replaceChildren();
+}
+function saveFlow(base){
+ if(!base)return;
+ for(const o of base.items){
+  if(o.el===chosen)continue;
+  const r=layout(o.el);
+  if(Math.abs(r.l-o.r.l)>.5||Math.abs(r.t-o.r.t)>.5||
+   JSON.stringify(snapshot(o.el))!==JSON.stringify(o.state))rememberWidget(o.el);
+ }
 }
 function requestPos(){
  cancelAnimationFrame(raf);raf=requestAnimationFrame(position);
 }
 function position(){
  if(!chosen||overlay.hidden)return;
+ layoutChanged();
  const r=chosen.getBoundingClientRect();
  const outline=overlay.querySelector(".layout-outline");
  Object.assign(outline.style,{left:r.left+"px",top:r.top+"px",width:r.width+"px",height:r.height+"px"});
@@ -171,20 +402,28 @@ function position(){
   sw:[r.left,r.bottom],s:[centerX,r.bottom],se:[r.right,r.bottom]
  };
  for(const button of overlay.querySelectorAll(".widget-resize-handle")){
-  const p=positions[button.dataset.edge];
-  button.style.left=limit(p[0],17,innerWidth-17)+"px";
-  button.style.top=limit(p[1],17,innerHeight-17)+"px";
+  const edge=button.dataset.edge,p=positions[edge];
+  button.disabled=(chosen.dataset.nativeHorizontal==="false"&&/[we]/.test(edge))||
+   (chosen.dataset.nativeVertical==="false"&&/[ns]/.test(edge));
+  const halfW=(button.offsetWidth||34)/2,halfH=(button.offsetHeight||34)/2;
+  button.style.left=limit(p[0],Math.max(halfW+1,28),innerWidth-Math.max(halfW+1,28))+"px";
+  button.style.top=limit(p[1],halfH+1,innerHeight-halfH-1)+"px";
  }
  const bar=overlay.querySelector(".layout-toolbar"),grip=overlay.querySelector(".layout-move-handle");
- bar.style.left=limit(r.left,5,Math.max(5,innerWidth-160))+"px";
- bar.style.top=limit(r.top-49,11,innerHeight-42)+"px";
+ bar.style.left=limit(r.left,5,Math.max(5,innerWidth-bar.offsetWidth-5))+"px";
+ const top=r.top-49,bottom=r.bottom+20;
+ bar.style.top=limit(top>=11?top:bottom+bar.offsetHeight<innerHeight?bottom:11,11,innerHeight-42)+"px";
  grip.style.left=limit(centerX,50,innerWidth-50)+"px";
- grip.style.top=limit(r.top+28,30,innerHeight-30)+"px";
+ grip.style.top=limit(centerY,30,innerHeight-30)+"px";
 }
 function openEditor(id){
  const el=byId(id);if(!el||!movable().includes(el))return false;
  closeEditor();
- chosen=el;chosen.classList.add("widget-editing");
+ chosen=el;chosen.classList.add("widget-editing");document.body.classList.add("widget-layout-editing");
+ const accent=el.style.getPropertyValue("--native-provider-accent").trim();
+ if(/^#[0-9a-f]{6}$/i.test(accent)){
+  overlay.style.setProperty("--ds-accent",accent);guides.style.setProperty("--ds-accent",accent);
+ }
  overlay.hidden=false;
  cancelClickUntil=Date.now()+850;
  position();
@@ -195,11 +434,16 @@ window.audioDeskRestoreWidgetLayouts=applySizes;
 overlay.addEventListener("click",e=>{
  const action=e.target.closest("[data-layout-control]")?.dataset.layoutControl;
  if(action==="done"){save();closeEditor()}
+ if(action==="remove"&&chosen){
+  const id=chosen.id;save();closeEditor();setRemoved(id,true);
+ }
  if(action==="reset"&&chosen){
   delete geometry[chosen.id];deskStorage.setItem(storeKey(),JSON.stringify(geometry));
   const el=chosen;closeEditor();
   ["--widget-x","--widget-y","--user-widget-width","--user-widget-height"].forEach(x=>el.style.removeProperty(x));
-  delete el.dataset.layoutSized;
+  delete el.dataset.layoutSized;delete el.dataset.widgetPacked;el.style.removeProperty("--widget-pack-left");el.style.removeProperty("--widget-pack-top");
+  if(byId("launcherHomePage").hasAttribute("data-packed-layout"))arrangeWidgets(false,false);
+  updateHomeExtent();layoutChanged();
  }
 });
 overlay.addEventListener("pointerdown",e=>{
@@ -210,8 +454,9 @@ overlay.addEventListener("pointerdown",e=>{
  gesture={pointerId:e.pointerId,kind:target.dataset.edge?"resize":"move",
   edge:target.dataset.edge,x:e.clientX,y:e.clientY,rect:initial,
   initialX:Number(chosen.style.getPropertyValue("--widget-x").replace("px",""))||0,
-  initialY:Number(chosen.style.getPropertyValue("--widget-y").replace("px",""))||0};
- target.setPointerCapture?.(e.pointerId);
+  initialY:Number(chosen.style.getPropertyValue("--widget-y").replace("px",""))||0,
+  flow:target.dataset.edge?.includes("s")?flowBaseline():null};
+ try{target.setPointerCapture?.(e.pointerId)}catch{}
  document.body.classList.add("widget-dragging");
 });
 overlay.addEventListener("pointermove",e=>{
@@ -221,23 +466,24 @@ overlay.addEventListener("pointermove",e=>{
  const rect=gesture.kind==="move"?
    moveDimensions(gesture.rect,dx,dy):
    resizeDimensions(gesture.rect,gesture.edge,dx,dy);
- const naturalLeft=gesture.rect.l-gesture.initialX,naturalTop=gesture.rect.t-gesture.initialY;
- const w=Math.round(rect.r-rect.l),h=Math.round(rect.b-rect.t);
- chosen.style.setProperty("--user-widget-width",w+"px");
- chosen.style.setProperty("--user-widget-height",h+"px");
- chosen.style.setProperty("--widget-x",Math.round(rect.l-naturalLeft)+"px");
- chosen.style.setProperty("--widget-y",Math.round(rect.t-naturalTop)+"px");
- chosen.dataset.layoutSized="true";
+ if(gesture.kind==="resize"){
+  // Preserve guides from the snapped proposal while computing raw fallback.
+  const savedGuides=[...guides.children];
+  const raw=resizeDimensions(gesture.rect,gesture.edge,dx,dy,false);
+  guides.replaceChildren(...savedGuides);
+  applyFlowResize(rect,raw,gesture.edge,gesture.flow);
+ }else guardedChange(chosen,()=>applyRect(rect,null));
  requestPos();
 });
 function endGesture(e){
  if(!gesture||gesture.pointerId!==e.pointerId)return;
- gesture=null;save();guides.replaceChildren();
+ saveFlow(gesture.flow);gesture=null;save();updateHomeExtent();guides.replaceChildren();
  document.body.classList.remove("widget-dragging");
  requestPos();
 }
 overlay.addEventListener("pointerup",endGesture);
 overlay.addEventListener("pointercancel",endGesture);
+overlay.addEventListener("lostpointercapture",endGesture);
 overlay.addEventListener("keydown",e=>{
  const btn=e.target.closest("[data-edge],[data-layout-control='move']");
  if(!btn||!chosen||!["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(e.key))return;
@@ -246,17 +492,14 @@ overlay.addEventListener("keydown",e=>{
  const dx=(e.key==="ArrowLeft"?-delta:e.key==="ArrowRight"?delta:0);
  const dy=(e.key==="ArrowUp"?-delta:e.key==="ArrowDown"?delta:0);
  const r=layout(chosen);
- const pos=btn.dataset.edge?resizeDimensions(r,btn.dataset.edge,dx,dy):moveDimensions(r,dx,dy);
- const oldX=Number(chosen.style.getPropertyValue("--widget-x").replace("px",""))||0;
- const oldY=Number(chosen.style.getPropertyValue("--widget-y").replace("px",""))||0;
- chosen.style.setProperty("--user-widget-width",Math.round(pos.r-pos.l)+"px");
- chosen.style.setProperty("--user-widget-height",Math.round(pos.b-pos.t)+"px");
- chosen.style.setProperty("--widget-x",Math.round(oldX+pos.l-r.l)+"px");
- chosen.style.setProperty("--widget-y",Math.round(oldY+pos.t-r.t)+"px");
- chosen.dataset.layoutSized="true";save();requestPos();
+ const pos=btn.dataset.edge?resizeDimensions(r,btn.dataset.edge,dx,dy,false):moveDimensions(r,dx,dy);
+ const base=btn.dataset.edge?.includes("s")?flowBaseline():null;
+ if(btn.dataset.edge)applyFlowResize(pos,pos,btn.dataset.edge,base);
+ else guardedChange(chosen,()=>applyRect(pos,null));
+ saveFlow(base);save();updateHomeExtent();requestPos();
 });
-for(const id of ids){
- const el=byId(id);if(!el)continue;
+function registerWidget(id){
+ const el=byId(id);if(!el||el.dataset.widgetResizable==="true")return;
  el.dataset.widgetResizable="true";el.addEventListener("contextmenu",e=>e.preventDefault());
  el.addEventListener("pointerdown",e=>{
   if(e.button!==0||launcherPage!=="home"||e.target.closest(".launcher-app,.folder-tile,[data-folder-id]"))return;
@@ -274,6 +517,21 @@ for(const id of ids){
   el.addEventListener(type,()=>{if(hold){clearTimeout(hold.timer);hold=null}});
  }
 }
+for(const id of ids)registerWidget(id);
+window.audioDeskRegisterNativeWidget=(id,label)=>{
+ if(!/^nativeWidget_\d+$/.test(id)||!byId(id))return;
+ if(!ids.includes(id))ids.push(id);
+ labels[id]=String(label);registerWidget(id);
+};
+window.audioDeskUnregisterNativeWidget=id=>{
+ if(!/^nativeWidget_\d+$/.test(id))return;
+ const i=ids.indexOf(id);if(i>=0)ids.splice(i,1);delete labels[id];
+ for(const theme of ["minimal","pixel","windows","warm"]){
+  const k="ad_widget_layout_v2_"+theme,r="ad_widget_removed_v1_"+theme;
+  try{const g=JSON.parse(deskStorage.getItem(k)||"{}");delete g[id];deskStorage.setItem(k,JSON.stringify(g));}catch{}
+  try{const h=JSON.parse(deskStorage.getItem(r)||"[]");deskStorage.setItem(r,JSON.stringify(h.filter(v=>v!==id)));}catch{}
+ }
+};
 document.addEventListener("click",e=>{
  // Suppress only the matching long-pressed widget, never unrelated widgets.
  // Dismissing the editor must restore normal click actions immediately.
@@ -289,5 +547,172 @@ document.addEventListener("pointerdown",e=>{
 },true);
 window.addEventListener("resize",()=>{applySizes();requestPos()});
 window.addEventListener("launcher-page-changed",closeEditor);
+window.addEventListener("scroll",()=>{if(chosen&&!gesture)requestPos()},{passive:true});
+const restoreToggle=document.createElement("button");
+restoreToggle.id="widgetRestoreToggle";restoreToggle.type="button";
+restoreToggle.className="launcher-options-action";
+restoreToggle.setAttribute("aria-expanded","false");
+const restoreList=document.createElement("div");
+restoreList.id="widgetRestoreList";restoreList.hidden=true;
+const anchor=byId("launcherThemeChoose");
+anchor?.after(restoreToggle,restoreList);
+restoreToggle.onclick=()=>{
+ restoreList.hidden=!restoreList.hidden;
+ restoreToggle.setAttribute("aria-expanded",String(!restoreList.hidden));
+};
+function renderRemoved(){
+ restoreToggle.textContent="▤ RESTORE WIDGETS"+(removed.size?" ("+removed.size+")":"");
+ restoreList.replaceChildren();
+ if(!removed.size){
+  const p=document.createElement("p");p.textContent="No removed widgets in this theme.";restoreList.append(p);return;
+ }
+ for(const id of removed){
+  const b=document.createElement("button");b.type="button";b.className="launcher-options-action";
+  b.dataset.restoreWidget=id;b.textContent="+ Restore "+labels[id];
+  b.onclick=()=>{setRemoved(id,false);};
+  restoreList.append(b);
+ }
+}
+// Absolute, document-relative layout. Original flow boxes are no longer
+// reserving space behind translated widgets. Keep native provider views in
+// their original DOM parents so widget actions and theme selectors survive.
+const previousKey=()=>"ad_widget_previous_layout_v1_"+launcherTheme;
+function updateHomeExtent(){
+ const home=byId("launcherHomePage");
+ if(!home||home.hidden)return;
+ const bounds=home.getBoundingClientRect();
+ let bottom=0;
+ for(const el of movable())if(home.contains(el))bottom=Math.max(bottom,layout(el).b-bounds.top);
+ if(bottom>0)home.style.setProperty("--widget-arranged-height",Math.ceil(bottom+100)+"px");
+ else home.style.removeProperty("--widget-arranged-height");
+}
+function packingBounds(home){
+ const r=home.getBoundingClientRect();
+ const rail=byId("launcherAlphaIndex");
+ const rr=rail&&rail.getClientRects().length&&getComputedStyle(rail).visibility!=="hidden"?rail.getBoundingClientRect():null;
+ const left=Math.max(12,r.left+14),right=Math.min(innerWidth-12,r.right-14,rr&&rr.width>0&&rr.left>left?rr.left-8:innerWidth);
+ const safe=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--status-top"))||0;
+ return {left:Math.round(left-r.left),right:Math.round(Math.max(left+80,right)-r.left),top:Math.max(20,safe+18)};
+}
+function visibleHomeNodes(){
+ const home=byId("launcherHomePage"),visible=movable();
+ return visible.filter(el=>home.contains(el)&&!visible.some(p=>p!==el&&p.contains(el))&&
+  (el.id!=="launcherFavorites"||el.childElementCount>0));
+}
+const publicPriority=id=>id==="launcherClockWidget"?0:id==="launcherTilesSearch"||id==="warmSearchWidget"?1:
+ id==="launcherMusicWidget"?2:id==="launcherAgendaWidget"?3:
+ id==="launcherRecentStrip"||id==="launcherFavorites"?5:4;
+function arrangeWidgets(random,recordUndo=true){
+ if(launcherPage!=="home")return false;
+ closeEditor();
+ const home=byId("launcherHomePage"),nodes=visibleHomeNodes();
+ // Tests and extensions can register widgets outside the Home container.
+ // They are not part of packing, and must not distort the real Home area.
+ if(!nodes.length)return false;
+ const before=JSON.stringify(geometry),snapshots=ids.map(byId).filter(Boolean).map(el=>[el,snapshot(el)]);
+ const wasPacked=home.hasAttribute("data-packed-layout");
+ const bounds=packingBounds(home),gap=8,available=bounds.right-bounds.left;
+ const measured=nodes.map(el=>({el,r:layout(el)}));
+ document.body.classList.add("widget-dragging");
+ home.setAttribute("data-packed-layout","");
+ // First give every card a measured width, then measure content at that
+ // width. Only the app lists have decorative min-heights that need trimming.
+ for(const o of measured){
+  const el=o.el,w=Math.max(1,Math.min(available,Math.round(o.r.w)));
+  el.dataset.widgetPacked="true";el.dataset.layoutSized="true";
+  el.style.setProperty("--widget-pack-left",bounds.left+"px");
+  el.style.setProperty("--widget-pack-top",bounds.top+"px");
+  el.style.setProperty("--widget-x","0px");el.style.setProperty("--widget-y","0px");
+  el.style.setProperty("--user-widget-width",w+"px");
+  el.style.setProperty("--user-widget-height",Math.max(1,Math.round(o.r.h))+"px");
+  if(el.id==="launcherRecentStrip"||el.id==="launcherFavorites"){
+   el.dataset.packMeasure="true";
+   const h=Math.max(48,Math.ceil(el.getBoundingClientRect().height));
+   delete el.dataset.packMeasure;
+   el.style.setProperty("--user-widget-height",h+"px");
+  }
+ }
+ const ordered=measured.map(o=>({el:o.el,r:layout(o.el)}))
+  .sort((a,b)=>publicPriority(a.el.id)-publicPriority(b.el.id)||b.r.w-a.r.w||ids.indexOf(a.el.id)-ids.indexOf(b.el.id));
+ if(random&&ordered.length>1){
+  const original=ordered.slice();
+  for(let i=ordered.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ordered[i],ordered[j]]=[ordered[j],ordered[i]]}
+  if(ordered.every((o,i)=>o===original[i]))ordered.push(ordered.shift());
+ }
+ // Bottom-left packing: candidates are the safe top and the exact
+ // right/bottom edges of existing cards, including holes under short cards.
+ // This gives a compaction pass for free rather than reserving entire rows.
+ const placed=[];
+ for(const o of ordered){
+  const w=Math.ceil(o.r.w),h=Math.ceil(o.r.h);
+  const xs=[bounds.left,...placed.map(p=>p.r+gap)].sort((a,b)=>a-b);
+  const ys=[bounds.top,...placed.map(p=>p.b+gap)].sort((a,b)=>a-b);
+  let target=null;
+  outer:for(const y of ys)for(const x of xs){
+   if(x+w>bounds.right+1)continue;
+   const p={l:x,t:y,r:x+w,b:y+h};
+   if(placed.some(q=>p.l<q.r+gap-1&&p.r>q.l-gap+1&&p.t<q.b+gap-1&&p.b>q.t-gap+1))continue;
+   target=p;break outer;
+  }
+  if(!target){const y=Math.max(bounds.top,...placed.map(p=>p.b+gap));target={l:bounds.left,t:y,r:bounds.left+w,b:y+h}}
+  o.el.style.setProperty("--widget-pack-left",target.l+"px");
+  o.el.style.setProperty("--widget-pack-top",target.t+"px");
+  placed.push({...target,el:o.el});
+ }
+ const hr=home.getBoundingClientRect();
+ const valid=placed.every(p=>{
+  const r=layout(p.el);return r.l>=hr.left+bounds.left-2&&r.r<=hr.left+bounds.right+2&&r.t>=hr.top+bounds.top-2&&
+  !placed.some(q=>q!==p&&overlapArea(r,layout(q.el))>1);
+ });
+ if(!valid){
+  for(const [el,state] of snapshots)restoreSnapshot(el,state);
+  home.toggleAttribute("data-packed-layout",wasPacked);
+  document.body.classList.remove("widget-dragging");
+  updateHomeExtent();layoutChanged();return false;
+ }
+ if(recordUndo)deskStorage.setItem(previousKey(),before);
+ for(const p of placed){const r=layout(p.el);geometry[p.el.id]={w:Math.round(r.w),h:Math.round(r.h),x:0,y:0,natural:false,packed:true,left:p.l,top:p.t}}
+ deskStorage.setItem(storeKey(),JSON.stringify(geometry));
+ updateHomeExtent();document.body.classList.remove("widget-dragging");layoutChanged();
+ if(recordUndo)window.scrollTo(0,0);
+ return true;
+}
+let repairFrame=0,repairNeeded=false;
+function queuePackedRepair(force=false){
+ if(force===true)repairNeeded=true;
+ if(repairFrame)return;
+ repairFrame=requestAnimationFrame(()=>{
+  repairFrame=0;
+  const home=byId("launcherHomePage");
+  if(launcherPage!=="home"||!home.hasAttribute("data-packed-layout")||chosen)return;
+  const forceRepair=repairNeeded;repairNeeded=false;
+  const nodes=visibleHomeNodes(),hr=home.getBoundingClientRect(),bounds=packingBounds(home);
+  // New or restored widgets and screen rotations must not be left in the
+  // old document flow. Do not change the user's previous-layout snapshot.
+  if(forceRepair||nodes.some(el=>{const r=layout(el);return el.dataset.widgetPacked!=="true"||r.l<hr.left-1||r.r>hr.right+1||
+   r.t<hr.top-1||nodes.some(o=>o!==el&&overlapArea(r,layout(o))>1)}))arrangeWidgets(false,false);
+  else updateHomeExtent();
+ });
+}
+window.addEventListener("audio-desk-widget-visibility",queuePackedRepair);
+window.addEventListener("launcher-page-changed",queuePackedRepair);
+new MutationObserver(queuePackedRepair).observe(byId("launcherHomePage"),{subtree:true,childList:true,attributes:true,attributeFilter:["hidden","data-widget-removed"]});
+function restorePrevious(){
+ const previous=deskStorage.getItem(previousKey());
+ if(!previous)return false;
+ deskStorage.setItem(storeKey(),previous);
+ deskStorage.setItem(previousKey(),"");
+ applySizes();return true;
+}
+const toolsPanel=document.createElement("div");toolsPanel.id="widgetArrangementTools";toolsPanel.className="widget-arrangement-tools";
+toolsPanel.innerHTML='<button type="button" class="launcher-options-action" id="widgetAutoArrange">Auto arrange widgets</button><button type="button" class="launcher-options-action" id="widgetRandomize">Randomize widget positions</button><button type="button" class="launcher-options-action" id="widgetUndoArrange">Restore previous positions</button><small id="widgetArrangementStatus" role="status"></small>';
+restoreList.after(toolsPanel);
+function refreshArrangement(){byId("widgetUndoArrange").disabled=!deskStorage.getItem(previousKey())}
+function act(random){const ok=arrangeWidgets(random);byId("widgetArrangementStatus").textContent=ok?"Layout saved. Restore previous positions to undo.":"No collision-free arrangement found. Layout unchanged.";refreshArrangement()}
+byId("widgetAutoArrange").onclick=()=>act(false);
+byId("widgetRandomize").onclick=()=>act(true);
+byId("widgetUndoArrange").onclick=()=>{if(restorePrevious())byId("widgetArrangementStatus").textContent="Previous layout restored.";refreshArrangement()};
+window.addEventListener("audio-desk-layout-changed",refreshArrangement);
 applySizes();
+refreshArrangement();
 })();

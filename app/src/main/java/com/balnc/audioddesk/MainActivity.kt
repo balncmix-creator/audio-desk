@@ -2,7 +2,11 @@ package com.balnc.audioddesk
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.Manifest
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.media.projection.MediaProjectionManager
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -26,6 +30,8 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.webkit.WebViewAssetLoader
+import androidx.browser.customtabs.CustomTabsIntent
+import androidx.browser.customtabs.CustomTabsClient
 import org.json.JSONObject
 
 class MainActivity : Activity() {
@@ -43,8 +49,21 @@ class MainActivity : Activity() {
     private lateinit var launcherSupport: HomeLauncherSupport
     private lateinit var systemWallpaperInstaller: SystemWallpaperInstaller
     private lateinit var mediaWidgetSupport: MediaWidgetSupport
+    private lateinit var spectrumSupport: AudioSpectrumSupport
+    private lateinit var agendaSupport: AgendaSupport
+    private lateinit var acousticSupport: AcousticMeterSupport
+    private lateinit var nativeWidgets: NativeWidgetPanel
+    private lateinit var youtubeWidget: YouTubeWidgetPanel
+    private val acousticPermissionRequest = 6212
+    private val agendaPermissionRequest = 6211
+    private var spectrumVisible = false
+    private var projectionInUse = false
+    private val spectrumPermissionRequest = 6209
+    private val spectrumProjectionRequest = 6210
     private lateinit var pixelStatusBar: PixelStatusBar
     private var pixelHomeThemeRequested = false
+    private var windowsHomeThemeRequested = false
+    private var systemStatusHidden = false
     private var pixelBarActive = false
     private var pixelBarSuspended = false
     private var destroyed = false
@@ -101,7 +120,11 @@ class MainActivity : Activity() {
             val stableTop = insets.getInsetsIgnoringVisibility(
                 WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.displayCutout()
             ).top
-            val top = if (pixelBarActive) maxOf(stableTop, (24f * density).toInt()) else safe.top
+            val top = when {
+                pixelBarActive -> maxOf(stableTop, (24f * density).toInt())
+                systemStatusHidden -> insets.getInsetsIgnoringVisibility(WindowInsetsCompat.Type.displayCutout()).top
+                else -> safe.top
+            }
             statusInsetDp = (top / density).toInt()
             bottomInsetDp = (safe.bottom / density).toInt()
             if (::pixelStatusBar.isInitialized) {
@@ -160,6 +183,21 @@ class MainActivity : Activity() {
         launcherSupport = HomeLauncherSupport(this)
         systemWallpaperInstaller = SystemWallpaperInstaller(applicationContext)
         mediaWidgetSupport = MediaWidgetSupport(this)
+        spectrumSupport = AudioSpectrumSupport(this, ::sendSpectrum)
+        agendaSupport = AgendaSupport(this) { data ->
+            runOnUiThread {
+                if (!destroyed && ::appWebView.isInitialized)
+                    appWebView.evaluateJavascript("window.receiveAudioDeskAgenda&&window.receiveAudioDeskAgenda(" +
+                        data.toString() + ")", null)
+            }
+        }
+        acousticSupport = AcousticMeterSupport(this) { data ->
+            runOnUiThread {
+                if (!destroyed && ::appWebView.isInitialized && (!pixelBarSuspended || data.optString("state") != "active"))
+                    appWebView.evaluateJavascript("window.receiveAudioDeskAcoustics&&window.receiveAudioDeskAcoustics(" + data.toString() + ")", null)
+            }
+        }
+        nativeWidgets = NativeWidgetPanel(this, appWebView)
         appWebView.addJavascriptInterface(AppBridge(), "AudioDesk")
         appWebView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
@@ -242,6 +280,7 @@ class MainActivity : Activity() {
         ))
 
         setContentView(root)
+        youtubeWidget = YouTubeWidgetPanel(this, appWebView)
         // The 8-bit bar is a *native Android View* layered over the wallpaper,
         // not HTML and not an attempt to reskin SystemUI outside this app.
         pixelStatusBar = PixelStatusBar(this)
@@ -265,20 +304,24 @@ class MainActivity : Activity() {
 
     private fun applyPixelStatusMode() {
         if (!::pixelStatusBar.isInitialized) return
-        val shouldShow = pixelHomeThemeRequested && !pixelBarSuspended &&
+        val homeVisible = !pixelBarSuspended &&
             !(::browserPanel.isInitialized && browserPanel.visibility == View.VISIBLE)
-        if (pixelBarActive == shouldShow) return
+        val shouldShow = pixelHomeThemeRequested && homeVisible
+        val shouldHide = homeVisible && (pixelHomeThemeRequested || windowsHomeThemeRequested)
+        if (pixelBarActive == shouldShow && systemStatusHidden == shouldHide) return
+        val pixelChanged = pixelBarActive != shouldShow
         pixelBarActive = shouldShow
+        systemStatusHidden = shouldHide
         val controller = WindowCompat.getInsetsController(window, window.decorView)
-        if (shouldShow) {
-            pixelStatusBar.visibility = View.VISIBLE
-            pixelStatusBar.startUpdates()
+        if (pixelChanged) {
+            pixelStatusBar.visibility = if (shouldShow) View.VISIBLE else View.GONE
+            if (shouldShow) pixelStatusBar.startUpdates() else pixelStatusBar.stopUpdates()
+        }
+        if (shouldHide) {
             controller.systemBarsBehavior =
                 androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             controller.hide(WindowInsetsCompat.Type.statusBars())
         } else {
-            pixelStatusBar.stopUpdates()
-            pixelStatusBar.visibility = View.GONE
             controller.show(WindowInsetsCompat.Type.statusBars())
         }
         // Retain clock and alphabet safe areas despite hiding the system bar.
@@ -328,8 +371,173 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun sendSpectrum(data: JSONObject) {
+        runOnUiThread {
+            if (!destroyed && ::appWebView.isInitialized)
+                appWebView.evaluateJavascript(
+                    "window.receiveAudioDeskSpectrum&&window.receiveAudioDeskSpectrum(" +
+                        data.toString() + ")", null)
+        }
+    }
+
+    private fun requestSpectrumCapture() {
+        spectrumVisible = true
+        if (!::spectrumSupport.isInitialized) return
+        if (spectrumSupport.hasPermission()) {
+            if (!projectionInUse) spectrumSupport.start()
+        } else {
+            requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO),
+                spectrumPermissionRequest)
+        }
+    }
+
+    private fun requestPlaybackProjection() {
+        if (Build.VERSION.SDK_INT < 29) {
+            spectrumSupport.signal("unsupported")
+            return
+        }
+        if (!spectrumSupport.hasPermission()) {
+            requestSpectrumCapture()
+            return
+        }
+        val manager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        try {
+            @Suppress("DEPRECATION")
+            startActivityForResult(manager.createScreenCaptureIntent(), spectrumProjectionRequest)
+        } catch (_: Exception) {
+            spectrumSupport.signal("unsupported")
+        }
+    }
+
+    private fun stopSpectrumProjection() {
+        SpectrumProjectionService.observer = null
+        if (projectionInUse) {
+            projectionInUse = false
+            try { stopService(Intent(this, SpectrumProjectionService::class.java)) }
+            catch (_: Exception) {}
+        }
+    }
+
     private inner class AppBridge {
+        @JavascriptInterface fun layoutYouTubeWidget(payload: String) {
+            if (payload.length > 2048) return
+            runOnUiThread {
+                if (!destroyed && ::youtubeWidget.isInitialized) {
+                    if (pixelBarSuspended || browserPanel.visibility == View.VISIBLE) youtubeWidget.hide()
+                    else youtubeWidget.layout(payload)
+                }
+            }
+        }
+
+        @JavascriptInterface fun navigateYouTubeWidget(destination: String, query: String) {
+            runOnUiThread {
+                if (!destroyed && !pixelBarSuspended && ::youtubeWidget.isInitialized)
+                    youtubeWidget.navigate(destination, query)
+            }
+        }
+
+        @JavascriptInterface fun openYouTubePage(destination: String, query: String) {
+            runOnUiThread {
+                if (destroyed || pixelBarSuspended) return@runOnUiThread
+                val uri = when (destination) {
+                    "home" -> Uri.parse("https://m.youtube.com/")
+                    "subscriptions" -> Uri.parse("https://m.youtube.com/feed/subscriptions")
+                    "search" -> {
+                        val text = query.trim().take(300)
+                        if (text.isEmpty()) return@runOnUiThread
+                        Uri.parse("https://m.youtube.com/results").buildUpon()
+                            .appendQueryParameter("search_query", text).build()
+                    }
+                    else -> return@runOnUiThread
+                }
+                // The trusted browser owns the authenticated session, not our
+                // news WebView. Never access Google credentials or cookies.
+                try {
+                    val tab = CustomTabsIntent.Builder().setShowTitle(true).build()
+                    CustomTabsClient.getPackageName(this@MainActivity, null)?.let {
+                        tab.intent.setPackage(it)
+                    }
+                    tab.launchUrl(this@MainActivity, uri)
+                } catch (_: Exception) {
+                    try {
+                        startActivity(Intent(Intent.ACTION_VIEW, uri))
+                    } catch (_: Exception) {
+                        android.widget.Toast.makeText(this@MainActivity,
+                            "Open YouTube requires a compatible browser or the YouTube app",
+                            android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+
+        @JavascriptInterface fun enableAcousticMic() {
+            runOnUiThread {
+                if (destroyed || pixelBarSuspended) return@runOnUiThread
+                if (!acousticSupport.permitted())
+                    requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), acousticPermissionRequest)
+                else acousticSupport.state("granted")
+            }
+        }
+        @JavascriptInterface fun setAcousticActive(spl: Boolean, fft: Boolean) {
+            runOnUiThread {
+                if (destroyed) return@runOnUiThread
+                val visible = !pixelBarSuspended && browserPanel.visibility != View.VISIBLE
+                acousticSupport.setActive(spl && visible, fft && visible)
+            }
+        }
+        @JavascriptInterface fun openNativeWidgets() {
+            runOnUiThread { if (!destroyed && !pixelBarSuspended) nativeWidgets.open() }
+        }
+        @JavascriptInterface fun requestNativeWidgets() {
+            runOnUiThread { if (!destroyed) nativeWidgets.publish() }
+        }
+        @JavascriptInterface fun layoutNativeWidgets(payload: String) {
+            runOnUiThread { if (!destroyed && !pixelBarSuspended && browserPanel.visibility != View.VISIBLE) nativeWidgets.layout(payload) }
+        }
+        @JavascriptInterface fun deleteNativeWidget(id: Int) {
+            runOnUiThread { if (!destroyed) nativeWidgets.delete(id) }
+        }
+
+        @JavascriptInterface fun requestAgenda() {
+            runOnUiThread { if (!destroyed && ::agendaSupport.isInitialized) agendaSupport.refresh() }
+        }
+
+        @JavascriptInterface fun enableAgenda() {
+            runOnUiThread {
+                if (destroyed || !::agendaSupport.isInitialized) return@runOnUiThread
+                if (agendaSupport.granted()) agendaSupport.refresh()
+                else requestPermissions(arrayOf(Manifest.permission.READ_CALENDAR), agendaPermissionRequest)
+            }
+        }
+
+        @JavascriptInterface fun openAgendaEvent(id: String, begin: Long, end: Long) {
+            runOnUiThread { if (!destroyed && ::agendaSupport.isInitialized) agendaSupport.openEvent(id, begin, end) }
+        }
+
+        @JavascriptInterface fun newAgendaEvent(begin: Long) {
+            runOnUiThread { if (!destroyed && ::agendaSupport.isInitialized) agendaSupport.newEvent(begin) }
+        }
+
         @JavascriptInterface fun supportsAdaptiveAppIcons(): Boolean = true
+
+        @JavascriptInterface fun requestSpectrumCapture() {
+            runOnUiThread { if (!destroyed) this@MainActivity.requestSpectrumCapture() }
+        }
+        @JavascriptInterface fun requestSpectrumProjection() {
+            runOnUiThread { if (!destroyed) this@MainActivity.requestPlaybackProjection() }
+        }
+        @JavascriptInterface fun setSpectrumActive(visible: Boolean) {
+            runOnUiThread {
+                if (destroyed || !::spectrumSupport.isInitialized) return@runOnUiThread
+                spectrumVisible = visible
+                if (visible && !pixelBarSuspended && browserPanel.visibility != View.VISIBLE && spectrumSupport.hasPermission() && !projectionInUse)
+                    spectrumSupport.start()
+                else if (!visible) {
+                    spectrumSupport.stop()
+                    stopSpectrumProjection()
+                }
+            }
+        }
 
         @JavascriptInterface fun requestMediaState() {
             runOnUiThread {
@@ -344,6 +552,32 @@ class MainActivity : Activity() {
                     sendMediaState(mediaWidgetSupport.command(action))
             }
         }
+        /**
+         * Live Tiles: opt-in active notification counts. Only verified installed
+         * launcher packages are accepted; no notification text crosses the bridge.
+         * The WebView never requests this until the user enables the feature.
+         */
+        @JavascriptInterface fun requestLiveTileCounts(packagesJson: String) {
+            if (packagesJson.length > 4096) return
+            runOnUiThread {
+                if (destroyed || !::mediaWidgetSupport.isInitialized ||
+                    !::launcherSupport.isInitialized || !::appWebView.isInitialized) return@runOnUiThread
+                val requested = try {
+                    val json = org.json.JSONArray(packagesJson)
+                    (0 until minOf(json.length(), 24))
+                        .mapNotNull { json.optString(it).takeIf { pkg ->
+                            pkg.length in 4..180 && pkg.matches(Regex("[A-Za-z0-9_.]+")) &&
+                                launcherSupport.hasLaunchablePackage(pkg)
+                        } }.toSet()
+                } catch (_: Exception) { emptySet<String>() }
+                val data = mediaWidgetSupport.liveTileCounts(requested)
+                appWebView.evaluateJavascript(
+                    "window.receiveAudioDeskLiveTileCounts&&window.receiveAudioDeskLiveTileCounts(" +
+                        data.toString() + ")", null
+                )
+            }
+        }
+
         @JavascriptInterface fun requestMediaAccess() {
             runOnUiThread {
                 if (!destroyed && ::mediaWidgetSupport.isInitialized)
@@ -379,6 +613,7 @@ class MainActivity : Activity() {
                 if (!destroyed) {
                     val windowsHome = theme == "windows"
                     pixelHomeThemeRequested = theme == "pixel"
+                    windowsHomeThemeRequested = windowsHome
                     if (::pixelStatusBar.isInitialized) pixelStatusBar.setContrast(light)
                     applyPixelStatusMode()
                     // Wallpaper fills the entire status inset in every Home theme.
@@ -556,28 +791,80 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        if (::nativeWidgets.isInitialized) nativeWidgets.resume()
         pixelBarSuspended = false
         applyPixelStatusMode()
         if (::mediaWidgetSupport.isInitialized) sendMediaState(mediaWidgetSupport.state())
+        if (::spectrumSupport.isInitialized && spectrumVisible &&
+            spectrumSupport.hasPermission() && !projectionInUse) spectrumSupport.start()
         // Refresh installed apps after returning from another app or installing a package.
         if (::appWebView.isInitialized && ::launcherSupport.isInitialized)
             appWebView.evaluateJavascript(
-                "window.launcherOnResume&&window.launcherOnResume();" +
+                "window.audioDeskSetForeground&&window.audioDeskSetForeground(" + (browserPanel.visibility != View.VISIBLE) + ");" +
+                    "window.launcherOnResume&&window.launcherOnResume();" +
                     "window.launcherWallpaperActive&&window.launcherWallpaperActive(" + (browserPanel.visibility != View.VISIBLE) + ")", null)
     }
 
     override fun onPause() {
+        if (::acousticSupport.isInitialized) acousticSupport.stop()
+        if (::nativeWidgets.isInitialized) nativeWidgets.pause()
+        if (::youtubeWidget.isInitialized) youtubeWidget.hide()
+        if (::spectrumSupport.isInitialized) spectrumSupport.stop()
+        stopSpectrumProjection()
         pixelBarSuspended = true
         applyPixelStatusMode()
         if (::appWebView.isInitialized && !destroyed) appWebView.evaluateJavascript(
-            "window.launcherWallpaperActive&&window.launcherWallpaperActive(false);" +
+            "window.audioDeskSetForeground&&window.audioDeskSetForeground(false);" +
+                "window.launcherWallpaperActive&&window.launcherWallpaperActive(false);" +
                 "if(typeof pauseSampleDemos==='function')pauseSampleDemos()", null)
         super.onPause()
+    }
+
+    @Deprecated("Runtime permission callback compatibility")
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == agendaPermissionRequest && ::agendaSupport.isInitialized) agendaSupport.refresh()
+        if (requestCode == acousticPermissionRequest && ::acousticSupport.isInitialized)
+            acousticSupport.state(if (acousticSupport.permitted()) "granted" else "permission")
+        if (requestCode == spectrumPermissionRequest && ::spectrumSupport.isInitialized) {
+            if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED &&
+                spectrumVisible) spectrumSupport.start()
+            else spectrumSupport.signal("permission")
+        }
     }
 
     @Deprecated("Activity result compatibility for minSdk 23")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (::nativeWidgets.isInitialized && nativeWidgets.result(requestCode, resultCode)) return
+        if (requestCode == spectrumProjectionRequest) {
+            if (resultCode == RESULT_OK && data != null && spectrumVisible &&
+                Build.VERSION.SDK_INT >= 29) {
+                spectrumSupport.stop()
+                projectionInUse = true
+                SpectrumProjectionService.observer = { samples ->
+                    if (!destroyed && projectionInUse && spectrumVisible)
+                        spectrumSupport.deliverProjection(samples)
+                }
+                val service = Intent(this, SpectrumProjectionService::class.java).apply {
+                    action = SpectrumProjectionService.ACTION_START
+                    putExtra(SpectrumProjectionService.EXTRA_RESULT, resultCode)
+                    putExtra(SpectrumProjectionService.EXTRA_DATA, data)
+                }
+                try {
+                    startForegroundService(service)
+                    spectrumSupport.signal("listening")
+                } catch (_: Exception) {
+                    stopSpectrumProjection()
+                    spectrumSupport.signal("unsupported")
+                }
+            } else {
+                spectrumSupport.signal("unsupported")
+            }
+            return
+        }
         if (requestCode != wallpaperFileRequest) return
         val callback = wallpaperFileCallback
         wallpaperFileCallback = null
@@ -591,7 +878,11 @@ class MainActivity : Activity() {
 
     private fun openInBrowser(url: String) {
         if (!url.startsWith("https://") && !url.startsWith("http://")) return
-        appWebView.evaluateJavascript("if(typeof pauseSampleDemos==='function')pauseSampleDemos();window.launcherWallpaperActive&&window.launcherWallpaperActive(false)", null)
+        if (::nativeWidgets.isInitialized) nativeWidgets.pause()
+        if (::acousticSupport.isInitialized) acousticSupport.stop()
+        if (::spectrumSupport.isInitialized) spectrumSupport.stop()
+        stopSpectrumProjection()
+        appWebView.evaluateJavascript("window.audioDeskSetForeground&&window.audioDeskSetForeground(false);if(typeof pauseSampleDemos==='function')pauseSampleDemos();window.launcherWallpaperActive&&window.launcherWallpaperActive(false)", null)
         swipeRefresh.isEnabled = false
         applyPixelStatusMode()
         WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = false
@@ -605,10 +896,11 @@ class MainActivity : Activity() {
         browserWebView.stopLoading()
         browserWebView.loadUrl("about:blank")
         browserPanel.visibility = View.GONE
+        if (::nativeWidgets.isInitialized) nativeWidgets.resume()
         applyPixelStatusMode()
         swipeRefresh.visibility = View.VISIBLE
         swipeRefresh.isEnabled = refreshAllowed
-        appWebView.evaluateJavascript("window.launcherWallpaperActive&&window.launcherWallpaperActive(true)", null)
+        appWebView.evaluateJavascript("window.audioDeskSetForeground&&window.audioDeskSetForeground(true);window.launcherWallpaperActive&&window.launcherWallpaperActive(true)", null)
     }
 
     @Deprecated("Deprecated in Android API")
@@ -637,6 +929,12 @@ class MainActivity : Activity() {
         if (::feedDiscovery.isInitialized) feedDiscovery.close()
         if (::sampleDemos.isInitialized) sampleDemos.close()
         if (::launcherSupport.isInitialized) launcherSupport.close()
+        if (::agendaSupport.isInitialized) agendaSupport.close()
+        if (::acousticSupport.isInitialized) acousticSupport.stop()
+        if (::nativeWidgets.isInitialized) nativeWidgets.close()
+        if (::youtubeWidget.isInitialized) youtubeWidget.close()
+        stopSpectrumProjection()
+        if (::spectrumSupport.isInitialized) spectrumSupport.close()
         if (::systemWallpaperInstaller.isInitialized) systemWallpaperInstaller.close()
         refreshHandler.removeCallbacks(refreshFailsafe)
         if (::browserWebView.isInitialized) browserWebView.destroy()

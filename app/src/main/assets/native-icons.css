@@ -31,7 +31,7 @@ body[data-launcher-theme="minimal"] .ad-icon-shell{
  border:1px solid color-mix(in srgb,var(--ds-line) 45%,transparent);
 }
 body[data-launcher-theme="warm"] .ad-icon-shell{
- background:#e9d5ce;border:1px solid #c8b4ae;border-radius:11px;
+ background:var(--theme-panel,#e9d5ce);border:1px solid var(--ds-line);border-radius:11px;
 }
 body[data-launcher-theme="windows"] .ad-icon-shell{
  background:color-mix(in srgb,var(--ds-accent) 50%,var(--ds-panel2));
@@ -39,7 +39,7 @@ body[data-launcher-theme="windows"] .ad-icon-shell{
 }
 body[data-launcher-theme="pixel"] .ad-icon-shell{
  border:2px solid var(--ds-line);border-radius:0;
- background:#20172f;
+ background:var(--ds-panel2);
  width:42px;height:42px;flex-basis:42px;
 }
 body[data-launcher-theme="pixel"] .ad-icon-shell .ad-icon-image{
@@ -129,7 +129,7 @@ body.low-power .ad-icon-shell .ad-icon-fallback{transition:none!important}
 #iconStudioDone{
  display:block;width:100%;padding:12px!important;
  background:var(--ds-accent)!important;
- color:var(--ds-bg)!important;
+ color:var(--theme-accent-ink,#17151c)!important;
  border-color:var(--ds-accent)!important;
 }
 body[data-launcher-theme="pixel"] .icon-studio-panel,

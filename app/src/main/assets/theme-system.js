@@ -35,14 +35,86 @@ const key=theme=>"ad_wallpaper_by_theme_v2_"+theme;
 let paletteId=null;
 let switching=false;
 const activePalette=()=>palettes[launcherTheme].find(p=>p[0]===paletteId);
+// One wallpaper-derived palette drives all Warm surfaces, not only the picker.
+const colorRgb=hex=>{
+ const m=/^#([0-9a-f]{6})$/i.exec(hex||"");
+ return m?[0,2,4].map(i=>parseInt(m[1].slice(i,i+2),16)):null;
+};
+const rgbHex=rgb=>"#"+rgb.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,"0")).join("");
+const mixColor=(a,b,t)=>rgbHex(a.map((v,i)=>v*(1-t)+b[i]*t));
+function setWallpaperColors(accent,panel,dark){
+ const a=colorRgb(accent),p=colorRgb(panel),d=colorRgb(dark);
+ if(!a||!p||!d)return;
+ const root=document.documentElement.style;
+ const panelLuma=(p[0]*.2126+p[1]*.7152+p[2]*.0722)/255;
+ const darkLuma=(d[0]*.2126+d[1]*.7152+d[2]*.0722)/255;
+ const tint=mixColor(a,[255,255,255],.10);
+ root.setProperty("--theme-accent",tint);
+ root.setProperty("--theme-accent-ink",darkLuma>.58?"#181719":"#121419");
+ root.setProperty("--theme-panel",panel);
+ root.setProperty("--theme-ink",panelLuma>.56?"#25252b":"#f9f7f6");
+ root.setProperty("--theme-dark",dark);
+ root.setProperty("--theme-text",darkLuma>.58?"#17171a":mixColor(a,[250,250,250],.82));
+ root.setProperty("--theme-surface",mixColor(d,a,.16));
+ root.setProperty("--theme-surface2",mixColor(d,a,.28));
+ root.setProperty("--theme-line",mixColor(d,a,.49));
+ root.setProperty("--theme-muted",mixColor(a,[240,239,240],.64));
+ root.setProperty("--theme-glass",mixColor(p,[244,240,238],.18));
+}
+function refreshWallpaperColors(){
+ const p=activePalette();
+ if(p){setWallpaperColors(p[4],p[5],p[2]);return}
+ if(document.body.dataset.audioWallpaper)return;
+ const img=byId("wallpaperImage");
+ if(!img?.naturalWidth){setWallpaperColors("#eedbd4","#f0dad3","#1b181a");return}
+ try{
+  const canvas=document.createElement("canvas");canvas.width=32;canvas.height=32;
+  const ctx=canvas.getContext("2d",{willReadFrequently:true});
+  ctx.drawImage(img,0,0,32,32);
+  const pixels=ctx.getImageData(0,0,32,32).data;
+  const sum=[0,0,0],chromatic=[0,0,0];let weight=0,colorWeight=0;
+  for(let i=0;i<pixels.length;i+=4){
+   const r=pixels[i],g=pixels[i+1],b=pixels[i+2];
+   const max=Math.max(r,g,b),min=Math.min(r,g,b);
+   const saturation=(max-min)/255;
+   const visibility=max/255;
+   const w=.3+saturation*.9;
+   sum[0]+=r*w;sum[1]+=g*w;sum[2]+=b*w;weight+=w;
+   // A small, saturated area should set the accent on dark audio wallpapers;
+   // averaging the entire frame otherwise turns every accent grey or pink.
+   const chromaWeight=saturation*saturation*visibility*visibility;
+   if(chromaWeight>.014){
+    chromatic[0]+=r*chromaWeight;chromatic[1]+=g*chromaWeight;
+    chromatic[2]+=b*chromaWeight;colorWeight+=chromaWeight;
+   }
+  }
+  const avg=sum.map(x=>x/weight);
+  const dominant=colorWeight>.3?chromatic.map(x=>x/colorWeight):avg;
+  const accent=mixColor(dominant,[250,250,250],.22);
+  const panel=mixColor(avg,[242,240,241],.70);
+  const dark=mixColor(avg,[15,15,20],.83);
+  setWallpaperColors(accent,panel,dark);
+ }catch{setWallpaperColors("#eedbd4","#f0dad3","#1b181a")}
+}
+// The wallpaper picker and imported images all pass through this decoded-image path.
+const originalApplyWallpaper=applyWallpaper;
+applyWallpaper=async function(){
+ await originalApplyWallpaper();
+ if(!activePalette())refreshWallpaperColors();
+};
+window.audioDeskApplyWallpaperColors=(accent,dark)=>{
+ const a=colorRgb(accent);if(!a||!colorRgb(dark))return;
+ setWallpaperColors(accent,
+  mixColor(a,[241,240,242],.66),dark);
+};
+window.audioDeskRefreshWallpaperColors=refreshWallpaperColors;
 function setPalette(id){
  paletteId=palettes[launcherTheme].some(p=>p[0]===id)?id:null;
  const p=activePalette();
  document.body.dataset.themePalette=paletteId||"";
  const root=document.documentElement.style;
  root.setProperty("--theme-wallpaper",p?"linear-gradient(152deg,"+p[2]+"," +p[3]+ " 64%,"+p[2]+")":"none");
- root.setProperty("--theme-accent",p?.[4]||"#ededed");
- root.setProperty("--theme-panel",p?.[5]||"#f0dad3");
+ refreshWallpaperColors();
  if(p){
   document.body.dataset.wallpaperLight="false";
   document.body.dataset.wallpaperStatusLight="false";
@@ -195,10 +267,13 @@ function refreshThemeChrome(){
 }
 
 // Theme-matched media controls; never skip prohibited ads or ignore player actions.
-let mediaState={enabled:false,available:false};
+let mediaState={enabled:false,available:false},mediaSignature="",mediaTimer=0;
 window.receiveAudioDeskMedia=function(data){
  if(!data||typeof data!=="object")return;
  mediaState=data;
+ const signature=JSON.stringify([data.enabled,data.available,data.playing,data.title,data.artist,data.app,data.canPrevious,data.canNext,data.canToggle]);
+ if(signature===mediaSignature)return;
+ mediaSignature=signature;
  const available=!!data.available;
  byId("musicTrackTitle").textContent=available?(data.title||"Unknown track"):
   (data.enabled?"No active player":"Music controls");
@@ -206,8 +281,14 @@ window.receiveAudioDeskMedia=function(data){
   (data.enabled?"Open your music player":"Connect a compatible player");
  byId("musicPrev").disabled=!available||!data.canPrevious;
  byId("musicNext").disabled=!available||!data.canNext;
- byId("musicToggle").disabled=!available||!data.canToggle;
- byId("musicToggle").textContent=data.playing?"Ⅱ":"▶";
+ const toggle=byId("musicToggle");
+ toggle.disabled=!available||!data.canToggle;
+ // The icon describes the action: pause while playing, play while paused.
+ const isPlaying=available&&data.playing===true;
+ toggle.textContent=isPlaying?"❚❚":"▶";
+ toggle.setAttribute("aria-label",isPlaying?"Pause playback":"Play playback");
+ toggle.title=isPlaying?"Pause":"Play";
+ toggle.dataset.playing=String(isPlaying);
  byId("musicAccess").hidden=!!data.enabled;
  byId("musicAccessNote").textContent=available?
   (data.canNext?"Skip follows the player’s Next permission. Ads are not bypassed.":
@@ -220,10 +301,16 @@ for(const [id,action] of [["musicPrev","previous"],["musicToggle","toggle"],["mu
  byId(id).onclick=()=>{if(!byId(id).disabled)window.AudioDesk?.mediaCommand?.(action)};
 }
 function refreshMedia(){
- if(document.hidden||launcherPage!=="home")return;
+ clearTimeout(mediaTimer);
+ const music=byId("launcherMusicWidget");
+ if(document.hidden||window.audioDeskForeground===false||launcherPage!=="home"||
+  (music.hasAttribute("data-widget-removed")&&launcherTheme!=="windows"))return;
  window.AudioDesk?.requestMediaState?.();
+ mediaTimer=setTimeout(refreshMedia,mediaState.playing?3500:9000);
 }
 window.addEventListener("launcher-page-changed",refreshMedia);
+window.addEventListener("audio-desk-foreground",refreshMedia);
+window.addEventListener("audio-desk-widget-visibility",refreshMedia);
 document.addEventListener("visibilitychange",refreshMedia);
 const origResume=window.launcherOnResume;
 window.launcherOnResume=function(){origResume?.();refreshMedia()};

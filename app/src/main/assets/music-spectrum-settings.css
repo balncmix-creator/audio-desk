@@ -1,0 +1,134 @@
+/* A settings sheet, not a border around the waveform. The spectrum
+ * itself stays completely transparent in every launcher edition. */
+#musicSpectrumSettingsToggle{
+ margin-left:auto;max-width:none!important;white-space:nowrap;
+ font-size:10px!important;min-height:28px!important;padding:5px 9px!important;
+ border:1px solid var(--ds-line)!important;
+ background:color-mix(in srgb,var(--ds-panel2) 75%,transparent)!important;
+ color:var(--ds-accent)!important;box-shadow:none!important;
+ border-radius:var(--ds-radius)!important;
+}
+body[data-launcher-theme="pixel"] #musicSpectrumSettingsToggle,
+body[data-launcher-theme="windows"] #musicSpectrumSettingsToggle{
+ border-radius:0!important;
+}
+.music-spectrum-tuning-overlay[hidden]{display:none!important}
+.music-spectrum-tuning-overlay{
+ position:fixed;inset:0;
+ z-index:240;
+ display:flex;align-items:center;justify-content:center;
+ padding:calc(12px + env(safe-area-inset-top,0px)) 12px
+  calc(12px + env(safe-area-inset-bottom,0px));
+ background:rgba(5,6,10,.76);
+ -webkit-backdrop-filter:blur(8px);
+ backdrop-filter:blur(8px);
+ overscroll-behavior:contain;
+}
+.music-spectrum-tuning{
+ width:min(100%,440px);
+ max-height:min(83dvh,670px);
+ display:flex;flex-direction:column;
+ box-sizing:border-box;
+ padding:16px 15px 10px;
+ gap:12px;
+ background:var(--ds-panel,#22252b)!important;
+ color:var(--ds-text,#f3f4f5)!important;
+ border:1px solid var(--ds-line,#777);
+ border-radius:var(--ds-radius,16px);
+ box-shadow:0 12px 55px rgba(0,0,0,.52);
+ font-family:var(--ds-font,system-ui,sans-serif);
+ overflow:hidden;
+}
+.music-spectrum-tuning button{
+ color:var(--ds-text,#fff)!important;
+ background:var(--ds-panel2,#252a30)!important;
+ border:1px solid var(--ds-line,#666)!important;
+ border-radius:var(--ds-radius,9px)!important;
+ min-height:36px;padding:7px 12px;
+ font:600 12px/1.25 var(--ds-font,system-ui,sans-serif)!important;
+ box-shadow:none!important;cursor:pointer;
+}
+.music-spectrum-tuning button:focus-visible,
+.music-spectrum-tuning input:focus-visible{
+ outline:2px solid var(--ds-accent,#ddd)!important;outline-offset:3px;
+}
+.spectrum-tuning-header{display:flex;align-items:flex-start;gap:14px;justify-content:space-between}
+.spectrum-tuning-header strong{display:block;font-size:17px;line-height:1.25}
+.spectrum-tuning-header small{display:block;margin-top:5px;color:var(--ds-muted,#aaa);font-size:11px}
+.spectrum-tuning-header #musicSpectrumTuningClose{
+ flex:0 0 38px;font-size:22px!important;padding:0!important;
+}
+.spectrum-tuning-presets{display:flex;gap:7px}
+.spectrum-tuning-presets button{flex:1 1 0;min-width:0}
+.spectrum-tuning-presets button[aria-pressed="true"]{
+ background:var(--ds-accent,#ddd)!important;
+ border-color:var(--ds-accent,#ddd)!important;
+ color:var(--theme-accent-ink,#14151a)!important;
+}
+.spectrum-tuning-controls{
+ min-height:0;overflow-y:auto;overflow-x:hidden;
+ scrollbar-width:thin;
+ padding:3px 4px 8px;
+ overscroll-behavior:contain;
+}
+.spectrum-tuning-row{padding:7px 0 11px;border-bottom:1px solid color-mix(in srgb,var(--ds-line) 35%,transparent)}
+.spectrum-tuning-row:last-child{border-bottom:none}
+.spectrum-tuning-label{display:flex;gap:12px;align-items:baseline;justify-content:space-between}
+.spectrum-tuning-label label{font-size:13px;font-weight:600;line-height:1.4}
+.spectrum-tuning-label output{
+ color:var(--ds-accent,#ddd);font-size:13px;font-weight:700;
+ font-variant-numeric:tabular-nums;
+}
+.spectrum-tuning-row input[type="range"]{
+ appearance:auto;-webkit-appearance:auto;
+ display:block;box-sizing:border-box;
+ width:100%;height:27px;margin:7px 0 2px;
+ accent-color:var(--ds-accent,#ddd);
+ cursor:pointer;touch-action:pan-y;
+}
+.spectrum-tuning-row small{
+ display:block;color:var(--ds-muted,#bbb);font-size:10px;line-height:1.4;
+}
+.music-spectrum-tuning .spectrum-tuning-footer{
+ display:flex;align-items:center;gap:10px;justify-content:space-between;
+ border-top:1px solid var(--ds-line,#555);padding-top:9px;
+}
+.music-spectrum-tuning .spectrum-tuning-footer small{
+ flex:1 1 auto;font-size:10px;line-height:1.4;color:var(--ds-muted,#bbb);
+}
+.music-spectrum-tuning #musicSpectrumTuningReset{
+ flex:0 0 auto;min-height:34px;font-size:11px!important;
+}
+body[data-launcher-theme="pixel"] .music-spectrum-tuning,
+body[data-launcher-theme="windows"] .music-spectrum-tuning,
+body[data-launcher-theme="pixel"] .music-spectrum-tuning button,
+body[data-launcher-theme="windows"] .music-spectrum-tuning button{
+ border-radius:0!important;
+}
+@media(max-height:610px){
+ .music-spectrum-tuning{max-height:90dvh;gap:7px;padding:10px 12px}
+ .spectrum-tuning-row{padding:5px 0 7px}
+}
+@media(prefers-reduced-motion:reduce){
+ .music-spectrum-tuning-overlay,.music-spectrum-tuning{transition:none!important}
+}
+
+/* Two deliberate display modes: frequency spectrum is the default.
+   Keep the styling edition-aware without drawing a frame around the graph. */
+.spectrum-tuning-modes{
+ display:grid;grid-template-columns:1fr 1fr;gap:7px;
+}
+.spectrum-tuning-modes button[aria-pressed="true"]{
+ background:var(--ds-accent,#ddd)!important;
+ border-color:var(--ds-accent,#ddd)!important;
+ color:var(--theme-accent-ink,#14151a)!important;
+}
+.spectrum-mode-hint{
+ display:block;
+ font:400 10px/1.35 var(--ds-font,system-ui,sans-serif);
+ color:var(--ds-muted,#bdbdbd);margin-top:-7px;
+}
+body[data-launcher-theme="pixel"] .spectrum-tuning-modes button,
+body[data-launcher-theme="windows"] .spectrum-tuning-modes button{
+ border-radius:0!important;
+}

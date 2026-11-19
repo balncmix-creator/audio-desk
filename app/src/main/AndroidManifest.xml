@@ -3,11 +3,30 @@
     <!-- Connectivity type only; no location, Wi-Fi scan, or sensitive phone state. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
+    <!-- Optional read-only agenda; event creation opens the calendar app for confirmation. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <!-- Android still requires the user to approve each new widget host binding. -->
+    <uses-permission android:name="android.permission.BIND_APPWIDGET" />
+    <!-- Explicitly user-enabled real output-mix visualization, never microphone fallback. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- Android 10+ consent-backed playback capture uses an ongoing foreground notification. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <!-- Only launchable activities are visible on Android 11+. -->
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <!-- Discover compatible browser Custom Tabs for authenticated YouTube browsing. -->
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
         </intent>
     </queries>
     <application android:allowBackup="false" android:label="Audio Desk Launcher"
@@ -24,6 +43,8 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+        <service android:name=".SpectrumProjectionService"
+            android:exported="false" android:foregroundServiceType="mediaProjection" />
         <activity android:name=".MainActivity" android:launchMode="singleTask"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="true">

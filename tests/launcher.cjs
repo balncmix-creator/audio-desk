@@ -62,6 +62,27 @@ const demoApps=[
   await page.waitForFunction(()=>!document.getElementById('refresh').disabled);
   await page.waitForFunction(()=>document.getElementById('status').textContent.includes('GitHub:'));
   await page.waitForFunction(()=>launcherApps.length===8);
+  const ranking=await page.evaluate(()=>rankedLauncherApps('nin',[
+   {label:'Awakening',pkg:'example.awakening',activity:'a'},
+   {label:'LibreTorrent',pkg:'example.nin.libre',activity:'b'},
+   {label:'Ninja VPN',pkg:'example.vpn',activity:'c'}]).map(a=>a.label));
+  assert.equal(ranking[0],'Ninja VPN','label prefix outranks unrelated package and substring matches');
+  assert.ok(!ranking.includes('LibreTorrent'),'package-only results are suppressed when names match');
+  const habitResult=await page.evaluate(()=>{
+   const oldApps=launcherApps,oldPins=launcherPins;
+   try{
+    launcherPins=[];
+    launcherApps=[
+     {label:'Daily music',pkg:'example.music',activity:'a',usageDays:12,habitScore:10,uses:13},
+     {label:'One-off app',pkg:'example.once',activity:'b',usageDays:1,habitScore:1.15,uses:200},
+     {label:'Daily messages',pkg:'example.messages',activity:'c',usageDays:6,habitScore:6,uses:8},
+     {label:'New app',pkg:'example.new',activity:'d',usageDays:2,habitScore:2,uses:60}
+    ];
+    return launcherSuggestedApps().map(a=>a.label);
+   }finally{launcherApps=oldApps;launcherPins=oldPins}
+  });
+  assert.deepEqual(habitResult,['Daily music','Daily messages'],
+   'habit ranking requires distinct active days and ignores one-off high launch counts');
   assert.equal(await page.evaluate(()=>launcherPage),'home','launcher must open on favorites Home');
   assert.equal(await page.locator('#launcherHomePage').isVisible(),true);
   assert.equal(await page.locator('#launcherNavigation').isVisible(),false,
@@ -86,7 +107,7 @@ const demoApps=[
   });
   assert.equal(recentLayout.direction,'column');
   assert.ok(recentLayout.stacked&&recentLayout.iconOnLeft,'recent app shortcuts are vertical icon-and-label rows');
-  assert.match(await page.locator('#launcherRecentStripTitle').textContent(),/SUGGESTED APPS/);
+  assert.match(await page.locator('#launcherRecentStripTitle').textContent(),/FREQUENTLY USED/);
   assert.equal(await page.locator('#launcherAlphaIndex').isVisible(),true,'Home shows quick alphabetical rail');
   await page.locator('#launcherAlphaIndex [data-launcher-letter="R"]').click();
   assert.equal(await page.locator('#launcherLetterPanel').isVisible(),true);
@@ -232,8 +253,8 @@ const demoApps=[
   await page.waitForFunction(()=>window.appLaunchCalls.length===1);
   await page.waitForFunction(()=>launcherRecents.length===1);
   await page.evaluate(()=>setLauncherTheme('minimal'));
-  assert.match(await page.locator('#launcherRecentStripTitle').textContent(),/RECENTLY OPENED/);
-  assert.equal(await page.locator('#launcherRecentQuick .launcher-app').count(),1);
+  assert.match(await page.locator('#launcherRecentStripTitle').textContent(),/FREQUENTLY USED/);
+  assert.equal(await page.locator('#launcherRecentQuick .launcher-app').count(),6);
   assert.match(await page.locator('#launcherRecentQuick .launcher-app').first().textContent(),/REAPER Remote/);
   await page.evaluate(()=>setLauncherTheme('windows'));
   assert.equal(await page.locator('#launcherLiveTiles').isVisible(),true);

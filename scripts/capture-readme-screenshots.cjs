@@ -124,7 +124,7 @@ const assert=require('node:assert/strict');
   });
   await page.locator('[data-home-nav="home"]').click();
   assert.equal(await page.locator('#launcherFavorites .launcher-app').count(),0,'Minimal Home hides the duplicate app list');
-  assert.equal(await page.locator('#launcherRecentQuick .launcher-app').count(),4,'Home shows four genuinely recent demo app shortcuts');
+  assert.equal(await page.locator('#launcherRecentQuick .launcher-app').count(),6,'Home shows six frequently used demo app shortcuts');
   assert.equal(await page.locator('#launcherRecentQuick').evaluate(el=>getComputedStyle(el).flexDirection),'column');
   assert.equal(await page.locator('#launcherAlphaIndex').isVisible(),true,'Home displays the A-Z rail');
   assert.equal(await page.locator('#launcherNavigation').isVisible(),false);
@@ -149,8 +149,14 @@ const assert=require('node:assert/strict');
    return {inside:i.left>=r.left&&i.right<=r.right&&i.top>=r.top&&i.bottom<=r.bottom};
   });
   assert.equal(firstGeometry.inside,true,'warm screenshot has no clipped first icon');
-  assert.equal(await page.locator('#launcherRecentStrip').evaluate(el=>el.getBoundingClientRect().bottom>=innerHeight),
-   true,'screenshot cream panel extends to the viewport bottom');
+  const cornerRadii=await page.locator('#launcherRecentStrip').evaluate(el=>{
+   const style=getComputedStyle(el);
+   return [style.borderTopLeftRadius,style.borderTopRightRadius,
+    style.borderBottomRightRadius,style.borderBottomLeftRadius]
+    .map(value=>parseFloat(value));
+  });
+  assert.ok(cornerRadii.every(radius=>radius>=12),
+   'Warm Favourites & Recents should round all four corners: '+cornerRadii.join(','));
   assert.ok(await page.evaluate(()=>document.getElementById('launcherAlphaIndex').getBoundingClientRect().left-
    document.getElementById('warmAudioWidget').getBoundingClientRect().right>=8),
    'screenshot widgets do not collide with A–Z letters');

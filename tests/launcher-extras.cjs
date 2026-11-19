@@ -97,6 +97,25 @@ const assert=require('node:assert/strict');
    'Warm Minimal remembers its own glass preference');
   await page.locator('#launcherOptionsClose').click();
   await page.locator('#launcherHomeOptions').waitFor({state:'hidden'});
+  // A physical touch hold on a widget must open ONLY its layout editor.
+  // The Home long-press listener must not also open Audio Desk settings.
+  await page.evaluate(()=>{
+   const widget=document.getElementById('launcherRecentStrip');
+   const point={clientX:90,clientY:165,screenX:90,screenY:165};
+   widget.dispatchEvent(new PointerEvent('pointerdown',{
+    bubbles:true,pointerId:41,pointerType:'touch',isPrimary:true,button:0,...point
+   }));
+   const touch=new Touch({identifier:41,target:widget,...point});
+   widget.dispatchEvent(new TouchEvent('touchstart',{
+    bubbles:true,cancelable:true,touches:[touch],targetTouches:[touch],changedTouches:[touch]
+   }));
+  });
+  await page.waitForTimeout(650);
+  assert.equal(await page.locator('#widgetLayoutOverlay').isVisible(),true,
+   'holding a widget opens its eight-handle editor');
+  assert.equal(await page.locator('#launcherHomeOptions').isVisible(),false,
+   'widget hold never opens Audio Desk settings at the same time');
+  await page.locator('#widgetLayoutOverlay [data-layout-control="done"]').click();
   // Folders created from quick actions appear on Home and can be edited by holding.
   await page.evaluate(()=>window.audioDeskFolderCreate());
   await page.locator('#folderNameInput').fill('Games');
@@ -123,18 +142,236 @@ const assert=require('node:assert/strict');
   await page.mouse.move(grip.x+grip.width/2,grip.y+grip.height/2);
   await page.mouse.down();await page.mouse.move(grip.x+grip.width/2,grip.y+grip.height/2+37,{steps:5});
   await page.mouse.up();
-  assert.ok(await page.locator('#launcherMusicWidget').evaluate(el=>
-   Math.abs(parseFloat(el.style.getPropertyValue('--widget-y'))||0)>3),
-   'drag grip freely moves the music widget');
+  const intersect=await page.evaluate(()=>{
+   const a=document.getElementById('launcherMusicWidget').getBoundingClientRect();
+   return [...document.querySelectorAll('[data-widget-resizable]')].filter(el=>el.id!=='launcherMusicWidget'&&el.getClientRects().length&&el.getBoundingClientRect().width>16).some(el=>{
+    const b=el.getBoundingClientRect();return Math.min(a.right,b.right)-Math.max(a.left,b.left)>1&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1;
+   });
+  });
+  assert.equal(intersect,false,'dragged widget must never overlap adjacent widgets');
   await page.locator('#widgetLayoutOverlay [data-layout-control="done"]').click();
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('ad_widget_layout_v2_warm')));
-  assert.ok(saved.launcherMusicWidget?.y,'per-theme widget positions are persisted');
+  assert.ok(saved.launcherMusicWidget,'per-theme widget positions are persisted');
+  // Exercise real edge drags on an isolated dynamic Home widget pair.
+  await page.evaluate(()=>{
+   const home=document.getElementById('launcherHomePage');
+   // Isolate geometry from unrelated warm Home cards (including naturally
+   // tall recents). Preserve original inline styles exactly for later tests.
+   window.savedWidgetDisplay=[...home.querySelectorAll('[data-widget-resizable]')].map(el=>[el,el.style.getPropertyValue('display'),el.style.getPropertyPriority('display')]);
+   for(const [node] of window.savedWidgetDisplay)node.style.setProperty('display','none','important');
+   window.scrollTo(0,0);
+   for(const id of ['nativeWidget_701','nativeWidget_702']){
+    const node=document.createElement('div');node.id=id;
+    node.style.cssText='position:fixed!important;width:140px;height:100px;left:100px;top:280px;z-index:40;box-sizing:border-box';
+    // Deliberately use viewport coordinates, independent of Home ancestor
+    // transforms/clipping and the previous test's scroll offset.
+    document.body.append(node);window.audioDeskRegisterNativeWidget(id,id);
+   }
+   document.querySelector('#nativeWidget_702').style.top='450px';
+  });
+  await page.evaluate(()=>window.audioDeskBeginWidgetResize('nativeWidget_701'));
+  const bounds=async()=>page.locator('#nativeWidget_701').evaluate(el=>el.getBoundingClientRect().toJSON());
+  const drag=async(edge,dx,dy)=>{
+   const handle=page.locator('#widgetLayoutOverlay [data-edge="'+edge+'"]');
+   const b=await handle.boundingBox();
+   const hit=await page.evaluate(({x,y})=>document.elementFromPoint(x,y)?.closest('[data-edge]')?.dataset.edge,{x:b.x+b.width/2,y:b.y+b.height/2});
+   assert.equal(hit,edge,'pointer must actually hit the intended resize handle');
+   await page.mouse.move(b.x+b.width/2,b.y+b.height/2);await page.mouse.down();
+   await page.mouse.move(b.x+b.width/2+dx,b.y+b.height/2+dy,{steps:4});await page.mouse.up();
+   await page.waitForTimeout(50);
+  };
+  let initial=await bounds();
+  // Snap the moving left edge to the neighboring alignment line at x=100
+  // only when close; a deliberate change must preserve the opposite edge.
+  await drag('w',-30,0);
+  let changed=await bounds();
+  assert.ok(changed.left<initial.left-15&&Math.abs(changed.right-initial.right)<2,'west edge grows with right edge fixed: '+JSON.stringify({initial,changed}));
+  initial=changed;
+  await drag('e',35,0);changed=await bounds();
+  assert.ok(changed.right>initial.right+15&&Math.abs(changed.left-initial.left)<2,'east edge moves independently');
+  initial=changed;
+  await drag('s',0,65);changed=await bounds();
+  assert.ok(Math.abs(changed.bottom-450)<3&&Math.abs(changed.top-initial.top)<2,'south snaps to adjacent widget top');
+  initial=changed;
+  await drag('n',0,-35);changed=await bounds();
+  assert.ok(changed.top<initial.top-15&&Math.abs(changed.bottom-initial.bottom)<2,'north edge grows with bottom fixed');
+  await page.locator('#widgetLayoutOverlay [data-layout-control="done"]').click();
+  await page.evaluate(()=>{
+   for(const [el,value,priority] of window.savedWidgetDisplay){if(value)el.style.setProperty('display',value,priority);else el.style.removeProperty('display')}
+   delete window.savedWidgetDisplay;
+   for(const id of ['nativeWidget_701','nativeWidget_702']){
+    window.audioDeskUnregisterNativeWidget(id);document.getElementById(id).remove();
+   }
+   window.audioDeskRestoreWidgetLayouts();
+  });
+  // Packed Home: expanding a card pushes its column, including a chained
+  // downstream card; an independent column stays put. Shrinking pulls back.
+  await page.evaluate(()=>{
+   const home=document.getElementById('launcherHomePage');
+   window.reflowDisplay=[...home.querySelectorAll('[data-widget-resizable]')].map(el=>[el,el.style.getPropertyValue('display'),el.style.getPropertyPriority('display')]);
+   for(const [el] of window.reflowDisplay)el.style.setProperty('display','none','important');
+   window.reflowOriginal=localStorage.getItem('ad_widget_layout_v2_warm');
+   const geometry={};
+   for(const [id,left,top,width,height] of [
+    ['nativeWidget_801',20,100,130,100],
+    ['nativeWidget_802',20,210,130,100],
+    ['nativeWidget_803',20,320,130,100],
+    ['nativeWidget_804',175,210,100,100]]){
+    const el=document.createElement('section');el.id=id;el.style.boxSizing='border-box';home.append(el);
+    window.audioDeskRegisterNativeWidget(id,id);
+    geometry[id]={packed:true,natural:false,left,top,w:width,h:height,x:0,y:0};
+   }
+   localStorage.setItem('ad_widget_layout_v2_warm',JSON.stringify(geometry));
+   window.audioDeskRestoreWidgetLayouts();
+  });
+  const flowRects=()=>page.evaluate(()=>Object.fromEntries([801,802,803,804].map(id=>{const r=document.getElementById('nativeWidget_'+id).getBoundingClientRect();return [id,{x:r.left,y:r.top,b:r.bottom,w:r.width,h:r.height}]})));
+  await page.evaluate(()=>window.audioDeskBeginWidgetResize('nativeWidget_801'));
+  const flowBefore=await flowRects();
+  await drag('s',0,55);
+  const flowAfter=await flowRects();
+  const growth=flowAfter[801].h-flowBefore[801].h;
+  assert.ok(growth>40,'resize continues past the original neighboring edge');
+  for(const id of [802,803]){
+   assert.ok(Math.abs(flowAfter[id].y-flowBefore[id].y-growth)<2,'downstream card follows resize');
+   assert.equal(flowAfter[id].x,flowBefore[id].x);
+   assert.equal(flowAfter[id].h,flowBefore[id].h);
+  }
+  assert.deepEqual(flowAfter[804],flowBefore[804],'unrelated column remains stationary');
+  await page.locator('#widgetLayoutOverlay [data-layout-control="done"]').click();
+  await page.evaluate(()=>window.audioDeskRestoreWidgetLayouts());
+  assert.deepEqual(await flowRects(),flowAfter,'displaced positions survive restoring saved layout');
+  await page.evaluate(()=>window.audioDeskBeginWidgetResize('nativeWidget_801'));
+  await drag('s',0,-55);
+  const shrunk=await flowRects();
+  assert.ok(shrunk[801].h<flowAfter[801].h-40,'shrink is not blocked');
+  for(const id of [802,803])assert.ok(Math.abs(shrunk[id].y-flowAfter[id].y-(shrunk[801].h-flowAfter[801].h))<2,'shrink pulls downstream cards up');
+  assert.deepEqual(shrunk[804],flowBefore[804]);
+  await page.locator('#widgetLayoutOverlay [data-layout-control="done"]').click();
+  await page.evaluate(()=>{
+   for(const id of [801,802,803,804]){
+    window.audioDeskUnregisterNativeWidget('nativeWidget_'+id);
+    document.getElementById('nativeWidget_'+id).remove();
+   }
+   for(const [el,value,priority] of window.reflowDisplay){if(value)el.style.setProperty('display',value,priority);else el.style.removeProperty('display')}
+   localStorage.setItem('ad_widget_layout_v2_warm',window.reflowOriginal||'{}');
+   window.audioDeskRestoreWidgetLayouts();
+  });
+  // Exercise actual Home cards, not a pair of detached fixed test elements.
+  // Reproduce the reported scattered original arrangement and a huge
+  // decorative recents panel. Packing must ignore the old flow positions.
+  await page.evaluate(()=>{
+   window.scrollTo(0,0);
+   const el=document.getElementById('launcherMusicWidget');
+   el.style.setProperty('--widget-y','340px');
+   const recent=document.getElementById('launcherRecentStrip');
+   recent.style.setProperty('--widget-y','180px');
+  });
+  const beforeArrange=await page.evaluate(()=>localStorage.getItem('ad_widget_layout_v2_warm'));
+  await page.evaluate(()=>document.getElementById('widgetAutoArrange').click());
+  assert.match(await page.locator('#widgetArrangementStatus').textContent(),/Layout saved/);
+  const packed=async()=>page.evaluate(()=>{
+   const home=document.getElementById('launcherHomePage'),hr=home.getBoundingClientRect();
+   const nodes=[...home.querySelectorAll('[data-widget-packed="true"]')].filter(el=>el.getClientRects().length&&el.getBoundingClientRect().height>0);
+   return {scroll:scrollY,homeHeight:hr.height,vh:innerHeight,rows:nodes.map(el=>{
+    const r=el.getBoundingClientRect();return {id:el.id,l:r.left-hr.left,t:r.top-hr.top,r:r.right-hr.left,b:r.bottom-hr.top,h:r.height};
+   })};
+  });
+  const auto=await packed();
+  assert.ok(auto.rows.length>=4,'real Home includes multiple packed widgets');
+  assert.ok(Math.min(...auto.rows.map(r=>r.t))<80,'pack begins at safe top, not old scattered position');
+  assert.equal(auto.scroll,0,'auto arrange returns to top');
+  for(const r of auto.rows)for(const q of auto.rows)if(r!==q)assert.ok(Math.min(r.r,q.r)-Math.max(r.l,q.l)<=1||Math.min(r.b,q.b)-Math.max(r.t,q.t)<=1,'no overlapping packed cards');
+  const ordered=auto.rows.slice().sort((a,b)=>a.t-b.t);
+  let frontier=ordered[0].b;
+  for(const r of ordered.slice(1)){assert.ok(r.t<=frontier+12,'no empty vertical shelf bands');frontier=Math.max(frontier,r.b)}
+  assert.ok(auto.homeHeight<=Math.max(auto.vh,frontier+102),'no unused original flow extent');
+  const recent=auto.rows.find(r=>r.id==='launcherRecentStrip');
+  assert.ok(recent&&recent.h<auto.vh*.75,'frequently used card is content-sized, not viewport-sized');
+  const afterAuto=await page.evaluate(()=>localStorage.getItem('ad_widget_layout_v2_warm'));
+  await page.evaluate(()=>window.audioDeskRestoreWidgetLayouts());
+  const reloaded=await packed();
+  assert.deepEqual(reloaded.rows,auto.rows,'packed coordinates survive layout reload');
+  await page.evaluate(()=>document.getElementById('widgetRandomize').click());
+  assert.match(await page.locator('#widgetArrangementStatus').textContent(),/Layout saved/);
+  const afterRandom=await page.evaluate(()=>localStorage.getItem('ad_widget_layout_v2_warm'));
+  assert.notEqual(afterRandom,afterAuto,'randomize changes positions');
+  await page.evaluate(()=>document.getElementById('widgetUndoArrange').click());
+  assert.equal(await page.evaluate(()=>localStorage.getItem('ad_widget_layout_v2_warm')),afterAuto,'undo restores previous packed layout');
+  // Repeat auto arrangement and undo from default/natural mode.
+  await page.evaluate(()=>{
+   localStorage.setItem('ad_widget_layout_v2_warm',JSON.stringify({}));
+   window.audioDeskRestoreWidgetLayouts();
+   document.getElementById('widgetAutoArrange').click();
+   document.getElementById('widgetUndoArrange').click();
+  });
+  assert.equal(await page.locator('#launcherHomePage').getAttribute('data-packed-layout'),null,'undo restores natural layout mode');
+  // Auto arrange changes geometry only. In particular, the previous packed
+  // CSS revealed Warm's cream widgets in Minimal, Pixel and Windows.
+  const appearance=()=>page.evaluate(()=>{
+   const root=document.documentElement.style;
+   const nodes=[...document.querySelectorAll('#launcherHomePage [data-widget-resizable],#launcherAlphaIndex')].filter(el=>el.getClientRects().length&&el.getBoundingClientRect().width>16);
+   return {theme:launcherTheme,palette:document.body.dataset.themePalette,art:document.body.dataset.audioWallpaper,glass:document.body.dataset.glassMode,
+    tokens:['--theme-accent','--theme-panel','--theme-dark','--theme-text','--theme-surface','--theme-line'].map(k=>root.getPropertyValue(k)),
+    widgets:nodes.map(el=>{const c=getComputedStyle(el);return {id:el.id,bg:c.backgroundColor,color:c.color,border:c.borderTopColor,gradient:c.backgroundImage}})};
+  });
+  for(const theme of ['minimal','pixel','windows','warm']){
+   await page.evaluate(theme=>{
+    setLauncherTheme(theme);
+    localStorage.setItem('ad_widget_layout_v2_'+theme,'{}');
+    window.audioDeskRestoreWidgetLayouts();
+   },theme);
+   await page.waitForTimeout(350);
+   const prior=await appearance();
+   await page.evaluate(()=>document.getElementById('widgetAutoArrange').click());
+   assert.match(await page.locator('#widgetArrangementStatus').textContent(),/Layout saved/,theme+' arrangement succeeds');
+   await page.waitForTimeout(160);
+   assert.deepEqual(await appearance(),prior,theme+' arrangement preserves widget visibility and computed palette');
+   assert.equal(await page.locator('#warmDateWidget').isVisible(),theme==='warm',theme+' warm date visibility');
+   assert.equal(await page.locator('#warmAudioWidget').isVisible(),theme==='warm',theme+' warm audio visibility');
+   assert.equal(await page.locator('#liveClockWidget').isVisible(),theme==='windows',theme+' live tile visibility');
+   await page.evaluate(()=>document.getElementById('widgetRandomize').click());
+   await page.waitForTimeout(160);
+   assert.deepEqual(await appearance(),prior,theme+' randomize preserves colors and visibility');
+   await page.evaluate(()=>document.getElementById('widgetUndoArrange').click());
+   await page.waitForTimeout(160);
+   assert.deepEqual(await appearance(),prior,theme+' undo preserves colors and visibility');
+  }
+  // Restore a saved layout polluted by the previous version. Hidden edition
+  // cards must be removed from the persisted geometry before repacking.
+  await page.evaluate(()=>{
+   setLauncherTheme('minimal');
+   localStorage.setItem('ad_widget_layout_v2_minimal',JSON.stringify({
+    launcherMusicWidget:{w:270,h:250,x:0,y:0,packed:true,natural:false,left:14,top:196},
+    warmDateWidget:{w:270,h:59,x:0,y:0,packed:true,natural:false,left:14,top:20},
+    warmAudioWidget:{w:270,h:76,x:0,y:0,packed:true,natural:false,left:14,top:90}
+   }));
+   window.audioDeskRestoreWidgetLayouts();
+  });
+  await page.waitForTimeout(350);
+  const migrated=await page.evaluate(()=>JSON.parse(localStorage.getItem('ad_widget_layout_v2_minimal')));
+  assert.ok(!migrated.warmDateWidget&&!migrated.warmAudioWidget,'legacy cross-theme entries removed');
+  assert.equal(await page.locator('#warmDateWidget').isVisible(),false);
+  assert.equal(await page.locator('#warmAudioWidget').isVisible(),false);
+  await page.evaluate(()=>{localStorage.setItem('ad_widget_layout_v2_minimal','{}');window.audioDeskRestoreWidgetLayouts();setLauncherTheme('warm')});
   // Every theme has four distinct sharp, original audio compositions.
   await page.evaluate(()=>openWallpaperPicker());
   for(const theme of ['warm','minimal','pixel','windows']){
    await page.evaluate(theme=>setLauncherTheme(theme),theme);
    assert.equal(await page.locator('#audioWallpaperGrid .audio-art-choice').count(),4,
     'each theme has its own four-image audio collection');
+  }
+  // Pixel and Warm accents are tied to the actual selected wallpaper.
+  for(const [theme,colors] of [['pixel',['blue','violet']],['warm',['grey','blush']]]){
+   await page.evaluate(theme=>{closeCustomize(true);setLauncherTheme(theme)},theme);
+   await page.evaluate(()=>openWallpaperPicker());
+   const borders=[];
+   for(const color of colors){
+    await page.locator('[data-palette="'+color+'"]').click();
+    borders.push(await page.locator('#launcherAlphaIndex').evaluate(el=>getComputedStyle(el).borderTopColor));
+    const token=await page.evaluate(()=>document.documentElement.style.getPropertyValue('--theme-accent'));
+    assert.ok(/^#[0-9a-f]{6}$/i.test(token),'wallpaper supplies a real accent');
+   }
+   assert.notEqual(borders[0],borders[1],theme+' A-Z index border must follow wallpaper color');
   }
   await page.evaluate(()=>setLauncherTheme('warm'));
   await page.locator('#audioWallpaperGrid .audio-art-choice').first().click();
