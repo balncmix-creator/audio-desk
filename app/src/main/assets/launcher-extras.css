@@ -308,3 +308,16 @@ body #launcherHomePage [data-widget-removed][data-widget-resizable]{
 }
 #widgetRestoreList p{font-size:12px;color:var(--ds-muted);margin:8px}
 #widgetRestoreList .launcher-options-action{margin:5px 0!important}
+
+/* Stable geometry while editing. Bigger side-edge touch zones sit above
+   the move grip, with a compact painted handle centered on each target. */
+body:has(#widgetLayoutOverlay:not([hidden])) [data-widget-resizable],
+[data-widget-resizable].widget-editing{transition:none!important}
+#widgetLayoutOverlay .widget-resize-handle{z-index:3;min-width:34px;min-height:34px;box-sizing:border-box}
+#widgetLayoutOverlay .widget-resize-handle[data-edge="w"],
+#widgetLayoutOverlay .widget-resize-handle[data-edge="e"]{z-index:5;width:34px;height:42px}
+#widgetLayoutOverlay .widget-resize-handle[data-edge="n"],
+#widgetLayoutOverlay .widget-resize-handle[data-edge="s"]{width:42px;height:34px;z-index:4}
+#widgetLayoutOverlay .layout-move-handle{z-index:2}
+#widgetLayoutOverlay .layout-toolbar{z-index:6}
+#widgetLayoutOverlay .widget-resize-handle:disabled{display:none!important}
