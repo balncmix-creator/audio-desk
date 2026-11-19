@@ -204,6 +204,58 @@ const assert=require('node:assert/strict');
    }
    window.audioDeskRestoreWidgetLayouts();
   });
+  // Packed Home: expanding a card pushes its column, including a chained
+  // downstream card; an independent column stays put. Shrinking pulls back.
+  await page.evaluate(()=>{
+   const home=document.getElementById('launcherHomePage');
+   window.reflowDisplay=[...home.querySelectorAll('[data-widget-resizable]')].map(el=>[el,el.style.getPropertyValue('display'),el.style.getPropertyPriority('display')]);
+   for(const [el] of window.reflowDisplay)el.style.setProperty('display','none','important');
+   window.reflowOriginal=localStorage.getItem('ad_widget_layout_v2_warm');
+   const geometry={};
+   for(const [id,left,top,width,height] of [
+    ['nativeWidget_801',20,100,130,100],
+    ['nativeWidget_802',20,210,130,100],
+    ['nativeWidget_803',20,320,130,100],
+    ['nativeWidget_804',175,210,100,100]]){
+    const el=document.createElement('section');el.id=id;el.style.boxSizing='border-box';home.append(el);
+    window.audioDeskRegisterNativeWidget(id,id);
+    geometry[id]={packed:true,natural:false,left,top,w:width,h:height,x:0,y:0};
+   }
+   localStorage.setItem('ad_widget_layout_v2_warm',JSON.stringify(geometry));
+   window.audioDeskRestoreWidgetLayouts();
+  });
+  const flowRects=()=>page.evaluate(()=>Object.fromEntries([801,802,803,804].map(id=>{const r=document.getElementById('nativeWidget_'+id).getBoundingClientRect();return [id,{x:r.left,y:r.top,b:r.bottom,w:r.width,h:r.height}]})));
+  await page.evaluate(()=>window.audioDeskBeginWidgetResize('nativeWidget_801'));
+  const flowBefore=await flowRects();
+  await drag('s',0,55);
+  const flowAfter=await flowRects();
+  const growth=flowAfter[801].h-flowBefore[801].h;
+  assert.ok(growth>40,'resize continues past the original neighboring edge');
+  for(const id of [802,803]){
+   assert.ok(Math.abs(flowAfter[id].y-flowBefore[id].y-growth)<2,'downstream card follows resize');
+   assert.equal(flowAfter[id].x,flowBefore[id].x);
+   assert.equal(flowAfter[id].h,flowBefore[id].h);
+  }
+  assert.deepEqual(flowAfter[804],flowBefore[804],'unrelated column remains stationary');
+  await page.locator('#widgetLayoutOverlay [data-layout-control="done"]').click();
+  await page.evaluate(()=>window.audioDeskRestoreWidgetLayouts());
+  assert.deepEqual(await flowRects(),flowAfter,'displaced positions survive restoring saved layout');
+  await page.evaluate(()=>window.audioDeskBeginWidgetResize('nativeWidget_801'));
+  await drag('s',0,-55);
+  const shrunk=await flowRects();
+  assert.ok(shrunk[801].h<flowAfter[801].h-40,'shrink is not blocked');
+  for(const id of [802,803])assert.ok(Math.abs(shrunk[id].y-flowAfter[id].y-(shrunk[801].h-flowAfter[801].h))<2,'shrink pulls downstream cards up');
+  assert.deepEqual(shrunk[804],flowBefore[804]);
+  await page.locator('#widgetLayoutOverlay [data-layout-control="done"]').click();
+  await page.evaluate(()=>{
+   for(const id of [801,802,803,804]){
+    window.audioDeskUnregisterNativeWidget('nativeWidget_'+id);
+    document.getElementById('nativeWidget_'+id).remove();
+   }
+   for(const [el,value,priority] of window.reflowDisplay){if(value)el.style.setProperty('display',value,priority);else el.style.removeProperty('display')}
+   localStorage.setItem('ad_widget_layout_v2_warm',window.reflowOriginal||'{}');
+   window.audioDeskRestoreWidgetLayouts();
+  });
   // Exercise actual Home cards, not a pair of detached fixed test elements.
   // Reproduce the reported scattered original arrangement and a huge
   // decorative recents panel. Packing must ignore the old flow positions.
