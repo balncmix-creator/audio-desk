@@ -48,16 +48,15 @@ function read(){
   return raw&&typeof raw==="object"?raw:{};
  }catch{return{}}
 }
+function rememberWidget(el){
+ const r=layout(el),size={natural:el.dataset.layoutSized!=="true",
+  w:Math.round(r.w),h:Math.round(r.h),x:Math.round(offset(el,"x")),y:Math.round(offset(el,"y"))};
+ if(el.dataset.widgetPacked==="true"){size.packed=true;size.left=parseFloat(el.style.getPropertyValue("--widget-pack-left"))||0;size.top=parseFloat(el.style.getPropertyValue("--widget-pack-top"))||0;}
+ geometry[el.id]=size;
+}
 function save(){
  if(!chosen)return;
- const r=chosen.getBoundingClientRect();
- const size=geometry[chosen.id]||{};
- size.natural=chosen.dataset.layoutSized!=="true";
- if(chosen.dataset.widgetPacked==="true"){size.packed=true;size.left=parseFloat(chosen.style.getPropertyValue("--widget-pack-left"))||0;size.top=parseFloat(chosen.style.getPropertyValue("--widget-pack-top"))||0;}
- size.w=Math.round(r.width);size.h=Math.round(r.height);
- size.x=Math.round(parseFloat(chosen.style.getPropertyValue("--widget-x"))||0);
- size.y=Math.round(parseFloat(chosen.style.getPropertyValue("--widget-y"))||0);
- geometry[chosen.id]=size;
+ rememberWidget(chosen);
  deskStorage.setItem(storeKey(),JSON.stringify(geometry));
 }
 function minWidth(el,fallback){return Math.min(innerWidth-18,Math.max(el?.id==="launcherMusicWidget"?76:el?.id==="launcherYouTubeWidget"?180:fallback,Number(el?.dataset.nativeMinWidth)||0))}
@@ -230,14 +229,16 @@ function resizeDimensions(start,edge,dx,dy,snap=true){
  if(west)l=limit(start.l+dx,westBound,start.r-mw);
  if(east)r=limit(start.r+dx,start.l+mw,eastBound);
  if(north)t=limit(start.t+dy,topBound,start.b-mh);
- if(south)b=limit(start.b+dy,start.t+mh,bottomBound);
+ if(south)b=limit(start.b+dy,start.t+mh,byId("launcherHomePage").contains(chosen)?Math.max(bottomBound,start.t+innerHeight*4):bottomBound);
  let sx=null,sy=null;
  if(west||east){
   sx=edgeSnap(west?l:r,"x",west?westBound:start.l+mw,west?start.r-mw:eastBound,[t,b],others,snap);
   if(west)l=sx.coordinate;else r=sx.coordinate;
  }
  if(north||south){
-  sy=edgeSnap(north?t:b,"y",north?topBound:start.t+mh,north?start.b-mh:bottomBound,[l,r],others,snap);
+  const reflow=south&&byId("launcherHomePage").contains(chosen);
+  const targets=reflow?others.filter(o=>o.t<start.b-1||Math.min(r,o.r)-Math.max(l,o.l)<=1):others;
+  sy=edgeSnap(north?t:b,"y",north?topBound:start.t+mh,north?start.b-mh:reflow?Math.max(bottomBound,start.t+innerHeight*4):bottomBound,[l,r],targets,snap);
   if(north)t=sy.coordinate;else b=sy.coordinate;
  }
  showGuides(sx,sy);
@@ -318,6 +319,72 @@ function applySafeResize(rect,raw,edge){
  }
  guides.replaceChildren();
 }
+// Capture the complete layout once per drag, not once per motion frame.
+ // Moving dependent rows relative to that baseline avoids cumulative drift.
+function flowBaseline(){
+ if(!chosen||!byId("launcherHomePage").contains(chosen))return null;
+ const nodes=visibleHomeNodes().filter(el=>el===chosen||(!el.contains(chosen)&&!chosen.contains(el)));
+ if(!nodes.includes(chosen))return null;
+ return {items:nodes.map(el=>({el,r:layout(el),state:snapshot(el)})),rect:layout(chosen)};
+}
+function horizontalContact(a,b){return Math.min(a.r,b.r)-Math.max(a.l,b.l)>1}
+function flowPairMap(items){
+ const rects=items.map(o=>layout(o.el)),pairs=[];
+ for(let i=0;i<rects.length;i++)for(let j=i+1;j<rects.length;j++)pairs.push(overlapArea(rects[i],rects[j]));
+ return pairs;
+}
+function reflowResize(rect,edge,base){
+ const items=base.items,original=base.rect;
+ // Roll back to the previous accepted frame if the proposal fails.
+ const previous=items.map(o=>snapshot(o.el));
+ const areas=flowPairMap(items);
+ for(const o of items)restoreSnapshot(o.el,o.state);
+ applyRect(rect,edge);
+ const updated=layout(chosen),delta=updated.b-original.b;
+ const affected=new Set();
+ const others=items.filter(o=>o.el!==chosen).sort((a,b)=>a.r.t-b.r.t);
+ // Propagate through intersecting columns, not unrelated side-by-side cards.
+ const anchor={l:Math.min(original.l,updated.l),r:Math.max(original.r,updated.r),b:original.b};
+ if(Math.abs(delta)>.5){
+  const chain=[anchor];
+  for(const o of others){
+   if(chain.some(p=>o.r.t>=p.b-1&&horizontalContact(p,o.r))){affected.add(o.el);chain.push(o.r)}
+  }
+ }
+ for(const o of others){
+  const desiredTop=o.r.t+(affected.has(o.el)?delta:0);
+  const actual=layout(o.el);
+  // Compensate for natural flex/grid reflow as well as absolute packed cards.
+  // Leave sizes, style and x alignment unchanged.
+  const dx=o.r.l-actual.l,dy=desiredTop-actual.t;
+  if(Math.abs(dx)>.5)o.el.style.setProperty("--widget-x",Math.round(offset(o.el,"x")+dx)+"px");
+  if(Math.abs(dy)>.5)o.el.style.setProperty("--widget-y",Math.round(offset(o.el,"y")+dy)+"px");
+ }
+ if(flowPairMap(items).some((a,i)=>a>areas[i]+1)){
+  items.forEach((o,i)=>restoreSnapshot(o.el,previous[i]));return false;
+ }
+ return true;
+}
+function applyFlowResize(rect,raw,edge,base){
+ if(!base||!edge.includes("s")||chosen?.dataset.nativeVertical==="false"){applySafeResize(rect,raw,edge);return}
+ if(reflowResize(rect,edge,base)||reflowResize(raw,edge,base))return;
+ const from=layout(chosen);
+ let lo=0,hi=1;
+ for(let i=0;i<7;i++){
+  const t=(lo+hi)/2,p={};
+  for(const k of ["l","t","r","b"])p[k]=from[k]+(raw[k]-from[k])*t;
+  if(reflowResize(p,edge,base))lo=t;else hi=t;
+ }
+ guides.replaceChildren();
+}
+function saveFlow(base){
+ if(!base)return;
+ for(const o of base.items){
+  if(o.el===chosen)continue;
+  const r=layout(o.el);
+  if(Math.abs(r.l-o.r.l)>.5||Math.abs(r.t-o.r.t)>.5)rememberWidget(o.el);
+ }
+}
 function requestPos(){
  cancelAnimationFrame(raf);raf=requestAnimationFrame(position);
 }
@@ -386,7 +453,8 @@ overlay.addEventListener("pointerdown",e=>{
  gesture={pointerId:e.pointerId,kind:target.dataset.edge?"resize":"move",
   edge:target.dataset.edge,x:e.clientX,y:e.clientY,rect:initial,
   initialX:Number(chosen.style.getPropertyValue("--widget-x").replace("px",""))||0,
-  initialY:Number(chosen.style.getPropertyValue("--widget-y").replace("px",""))||0};
+  initialY:Number(chosen.style.getPropertyValue("--widget-y").replace("px",""))||0,
+  flow:target.dataset.edge?.includes("s")?flowBaseline():null};
  try{target.setPointerCapture?.(e.pointerId)}catch{}
  document.body.classList.add("widget-dragging");
 });
@@ -402,13 +470,13 @@ overlay.addEventListener("pointermove",e=>{
   const savedGuides=[...guides.children];
   const raw=resizeDimensions(gesture.rect,gesture.edge,dx,dy,false);
   guides.replaceChildren(...savedGuides);
-  applySafeResize(rect,raw,gesture.edge);
+  applyFlowResize(rect,raw,gesture.edge,gesture.flow);
  }else guardedChange(chosen,()=>applyRect(rect,null));
  requestPos();
 });
 function endGesture(e){
  if(!gesture||gesture.pointerId!==e.pointerId)return;
- gesture=null;save();updateHomeExtent();guides.replaceChildren();
+ saveFlow(gesture.flow);gesture=null;save();updateHomeExtent();guides.replaceChildren();
  document.body.classList.remove("widget-dragging");
  requestPos();
 }
@@ -424,9 +492,10 @@ overlay.addEventListener("keydown",e=>{
  const dy=(e.key==="ArrowUp"?-delta:e.key==="ArrowDown"?delta:0);
  const r=layout(chosen);
  const pos=btn.dataset.edge?resizeDimensions(r,btn.dataset.edge,dx,dy,false):moveDimensions(r,dx,dy);
- if(btn.dataset.edge)applySafeResize(pos,pos,btn.dataset.edge);
+ const base=btn.dataset.edge?.includes("s")?flowBaseline():null;
+ if(btn.dataset.edge)applyFlowResize(pos,pos,btn.dataset.edge,base);
  else guardedChange(chosen,()=>applyRect(pos,null));
- save();updateHomeExtent();requestPos();
+ saveFlow(base);save();updateHomeExtent();requestPos();
 });
 function registerWidget(id){
  const el=byId(id);if(!el||el.dataset.widgetResizable==="true")return;
