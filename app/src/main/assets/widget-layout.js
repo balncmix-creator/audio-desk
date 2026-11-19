@@ -4,7 +4,7 @@
 (()=>{
 "use strict";
 const ids=["launcherClockWidget","warmDateWidget","warmAudioWidget","warmSearchWidget",
- "launcherMusicWidget","launcherFavorites","launcherRecentStrip",
+ "launcherMusicWidget","launcherFavorites","launcherRecentStrip","launcherTilesSearch",
  "liveClockWidget","liveCalendarWidget","liveNewsWidget","launcherAgendaWidget","launcherSplWidget","launcherMicAnalyzer"];
 const byId=id=>document.getElementById(id);
 const movable=()=>ids.map(byId).filter(el=>el&&!el.hidden&&el.getClientRects().length&&
@@ -13,7 +13,7 @@ const storeKey=()=>"ad_widget_layout_v2_"+launcherTheme;
 const removedKey=()=>"ad_widget_removed_v1_"+launcherTheme;
 const labels={launcherClockWidget:"Clock",warmDateWidget:"Date",warmAudioWidget:"Audio",warmSearchWidget:"Search",
  launcherMusicWidget:"Music player",launcherFavorites:"Favourites",launcherRecentStrip:"Recents",
- liveClockWidget:"Live clock",liveCalendarWidget:"Live calendar",liveNewsWidget:"Live news",launcherAgendaWidget:"Agenda",launcherSplWidget:"SPL meter",launcherMicAnalyzer:"Mic spectrum"};
+ launcherTilesSearch:"App search",liveClockWidget:"Live clock",liveCalendarWidget:"Live calendar",liveNewsWidget:"Live news",launcherAgendaWidget:"Agenda",launcherSplWidget:"SPL meter",launcherMicAnalyzer:"Mic spectrum"};
 let removed=new Set();
 function readRemoved(){
  try{const saved=JSON.parse(deskStorage.getItem(removedKey())||"[]");
@@ -49,6 +49,7 @@ function save(){
  const r=chosen.getBoundingClientRect();
  const size=geometry[chosen.id]||{};
  size.natural=chosen.dataset.layoutSized!=="true";
+ if(chosen.dataset.widgetPacked==="true"){size.packed=true;size.left=parseFloat(chosen.style.getPropertyValue("--widget-pack-left"))||0;size.top=parseFloat(chosen.style.getPropertyValue("--widget-pack-top"))||0;}
  size.w=Math.round(r.width);size.h=Math.round(r.height);
  size.x=Math.round(parseFloat(chosen.style.getPropertyValue("--widget-x"))||0);
  size.y=Math.round(parseFloat(chosen.style.getPropertyValue("--widget-y"))||0);
@@ -62,22 +63,25 @@ function applySizes(){
  closeEditor();
  document.body.classList.add("widget-dragging");
  geometry=read();
+ byId("launcherHomePage").toggleAttribute("data-packed-layout",Object.values(geometry).some(g=>g?.packed));
  applyRemoved();
  ids.forEach(id=>{
   const el=byId(id);if(!el)return;
   const g=geometry[id];
   for(const name of ["--widget-x","--widget-y","--user-widget-width","--user-widget-height"])
    el.style.removeProperty(name);
-  delete el.dataset.layoutSized;
+  delete el.dataset.layoutSized;delete el.dataset.widgetPacked;
+  el.style.removeProperty("--widget-pack-left");el.style.removeProperty("--widget-pack-top");
   if(!g||![g.w,g.h,g.x,g.y].every(Number.isFinite))return;
-  const width=limit(g.w,minWidth(el,id==="launcherAgendaWidget"?160:id==="launcherSplWidget"||id==="launcherMicAnalyzer"?200:100),Math.max(160,innerWidth-18));
+  const width=g.packed?limit(g.w,Math.min(g.w,innerWidth-18),innerWidth-18):limit(g.w,minWidth(el,id==="launcherAgendaWidget"?160:id==="launcherSplWidget"||id==="launcherMicAnalyzer"?200:100),Math.max(160,innerWidth-18));
   const minimum=minHeight(el,id==="launcherMusicWidget"?202:id==="launcherAgendaWidget"?156:id==="launcherSplWidget"||id==="launcherMicAnalyzer"?230:48);
-  const height=limit(g.h,minimum,Math.max(minimum,innerHeight*4));
+  const height=g.packed?Math.max(1,g.h):limit(g.h,minimum,Math.max(minimum,innerHeight*4));
   if(!g.natural){
    el.style.setProperty("--user-widget-width",Math.round(width)+"px");
    el.style.setProperty("--user-widget-height",Math.round(height)+"px");
    el.dataset.layoutSized="true";
   }
+  if(g.packed&&Number.isFinite(g.left)&&Number.isFinite(g.top)){el.dataset.widgetPacked="true";el.style.setProperty("--widget-pack-left",g.left+"px");el.style.setProperty("--widget-pack-top",g.top+"px");}
   el.style.setProperty("--widget-x",limit(g.x,-innerWidth,innerWidth)+"px");
   const maxOffset=Math.max(innerHeight,Math.min(40000,Math.abs(g.y)));
   el.style.setProperty("--widget-y",limit(g.y,-maxOffset,maxOffset)+"px");
@@ -86,7 +90,7 @@ function applySizes(){
  // flow placement for affected widgets; retain size if that is sufficient.
  const visible=movable();
  for(const el of visible){
-  if(!collisions(el).length||!geometry[el.id])continue;
+  if(el.dataset.widgetPacked==="true"||!collisions(el).length||!geometry[el.id])continue;
   el.style.removeProperty("--widget-x");el.style.removeProperty("--widget-y");
   if(collisions(el).length){
    el.style.removeProperty("--user-widget-width");
@@ -98,6 +102,7 @@ function applySizes(){
   }
  }
  deskStorage.setItem(storeKey(),JSON.stringify(geometry));updateHomeExtent();document.body.classList.remove("widget-dragging");layoutChanged();
+ queuePackedRepair();
 }
 function closeEditor(){
  hold&&clearTimeout(hold.timer);hold=null;
@@ -236,13 +241,14 @@ function collisions(el){
  return movable().filter(other=>other!==el&&!other.contains(el)&&!el.contains(other))
   .map(other=>({other,area:overlapArea(layout(el),layout(other))})).filter(x=>x.area>0);
 }
-const layoutProps=["--widget-x","--widget-y","--user-widget-width","--user-widget-height"];
+const layoutProps=["--widget-x","--widget-y","--user-widget-width","--user-widget-height","--widget-pack-left","--widget-pack-top"];
 function snapshot(el){
- return {values:layoutProps.map(name=>el.style.getPropertyValue(name)),sized:el.dataset.layoutSized};
+ return {values:layoutProps.map(name=>el.style.getPropertyValue(name)),sized:el.dataset.layoutSized,packed:el.dataset.widgetPacked};
 }
 function restoreSnapshot(el,snapshot){
  layoutProps.forEach((name,i)=>snapshot.values[i]?el.style.setProperty(name,snapshot.values[i]):el.style.removeProperty(name));
  if(snapshot.sized===undefined)delete el.dataset.layoutSized;else el.dataset.layoutSized=snapshot.sized;
+ if(snapshot.packed===undefined)delete el.dataset.widgetPacked;else el.dataset.widgetPacked=snapshot.packed;
 }
 function guardedChange(el,change){
  const before=snapshot(el);
@@ -356,7 +362,9 @@ overlay.addEventListener("click",e=>{
   delete geometry[chosen.id];deskStorage.setItem(storeKey(),JSON.stringify(geometry));
   const el=chosen;closeEditor();
   ["--widget-x","--widget-y","--user-widget-width","--user-widget-height"].forEach(x=>el.style.removeProperty(x));
-  delete el.dataset.layoutSized;updateHomeExtent();layoutChanged();
+  delete el.dataset.layoutSized;delete el.dataset.widgetPacked;el.style.removeProperty("--widget-pack-left");el.style.removeProperty("--widget-pack-top");
+  if(byId("launcherHomePage").hasAttribute("data-packed-layout"))arrangeWidgets(false,false);
+  updateHomeExtent();layoutChanged();
  }
 });
 overlay.addEventListener("pointerdown",e=>{
@@ -484,64 +492,128 @@ function renderRemoved(){
   restoreList.append(b);
  }
 }
-// Whole-page shelf packing. Keep provider content, sizes, removed widgets
-// and each theme's state intact; undo restores the exact saved geometry.
+// Absolute, document-relative layout. Original flow boxes are no longer
+// reserving space behind translated widgets. Keep native provider views in
+// their original DOM parents so widget actions and theme selectors survive.
 const previousKey=()=>"ad_widget_previous_layout_v1_"+launcherTheme;
 function updateHomeExtent(){
  const home=byId("launcherHomePage");
  if(!home||home.hidden)return;
- home.style.removeProperty("--widget-arranged-height");
  const bounds=home.getBoundingClientRect();
  let bottom=0;
- for(const el of movable())bottom=Math.max(bottom,layout(el).b-bounds.top);
- if(bottom>0)home.style.setProperty("--widget-arranged-height",Math.ceil(bottom+110)+"px");
+ for(const el of movable())if(home.contains(el))bottom=Math.max(bottom,layout(el).b-bounds.top);
+ if(bottom>0)home.style.setProperty("--widget-arranged-height",Math.ceil(bottom+100)+"px");
+ else home.style.removeProperty("--widget-arranged-height");
 }
-function arrangeWidgets(random){
+function packingBounds(home){
+ const r=home.getBoundingClientRect();
+ const rail=byId("launcherAlphaIndex");
+ const rr=rail&&rail.getClientRects().length&&getComputedStyle(rail).visibility!=="hidden"?rail.getBoundingClientRect():null;
+ const left=Math.max(12,r.left+14),right=Math.min(innerWidth-12,r.right-14,rr&&rr.width>0&&rr.left>left?rr.left-8:innerWidth);
+ const safe=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--status-top"))||0;
+ return {left:Math.round(left-r.left),right:Math.round(Math.max(left+80,right)-r.left),top:Math.max(20,safe+18)};
+}
+function visibleHomeNodes(){
+ const home=byId("launcherHomePage"),visible=movable();
+ return visible.filter(el=>home.contains(el)&&!visible.some(p=>p!==el&&p.contains(el))&&
+  (el.id!=="launcherFavorites"||el.childElementCount>0));
+}
+const publicPriority=id=>id==="launcherClockWidget"?0:id==="launcherTilesSearch"||id==="warmSearchWidget"?1:
+ id==="launcherMusicWidget"?2:id==="launcherAgendaWidget"?3:
+ id==="launcherRecentStrip"||id==="launcherFavorites"?5:4;
+function arrangeWidgets(random,recordUndo=true){
  if(launcherPage!=="home")return false;
  closeEditor();
- const home=byId("launcherHomePage"),visible=movable(),nodes=visible.filter(el=>!visible.some(p=>p!==el&&p.contains(el)));
+ const home=byId("launcherHomePage"),nodes=visibleHomeNodes();
+ // Tests and extensions can register widgets outside the Home container.
+ // They are not part of packing, and must not distort the real Home area.
  if(!nodes.length)return false;
- const before=JSON.stringify(geometry),snapshots=nodes.map(el=>[el,snapshot(el)]);
- const original=nodes.map(el=>({el,r:layout(el)})).sort((a,b)=>a.r.t-b.r.t||a.r.l-b.r.l);
- const left=Math.max(8,Math.min(...original.map(o=>o.r.l))),right=Math.min(innerWidth-12,Math.max(...original.map(o=>o.r.r)));
- const ordered=original.slice();
+ const before=JSON.stringify(geometry),snapshots=ids.map(byId).filter(Boolean).map(el=>[el,snapshot(el)]);
+ const wasPacked=home.hasAttribute("data-packed-layout");
+ const bounds=packingBounds(home),gap=8,available=bounds.right-bounds.left;
+ const measured=nodes.map(el=>({el,r:layout(el)}));
+ document.body.classList.add("widget-dragging");
+ home.setAttribute("data-packed-layout","");
+ // First give every card a measured width, then measure content at that
+ // width. Only the app lists have decorative min-heights that need trimming.
+ for(const o of measured){
+  const el=o.el,w=Math.max(1,Math.min(available,Math.round(o.r.w)));
+  el.dataset.widgetPacked="true";el.dataset.layoutSized="true";
+  el.style.setProperty("--widget-pack-left",bounds.left+"px");
+  el.style.setProperty("--widget-pack-top",bounds.top+"px");
+  el.style.setProperty("--widget-x","0px");el.style.setProperty("--widget-y","0px");
+  el.style.setProperty("--user-widget-width",w+"px");
+  el.style.setProperty("--user-widget-height",Math.max(1,Math.round(o.r.h))+"px");
+  if(el.id==="launcherRecentStrip"||el.id==="launcherFavorites"){
+   el.dataset.packMeasure="true";
+   const h=Math.max(48,Math.ceil(el.getBoundingClientRect().height));
+   delete el.dataset.packMeasure;
+   el.style.setProperty("--user-widget-height",h+"px");
+  }
+ }
+ const ordered=measured.map(o=>({el:o.el,r:layout(o.el)}))
+  .sort((a,b)=>publicPriority(a.el.id)-publicPriority(b.el.id)||b.r.w-a.r.w||ids.indexOf(a.el.id)-ids.indexOf(b.el.id));
  if(random&&ordered.length>1){
+  const original=ordered.slice();
   for(let i=ordered.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ordered[i],ordered[j]]=[ordered[j],ordered[i]]}
   if(ordered.every((o,i)=>o===original[i]))ordered.push(ordered.shift());
  }
- const top=Math.min(...original.map(o=>o.r.t));
- const rail=byId("launcherAlphaIndex");
- const railRect=rail&&rail.getClientRects().length?rail.getBoundingClientRect():null;
- const ceiling=railRect&&railRect.width>0&&railRect.left>left?Math.min(right,railRect.left-5):right;
- const available=Math.max(...original.map(o=>o.r.w),ceiling-left);
- const reserve=byId("launcherTilesSearch");
- const obstacle=reserve&&reserve.getClientRects().length&&getComputedStyle(reserve).display!=="none"?layout(reserve):null;
- let x=left,y=top,row=0;
- const positions=[];
+ // Bottom-left packing: candidates are the safe top and the exact
+ // right/bottom edges of existing cards, including holes under short cards.
+ // This gives a compaction pass for free rather than reserving entire rows.
+ const placed=[];
  for(const o of ordered){
-  const w=o.r.w,h=o.r.h;
-  if(x>left&&x+w>left+available+1){x=left;y+=row+10;row=0}
-  if(obstacle&&overlapArea({l:x,r:x+w,t:y,b:y+h},obstacle)>0){x=left;y=Math.max(y+row+10,obstacle.b+10);row=0}
-  positions.push({el:o.el,l:Math.min(x,innerWidth-w-4),t:y,w,h});
-  x+=w+10;row=Math.max(row,h);
+  const w=Math.ceil(o.r.w),h=Math.ceil(o.r.h);
+  const xs=[bounds.left,...placed.map(p=>p.r+gap)].sort((a,b)=>a-b);
+  const ys=[bounds.top,...placed.map(p=>p.b+gap)].sort((a,b)=>a-b);
+  let target=null;
+  outer:for(const y of ys)for(const x of xs){
+   if(x+w>bounds.right+1)continue;
+   const p={l:x,t:y,r:x+w,b:y+h};
+   if(placed.some(q=>p.l<q.r+gap-1&&p.r>q.l-gap+1&&p.t<q.b+gap-1&&p.b>q.t-gap+1))continue;
+   target=p;break outer;
+  }
+  if(!target){const y=Math.max(bounds.top,...placed.map(p=>p.b+gap));target={l:bounds.left,t:y,r:bounds.left+w,b:y+h}}
+  o.el.style.setProperty("--widget-pack-left",target.l+"px");
+  o.el.style.setProperty("--widget-pack-top",target.t+"px");
+  placed.push({...target,el:o.el});
  }
- document.body.classList.add("widget-dragging");
- for(const p of positions){
-  const r=layout(p.el);
-  p.el.style.setProperty("--widget-x",Math.round(offset(p.el,"x")+p.l-r.l)+"px");
-  p.el.style.setProperty("--widget-y",Math.round(offset(p.el,"y")+p.t-r.t)+"px");
- }
- const valid=positions.every(p=>!collisions(p.el).length)&&positions.every(p=>{const r=layout(p.el);return r.l>=-1&&r.r<=innerWidth+1&&(!obstacle||overlapArea(r,obstacle)===0)});
+ const hr=home.getBoundingClientRect();
+ const valid=placed.every(p=>{
+  const r=layout(p.el);return r.l>=hr.left+bounds.left-2&&r.r<=hr.left+bounds.right+2&&r.t>=hr.top+bounds.top-2&&
+  !placed.some(q=>q!==p&&overlapArea(r,layout(q.el))>1);
+ });
  if(!valid){
   for(const [el,state] of snapshots)restoreSnapshot(el,state);
+  home.toggleAttribute("data-packed-layout",wasPacked);
   document.body.classList.remove("widget-dragging");
   updateHomeExtent();layoutChanged();return false;
  }
- deskStorage.setItem(previousKey(),before);
- for(const p of positions){const r=layout(p.el);geometry[p.el.id]={w:Math.round(r.w),h:Math.round(r.h),x:Math.round(offset(p.el,"x")),y:Math.round(offset(p.el,"y")),natural:p.el.dataset.layoutSized!=="true"}}
+ if(recordUndo)deskStorage.setItem(previousKey(),before);
+ for(const p of placed){const r=layout(p.el);geometry[p.el.id]={w:Math.round(r.w),h:Math.round(r.h),x:0,y:0,natural:false,packed:true,left:p.l,top:p.t}}
  deskStorage.setItem(storeKey(),JSON.stringify(geometry));
- updateHomeExtent();document.body.classList.remove("widget-dragging");layoutChanged();return true;
+ updateHomeExtent();document.body.classList.remove("widget-dragging");layoutChanged();
+ if(recordUndo)window.scrollTo(0,0);
+ return true;
 }
+let repairFrame=0;
+function queuePackedRepair(){
+ if(repairFrame)return;
+ repairFrame=requestAnimationFrame(()=>{
+  repairFrame=0;
+  const home=byId("launcherHomePage");
+  if(launcherPage!=="home"||!home.hasAttribute("data-packed-layout")||chosen)return;
+  const nodes=visibleHomeNodes(),hr=home.getBoundingClientRect(),bounds=packingBounds(home);
+  // New or restored widgets and screen rotations must not be left in the
+  // old document flow. Do not change the user's previous-layout snapshot.
+  if(nodes.some(el=>{const r=layout(el);return el.dataset.widgetPacked!=="true"||r.l<hr.left-1||r.r>hr.right+1||
+   r.t<hr.top-1||nodes.some(o=>o!==el&&overlapArea(r,layout(o))>1)}))arrangeWidgets(false,false);
+  else updateHomeExtent();
+ });
+}
+window.addEventListener("audio-desk-widget-visibility",queuePackedRepair);
+window.addEventListener("launcher-page-changed",queuePackedRepair);
+new MutationObserver(queuePackedRepair).observe(byId("launcherHomePage"),{subtree:true,childList:true,attributes:true,attributeFilter:["hidden","data-widget-removed"]});
 function restorePrevious(){
  const previous=deskStorage.getItem(previousKey());
  if(!previous)return false;
