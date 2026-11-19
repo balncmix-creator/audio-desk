@@ -311,7 +311,7 @@ body #launcherHomePage [data-widget-removed][data-widget-resizable]{
 
 /* Stable geometry while editing. Bigger side-edge touch zones sit above
    the move grip, with a compact painted handle centered on each target. */
-body:has(#widgetLayoutOverlay:not([hidden])) [data-widget-resizable],
+body.widget-layout-editing [data-widget-resizable],
 [data-widget-resizable].widget-editing{transition:none!important}
 #widgetLayoutOverlay .widget-resize-handle{z-index:3;min-width:34px;min-height:34px;box-sizing:border-box}
 #widgetLayoutOverlay .widget-resize-handle[data-edge="w"],
@@ -321,3 +321,14 @@ body:has(#widgetLayoutOverlay:not([hidden])) [data-widget-resizable],
 #widgetLayoutOverlay .layout-move-handle{z-index:2}
 #widgetLayoutOverlay .layout-toolbar{z-index:6}
 #widgetLayoutOverlay .widget-resize-handle:disabled{display:none!important}
+
+/* Keep translated widgets reachable even when packed beyond their original
+   natural rows; don't change Home positioning in the default layout. */
+body[data-home-page="home"] #launcherHomePage{
+ min-height:max(100dvh,var(--widget-arranged-height,0px));
+}
+body.widget-layout-editing #launcherAlphaIndex,
+body.widget-layout-editing #launcherAlphaBubble{pointer-events:none!important}
+.widget-arrangement-tools{display:flex;flex-direction:column;gap:3px;padding:4px 0 8px}
+.widget-arrangement-tools small{font-size:10px;color:var(--ds-muted);padding:0 8px}
+.widget-arrangement-tools button:disabled{opacity:.42}
