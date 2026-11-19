@@ -16,6 +16,7 @@ import kotlin.math.*
 /** One foreground-only microphone stream. PCM stays in memory. */
 internal class AcousticMeterSupport(private val context: Context,
  private val deliver: (JSONObject) -> Unit) {
+    private val captureLock = Any()
     @Volatile private var generation = 0
     @Volatile private var worker: Thread? = null
     @Volatile private var spectrum = false
@@ -28,7 +29,7 @@ internal class AcousticMeterSupport(private val context: Context,
         if (!permitted()) { state("permission"); return }
         if (worker?.isAlive == true) return
         val token = ++generation
-        worker = Thread({ capture(token) }, "AudioDesk-acoustic").apply { start() }
+        worker = Thread({ synchronized(captureLock) { if(token == generation) capture(token) } }, "AudioDesk-acoustic").apply { start() }
     }
     @Synchronized fun stop() {
         generation++
