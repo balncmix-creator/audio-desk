@@ -105,7 +105,7 @@ function closeEditor(){
  if(chosen){chosen.classList.remove("widget-editing");chosen=null}
  document.body.classList.remove("widget-dragging","widget-layout-editing");
  document.getElementById("widgetLayoutOverlay")?.setAttribute("hidden","");
- guides.replaceChildren();layoutChanged();
+ guides.replaceChildren();overlay.style.removeProperty("--ds-accent");guides.style.removeProperty("--ds-accent");layoutChanged();
 }
 const overlay=document.createElement("div");
 overlay.id="widgetLayoutOverlay";
@@ -330,6 +330,10 @@ function openEditor(id){
  const el=byId(id);if(!el||!movable().includes(el))return false;
  closeEditor();
  chosen=el;chosen.classList.add("widget-editing");document.body.classList.add("widget-layout-editing");
+ const accent=el.style.getPropertyValue("--native-provider-accent").trim();
+ if(/^#[0-9a-f]{6}$/i.test(accent)){
+  overlay.style.setProperty("--ds-accent",accent);guides.style.setProperty("--ds-accent",accent);
+ }
  overlay.hidden=false;
  cancelClickUntil=Date.now()+850;
  position();
