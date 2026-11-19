@@ -191,6 +191,11 @@ function resizeDimensions(start,edge,dx,dy){
   if(edge.includes("n"))t=sy.coordinate;
   else if(edge.includes("s"))b+=sy.coordinate-t;
  }
+ // Provider-fixed axes must stay fixed even after edge snapping.
+ if(chosen?.dataset.nativeHorizontal==="false"){l=start.l;r=start.r}
+ if(chosen?.dataset.nativeVertical==="false"){t=start.t;b=start.b}
+ if(r-l<minimumWidth){if(edge.includes("w"))l=r-minimumWidth;else r=l+minimumWidth}
+ if(b-t<minimumHeight){if(edge.includes("n"))t=b-minimumHeight;else b=t+minimumHeight}
  showGuides(sx,sy);
  return {l,t,r,b};
 }
