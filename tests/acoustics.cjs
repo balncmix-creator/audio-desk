@@ -9,11 +9,14 @@ const origin='https://appassets.androidplatform.net/assets/';
   const page=await browser.newPage({viewport:{width:393,height:852},hasTouch:true,isMobile:true});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{
-   window.micCalls=[];window.permissionCalls=0;window.nativeWidgetCalls=0;
+   window.micCalls=[];window.permissionCalls=0;window.nativeWidgetCalls=0;window.nativeLayouts=[];window.nativeRows=[];
    window.AudioDesk={
     setAcousticActive(s,f){window.micCalls.push([s,f])},
     enableAcousticMic(){window.permissionCalls++;setTimeout(()=>window.receiveAudioDeskAcoustics({state:'granted'}),20)},
     openNativeWidgets(){window.nativeWidgetCalls++},
+    requestNativeWidgets(){window.receiveAudioDeskNativeWidgets(window.nativeRows)},
+    layoutNativeWidgets(payload){window.nativeLayouts.push(JSON.parse(payload))},
+    deleteNativeWidget(id){window.nativeRows=window.nativeRows.filter(x=>x.id!==id);window.receiveAudioDeskNativeWidgets(window.nativeRows)},
     requestLauncherApps(){window.receiveLauncherApps([],[],true)},
     requestMediaState(){},setStatusBarTheme(){},setWallpaperTone(){},setRefreshEnabled(){},isDefaultLauncher(){return true}
    };
@@ -64,6 +67,39 @@ const origin='https://appassets.androidplatform.net/assets/';
   assert.equal(await fft.isVisible(),true);
   assert.equal(await page.evaluate(()=>window.permissionCalls),0);
   assert.deepEqual(await page.evaluate(()=>window.micCalls.at(-1)),[false,false]);
+  await page.evaluate(()=>{
+   window.nativeRows=[{id:42,label:'Example calendar',width:220,height:120,minWidth:120,minHeight:80,horizontal:true,vertical:true}];
+   window.receiveAudioDeskNativeWidgets(window.nativeRows);
+  });
+  const slot=page.locator('#nativeWidget_42');
+  await slot.scrollIntoViewIfNeeded();
+  await page.waitForFunction(()=>window.nativeLayouts.at(-1)?.slots.some(s=>s.id===42));
+  assert.equal(await slot.getAttribute('data-widget-resizable'),'true');
+  const position=await slot.locator('.native-widget-body').boundingBox();
+  const native=await page.evaluate(()=>window.nativeLayouts.at(-1).slots.find(s=>s.id===42));
+  assert.ok(Math.abs(native.x-position.x)<2&&Math.abs(native.y-position.y)<2,'native host aligns to its actual DOM bounds');
+  await slot.getByRole('button',{name:'Edit Example calendar widget'}).click();
+  assert.equal(await page.locator('#widgetLayoutOverlay').isVisible(),true);
+  await page.waitForFunction(()=>window.nativeLayouts.at(-1)?.home===false);
+  await page.locator('#widgetLayoutOverlay [data-edge="e"]').focus();
+  await page.keyboard.press('ArrowLeft');
+  await page.locator('#widgetLayoutOverlay [data-layout-control="done"]').click();
+  const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('ad_widget_layout_v2_'+launcherTheme)));
+  assert.ok(saved.nativeWidget_42,'native widget geometry saved by shared editor');
+  await page.evaluate(()=>window.audioDeskBeginWidgetResize('nativeWidget_42'));
+  await page.locator('#widgetLayoutOverlay [data-layout-control="remove"]').click();
+  assert.equal(await slot.isVisible(),false);
+  await page.evaluate(()=>setLauncherTheme('warm'));
+  assert.equal(await slot.isVisible(),true,'widget removal is per theme');
+  await page.evaluate(()=>setLauncherTheme('minimal'));
+  assert.equal(await slot.isVisible(),false);
+  await page.evaluate(()=>window.audioDeskRestoreWidget('nativeWidget_42'));
+  assert.equal(await slot.isVisible(),true);
+  await page.evaluate(()=>window.audioDeskSetForeground(false));
+  await page.waitForFunction(()=>window.nativeLayouts.at(-1)?.home===false);
+  await page.evaluate(()=>window.audioDeskSetForeground(true));
+  await page.evaluate(()=>window.AudioDesk.deleteNativeWidget(42));
+  assert.equal(await slot.count(),0);
   assert.deepEqual(errors,[]);
   console.log('PASS: optional acoustic widgets, permission gating, shared mic, weighting/calibration, FFT UI, removal, foreground lifecycle and native widget picker');
  }finally{await browser.close()}
