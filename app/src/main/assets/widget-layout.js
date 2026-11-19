@@ -48,14 +48,15 @@ function save(){
  if(!chosen)return;
  const r=chosen.getBoundingClientRect();
  const size=geometry[chosen.id]||{};
+ size.natural=chosen.dataset.layoutSized!=="true";
  size.w=Math.round(r.width);size.h=Math.round(r.height);
  size.x=Math.round(parseFloat(chosen.style.getPropertyValue("--widget-x"))||0);
  size.y=Math.round(parseFloat(chosen.style.getPropertyValue("--widget-y"))||0);
  geometry[chosen.id]=size;
  deskStorage.setItem(storeKey(),JSON.stringify(geometry));
 }
-function minWidth(el,fallback){return Math.min(innerWidth-18,Math.max(fallback,Number(el?.dataset.nativeMinWidth)||0))}
-function minHeight(el,fallback){return Math.max(fallback,Number(el?.dataset.nativeMinHeight)||0)}
+function minWidth(el,fallback){return Math.min(innerWidth-18,Math.max(el?.id==="launcherMusicWidget"?76:fallback,Number(el?.dataset.nativeMinWidth)||0))}
+function minHeight(el,fallback){return Math.max(el?.id==="launcherMusicWidget"?48:fallback,Number(el?.dataset.nativeMinHeight)||0)}
 function layoutChanged(){window.dispatchEvent(new Event("audio-desk-layout-changed"))}
 function applySizes(){
  closeEditor();
@@ -70,12 +71,15 @@ function applySizes(){
   if(!g||![g.w,g.h,g.x,g.y].every(Number.isFinite))return;
   const width=limit(g.w,minWidth(el,id==="launcherAgendaWidget"?160:id==="launcherSplWidget"||id==="launcherMicAnalyzer"?200:100),Math.max(160,innerWidth-18));
   const minimum=minHeight(el,id==="launcherMusicWidget"?202:id==="launcherAgendaWidget"?156:id==="launcherSplWidget"||id==="launcherMicAnalyzer"?230:48);
-  const height=limit(g.h,minimum,Math.max(minimum,320,innerHeight*.8));
-  el.style.setProperty("--user-widget-width",Math.round(width)+"px");
-  el.style.setProperty("--user-widget-height",Math.round(height)+"px");
-  el.style.setProperty("--widget-x",limit(g.x,-innerWidth*.7,innerWidth*.7)+"px");
-  el.style.setProperty("--widget-y",limit(g.y,-innerHeight*.7,innerHeight*.7)+"px");
-  el.dataset.layoutSized="true";
+  const height=limit(g.h,minimum,Math.max(minimum,innerHeight*4));
+  if(!g.natural){
+   el.style.setProperty("--user-widget-width",Math.round(width)+"px");
+   el.style.setProperty("--user-widget-height",Math.round(height)+"px");
+   el.dataset.layoutSized="true";
+  }
+  el.style.setProperty("--widget-x",limit(g.x,-innerWidth,innerWidth)+"px");
+  const maxOffset=Math.max(innerHeight,Math.min(40000,Math.abs(g.y)));
+  el.style.setProperty("--widget-y",limit(g.y,-maxOffset,maxOffset)+"px");
  });
  // Older versions permitted overlapping saved positions. Prefer original
  // flow placement for affected widgets; retain size if that is sufficient.
@@ -92,13 +96,13 @@ function applySizes(){
    else delete geometry[el.id];
   }
  }
- deskStorage.setItem(storeKey(),JSON.stringify(geometry));layoutChanged();
+ deskStorage.setItem(storeKey(),JSON.stringify(geometry));updateHomeExtent();layoutChanged();
 }
 function closeEditor(){
  hold&&clearTimeout(hold.timer);hold=null;
  edit=null;gesture=null;
  if(chosen){chosen.classList.remove("widget-editing");chosen=null}
- document.body.classList.remove("widget-dragging");
+ document.body.classList.remove("widget-dragging","widget-layout-editing");
  document.getElementById("widgetLayoutOverlay")?.setAttribute("hidden","");
  guides.replaceChildren();layoutChanged();
 }
@@ -307,20 +311,24 @@ function position(){
   sw:[r.left,r.bottom],s:[centerX,r.bottom],se:[r.right,r.bottom]
  };
  for(const button of overlay.querySelectorAll(".widget-resize-handle")){
-  const p=positions[button.dataset.edge];
-  button.style.left=limit(p[0],17,innerWidth-17)+"px";
-  button.style.top=limit(p[1],17,innerHeight-17)+"px";
+  const edge=button.dataset.edge,p=positions[edge];
+  button.disabled=(chosen.dataset.nativeHorizontal==="false"&&/[we]/.test(edge))||
+   (chosen.dataset.nativeVertical==="false"&&/[ns]/.test(edge));
+  const halfW=(button.offsetWidth||34)/2,halfH=(button.offsetHeight||34)/2;
+  button.style.left=limit(p[0],Math.max(halfW+1,28),innerWidth-Math.max(halfW+1,28))+"px";
+  button.style.top=limit(p[1],halfH+1,innerHeight-halfH-1)+"px";
  }
  const bar=overlay.querySelector(".layout-toolbar"),grip=overlay.querySelector(".layout-move-handle");
  bar.style.left=limit(r.left,5,Math.max(5,innerWidth-bar.offsetWidth-5))+"px";
- bar.style.top=limit(r.top-49,11,innerHeight-42)+"px";
+ const top=r.top-49,bottom=r.bottom+20;
+ bar.style.top=limit(top>=11?top:bottom+bar.offsetHeight<innerHeight?bottom:11,11,innerHeight-42)+"px";
  grip.style.left=limit(centerX,50,innerWidth-50)+"px";
- grip.style.top=limit(r.top+28,30,innerHeight-30)+"px";
+ grip.style.top=limit(centerY,30,innerHeight-30)+"px";
 }
 function openEditor(id){
  const el=byId(id);if(!el||!movable().includes(el))return false;
  closeEditor();
- chosen=el;chosen.classList.add("widget-editing");
+ chosen=el;chosen.classList.add("widget-editing");document.body.classList.add("widget-layout-editing");
  overlay.hidden=false;
  cancelClickUntil=Date.now()+850;
  position();
@@ -338,7 +346,7 @@ overlay.addEventListener("click",e=>{
   delete geometry[chosen.id];deskStorage.setItem(storeKey(),JSON.stringify(geometry));
   const el=chosen;closeEditor();
   ["--widget-x","--widget-y","--user-widget-width","--user-widget-height"].forEach(x=>el.style.removeProperty(x));
-  delete el.dataset.layoutSized;layoutChanged();
+  delete el.dataset.layoutSized;updateHomeExtent();layoutChanged();
  }
 });
 overlay.addEventListener("pointerdown",e=>{
@@ -371,7 +379,7 @@ overlay.addEventListener("pointermove",e=>{
 });
 function endGesture(e){
  if(!gesture||gesture.pointerId!==e.pointerId)return;
- gesture=null;save();guides.replaceChildren();
+ gesture=null;save();updateHomeExtent();guides.replaceChildren();
  document.body.classList.remove("widget-dragging");
  requestPos();
 }
@@ -389,7 +397,7 @@ overlay.addEventListener("keydown",e=>{
  const pos=btn.dataset.edge?resizeDimensions(r,btn.dataset.edge,dx,dy,false):moveDimensions(r,dx,dy);
  if(btn.dataset.edge)applySafeResize(pos,pos,btn.dataset.edge);
  else guardedChange(chosen,()=>applyRect(pos,null));
- save();requestPos();
+ save();updateHomeExtent();requestPos();
 });
 function registerWidget(id){
  const el=byId(id);if(!el||el.dataset.widgetResizable==="true")return;
@@ -440,6 +448,7 @@ document.addEventListener("pointerdown",e=>{
 },true);
 window.addEventListener("resize",()=>{applySizes();requestPos()});
 window.addEventListener("launcher-page-changed",closeEditor);
+window.addEventListener("scroll",()=>{if(chosen&&!gesture)requestPos()},{passive:true});
 const restoreToggle=document.createElement("button");
 restoreToggle.id="widgetRestoreToggle";restoreToggle.type="button";
 restoreToggle.className="launcher-options-action";
@@ -465,5 +474,80 @@ function renderRemoved(){
   restoreList.append(b);
  }
 }
+// Whole-page shelf packing. Keep provider content, sizes, removed widgets
+// and each theme's state intact; undo restores the exact saved geometry.
+const previousKey=()=>"ad_widget_previous_layout_v1_"+launcherTheme;
+function updateHomeExtent(){
+ const home=byId("launcherHomePage");
+ if(!home||home.hidden)return;
+ home.style.removeProperty("--widget-arranged-height");
+ const bounds=home.getBoundingClientRect();
+ let bottom=0;
+ for(const el of movable())bottom=Math.max(bottom,layout(el).b-bounds.top);
+ if(bottom>0)home.style.setProperty("--widget-arranged-height",Math.ceil(bottom+110)+"px");
+}
+function arrangeWidgets(random){
+ if(launcherPage!=="home")return false;
+ closeEditor();
+ const home=byId("launcherHomePage"),nodes=movable().filter(el=>!movable().some(p=>p!==el&&p.contains(el)));
+ if(!nodes.length)return false;
+ const before=JSON.stringify(geometry),snapshots=nodes.map(el=>[el,snapshot(el)]);
+ const original=nodes.map(el=>({el,r:layout(el)})).sort((a,b)=>a.r.t-b.r.t||a.r.l-b.r.l);
+ const base=home.getBoundingClientRect(),left=Math.max(8,Math.min(...original.map(o=>o.r.l))),right=Math.min(innerWidth-12,Math.max(...original.map(o=>o.r.r)));
+ const ordered=original.slice();
+ if(random&&ordered.length>1){
+  for(let i=ordered.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ordered[i],ordered[j]]=[ordered[j],ordered[i]]}
+  if(ordered.every((o,i)=>o===original[i]))ordered.push(ordered.shift());
+ }
+ const top=Math.min(...original.map(o=>o.r.t));
+ const rail=byId("launcherAlphaIndex");
+ const railRect=rail&&rail.getClientRects().length?rail.getBoundingClientRect():null;
+ const ceiling=railRect&&railRect.width>0&&railRect.left>left?Math.min(right,railRect.left-5):right;
+ const available=Math.max(...original.map(o=>o.r.w),ceiling-left);
+ const reserve=byId("launcherTilesSearch");
+ const obstacle=reserve&&reserve.getClientRects().length&&getComputedStyle(reserve).display!=="none"?layout(reserve):null;
+ let x=left,y=top,row=0;
+ const positions=[];
+ for(const o of ordered){
+  const w=o.r.w,h=o.r.h;
+  if(x>left&&x+w>left+available+1){x=left;y+=row+10;row=0}
+  if(obstacle&&overlapArea({l:x,r:x+w,t:y,b:y+h},obstacle)>0){x=left;y=Math.max(y+row+10,obstacle.b+10);row=0}
+  positions.push({el:o.el,l:Math.min(x,innerWidth-w-4),t:y,w,h});
+  x+=w+10;row=Math.max(row,h);
+ }
+ document.body.classList.add("widget-dragging");
+ for(const p of positions){
+  const r=layout(p.el);
+  p.el.style.setProperty("--widget-x",Math.round(offset(p.el,"x")+p.l-r.l)+"px");
+  p.el.style.setProperty("--widget-y",Math.round(offset(p.el,"y")+p.t-r.t)+"px");
+ }
+ const valid=positions.every(p=>!collisions(p.el).length)&&positions.every(p=>{const r=layout(p.el);return r.l>=-1&&r.r<=innerWidth+1&&(!obstacle||overlapArea(r,obstacle)===0)});
+ if(!valid){
+  for(const [el,state] of snapshots)restoreSnapshot(el,state);
+  document.body.classList.remove("widget-dragging");
+  updateHomeExtent();layoutChanged();return false;
+ }
+ deskStorage.setItem(previousKey(),before);
+ for(const p of positions){const r=layout(p.el);geometry[p.el.id]={w:Math.round(r.w),h:Math.round(r.h),x:Math.round(offset(p.el,"x")),y:Math.round(offset(p.el,"y")),natural:p.el.dataset.layoutSized!=="true"}}
+ deskStorage.setItem(storeKey(),JSON.stringify(geometry));
+ updateHomeExtent();document.body.classList.remove("widget-dragging");layoutChanged();return true;
+}
+function restorePrevious(){
+ const previous=deskStorage.getItem(previousKey());
+ if(previous===null)return false;
+ deskStorage.setItem(storeKey(),previous);
+ deskStorage.removeItem(previousKey());
+ applySizes();return true;
+}
+const toolsPanel=document.createElement("div");toolsPanel.id="widgetArrangementTools";toolsPanel.className="widget-arrangement-tools";
+toolsPanel.innerHTML='<button type="button" class="launcher-options-action" id="widgetAutoArrange">Auto arrange widgets</button><button type="button" class="launcher-options-action" id="widgetRandomize">Randomize widget positions</button><button type="button" class="launcher-options-action" id="widgetUndoArrange">Restore previous positions</button><small id="widgetArrangementStatus" role="status"></small>';
+restoreList.after(toolsPanel);
+function refreshArrangement(){byId("widgetUndoArrange").disabled=deskStorage.getItem(previousKey())===null}
+function act(random){const ok=arrangeWidgets(random);byId("widgetArrangementStatus").textContent=ok?"Layout saved. Restore previous positions to undo.":"No collision-free arrangement found. Layout unchanged.";refreshArrangement()}
+byId("widgetAutoArrange").onclick=()=>act(false);
+byId("widgetRandomize").onclick=()=>act(true);
+byId("widgetUndoArrange").onclick=()=>{if(restorePrevious())byId("widgetArrangementStatus").textContent="Previous layout restored.";refreshArrangement()};
+window.addEventListener("audio-desk-layout-changed",refreshArrangement);
 applySizes();
+refreshArrangement();
 })();
