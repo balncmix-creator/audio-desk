@@ -49,6 +49,9 @@ class MainActivity : Activity() {
     private lateinit var mediaWidgetSupport: MediaWidgetSupport
     private lateinit var spectrumSupport: AudioSpectrumSupport
     private lateinit var agendaSupport: AgendaSupport
+    private lateinit var acousticSupport: AcousticMeterSupport
+    private lateinit var nativeWidgets: NativeWidgetPanel
+    private val acousticPermissionRequest = 6212
     private val agendaPermissionRequest = 6211
     private var spectrumVisible = false
     private var projectionInUse = false
@@ -179,6 +182,13 @@ class MainActivity : Activity() {
                         data.toString() + ")", null)
             }
         }
+        acousticSupport = AcousticMeterSupport(this) { data ->
+            runOnUiThread {
+                if (!destroyed && ::appWebView.isInitialized && !pixelBarSuspended)
+                    appWebView.evaluateJavascript("window.receiveAudioDeskAcoustics&&window.receiveAudioDeskAcoustics(" + data.toString() + ")", null)
+            }
+        }
+        nativeWidgets = NativeWidgetPanel(this)
         appWebView.addJavascriptInterface(AppBridge(), "AudioDesk")
         appWebView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
@@ -395,6 +405,25 @@ class MainActivity : Activity() {
     }
 
     private inner class AppBridge {
+        @JavascriptInterface fun enableAcousticMic() {
+            runOnUiThread {
+                if (destroyed || pixelBarSuspended) return@runOnUiThread
+                if (!acousticSupport.permitted())
+                    requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), acousticPermissionRequest)
+                else acousticSupport.state("granted")
+            }
+        }
+        @JavascriptInterface fun setAcousticActive(spl: Boolean, fft: Boolean) {
+            runOnUiThread {
+                if (destroyed) return@runOnUiThread
+                val visible = !pixelBarSuspended && browserPanel.visibility != View.VISIBLE
+                acousticSupport.setActive(spl && visible, fft && visible)
+            }
+        }
+        @JavascriptInterface fun openNativeWidgets() {
+            runOnUiThread { if (!destroyed && !pixelBarSuspended) nativeWidgets.open() }
+        }
+
         @JavascriptInterface fun requestAgenda() {
             runOnUiThread { if (!destroyed && ::agendaSupport.isInitialized) agendaSupport.refresh() }
         }
@@ -687,6 +716,7 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        if (::nativeWidgets.isInitialized) nativeWidgets.resume()
         pixelBarSuspended = false
         applyPixelStatusMode()
         if (::mediaWidgetSupport.isInitialized) sendMediaState(mediaWidgetSupport.state())
@@ -701,6 +731,8 @@ class MainActivity : Activity() {
     }
 
     override fun onPause() {
+        if (::acousticSupport.isInitialized) acousticSupport.stop()
+        if (::nativeWidgets.isInitialized) nativeWidgets.pause()
         if (::spectrumSupport.isInitialized) spectrumSupport.stop()
         stopSpectrumProjection()
         pixelBarSuspended = true
@@ -718,6 +750,8 @@ class MainActivity : Activity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == agendaPermissionRequest && ::agendaSupport.isInitialized) agendaSupport.refresh()
+        if (requestCode == acousticPermissionRequest && ::acousticSupport.isInitialized)
+            acousticSupport.state(if (acousticSupport.permitted()) "granted" else "permission")
         if (requestCode == spectrumPermissionRequest && ::spectrumSupport.isInitialized) {
             if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED &&
                 spectrumVisible) spectrumSupport.start()
@@ -728,6 +762,7 @@ class MainActivity : Activity() {
     @Deprecated("Activity result compatibility for minSdk 23")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (::nativeWidgets.isInitialized && nativeWidgets.result(requestCode, resultCode)) return
         if (requestCode == spectrumProjectionRequest) {
             if (resultCode == RESULT_OK && data != null && spectrumVisible &&
                 Build.VERSION.SDK_INT >= 29) {
@@ -767,6 +802,7 @@ class MainActivity : Activity() {
 
     private fun openInBrowser(url: String) {
         if (!url.startsWith("https://") && !url.startsWith("http://")) return
+        if (::acousticSupport.isInitialized) acousticSupport.stop()
         if (::spectrumSupport.isInitialized) spectrumSupport.stop()
         stopSpectrumProjection()
         appWebView.evaluateJavascript("window.audioDeskSetForeground&&window.audioDeskSetForeground(false);if(typeof pauseSampleDemos==='function')pauseSampleDemos();window.launcherWallpaperActive&&window.launcherWallpaperActive(false)", null)
@@ -816,6 +852,8 @@ class MainActivity : Activity() {
         if (::sampleDemos.isInitialized) sampleDemos.close()
         if (::launcherSupport.isInitialized) launcherSupport.close()
         if (::agendaSupport.isInitialized) agendaSupport.close()
+        if (::acousticSupport.isInitialized) acousticSupport.stop()
+        if (::nativeWidgets.isInitialized) nativeWidgets.close()
         stopSpectrumProjection()
         if (::spectrumSupport.isInitialized) spectrumSupport.close()
         if (::systemWallpaperInstaller.isInitialized) systemWallpaperInstaller.close()
