@@ -5,7 +5,7 @@
 "use strict";
 const ids=["launcherClockWidget","warmDateWidget","warmAudioWidget","warmSearchWidget",
  "launcherMusicWidget","launcherFavorites","launcherRecentStrip","launcherTilesSearch",
- "liveClockWidget","liveCalendarWidget","liveNewsWidget","launcherAgendaWidget","launcherSplWidget","launcherMicAnalyzer"];
+ "liveClockWidget","liveCalendarWidget","liveNewsWidget","launcherAgendaWidget","launcherSplWidget","launcherMicAnalyzer","launcherYouTubeWidget"];
 const byId=id=>document.getElementById(id);
 // Edition-specific widgets must not be packed, edited, or measured in an
 // unrelated theme, even if a stylesheet temporarily exposes their wrapper.
@@ -17,7 +17,7 @@ const storeKey=()=>"ad_widget_layout_v2_"+launcherTheme;
 const removedKey=()=>"ad_widget_removed_v1_"+launcherTheme;
 const labels={launcherClockWidget:"Clock",warmDateWidget:"Date",warmAudioWidget:"Audio",warmSearchWidget:"Search",
  launcherMusicWidget:"Music player",launcherFavorites:"Favourites",launcherRecentStrip:"Recents",
- launcherTilesSearch:"App search",liveClockWidget:"Live clock",liveCalendarWidget:"Live calendar",liveNewsWidget:"Live news",launcherAgendaWidget:"Agenda",launcherSplWidget:"SPL meter",launcherMicAnalyzer:"Mic spectrum"};
+ launcherTilesSearch:"App search",liveClockWidget:"Live clock",liveCalendarWidget:"Live calendar",liveNewsWidget:"Live news",launcherAgendaWidget:"Agenda",launcherSplWidget:"SPL meter",launcherMicAnalyzer:"Mic spectrum",launcherYouTubeWidget:"YouTube"};
 let removed=new Set();
 function readRemoved(){
  try{const saved=JSON.parse(deskStorage.getItem(removedKey())||"[]");
@@ -60,8 +60,8 @@ function save(){
  geometry[chosen.id]=size;
  deskStorage.setItem(storeKey(),JSON.stringify(geometry));
 }
-function minWidth(el,fallback){return Math.min(innerWidth-18,Math.max(el?.id==="launcherMusicWidget"?76:fallback,Number(el?.dataset.nativeMinWidth)||0))}
-function minHeight(el,fallback){return Math.max(el?.id==="launcherMusicWidget"?48:fallback,Number(el?.dataset.nativeMinHeight)||0)}
+function minWidth(el,fallback){return Math.min(innerWidth-18,Math.max(el?.id==="launcherMusicWidget"?76:el?.id==="launcherYouTubeWidget"?180:fallback,Number(el?.dataset.nativeMinWidth)||0))}
+function minHeight(el,fallback){return Math.max(el?.id==="launcherMusicWidget"?48:el?.id==="launcherYouTubeWidget"?144:fallback,Number(el?.dataset.nativeMinHeight)||0)}
 function layoutChanged(){window.dispatchEvent(new Event("audio-desk-layout-changed"))}
 function applySizes(){
  closeEditor();
