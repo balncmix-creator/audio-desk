@@ -91,7 +91,7 @@ internal class AcousticDsp(private val rate: Int) {
         private val a = (1-k)/(1+k)
         private var x = 0.0; private var y = 0.0
         fun next(v: Double): Double {
-            val out = b*(v + if (high) -x else x) + a*y
+            val out = b*(v + (if (high) -x else x)) + a*y
             x=v; y=out; return out
         }
         fun gain(hz: Double, rate: Int): Double {
@@ -140,7 +140,7 @@ internal class AcousticDsp(private val rate: Int) {
         var j=0
         for(i in 1 until N){
             var bit=N shr 1
-            while(j and bit != 0){j=j xor bit;bit=bit shr 1}
+            while((j and bit) != 0){j=j xor bit;bit=bit shr 1}
             j=j xor bit
             if(i<j){val v=real[i];real[i]=real[j];real[j]=v}
         }
@@ -166,7 +166,12 @@ internal class AcousticDsp(private val rate: Int) {
             val bin=(hz*N/rate).coerceIn(1.0,(N/2-2).toDouble())
             val lo=bin.toInt();val t=bin-lo
             val a=hypot(real[lo],imag[lo]);val b=hypot(real[lo+1],imag[lo+1])
-            20*log10(max(1e-7,(a*(1-t)+b*t)*4/N))
+            var peak=a*(1-t)+b*t
+            val half=1000.0.pow(.5/(BANDS-1))
+            val first=ceil(bin/half).toInt().coerceAtLeast(1)
+            val last=floor(bin*half).toInt().coerceAtMost(N/2-1)
+            for(k in first..last) peak=max(peak,hypot(real[k],imag[k]))
+            20*log10(max(1e-7,peak*4/N))
         }
     }
 }
