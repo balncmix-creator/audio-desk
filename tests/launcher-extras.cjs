@@ -159,10 +159,13 @@ const assert=require('node:assert/strict');
    // tall recents). Preserve original inline styles exactly for later tests.
    window.savedWidgetDisplay=[...home.querySelectorAll('[data-widget-resizable]')].map(el=>[el,el.style.getPropertyValue('display'),el.style.getPropertyPriority('display')]);
    for(const [node] of window.savedWidgetDisplay)node.style.setProperty('display','none','important');
+   window.scrollTo(0,0);
    for(const id of ['nativeWidget_701','nativeWidget_702']){
     const node=document.createElement('div');node.id=id;
     node.style.cssText='position:fixed!important;width:140px;height:100px;left:100px;top:280px;z-index:40;box-sizing:border-box';
-    home.append(node);window.audioDeskRegisterNativeWidget(id,id);
+    // Deliberately use viewport coordinates, independent of Home ancestor
+    // transforms/clipping and the previous test's scroll offset.
+    document.body.append(node);window.audioDeskRegisterNativeWidget(id,id);
    }
    document.querySelector('#nativeWidget_702').style.top='450px';
   });
@@ -171,6 +174,8 @@ const assert=require('node:assert/strict');
   const drag=async(edge,dx,dy)=>{
    const handle=page.locator('#widgetLayoutOverlay [data-edge="'+edge+'"]');
    const b=await handle.boundingBox();
+   const hit=await page.evaluate(({x,y})=>document.elementFromPoint(x,y)?.closest('[data-edge]')?.dataset.edge,{x:b.x+b.width/2,y:b.y+b.height/2});
+   assert.equal(hit,edge,'pointer must actually hit the intended resize handle');
    await page.mouse.move(b.x+b.width/2,b.y+b.height/2);await page.mouse.down();
    await page.mouse.move(b.x+b.width/2+dx,b.y+b.height/2+dy,{steps:4});await page.mouse.up();
    await page.waitForTimeout(50);
@@ -180,7 +185,7 @@ const assert=require('node:assert/strict');
   // only when close; a deliberate change must preserve the opposite edge.
   await drag('w',-30,0);
   let changed=await bounds();
-  assert.ok(changed.left<initial.left-15&&Math.abs(changed.right-initial.right)<2,'west edge grows with right edge fixed');
+  assert.ok(changed.left<initial.left-15&&Math.abs(changed.right-initial.right)<2,'west edge grows with right edge fixed: '+JSON.stringify({initial,changed}));
   initial=changed;
   await drag('e',35,0);changed=await bounds();
   assert.ok(changed.right>initial.right+15&&Math.abs(changed.left-initial.left)<2,'east edge moves independently');
