@@ -57,20 +57,20 @@ internal class NativeWidgetPanel(private val activity: Activity, private val web
                 try {host.deleteAppWidgetId(id)}catch(_:Exception){}
                 save();continue
             }
-            val minW = if (info.resizeMode and AppWidgetProviderInfo.RESIZE_HORIZONTAL != 0 && info.minResizeWidth > 0) info.minResizeWidth else info.minWidth
-            val minH = if (info.resizeMode and AppWidgetProviderInfo.RESIZE_VERTICAL != 0 && info.minResizeHeight > 0) info.minResizeHeight else info.minHeight
+            val minW = if ((info.resizeMode and AppWidgetProviderInfo.RESIZE_HORIZONTAL) != 0 && info.minResizeWidth > 0) info.minResizeWidth else info.minWidth
+            val minH = if ((info.resizeMode and AppWidgetProviderInfo.RESIZE_VERTICAL) != 0 && info.minResizeHeight > 0) info.minResizeHeight else info.minHeight
             result.put(JSONObject().put("id",id).put("label",info.loadLabel(activity.packageManager))
                 .put("width",dp(info.minWidth).coerceAtLeast(100)).put("height",dp(info.minHeight).coerceAtLeast(70))
                 .put("minWidth",dp(minW).coerceAtLeast(72)).put("minHeight",dp(minH).coerceAtLeast(56))
-                .put("horizontal",info.resizeMode and AppWidgetProviderInfo.RESIZE_HORIZONTAL != 0)
-                .put("vertical",info.resizeMode and AppWidgetProviderInfo.RESIZE_VERTICAL != 0))
+                .put("horizontal",(info.resizeMode and AppWidgetProviderInfo.RESIZE_HORIZONTAL) != 0)
+                .put("vertical",(info.resizeMode and AppWidgetProviderInfo.RESIZE_VERTICAL) != 0))
         }
         js("window.receiveAudioDeskNativeWidgets&&window.receiveAudioDeskNativeWidgets("+result.toString()+")")
     }
     fun open() {
         if (picker?.isShowing == true || pending > 0) return
         val providers = manager.installedProviders.filter {
-            it.widgetCategory and AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN != 0
+            (it.widgetCategory and AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN) != 0
         }.sortedBy { it.loadLabel(activity.packageManager).lowercase() }
         if (providers.isEmpty()) {
             Toast.makeText(activity,"No app widgets available",Toast.LENGTH_SHORT).show();return
