@@ -97,7 +97,8 @@ function draw(){
 }
 function resize(){
  if(!visible(fft))return;
- const b=canvas.getBoundingClientRect();canvas.width=Math.max(10,Math.round(b.width));canvas.height=Math.max(10,Math.round(b.height));draw()
+ const b=canvas.getBoundingClientRect(),w=Math.max(10,Math.round(b.width)),h=Math.max(10,Math.round(b.height));
+ if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}draw()
 }
 if("ResizeObserver" in window)new ResizeObserver(resize).observe(canvas);
 range.onchange=()=>{save("range",range.value);draw()};
