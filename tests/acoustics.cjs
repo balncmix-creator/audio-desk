@@ -68,13 +68,17 @@ const origin='https://appassets.androidplatform.net/assets/';
   assert.equal(await page.evaluate(()=>window.permissionCalls),0);
   assert.deepEqual(await page.evaluate(()=>window.micCalls.at(-1)),[false,false]);
   await page.evaluate(()=>{
-   window.nativeRows=[{id:42,label:'Example calendar',width:220,height:120,minWidth:120,minHeight:80,horizontal:true,vertical:true}];
+   window.nativeRows=[{id:42,label:'Example calendar',accent:'#8039C6',width:220,height:120,minWidth:120,minHeight:80,horizontal:true,vertical:true}];
    window.receiveAudioDeskNativeWidgets(window.nativeRows);
   });
   const slot=page.locator('#nativeWidget_42');
   await slot.scrollIntoViewIfNeeded();
   await page.waitForFunction(()=>window.nativeLayouts.at(-1)?.slots.some(s=>s.id===42));
   assert.equal(await slot.getAttribute('data-widget-resizable'),'true');
+  const appearance=await slot.evaluate(el=>({bg:getComputedStyle(el).backgroundColor,border:getComputedStyle(el).borderTopWidth,accent:el.style.getPropertyValue('--native-provider-accent')}));
+  assert.equal(appearance.bg,'rgba(0, 0, 0, 0)');
+  assert.equal(appearance.border,'0px');
+  assert.equal(appearance.accent,'#8039C6');
   // The bridge is frame-coalesced; scrollIntoView may complete before its
   // next frame. Compare the current DOM rectangle and latest bridge payload
   // in the same evaluation and require both positions and dimensions to match.
