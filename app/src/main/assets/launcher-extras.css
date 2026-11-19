@@ -344,3 +344,33 @@ body[data-home-page="home"][data-launcher-theme] #launcherHomePage :is([data-wid
  min-height:var(--user-widget-height)!important;max-height:none!important;
  flex-shrink:0;
 }
+
+/* A packed Home is a document-relative canvas, not translated flow items.
+   Parent wrappers retain theme-specific selectors but reserve no empty rows. */
+body[data-home-page="home"] #launcherHomePage[data-packed-layout]{
+ position:relative!important;
+ height:var(--widget-arranged-height,100dvh)!important;
+ min-height:100dvh!important;
+ padding-top:0!important;padding-bottom:0!important;
+ overflow:visible!important;
+}
+body[data-home-page="home"] #launcherHomePage[data-packed-layout] :is(#warmWidgets,#launcherLiveTiles):not([hidden]){
+ display:contents!important;
+}
+body:not([data-launcher-theme="warm"]) #launcherHomePage[data-packed-layout] #warmWidgets{display:none!important}
+body[data-home-page="home"][data-launcher-theme] #launcherHomePage[data-packed-layout] [data-widget-packed="true"]{
+ position:absolute!important;
+ left:var(--widget-pack-left,14px)!important;top:var(--widget-pack-top,24px)!important;
+ right:auto!important;bottom:auto!important;
+ margin:0!important;
+ width:var(--user-widget-width)!important;max-width:none!important;
+ height:var(--user-widget-height)!important;min-height:var(--user-widget-height)!important;
+ box-sizing:border-box!important;min-width:0!important;
+}
+body[data-home-page="home"][data-launcher-theme] #launcherHomePage[data-packed-layout] #launcherRecentStrip{
+ padding:12px!important;
+}
+body[data-home-page="home"][data-launcher-theme] #launcherHomePage[data-packed-layout] [data-pack-measure="true"]{
+ height:auto!important;min-height:0!important;max-height:none!important;
+ overflow:visible!important;
+}
