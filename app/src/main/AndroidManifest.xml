@@ -19,6 +19,15 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+        <!-- Discover compatible browser Custom Tabs for authenticated YouTube browsing. -->
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
     </queries>
     <application android:allowBackup="false" android:label="Audio Desk Launcher"
         android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher"
