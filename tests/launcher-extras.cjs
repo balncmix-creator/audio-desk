@@ -152,6 +152,47 @@ const assert=require('node:assert/strict');
   await page.locator('#widgetLayoutOverlay [data-layout-control="done"]').click();
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('ad_widget_layout_v2_warm')));
   assert.ok(saved.launcherMusicWidget,'per-theme widget positions are persisted');
+  // Exercise real edge drags on an isolated dynamic Home widget pair.
+  await page.evaluate(()=>{
+   const home=document.getElementById('launcherHomePage');
+   for(const id of ['nativeWidget_701','nativeWidget_702']){
+    const node=document.createElement('div');node.id=id;
+    node.style.cssText='position:fixed!important;width:140px;height:100px;left:100px;top:280px;z-index:40;box-sizing:border-box';
+    home.append(node);window.audioDeskRegisterNativeWidget(id,id);
+   }
+   document.querySelector('#nativeWidget_702').style.top='450px';
+  });
+  await page.evaluate(()=>window.audioDeskBeginWidgetResize('nativeWidget_701'));
+  const bounds=async()=>page.locator('#nativeWidget_701').evaluate(el=>el.getBoundingClientRect().toJSON());
+  const drag=async(edge,dx,dy)=>{
+   const handle=page.locator('#widgetLayoutOverlay [data-edge="'+edge+'"]');
+   const b=await handle.boundingBox();
+   await page.mouse.move(b.x+b.width/2,b.y+b.height/2);await page.mouse.down();
+   await page.mouse.move(b.x+b.width/2+dx,b.y+b.height/2+dy,{steps:4});await page.mouse.up();
+   await page.waitForTimeout(50);
+  };
+  let initial=await bounds();
+  // Snap the moving left edge to the neighboring alignment line at x=100
+  // only when close; a deliberate change must preserve the opposite edge.
+  await drag('w',-30,0);
+  let changed=await bounds();
+  assert.ok(changed.left<initial.left-15&&Math.abs(changed.right-initial.right)<2,'west edge grows with right edge fixed');
+  initial=changed;
+  await drag('e',35,0);changed=await bounds();
+  assert.ok(changed.right>initial.right+15&&Math.abs(changed.left-initial.left)<2,'east edge moves independently');
+  initial=changed;
+  await drag('s',0,65);changed=await bounds();
+  assert.ok(Math.abs(changed.bottom-450)<3&&Math.abs(changed.top-initial.top)<2,'south snaps to adjacent widget top');
+  initial=changed;
+  await drag('n',0,-35);changed=await bounds();
+  assert.ok(changed.top<initial.top-15&&Math.abs(changed.bottom-initial.bottom)<2,'north edge grows with bottom fixed');
+  await page.locator('#widgetLayoutOverlay [data-layout-control="done"]').click();
+  await page.evaluate(()=>{
+   for(const id of ['nativeWidget_701','nativeWidget_702']){
+    window.audioDeskUnregisterNativeWidget(id);document.getElementById(id).remove();
+   }
+   window.audioDeskRestoreWidgetLayouts();
+  });
   // Every theme has four distinct sharp, original audio compositions.
   await page.evaluate(()=>openWallpaperPicker());
   for(const theme of ['warm','minimal','pixel','windows']){
