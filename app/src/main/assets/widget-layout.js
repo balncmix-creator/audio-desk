@@ -60,6 +60,7 @@ function minHeight(el,fallback){return Math.max(el?.id==="launcherMusicWidget"?4
 function layoutChanged(){window.dispatchEvent(new Event("audio-desk-layout-changed"))}
 function applySizes(){
  closeEditor();
+ document.body.classList.add("widget-dragging");
  geometry=read();
  applyRemoved();
  ids.forEach(id=>{
@@ -96,7 +97,7 @@ function applySizes(){
    else delete geometry[el.id];
   }
  }
- deskStorage.setItem(storeKey(),JSON.stringify(geometry));updateHomeExtent();layoutChanged();
+ deskStorage.setItem(storeKey(),JSON.stringify(geometry));updateHomeExtent();document.body.classList.remove("widget-dragging");layoutChanged();
 }
 function closeEditor(){
  hold&&clearTimeout(hold.timer);hold=null;
@@ -489,11 +490,11 @@ function updateHomeExtent(){
 function arrangeWidgets(random){
  if(launcherPage!=="home")return false;
  closeEditor();
- const home=byId("launcherHomePage"),nodes=movable().filter(el=>!movable().some(p=>p!==el&&p.contains(el)));
+ const home=byId("launcherHomePage"),visible=movable(),nodes=visible.filter(el=>!visible.some(p=>p!==el&&p.contains(el)));
  if(!nodes.length)return false;
  const before=JSON.stringify(geometry),snapshots=nodes.map(el=>[el,snapshot(el)]);
  const original=nodes.map(el=>({el,r:layout(el)})).sort((a,b)=>a.r.t-b.r.t||a.r.l-b.r.l);
- const base=home.getBoundingClientRect(),left=Math.max(8,Math.min(...original.map(o=>o.r.l))),right=Math.min(innerWidth-12,Math.max(...original.map(o=>o.r.r)));
+ const left=Math.max(8,Math.min(...original.map(o=>o.r.l))),right=Math.min(innerWidth-12,Math.max(...original.map(o=>o.r.r)));
  const ordered=original.slice();
  if(random&&ordered.length>1){
   for(let i=ordered.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ordered[i],ordered[j]]=[ordered[j],ordered[i]]}
@@ -534,15 +535,15 @@ function arrangeWidgets(random){
 }
 function restorePrevious(){
  const previous=deskStorage.getItem(previousKey());
- if(previous===null)return false;
+ if(!previous)return false;
  deskStorage.setItem(storeKey(),previous);
- deskStorage.removeItem(previousKey());
+ deskStorage.setItem(previousKey(),"");
  applySizes();return true;
 }
 const toolsPanel=document.createElement("div");toolsPanel.id="widgetArrangementTools";toolsPanel.className="widget-arrangement-tools";
 toolsPanel.innerHTML='<button type="button" class="launcher-options-action" id="widgetAutoArrange">Auto arrange widgets</button><button type="button" class="launcher-options-action" id="widgetRandomize">Randomize widget positions</button><button type="button" class="launcher-options-action" id="widgetUndoArrange">Restore previous positions</button><small id="widgetArrangementStatus" role="status"></small>';
 restoreList.after(toolsPanel);
-function refreshArrangement(){byId("widgetUndoArrange").disabled=deskStorage.getItem(previousKey())===null}
+function refreshArrangement(){byId("widgetUndoArrange").disabled=!deskStorage.getItem(previousKey())}
 function act(random){const ok=arrangeWidgets(random);byId("widgetArrangementStatus").textContent=ok?"Layout saved. Restore previous positions to undo.":"No collision-free arrangement found. Layout unchanged.";refreshArrangement()}
 byId("widgetAutoArrange").onclick=()=>act(false);
 byId("widgetRandomize").onclick=()=>act(true);
