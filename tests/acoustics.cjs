@@ -14,6 +14,7 @@ const origin='https://appassets.androidplatform.net/assets/';
     setAcousticActive(s,f){window.micCalls.push([s,f])},
     enableAcousticMic(){window.permissionCalls++;setTimeout(()=>window.receiveAudioDeskAcoustics({state:'granted'}),20)},
     openNativeWidgets(){window.nativeWidgetCalls++},
+    openYouTubePage(destination,query){(window.youtubeCalls??=[]).push([destination,query])},
     requestNativeWidgets(){window.receiveAudioDeskNativeWidgets(window.nativeRows)},
     layoutNativeWidgets(payload){window.nativeLayouts.push(JSON.parse(payload))},
     deleteNativeWidget(id){window.nativeRows=window.nativeRows.filter(x=>x.id!==id);window.receiveAudioDeskNativeWidgets(window.nativeRows)},
@@ -32,6 +33,27 @@ const origin='https://appassets.androidplatform.net/assets/';
   await page.waitForFunction(()=>typeof window.receiveAudioDeskAcoustics==='function');
   const spl=page.locator('#launcherSplWidget'),fft=page.locator('#launcherMicAnalyzer');
   assert.equal(await spl.isVisible(),false);assert.equal(await fft.isVisible(),false);
+  const youtube=page.locator('#launcherYouTubeWidget');
+  assert.equal(await youtube.isVisible(),false,'YouTube is opt-in');
+  await page.locator('#launcherSettingsToggle').click();
+  await page.locator('#youtubeWidgetToggle').click();
+  await page.locator('#launcherOptionsClose').click();
+  assert.equal(await youtube.isVisible(),true);
+  assert.equal(await youtube.getAttribute('data-widget-resizable'),'true');
+  await page.locator('#ytHome').click();
+  await page.locator('#ytSubscriptions').click();
+  await page.locator('#ytSearchInput').fill('  REAPER sound design & mixing  ');
+  await page.locator('#ytSearchForm button').click();
+  assert.deepEqual(await page.evaluate(()=>window.youtubeCalls),[['home',''],['subscriptions',''],['search','REAPER sound design & mixing']]);
+  await page.evaluate(()=>window.audioDeskBeginWidgetResize('launcherYouTubeWidget'));
+  await page.locator('#widgetLayoutOverlay [data-layout-control="remove"]').click();
+  assert.equal(await youtube.isVisible(),false);
+  await page.evaluate(()=>window.audioDeskRestoreWidget('launcherYouTubeWidget'));
+  assert.equal(await youtube.isVisible(),true);
+  await page.locator('#launcherSettingsToggle').click();
+  await page.locator('#youtubeWidgetToggle').click();
+  await page.locator('#launcherOptionsClose').click();
+  assert.equal(await youtube.isVisible(),false);
   await page.locator('#launcherSettingsToggle').click();
   await page.locator('#acousticAddSpl').click();
   await page.locator('#acousticAddFft').click();
