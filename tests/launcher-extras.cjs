@@ -253,6 +253,54 @@ const assert=require('node:assert/strict');
    document.getElementById('widgetUndoArrange').click();
   });
   assert.equal(await page.locator('#launcherHomePage').getAttribute('data-packed-layout'),null,'undo restores natural layout mode');
+  // Auto arrange changes geometry only. In particular, the previous packed
+  // CSS revealed Warm's cream widgets in Minimal, Pixel and Windows.
+  const appearance=()=>page.evaluate(()=>{
+   const root=document.documentElement.style;
+   const nodes=[...document.querySelectorAll('#launcherHomePage [data-widget-resizable],#launcherAlphaIndex')].filter(el=>el.getClientRects().length&&el.getBoundingClientRect().width>16);
+   return {theme:launcherTheme,palette:document.body.dataset.themePalette,art:document.body.dataset.audioWallpaper,glass:document.body.dataset.glassMode,
+    tokens:['--theme-accent','--theme-panel','--theme-dark','--theme-text','--theme-surface','--theme-line'].map(k=>root.getPropertyValue(k)),
+    widgets:nodes.map(el=>{const c=getComputedStyle(el);return {id:el.id,bg:c.backgroundColor,color:c.color,border:c.borderTopColor,gradient:c.backgroundImage}})};
+  });
+  for(const theme of ['minimal','pixel','windows','warm']){
+   await page.evaluate(theme=>{
+    setLauncherTheme(theme);
+    localStorage.setItem('ad_widget_layout_v2_'+theme,'{}');
+    window.audioDeskRestoreWidgetLayouts();
+   },theme);
+   await page.waitForTimeout(350);
+   const prior=await appearance();
+   await page.evaluate(()=>document.getElementById('widgetAutoArrange').click());
+   assert.match(await page.locator('#widgetArrangementStatus').textContent(),/Layout saved/,theme+' arrangement succeeds');
+   await page.waitForTimeout(160);
+   assert.deepEqual(await appearance(),prior,theme+' arrangement preserves widget visibility and computed palette');
+   assert.equal(await page.locator('#warmDateWidget').isVisible(),theme==='warm',theme+' warm date visibility');
+   assert.equal(await page.locator('#warmAudioWidget').isVisible(),theme==='warm',theme+' warm audio visibility');
+   assert.equal(await page.locator('#liveClockWidget').isVisible(),theme==='windows',theme+' live tile visibility');
+   await page.evaluate(()=>document.getElementById('widgetRandomize').click());
+   await page.waitForTimeout(160);
+   assert.deepEqual(await appearance(),prior,theme+' randomize preserves colors and visibility');
+   await page.evaluate(()=>document.getElementById('widgetUndoArrange').click());
+   await page.waitForTimeout(160);
+   assert.deepEqual(await appearance(),prior,theme+' undo preserves colors and visibility');
+  }
+  // Restore a saved layout polluted by the previous version. Hidden edition
+  // cards must be removed from the persisted geometry before repacking.
+  await page.evaluate(()=>{
+   setLauncherTheme('minimal');
+   localStorage.setItem('ad_widget_layout_v2_minimal',JSON.stringify({
+    launcherMusicWidget:{w:270,h:250,x:0,y:0,packed:true,natural:false,left:14,top:196},
+    warmDateWidget:{w:270,h:59,x:0,y:0,packed:true,natural:false,left:14,top:20},
+    warmAudioWidget:{w:270,h:76,x:0,y:0,packed:true,natural:false,left:14,top:90}
+   }));
+   window.audioDeskRestoreWidgetLayouts();
+  });
+  await page.waitForTimeout(350);
+  const migrated=await page.evaluate(()=>JSON.parse(localStorage.getItem('ad_widget_layout_v2_minimal')));
+  assert.ok(!migrated.warmDateWidget&&!migrated.warmAudioWidget,'legacy cross-theme entries removed');
+  assert.equal(await page.locator('#warmDateWidget').isVisible(),false);
+  assert.equal(await page.locator('#warmAudioWidget').isVisible(),false);
+  await page.evaluate(()=>{localStorage.setItem('ad_widget_layout_v2_minimal','{}');window.audioDeskRestoreWidgetLayouts();setLauncherTheme('warm')});
   // Every theme has four distinct sharp, original audio compositions.
   await page.evaluate(()=>openWallpaperPicker());
   for(const theme of ['warm','minimal','pixel','windows']){
