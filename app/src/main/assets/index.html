@@ -430,6 +430,7 @@ body[data-home-page="home"] .launcher-dots .active{color:#c9c9c9}
 <link rel="stylesheet" href="music-spectrum-settings.css">
 <link rel="stylesheet" href="agenda.css">
 <link rel="stylesheet" href="acoustics.css">
+<link rel="stylesheet" href="native-widgets.css">
 <script>
 // One interruptible motion vocabulary for pages, sheets and touch feedback.
 const DeskMotion=(()=>{
@@ -2601,7 +2602,7 @@ $("launcherHomePage").addEventListener("touchstart",e=>{
  // Tiles must scroll freely: swipe-up search belongs only to Minimal and Pixel.
  if(launcherTheme==="windows"){upStart=null;return}
  if(e.touches.length!==1||hasLauncherOverlay()||
-   e.target.closest("#launcherFavorites,#launcherRecentStrip,#launcherAgendaWidget,input,textarea,button:not(.launcher-app)")){
+   e.target.closest("#launcherFavorites,#launcherRecentStrip,#launcherAgendaWidget,.native-app-widget,input,textarea,button:not(.launcher-app)")){
    upStart=null;return;
   }
  const t=e.touches[0];upStart={x:t.clientX,y:t.clientY};
@@ -2730,7 +2731,7 @@ document.addEventListener("touchstart",e=>{
  const edge=x<34||x>window.innerWidth-34;
  // News→Home works from anywhere on the feed, never only its outer edge.
  const appListRow=launcherPage==="apps"&&!!e.target.closest("#launcherAppsGrid .launcher-app");
-  if(e.target.closest("#launcherAlphaIndex,#launcherAgendaWidget,#agendaOverlay,input,textarea,select,audio,video,iframe,[contenteditable]"))return;
+  if(e.target.closest("#launcherAlphaIndex,#launcherAgendaWidget,#agendaOverlay,.native-app-widget,input,textarea,select,audio,video,iframe,[contenteditable]"))return;
   if(e.target.closest(".launcher-app,button,a")&&!appListRow)return;
  launcherGesture={x,y:t.clientY,lastX:x,locked:false,edge};
 },{capture:true,passive:true});
@@ -2915,6 +2916,7 @@ document.addEventListener("click",e=>{
 <script src="music-spectrum-settings.js"></script>
 <script src="agenda.js"></script>
 <script src="acoustics.js"></script>
+<script src="native-widgets.js"></script>
 <script>
 function hasLauncherOverlay(){return ['launcherLetterPanel','launcherHomeOptions','launcherShortcutMenu','launcherThemeDialog','launcherWallpaperDialog','launcherClockDialog','gridDetail','agendaOverlay'].some(id=>!document.getElementById(id).hidden)}
 function syncRefreshAvailability(){window.AudioDesk?.setRefreshEnabled?.(launcherPage==='events'&&!hasLauncherOverlay())}
