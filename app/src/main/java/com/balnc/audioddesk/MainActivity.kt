@@ -30,6 +30,8 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.webkit.WebViewAssetLoader
+import androidx.browser.customtabs.CustomTabsIntent
+import androidx.browser.customtabs.CustomTabsClient
 import org.json.JSONObject
 
 class MainActivity : Activity() {
@@ -415,6 +417,40 @@ class MainActivity : Activity() {
     }
 
     private inner class AppBridge {
+        @JavascriptInterface fun openYouTubePage(destination: String, query: String) {
+            runOnUiThread {
+                if (destroyed || pixelBarSuspended) return@runOnUiThread
+                val uri = when (destination) {
+                    "home" -> Uri.parse("https://m.youtube.com/")
+                    "subscriptions" -> Uri.parse("https://m.youtube.com/feed/subscriptions")
+                    "search" -> {
+                        val text = query.trim().take(300)
+                        if (text.isEmpty()) return@runOnUiThread
+                        Uri.parse("https://m.youtube.com/results").buildUpon()
+                            .appendQueryParameter("search_query", text).build()
+                    }
+                    else -> return@runOnUiThread
+                }
+                // The trusted browser owns the authenticated session, not our
+                // news WebView. Never access Google credentials or cookies.
+                try {
+                    val tab = CustomTabsIntent.Builder().setShowTitle(true).build()
+                    CustomTabsClient.getPackageName(this@MainActivity, null)?.let {
+                        tab.intent.setPackage(it)
+                    }
+                    tab.launchUrl(this@MainActivity, uri)
+                } catch (_: Exception) {
+                    try {
+                        startActivity(Intent(Intent.ACTION_VIEW, uri))
+                    } catch (_: Exception) {
+                        android.widget.Toast.makeText(this@MainActivity,
+                            "Open YouTube requires a compatible browser or the YouTube app",
+                            android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+
         @JavascriptInterface fun enableAcousticMic() {
             runOnUiThread {
                 if (destroyed || pixelBarSuspended) return@runOnUiThread
