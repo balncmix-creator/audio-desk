@@ -354,10 +354,17 @@ body[data-home-page="home"] #launcherHomePage[data-packed-layout]{
  padding-top:0!important;padding-bottom:0!important;
  overflow:visible!important;
 }
-body[data-home-page="home"] #launcherHomePage[data-packed-layout] :is(#warmWidgets,#launcherLiveTiles):not([hidden]){
+/* Packing must never override an edition's widget visibility. Only flatten
+   the wrapper actually belonging to the active theme. */
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherHomePage[data-packed-layout] #warmWidgets:not([hidden]),
+body[data-home-page="home"][data-launcher-theme="windows"] #launcherHomePage[data-packed-layout] #launcherLiveTiles:not([hidden]){
  display:contents!important;
 }
-body:not([data-launcher-theme="warm"]) #launcherHomePage[data-packed-layout] #warmWidgets{display:none!important}
+body[data-home-page="home"]:not([data-launcher-theme="warm"]) #launcherHomePage[data-packed-layout] #warmWidgets,
+body[data-home-page="home"]:not([data-launcher-theme="windows"]) #launcherHomePage[data-packed-layout] #launcherLiveTiles,
+body[data-home-page="home"] #launcherHomePage[data-packed-layout] :is(#warmWidgets,#launcherLiveTiles)[hidden]{
+ display:none!important;
+}
 body[data-home-page="home"][data-launcher-theme] #launcherHomePage[data-packed-layout] [data-widget-packed="true"]{
  position:absolute!important;
  left:var(--widget-pack-left,14px)!important;top:var(--widget-pack-top,24px)!important;
