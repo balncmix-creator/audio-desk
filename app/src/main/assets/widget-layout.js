@@ -382,7 +382,8 @@ function saveFlow(base){
  for(const o of base.items){
   if(o.el===chosen)continue;
   const r=layout(o.el);
-  if(Math.abs(r.l-o.r.l)>.5||Math.abs(r.t-o.r.t)>.5)rememberWidget(o.el);
+  if(Math.abs(r.l-o.r.l)>.5||Math.abs(r.t-o.r.t)>.5||
+   JSON.stringify(snapshot(o.el))!==JSON.stringify(o.state))rememberWidget(o.el);
  }
 }
 function requestPos(){
