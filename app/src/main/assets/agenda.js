@@ -147,7 +147,7 @@ function step(direction){
 let lastRefreshAt=0;
 function refresh(force=false){
  if(document.hidden||window.audioDeskForeground===false)return;
- if(!force&&overlay.hidden&&(widget.hidden||widget.hasAttribute("data-widget-removed")||launcherPage!=="home"))return;
+ if(!force&&overlay.hidden&&(launcherTheme==="extreme"||widget.hidden||widget.hasAttribute("data-widget-removed")||launcherPage!=="home"))return;
  if(!force&&Date.now()-lastRefreshAt<45000)return;
  lastRefreshAt=Date.now();
  window.AudioDesk.requestAgenda();
@@ -218,7 +218,7 @@ window.addEventListener("launcher-page-changed",()=>{close();if(launcherPage==="
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh()});
 setInterval(()=>{if(!document.hidden&&(launcherPage==="home"||!overlay.hidden))refresh()},90000);
 setInterval(()=>{
- if(launcherPage==="home"&&overlay.hidden&&!document.hidden&&window.audioDeskForeground!==false&&!widget.hidden&&
+ if(!lowPowerMode()&&launcherPage==="home"&&overlay.hidden&&!document.hidden&&window.audioDeskForeground!==false&&!widget.hidden&&
   !widget.hasAttribute("data-widget-removed")&&!widget.classList.contains("widget-editing")&&!gesture&&!hasLauncherOverlay()&&
   !matchMedia("(prefers-reduced-motion: reduce)").matches)step(1);
 },8500);
