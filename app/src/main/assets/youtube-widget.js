@@ -35,9 +35,10 @@ function sync(now){
 if(inline){
  slot.hidden=false;account.hidden=false;
  el("ytHome").textContent="Home";
- el("ytSubscriptions").textContent="Subscriptions ↗";
- el("ytWidgetNote").textContent="Public preview · personalised Home opens in your signed-in browser.";
- account.onclick=()=>api.openYouTubePage("home","");
+ el("ytSubscriptions").textContent="Subscriptions";
+ el("ytWidgetNote").textContent="Official YouTube website · sign in here if Google permits WebView login.";
+ account.textContent="Sign in to YouTube";
+ account.onclick=()=>open("signin");
  const observer=new MutationObserver(()=>schedule(true));
  observer.observe(widget,{attributes:true,attributeFilter:["hidden","data-widget-removed","data-layout-sized","style"]});
  observer.observe(document.body,{attributes:true,attributeFilter:["class","data-launcher-theme"]});
@@ -67,8 +68,8 @@ toggle.onclick=()=>{
 };
 function open(destination,query=""){
  if(widget.hidden||widget.hasAttribute("data-widget-removed")||launcherPage!=="home"||window.audioDeskForeground===false)return;
- if(inline&&destination!=="subscriptions"&&!widget.classList.contains("yt-compact"))api.navigateYouTubeWidget(destination,query);
- else api.openYouTubePage(destination,query);
+ if(inline)api.navigateYouTubeWidget(destination,query);
+ else el("ytWidgetNote").textContent="Embedded YouTube is unavailable in this version.";
 }
 el("ytHome").onclick=()=>open("home");
 el("ytSubscriptions").onclick=()=>open("subscriptions");
