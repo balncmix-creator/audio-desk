@@ -189,6 +189,8 @@ byId("customWallpaperRestore").addEventListener("click",()=>{
  setPalette(null);rememberWallpaper("custom");
 },true);
 async function restoreWallpaper(theme){
+ if(theme==="extreme")await applyWallpaper();
+ if(launcherTheme!==theme)return;
  const choice=theme==="extreme"?"palette:black":storedTheme(theme);
  if(choice.startsWith("palette:")){
   setPalette(choice.slice(8));
@@ -307,9 +309,10 @@ function refreshMedia(){
  if(launcherTheme==="extreme"||document.hidden||window.audioDeskForeground===false||launcherPage!=="home"||
   (music.hasAttribute("data-widget-removed")&&launcherTheme!=="windows"))return;
  window.AudioDesk?.requestMediaState?.();
- mediaTimer=setTimeout(refreshMedia,mediaState.playing?3500:9000);
+ mediaTimer=setTimeout(refreshMedia,lowPowerMode()?(mediaState.playing?6000:18000):(mediaState.playing?3500:9000));
 }
 window.addEventListener("launcher-page-changed",refreshMedia);
+window.addEventListener("audio-desk-theme-changed",refreshMedia);
 window.addEventListener("audio-desk-foreground",refreshMedia);
 window.addEventListener("audio-desk-widget-visibility",refreshMedia);
 document.addEventListener("visibilitychange",refreshMedia);
