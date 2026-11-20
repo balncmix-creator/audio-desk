@@ -16,7 +16,7 @@ let customPosition=loadPersonalInt("ar_wallpaper_position_v2",35,100);
 let nativeWallpaperActive=true;
 function syncWallpaperMotion(){
  const effect=wallpaperEffectChoice==="auto"?(customWallpaperSelected?"stars":WALLPAPERS[selectedWallpaper].motion):wallpaperEffectChoice;
- const saver=document.body.classList.contains("low-power")&&wallpaperEffectChoice==="auto";
+ const saver=document.body.classList.contains("low-power")&&(launcherTheme==="extreme"||wallpaperEffectChoice==="auto");
  const paused=document.hidden||!nativeWallpaperActive||launcherPage!=="home"||motionPreference.matches||saver;
  document.body.dataset.motionPaused=String(paused);
  document.body.dataset.wallpaperMotion=effect==="none"?"":effect;
@@ -38,6 +38,7 @@ if(motionPreference.addEventListener)motionPreference.addEventListener("change",
 else motionPreference.addListener(syncWallpaperMotion);
 async function applyWallpaper(){
  const token=++wallpaperLoad,wallpaper=WALLPAPERS[selectedWallpaper];
+ if(launcherTheme==="extreme"){$("wallpaperImage")?.remove();document.body.dataset.wallpaperLight="false";document.body.dataset.wallpaperStatusLight="false";syncWallpaperMotion();return;}
  const custom=customWallpaperSelected&&customWallpaper;
  const src=custom?customWallpaperUrl:wallpaper.src;
  const image=new Image();image.className="wallpaper-image";image.alt="";image.decoding="async";
@@ -126,6 +127,7 @@ $("launcherThemeGrid").addEventListener("click",e=>{
 });
 const lockWallpaperPref="ad_apply_lock_wallpaper_v1";
 function openWallpaperPicker(){
+ if(launcherTheme==="extreme")return;
  // New users default to both screens. Respect a deliberate opt-out across sessions.
  $("wallpaperApplyLock").checked=deskStorage.getItem(lockWallpaperPref)!=="false";
  renderWallpaperPicker();openCustomize("launcherWallpaperDialog");
@@ -134,7 +136,7 @@ function openWallpaperPicker(){
   if(selected)selected.scrollIntoView({block:"nearest",inline:"center",behavior:"instant"});
  });
 }
-function openClockCustomizer(){renderClockCustomizer();openCustomize("launcherClockDialog")}
+function openClockCustomizer(){if(launcherTheme==="extreme")return;renderClockCustomizer();openCustomize("launcherClockDialog")}
 function renderWallpaperPicker(){
  // Preserve the chosen card's position when selection changes; no gallery flash.
  const gallery=$("wallpaperGrid"),previousScroll=gallery.scrollLeft;
@@ -328,9 +330,9 @@ $("launcherHomePage").addEventListener("touchcancel",cancelHomeHold,{passive:tru
 $("launcherHomePage").addEventListener("contextmenu",e=>{if(e.target.closest("[data-widget-resizable],#widgetLayoutOverlay,.launcher-app,button,.customize-overlay"))return;e.preventDefault();if(e.target.closest(".launcher-clock"))openClockCustomizer();else $("launcherSettingsToggle").click()});
 applyClockDesign();syncWallpaperMotion();
 // Show a bundled portrait immediately; a blocked photo database cannot blank Home.
-applyWallpaper();
+if(launcherTheme!=="extreme")applyWallpaper();
 const initialWallpaperLoad=wallpaperLoad;
-customWallpaperStore().then(record=>{
+if(launcherTheme!=="extreme")customWallpaperStore().then(record=>{
  if(wallpaperLoad!==initialWallpaperLoad)return;
  if(record)useCustomWallpaper(record);else customWallpaperSelected=false;
  if(customWallpaperSelected)applyWallpaper();
