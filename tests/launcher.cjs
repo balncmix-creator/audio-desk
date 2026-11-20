@@ -318,6 +318,20 @@ const demoApps=[
   assert.ok(metrics.clockSize>=50,'clock is a prominent part of Home');
   assert.equal(metrics.firstBorder,'0px','Windows tiles have no list dividers');
   assert.equal(metrics.homeNav,'none','no visible navbar on Home');
+  await page.evaluate(()=>setLauncherTheme('extreme'));
+  assert.equal(await page.evaluate(()=>launcherTheme),'extreme');
+  assert.equal(await page.evaluate(()=>lowPowerMode()),true);
+  assert.equal(await page.locator('#wallpaperStage').isVisible(),false);
+  assert.equal(await page.locator('#launcherMusicWidget').isVisible(),false);
+  assert.equal(await page.locator('#launcherYouTubeWidget').isVisible(),false);
+  assert.equal(await page.locator('#launcherRecentQuick .launcher-app img').count(),0);
+  assert.equal(await page.locator('#extremeSearch').isVisible(),true);
+  await page.locator('#extremeSearch').click();
+  assert.equal(await page.evaluate(()=>launcherPage),'apps');
+  assert.equal(await page.locator('#launcherAppsGrid .ad-icon-image').count(),0);
+  await page.evaluate(()=>{setLauncherPage('home',false);setLauncherTheme('windows')});
+  assert.equal(await page.locator('#extremeSearch').isVisible(),false);
+  assert.equal(await page.evaluate(()=>launcherTheme),'windows');
   assert.deepEqual(errors,[],'no launcher errors');
   console.log('PASS: minimal Home without list, Niagara-style A-Z rail and panel, Windows tiles, pins, search, launches, recents and swipe navigation');
  }finally{await browser.close()}
