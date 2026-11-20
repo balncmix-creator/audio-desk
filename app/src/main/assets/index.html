@@ -440,7 +440,7 @@ const DeskMotion=(()=>{
  function cancel(node){const entry=running.get(node);if(entry){entry.cancel();running.delete(node)}}
  function run(node,frames,duration=240){
   cancel(node);
-  if(!node||preference.matches||document.body?.classList.contains("low-power")||typeof node.animate!=='function')return Promise.resolve();
+  if(!node||preference.matches||document.body?.dataset.performanceMode==="true"||typeof node.animate!=='function')return Promise.resolve();
   return new Promise(resolve=>{
    const animation=node.animate(frames,{duration:document.body?.classList.contains('low-power')?Math.round(duration*.65):duration,easing:ease});
    const finish=()=>{if(running.get(node)===animation)running.delete(node);resolve()};
@@ -2025,8 +2025,11 @@ const LOW_POWER_DEVICE=NATIVE_LOW_RAM||!!((navigator.deviceMemory&&navigator.dev
 let launcherTheme=deskStorage.getItem("ad_launcher_theme_v1")||(NATIVE_LOW_RAM?"extreme":"minimal");
 if(!LAUNCHER_THEMES.includes(launcherTheme))launcherTheme="minimal";
 document.body.dataset.launcherTheme=launcherTheme;
-function lowPowerMode(){return LOW_POWER_DEVICE||launcherTheme==="extreme"}
-function syncPerformanceMode(){document.body.classList.toggle("low-power",lowPowerMode())}
+// Browser hardware hints are imprecise (including in desktop/headless environments).
+// Apply aggressive native resource restrictions only with Android capability detection
+// or when the user explicitly chooses the Extreme Minimal theme.
+function lowPowerMode(){return launcherTheme==="extreme"||NATIVE_LOW_RAM||(typeof window.AudioDesk?.isLowRamDevice==="function"&&!!((navigator.deviceMemory&&navigator.deviceMemory<=2)||(navigator.hardwareConcurrency&&navigator.hardwareConcurrency<=4)))}
+function syncPerformanceMode(){document.body.classList.toggle("low-power",LOW_POWER_DEVICE||lowPowerMode());document.body.dataset.performanceMode=lowPowerMode()?"true":"false"}
 syncPerformanceMode();
 function setLauncherTheme(theme){
  if(!LAUNCHER_THEMES.includes(theme))return;
@@ -2914,13 +2917,13 @@ document.addEventListener("click",e=>{
  }
  function tick(time){
   frameId=0;
-  if(document.hidden||reduced.matches||document.body.dataset.homePage!=="events"||lowPowerMode()||window.audioDeskForeground===false)return;
+  if(document.hidden||reduced.matches||document.body.dataset.homePage!=="events"||LOW_POWER_DEVICE||lowPowerMode()||window.audioDeskForeground===false)return;
   if(previous)angle=(angle+Math.min(48,time-previous)*PI2/periodMs)%PI2;
   previous=time;draw(angle);
   frameId=window.requestAnimationFrame(tick);
  }
  function sync(){
-  if(document.hidden||reduced.matches||document.body.dataset.homePage!=="events"||lowPowerMode()||window.audioDeskForeground===false){
+  if(document.hidden||reduced.matches||document.body.dataset.homePage!=="events"||LOW_POWER_DEVICE||lowPowerMode()||window.audioDeskForeground===false){
    if(frameId)window.cancelAnimationFrame(frameId);
    frameId=0;previous=0;draw(angle);
   }else if(!frameId){previous=0;frameId=window.requestAnimationFrame(tick);}
