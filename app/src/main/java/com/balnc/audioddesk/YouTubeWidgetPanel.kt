@@ -2,20 +2,19 @@ package com.balnc.audioddesk
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.view.View
+import android.webkit.CookieManager
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
-import androidx.browser.customtabs.CustomTabsIntent
 import org.json.JSONObject
 import kotlin.math.roundToInt
 
-/** Public YouTube page, isolated from the trusted launcher JavaScript bridge.
- * The signed-in Google session remains in the user's browser. */
+/** Official YouTube mobile site, in a WebView without any launcher JavaScript bridge.
+ * Google handles sign-in; its browser restrictions are respected. */
 internal class YouTubeWidgetPanel(private val activity: Activity, private val launcher: WebView) {
     private val root get() = activity.findViewById<FrameLayout>(android.R.id.content)
     private var container: FrameLayout? = null
@@ -23,16 +22,16 @@ internal class YouTubeWidgetPanel(private val activity: Activity, private val la
     private var pending: String? = null
     private var current = "https://m.youtube.com/"
     private var showing = false
+    private var pageLoaded = false
 
     private fun trusted(uri: Uri): Boolean =
-        uri.scheme == "https" && uri.host in setOf("m.youtube.com", "www.youtube.com", "youtube.com")
-            && uri.path?.startsWith("/signin") != true && uri.path?.startsWith("/account") != true
+        uri.scheme == "https" && (uri.port == -1 || uri.port == 443) &&
+            uri.host in setOf("m.youtube.com", "www.youtube.com", "youtube.com",
+                "accounts.google.com", "accounts.youtube.com", "consent.google.com", "consent.youtube.com")
 
-    private fun external(uri: Uri) {
-        if (uri.scheme != "https") return
-        try { CustomTabsIntent.Builder().build().launchUrl(activity, uri) }
-        catch (_: Exception) { try { activity.startActivity(Intent(Intent.ACTION_VIEW, uri)) } catch (_: Exception) {} }
-    }
+    private fun isPlayback(uri: Uri): Boolean =
+        uri.path == "/watch" || uri.path?.startsWith("/shorts/") == true ||
+            uri.path?.startsWith("/live/") == true || uri.path?.startsWith("/embed/") == true
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun ensure(): WebView {
@@ -51,17 +50,21 @@ internal class YouTubeWidgetPanel(private val activity: Activity, private val la
             settings.mediaPlaybackRequiresUserGesture = true
             settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
             settings.setSupportMultipleWindows(false)
-            android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
+            CookieManager.getInstance().setAcceptCookie(true)
+            CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
+            isFocusable = true
+            isFocusableInTouchMode = true
             webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                     if (!request.isForMainFrame) return false
                     val uri = request.url
-                    if (trusted(uri)) return false
-                    if (request.hasGesture()) external(uri)
-                    return true
+                    return !trusted(uri)
                 }
                 override fun onPageFinished(view: WebView, url: String?) {
-                    if (url != null && trusted(Uri.parse(url))) current = url
+                    if (url != null && trusted(Uri.parse(url))) {
+                        current = url
+                        CookieManager.getInstance().flush()
+                    }
                 }
             }
         }
@@ -75,6 +78,8 @@ internal class YouTubeWidgetPanel(private val activity: Activity, private val la
     fun navigate(destination: String, query: String) {
         val target = when (destination) {
             "home" -> "https://m.youtube.com/"
+            "signin" -> "https://m.youtube.com/signin?app=mobile&next=%2F"
+            "subscriptions" -> "https://m.youtube.com/feed/subscriptions"
             "search" -> {
                 val q = query.trim().take(300)
                 if (q.isEmpty()) return
@@ -83,7 +88,7 @@ internal class YouTubeWidgetPanel(private val activity: Activity, private val la
             else -> return
         }
         pending = target
-        if (showing) { web?.loadUrl(target); pending = null; current = target }
+        if (showing) { web?.loadUrl(target); pending = null; current = target; pageLoaded = true }
     }
 
     fun layout(payload: String) {
@@ -111,7 +116,10 @@ internal class YouTubeWidgetPanel(private val activity: Activity, private val la
             holder.visibility=View.VISIBLE
             showing=true
             page.onResume()
-            page.loadUrl(pending ?: current)
+            if (pending != null || !pageLoaded) {
+                page.loadUrl(pending ?: current)
+                pageLoaded = true
+            }
             pending=null
         }
     }
@@ -121,10 +129,16 @@ internal class YouTubeWidgetPanel(private val activity: Activity, private val la
         showing=false
         container?.visibility=View.GONE
         web?.apply {
-            // Stop video and network work off Home, without pausing the launcher's WebView.
-            stopLoading()
-            loadUrl("about:blank")
+            // Keep the feed and authentication page in place when temporarily hidden.
+            // Stop a playback page off Home, without resetting the cookie session.
+            if (isPlayback(Uri.parse(url ?: current))) {
+                stopLoading()
+                loadUrl("about:blank")
+                current = "https://m.youtube.com/"
+                pageLoaded = false
+            }
             onPause()
+            CookieManager.getInstance().flush()
         }
     }
 
