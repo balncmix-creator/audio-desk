@@ -5,6 +5,7 @@
 "use strict";
 const byId=id=>document.getElementById(id);
 const palettes={
+ extreme:[["black","Pure black","#000000","#000000","#f1f1f1","#151515"]],
  minimal:[
   ["ink","Ink black","#080a0d","#24282b","#e1e5e7","#f5f5f5"],
   ["charcoal","Charcoal","#1b1d20","#4e555b","#e5e8e9","#d4d5d5"],
@@ -30,7 +31,7 @@ const palettes={
   ["blush","Soft blush","#30272c","#665154","#f4e0d9","#e5c8bf"]
  ]
 };
-const defaults={minimal:"bundled:0",pixel:"palette:arcade",windows:"palette:metro",warm:"palette:black"};
+const defaults={extreme:"palette:black",minimal:"bundled:0",pixel:"palette:arcade",windows:"palette:metro",warm:"palette:black"};
 const key=theme=>"ad_wallpaper_by_theme_v2_"+theme;
 let paletteId=null;
 let switching=false;
@@ -188,7 +189,9 @@ byId("customWallpaperRestore").addEventListener("click",()=>{
  setPalette(null);rememberWallpaper("custom");
 },true);
 async function restoreWallpaper(theme){
- const choice=storedTheme(theme);
+ if(theme==="extreme")await applyWallpaper();
+ if(launcherTheme!==theme)return;
+ const choice=theme==="extreme"?"palette:black":storedTheme(theme);
  if(choice.startsWith("palette:")){
   setPalette(choice.slice(8));
   customWallpaperSelected=false;
@@ -303,12 +306,13 @@ for(const [id,action] of [["musicPrev","previous"],["musicToggle","toggle"],["mu
 function refreshMedia(){
  clearTimeout(mediaTimer);
  const music=byId("launcherMusicWidget");
- if(document.hidden||window.audioDeskForeground===false||launcherPage!=="home"||
+ if(launcherTheme==="extreme"||document.hidden||window.audioDeskForeground===false||launcherPage!=="home"||
   (music.hasAttribute("data-widget-removed")&&launcherTheme!=="windows"))return;
  window.AudioDesk?.requestMediaState?.();
- mediaTimer=setTimeout(refreshMedia,mediaState.playing?3500:9000);
+ mediaTimer=setTimeout(refreshMedia,lowPowerMode()?(mediaState.playing?6000:18000):(mediaState.playing?3500:9000));
 }
 window.addEventListener("launcher-page-changed",refreshMedia);
+window.addEventListener("audio-desk-theme-changed",refreshMedia);
 window.addEventListener("audio-desk-foreground",refreshMedia);
 window.addEventListener("audio-desk-widget-visibility",refreshMedia);
 document.addEventListener("visibilitychange",refreshMedia);

@@ -21,6 +21,7 @@
   return typeof pkg==="string"&&/^[A-Za-z0-9_.]{4,180}$/.test(pkg);
  }
  function nativeIcon(app){
+  if(launcherTheme==="extreme")return "";
   const fallback=originalIcon(app);
   if(!nativeReady||selected()==="outline"||!validPackage(app.pkg))return fallback;
   const src="/app-icons/"+effectiveTheme()+"/"+encodeURIComponent(app.pkg)+".png";

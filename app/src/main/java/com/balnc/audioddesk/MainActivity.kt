@@ -419,6 +419,9 @@ class MainActivity : Activity() {
     }
 
     private inner class AppBridge {
+        @JavascriptInterface fun isLowRamDevice(): Boolean =
+            (getSystemService(android.content.Context.ACTIVITY_SERVICE) as? android.app.ActivityManager)?.isLowRamDevice == true
+
         @JavascriptInterface fun layoutYouTubeWidget(payload: String) {
             if (payload.length > 2048) return
             runOnUiThread {

@@ -774,3 +774,61 @@ body[data-launcher-theme="pixel"] .launcher-settings-fab{
 body[data-launcher-theme="pixel"] .launcher-app:focus-visible{
  outline:2px solid var(--ds-accent)!important;
 }
+
+/* Extreme Minimal: no composited wallpaper, web fonts or live widgets. */
+body[data-launcher-theme="extreme"]{
+ --ds-bg:#000;--ds-panel:#101010;--ds-panel2:#191919;--ds-text:#f1f1f1;
+ --ds-muted:#aaa;--ds-line:#333;--ds-accent:#f1f1f1;--ds-font:system-ui,sans-serif;--ds-radius:0px;
+ background:#000!important;color:#f1f1f1!important;font-family:system-ui,sans-serif!important;
+}
+.extreme-preview{background:#000!important;color:#fff!important;font-family:system-ui,sans-serif!important}
+.extreme-preview em{font:400 9px/1.6 system-ui,sans-serif!important}
+body.low-power *,body.low-power *::before,body.low-power *::after{
+ backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+}
+body[data-launcher-theme="extreme"] *,body[data-launcher-theme="extreme"] *::before,body[data-launcher-theme="extreme"] *::after{
+ animation:none!important;transition:none!important;box-shadow:none!important;
+ text-shadow:none!important;filter:none!important;scroll-behavior:auto!important;
+}
+body[data-launcher-theme="extreme"] #wallpaperStage,
+body[data-launcher-theme="extreme"] #launcherMusicWidget,
+body[data-launcher-theme="extreme"] #launcherAgendaWidget,
+body[data-launcher-theme="extreme"] #launcherSplWidget,
+body[data-launcher-theme="extreme"] #launcherMicAnalyzer,
+body[data-launcher-theme="extreme"] #launcherYouTubeWidget,
+body[data-launcher-theme="extreme"] [id^="nativeWidget_"],
+body[data-launcher-theme="extreme"] #launcherWallpaperChoose,
+body[data-launcher-theme="extreme"] #launcherClockChoose,
+body[data-launcher-theme="extreme"] #acousticAddSpl,
+body[data-launcher-theme="extreme"] #acousticAddFft,
+body[data-launcher-theme="extreme"] #youtubeWidgetToggle,
+body[data-launcher-theme="extreme"] #nativeWidgetsOpen,
+body[data-launcher-theme="extreme"] .warm-line-icon{display:none!important}
+body[data-launcher-theme="extreme"][data-home-page="home"] #launcherHomePage{background:#000!important}
+body[data-launcher-theme="extreme"] .launcher-clock .clock{
+ font:300 clamp(42px,13vw,66px)/1.05 system-ui,sans-serif!important;letter-spacing:-.045em!important;
+ color:#f1f1f1!important;background:none!important;border:0!important;
+}
+body[data-launcher-theme="extreme"] .launcher-clock .clock-date{font:400 13px/1.5 system-ui,sans-serif!important;color:#aaa!important}
+body[data-launcher-theme="extreme"] #launcherRecentQuick{
+ display:flex!important;flex-direction:column!important;gap:0!important;
+}
+body[data-launcher-theme="extreme"] #launcherRecentQuick .launcher-app{
+ width:100%!important;min-height:46px!important;justify-content:flex-start!important;
+ background:transparent!important;border:0!important;border-radius:0!important;padding:8px 0!important;
+ text-align:left!important;
+}
+body[data-launcher-theme="extreme"] #launcherRecentQuick .app-name{
+ font:400 21px/1.25 system-ui,sans-serif!important;color:#f1f1f1!important;
+}
+body[data-launcher-theme="extreme"] #launcherAppsGrid .n-app-row{background:transparent!important;border-bottom:1px solid #181818!important}
+body[data-launcher-theme="extreme"] #launcherNavigation{background:#000!important}
+body[data-launcher-theme="extreme"] #launcherAlphaIndex{background:transparent!important}
+
+#extremeSearch{display:none}
+body[data-launcher-theme="extreme"] #extremeSearch{display:flex;align-items:center;justify-content:space-between;
+ background:none!important;color:#ddd!important;border:0!important;border-bottom:1px solid #303030!important;
+ font:400 16px/1.4 system-ui,sans-serif!important;min-height:48px;width:100%;text-align:left;padding:10px 0;margin:0 0 12px}
+body[data-launcher-theme="extreme"] #launcherIconStudio,
+body[data-launcher-theme="extreme"] .ad-icon-shell,
+body[data-launcher-theme="extreme"] #launcherRecentQuick .folder-icon{display:none!important}

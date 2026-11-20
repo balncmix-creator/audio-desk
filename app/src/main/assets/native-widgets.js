@@ -21,7 +21,7 @@ function hiddenByOverlay(){
 }
 function sync(now=performance.now()){
  raf=0;
- const active=launcherPage==="home"&&!home.hidden&&!document.hidden&&window.audioDeskForeground!==false;
+ const active=launcherTheme!=="extreme"&&launcherPage==="home"&&!home.hidden&&!document.hidden&&window.audioDeskForeground!==false;
  const allowed=active&&!hiddenByOverlay();
  const style=getComputedStyle(document.documentElement);
  const top=Math.max(0,parseFloat(style.getPropertyValue("--status-top"))||0);
@@ -110,7 +110,7 @@ window.receiveAudioDeskNativeWidgets=data=>{
  if(changed)window.audioDeskRestoreWidgetLayouts?.();
  renderManage();lastPayload="";schedule(true);
 };
-for(const event of ["audio-desk-layout-changed","audio-desk-widget-visibility","launcher-page-changed","audio-desk-foreground"])window.addEventListener(event,()=>schedule(true));
+for(const event of ["audio-desk-layout-changed","audio-desk-widget-visibility","launcher-page-changed","audio-desk-foreground","audio-desk-theme-changed"])window.addEventListener(event,()=>schedule(true));
 window.addEventListener("scroll",()=>schedule(),{passive:true,capture:true});
 window.addEventListener("resize",()=>schedule(true));
 document.addEventListener("visibilitychange",()=>schedule());

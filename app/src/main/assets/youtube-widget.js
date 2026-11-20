@@ -17,7 +17,7 @@ function sync(now){
  widget.classList.toggle("yt-compact",sized&&widget.clientHeight<245);
  const editing=document.body.classList.contains("widget-dragging")||document.body.classList.contains("widget-layout-editing");
  const modal=(typeof hasLauncherOverlay==="function"&&hasLauncherOverlay())||[...document.querySelectorAll('[role="dialog"],[aria-modal="true"],.customize-overlay')].some(e=>!e.hidden&&e.getClientRects().length&&getComputedStyle(e).visibility!=="hidden");
- const visible=added&&!widget.hidden&&!widget.hasAttribute("data-widget-removed")&&!editing&&!modal&&launcherPage==="home"&&!document.hidden&&window.audioDeskForeground!==false;
+ const visible=launcherTheme!=="extreme"&&added&&!widget.hidden&&!widget.hasAttribute("data-widget-removed")&&!editing&&!modal&&launcherPage==="home"&&!document.hidden&&window.audioDeskForeground!==false;
  const b=slot.getBoundingClientRect(),w=widget.getBoundingClientRect();
  const style=getComputedStyle(document.documentElement);
  const top=Math.max(w.top,parseFloat(style.getPropertyValue("--status-top"))||0);
@@ -46,7 +46,7 @@ if(inline){
   const node=el(id);if(node)observer.observe(node,{attributes:true,attributeFilter:["hidden","class"]});
  }
  if(typeof ResizeObserver==="function"){const ro=new ResizeObserver(()=>schedule(true));ro.observe(widget);ro.observe(slot)}
- for(const event of ["audio-desk-layout-changed","audio-desk-widget-visibility","launcher-page-changed","audio-desk-foreground"])window.addEventListener(event,()=>{last="";schedule(true)});
+ for(const event of ["audio-desk-layout-changed","audio-desk-widget-visibility","launcher-page-changed","audio-desk-foreground","audio-desk-theme-changed"])window.addEventListener(event,()=>{last="";schedule(true)});
  window.addEventListener("scroll",()=>schedule(),{passive:true,capture:true});
  window.addEventListener("resize",()=>schedule(true));
  document.addEventListener("visibilitychange",()=>schedule());

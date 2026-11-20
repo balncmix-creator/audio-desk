@@ -440,7 +440,7 @@ const DeskMotion=(()=>{
  function cancel(node){const entry=running.get(node);if(entry){entry.cancel();running.delete(node)}}
  function run(node,frames,duration=240){
   cancel(node);
-  if(!node||preference.matches||typeof node.animate!=='function')return Promise.resolve();
+  if(!node||preference.matches||document.body?.dataset.performanceMode==="true"||typeof node.animate!=='function')return Promise.resolve();
   return new Promise(resolve=>{
    const animation=node.animate(frames,{duration:document.body?.classList.contains('low-power')?Math.round(duration*.65):duration,easing:ease});
    const finish=()=>{if(running.get(node)===animation)running.delete(node);resolve()};
@@ -591,6 +591,7 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
    <div class="clock" id="launcherClock">--:--</div>
    <div class="clock-date" id="launcherDate"></div>
   </div>
+  <button type="button" id="extremeSearch" aria-label="Search installed apps">Search apps <span aria-hidden="true">›</span></button>
   <section id="warmWidgets" class="warm-widgets" aria-label="Date, Audio Desk and app search">
    <button type="button" id="warmDateWidget" class="warm-widget warm-date" aria-label="Today's date and calendar">
     <span class="warm-widget-icon" data-warm-decor="calendar" aria-hidden="true"></span>
@@ -723,12 +724,13 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
   <div class="customize-panel">
    <div class="customize-head"><strong>HOME SCREEN THEME</strong><button type="button" id="themeClose" aria-label="Close themes">×</button></div>
    <div id="launcherThemeGrid" class="theme-grid" role="group" aria-label="Launcher themes">
+    <button type="button" class="theme-choice" data-launcher-theme-choice="extreme" aria-pressed="false"><span class="theme-visual extreme-preview"><i>12:48</i><em>Music<br>Camera<br>Messages</em></span><strong>Extreme Minimal</strong><small>Solid black, app names, no live widgets. Designed for low-end phones.</small></button>
     <button type="button" class="theme-choice" data-launcher-theme-choice="minimal" aria-pressed="true"><span class="theme-visual minimal-preview"><i>12:48</i><em>A<br>B<br>C<br>D</em></span><strong>Minimal A–Z</strong><small>Wallpaper, clock and right-hand letters</small></button>
     <button type="button" class="theme-choice" data-launcher-theme-choice="pixel" aria-pressed="false"><span class="theme-visual pixel-preview"><i>12:48</i><em>A<br>B<br>C<br>D</em></span><strong>8-Bit</strong><small>Pixel styling and quick app letters</small></button>
     <button type="button" class="theme-choice" data-launcher-theme-choice="windows" aria-pressed="false"><span class="theme-visual windows-preview"><i>12:48</i><em>▣ ▪<br>▪ ▣</em></span><strong>Windows Live Tiles</strong><small>Real clock, date, headlines and app activity</small></button>
     <button type="button" class="theme-choice" data-launcher-theme-choice="warm" aria-pressed="false"><span class="theme-visual warm-preview" aria-hidden="true"><span class="warm-preview-widgets"><b>Wed, 18</b><b>Audio Desk</b><b>Search apps</b></span><span class="warm-preview-list">Music<br>Camera<br>Messages</span></span><strong>Warm Minimal</strong><small>Cream and charcoal split, rounded widgets, favorite apps</small></button>
    </div>
-   <p class="customize-tip">Four themes. Swipe up to search in Minimal, 8-Bit and Warm Minimal; Windows Tiles scrolls freely. Every theme retains A–Z browsing.</p>
+   <p class="customize-tip">Five themes. Swipe up to search in Minimal, 8-Bit and Warm Minimal; Windows Tiles scrolls freely. Every theme retains A–Z browsing.</p>
   </div>
  </div>
  <div id="launcherWallpaperDialog" class="customize-overlay" role="dialog" aria-modal="true" aria-label="Choose wallpaper" hidden>
@@ -2017,27 +2019,32 @@ swipeMain.addEventListener("touchcancel",endPinch,{capture:true,passive:true});
 /* MeeGo-style Home planes: EVENTS preserves the original Audio Desk news UI,
    APPLICATIONS uses real installed Android apps, OPEN APPS lists local launches. */
 const launcherPages=["events","home","apps"];
-const LAUNCHER_THEMES=["minimal","pixel","windows","warm"];
-let launcherTheme=deskStorage.getItem("ad_launcher_theme_v1")||"minimal";
+const LAUNCHER_THEMES=["minimal","pixel","windows","warm","extreme"];
+const NATIVE_LOW_RAM=(()=>{try{return window.AudioDesk?.isLowRamDevice?.()===true}catch{return false}})();
+const LOW_POWER_DEVICE=NATIVE_LOW_RAM||!!((navigator.deviceMemory&&navigator.deviceMemory<=2)||(navigator.hardwareConcurrency&&navigator.hardwareConcurrency<=4)||window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+let launcherTheme=deskStorage.getItem("ad_launcher_theme_v1")||(NATIVE_LOW_RAM?"extreme":"minimal");
 if(!LAUNCHER_THEMES.includes(launcherTheme))launcherTheme="minimal";
 document.body.dataset.launcherTheme=launcherTheme;
+// Browser hardware hints are imprecise (including in desktop/headless environments).
+// Apply aggressive native resource restrictions only with Android capability detection
+// or when the user explicitly chooses the Extreme Minimal theme.
+function lowPowerMode(){return launcherTheme==="extreme"||NATIVE_LOW_RAM||(typeof window.AudioDesk?.isLowRamDevice==="function"&&!!((navigator.deviceMemory&&navigator.deviceMemory<=2)||(navigator.hardwareConcurrency&&navigator.hardwareConcurrency<=4)))}
+function syncPerformanceMode(){document.body.classList.toggle("low-power",LOW_POWER_DEVICE||lowPowerMode());document.body.dataset.performanceMode=lowPowerMode()?"true":"false"}
+syncPerformanceMode();
 function setLauncherTheme(theme){
  if(!LAUNCHER_THEMES.includes(theme))return;
  launcherTheme=theme;
  document.body.dataset.launcherTheme=theme;
  deskStorage.setItem("ad_launcher_theme_v1",theme);
+ syncPerformanceMode();
  renderLauncherHome();
  if(theme==="windows"&&typeof resetHomeSwipe==="function")resetHomeSwipe(true);
  if(typeof syncWallpaperMotion==="function")syncWallpaperMotion();
  if(typeof fitClock==="function")fitClock();
+ window.dispatchEvent(new Event("audio-desk-theme-changed"));
 }
-
-const LOW_POWER_DEVICE=(navigator.deviceMemory&&navigator.deviceMemory<=2)||
- (navigator.hardwareConcurrency&&navigator.hardwareConcurrency<=4)||
- window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-if(LOW_POWER_DEVICE)document.body.classList.add("low-power");
 let launcherPage="home", launcherApps=[], launcherRecents=[], launcherNativeLoaded=false;
-let launcherLastRequest=0, launcherEventScroll=0, launcherGesture=null, launcherHomeIsDefault=false;
+let launcherLastRequest=0, launcherLastScan=0, launcherEventScroll=0, launcherGesture=null, launcherHomeIsDefault=false;
 const launcherGhost=$("launcherSwipeGhost");
 function homePanel(page){
  return page==="events"?$("swipeMain"):page==="apps"?$("launcherAppsPage"):$("launcherHomePage");
@@ -2134,6 +2141,7 @@ function warmAppIcon(app){
  return '<span class="warm-line-icon" aria-hidden="true">'+warmIconSvg(match?match[1]:'apps')+'</span>';
 }
 function launcherIcon(app){
+ if(launcherTheme==="extreme")return "";
  if(launcherTheme!=='pixel')return warmAppIcon(app);
  const all=(app.label+" "+app.pkg).toLowerCase();
  const match=pixelCategories.find(([re])=>re.test(all));
@@ -2153,8 +2161,8 @@ if(!Array.isArray(launcherPins))launcherPins=[];
 function launcherAppKey(app){return app.pkg+"/"+app.activity}
 function renderFavoriteRow(app){
  const pinned=launcherPins.includes(launcherAppKey(app));
- const recent=launcherRecents.find(item=>launcherAppKey(item)===launcherAppKey(app));
- const activity=recent&&Number(recent.opened)>0?
+ const recent=launcherTheme==="windows"?launcherRecents.find(item=>launcherAppKey(item)===launcherAppKey(app)):null;
+ const activity=launcherTheme!=="windows"?"":recent&&Number(recent.opened)>0?
    "OPENED "+new Date(Number(recent.opened)).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):
    Number(app.uses)>0?"OPENED "+Number(app.uses)+"×":"";
  return '<div class="n-app-row">'+launchAppButton(app,"launcher-app")+
@@ -2452,13 +2460,14 @@ function requestLauncherApps(force=false,rescan=force){
  }
  if(!force&&Date.now()-launcherLastRequest<15000)return;
  launcherLastRequest=Date.now();
+ if(rescan)launcherLastScan=launcherLastRequest;
  try{window.AudioDesk.requestLauncherApps(rescan)}catch(e){$("launcherAppCount").textContent="APP LIST UNAVAILABLE"}
 }
 window.launcherOnResume=function(){
  formatLauncherClock();if(typeof fitClock==="function")fitClock();
  // Refresh discovery on resume so installs/uninstalls are immediately visible.
  // The launch-result path uses cached discovery instead of scanning twice.
- requestLauncherApps(true);
+ requestLauncherApps(true,!lowPowerMode()||Date.now()-launcherLastScan>60000);
 };
 window.launcherLaunchResult=function(opened){
  if(!opened){
@@ -2549,6 +2558,7 @@ $("launcherShowRecents").onclick=()=>{
 
 $("launcherAppSearch").addEventListener("input",renderLauncherApps);
 $("launcherTilesSearch").onclick=openLauncherSearch;
+$("extremeSearch").onclick=openLauncherSearch;
 $("launcherMakeDefault").onclick=()=>{
  if(window.AudioDesk&&typeof window.AudioDesk.requestDefaultLauncher==="function")
   window.AudioDesk.requestDefaultLauncher();
@@ -2564,12 +2574,13 @@ $("launcherShell").addEventListener("click",event=>{
   window.AudioDesk.launchExternalApp(button.dataset.launchPkg,button.dataset.launchActivity);
  }else $("launcherAppCount").textContent="LAUNCHING APPS REQUIRES THE ANDROID HOME APK";
 });
-renderLauncherHome();renderLauncherApps();renderLauncherRecents();
+renderLauncherHome();if(!lowPowerMode())renderLauncherApps();renderLauncherRecents();
 
 /* The swipe-up affordance follows the finger. Animate only transforms/opacity,
    then hand off to search, so weaker phones don't need layout or blur work. */
 let upStart=null,homeSwipeFrame=0,homeSwipeDistance=0;
 function previewHomeSwipe(distance){
+ if(lowPowerMode())return;
  homeSwipeDistance=Math.min(120,Math.max(0,distance));
  if(homeSwipeFrame)return;
  homeSwipeFrame=requestAnimationFrame(()=>{
@@ -2795,15 +2806,25 @@ $("addFeed").onclick=()=>{let name=$("feedName").value.trim(),url=$("feedUrl").v
 renderSources();
 setOfflineNotice(!navigator.onLine);
 window.addEventListener("offline",()=>{setOfflineNotice(true);$("status").textContent="No internet connection. Cached headlines remain available.";});
-window.addEventListener("online",()=>{setOfflineNotice(false);if(!$("refresh").disabled)loadFeeds();discoverPublisherFeeds();refreshLiveRadar(true);});
+window.addEventListener("online",()=>{setOfflineNotice(false);if(launcherPage==="events"||!lowPowerMode()){if(!$("refresh").disabled)loadFeeds();discoverPublisherFeeds();refreshLiveRadar(true);}});
 // Always show the first filter from its left edge on launch.
 $("filters").scrollLeft=0;
 if(items.length){render();$("status").textContent="Showing saved headlines instantly · checking for updates…";$("updated").textContent="Cached feed";}
-loadFeeds();
-setTimeout(()=>discoverPublisherFeeds(),800);
-setTimeout(()=>refreshLiveRadar(true),9500);
-setInterval(()=>refreshLiveRadar(),LIVE_RADAR_INTERVAL);
-document.addEventListener("visibilitychange",()=>{if(!document.hidden&&navigator.onLine)refreshLiveRadar()});
+let newsStarted=false,newsDiscoveryTimer=0,newsRadarTimer=0,newsInterval=0;
+function syncNewsWork(){
+ const visible=!document.hidden&&window.audioDeskForeground!==false;
+ const allowed=visible&&(!lowPowerMode()||launcherPage==="events");
+ if(!allowed){clearTimeout(newsDiscoveryTimer);clearTimeout(newsRadarTimer);clearInterval(newsInterval);newsDiscoveryTimer=newsRadarTimer=newsInterval=0;return}
+ if(!newsStarted){newsStarted=true;loadFeeds()}
+ if(!newsInterval){
+  newsDiscoveryTimer=setTimeout(()=>{if(!lowPowerMode()||launcherPage==="events")discoverPublisherFeeds()},800);
+  newsRadarTimer=setTimeout(()=>{if(!lowPowerMode()||launcherPage==="events")refreshLiveRadar(true)},9500);
+  newsInterval=setInterval(()=>refreshLiveRadar(),LIVE_RADAR_INTERVAL);
+ }
+}
+for(const event of ["launcher-page-changed","audio-desk-foreground","audio-desk-theme-changed"])window.addEventListener(event,syncNewsWork);
+document.addEventListener("visibilitychange",syncNewsWork);
+syncNewsWork();
 // Route all publisher/source links through the native in-app browser when running in Android.
 document.addEventListener("click",e=>{
  const a=e.target.closest("a[href]"); if(!a)return;
@@ -2896,13 +2917,13 @@ document.addEventListener("click",e=>{
  }
  function tick(time){
   frameId=0;
-  if(document.hidden||reduced.matches||document.body.dataset.homePage!=="events"||LOW_POWER_DEVICE)return;
+  if(document.hidden||reduced.matches||document.body.dataset.homePage!=="events"||LOW_POWER_DEVICE||lowPowerMode()||window.audioDeskForeground===false)return;
   if(previous)angle=(angle+Math.min(48,time-previous)*PI2/periodMs)%PI2;
   previous=time;draw(angle);
   frameId=window.requestAnimationFrame(tick);
  }
  function sync(){
-  if(document.hidden||reduced.matches||document.body.dataset.homePage!=="events"||LOW_POWER_DEVICE){
+  if(document.hidden||reduced.matches||document.body.dataset.homePage!=="events"||LOW_POWER_DEVICE||lowPowerMode()||window.audioDeskForeground===false){
    if(frameId)window.cancelAnimationFrame(frameId);
    frameId=0;previous=0;draw(angle);
   }else if(!frameId){previous=0;frameId=window.requestAnimationFrame(tick);}
@@ -2910,6 +2931,8 @@ document.addEventListener("click",e=>{
  draw(angle);
  document.addEventListener("visibilitychange",sync);
  window.addEventListener("launcher-page-changed",sync);
+ window.addEventListener("audio-desk-foreground",sync);
+ window.addEventListener("audio-desk-theme-changed",sync);
  if(reduced.addEventListener)reduced.addEventListener("change",sync);
  else if(reduced.addListener)reduced.addListener(sync);
  sync();
