@@ -838,6 +838,7 @@ class MainActivity : Activity() {
     @Deprecated("Activity result compatibility for minSdk 23")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (::youtubeWidget.isInitialized && youtubeWidget.result(requestCode, resultCode, data)) return
         if (::nativeWidgets.isInitialized && nativeWidgets.result(requestCode, resultCode)) return
         if (requestCode == spectrumProjectionRequest) {
             if (resultCode == RESULT_OK && data != null && spectrumVisible &&

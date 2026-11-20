@@ -34,10 +34,11 @@ function sync(now){
 }
 if(inline){
  slot.hidden=false;account.hidden=false;
- el("ytHome").textContent="Home";
- el("ytSubscriptions").textContent="Subscriptions ↗";
- el("ytWidgetNote").textContent="Public preview · personalised Home opens in your signed-in browser.";
- account.onclick=()=>api.openYouTubePage("home","");
+ el("ytHome").textContent="My feed";
+ el("ytSubscriptions").textContent="Subscriptions";
+ el("ytWidgetNote").textContent="Recent uploads from your subscriptions · expand widget to browse.";
+ account.textContent="Connect / refresh Google account";
+ account.onclick=()=>open("connect");
  const observer=new MutationObserver(()=>schedule(true));
  observer.observe(widget,{attributes:true,attributeFilter:["hidden","data-widget-removed","data-layout-sized","style"]});
  observer.observe(document.body,{attributes:true,attributeFilter:["class","data-launcher-theme"]});
@@ -67,7 +68,7 @@ toggle.onclick=()=>{
 };
 function open(destination,query=""){
  if(widget.hidden||widget.hasAttribute("data-widget-removed")||launcherPage!=="home"||window.audioDeskForeground===false)return;
- if(inline&&destination!=="subscriptions"&&!widget.classList.contains("yt-compact"))api.navigateYouTubeWidget(destination,query);
+ if(inline)api.navigateYouTubeWidget(destination,query);
  else api.openYouTubePage(destination,query);
 }
 el("ytHome").onclick=()=>open("home");
