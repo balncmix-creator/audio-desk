@@ -17,7 +17,7 @@ function sync(now){
  widget.classList.toggle("yt-compact",sized&&widget.clientHeight<245);
  const editing=document.body.classList.contains("widget-dragging")||document.body.classList.contains("widget-layout-editing");
  const modal=(typeof hasLauncherOverlay==="function"&&hasLauncherOverlay())||[...document.querySelectorAll('[role="dialog"],[aria-modal="true"],.customize-overlay')].some(e=>!e.hidden&&e.getClientRects().length&&getComputedStyle(e).visibility!=="hidden");
- const visible=launcherTheme!=="extreme"&&added&&!widget.hidden&&!widget.hasAttribute("data-widget-removed")&&!editing&&!modal&&launcherPage==="home"&&!document.hidden&&window.audioDeskForeground!==false;
+ const visible=launcherTheme!=="extreme"&&launcherTheme!=="orbit"&&added&&!widget.hidden&&!widget.hasAttribute("data-widget-removed")&&!editing&&!modal&&launcherPage==="home"&&!document.hidden&&window.audioDeskForeground!==false;
  const b=slot.getBoundingClientRect(),w=widget.getBoundingClientRect();
  const style=getComputedStyle(document.documentElement);
  const top=Math.max(w.top,parseFloat(style.getPropertyValue("--status-top"))||0);
