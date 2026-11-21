@@ -10,7 +10,7 @@ const weight=el("splWeight"),response=el("splResponse"),offset=el("splOffset"),r
 function read(k,def){return deskStorage.getItem("ad_acoustic_"+k)||def}
 function save(k,v){deskStorage.setItem("ad_acoustic_"+k,String(v))}
 weight.value=read("weight","A");response.value=read("response","fast");offset.value=read("offset","");range.value=read("range","90");
-function visible(w){return launcherTheme!=="extreme"&&!w.hidden&&!w.hasAttribute("data-widget-removed")&&launcherPage==="home"&&!document.hidden&&window.audioDeskForeground!==false}
+function visible(w){return launcherTheme!=="extreme"&&launcherTheme!=="orbit"&&!w.hidden&&!w.hasAttribute("data-widget-removed")&&launcherPage==="home"&&!document.hidden&&window.audioDeskForeground!==false}
 function sync(){
  const s=!permissionPending&&splOn&&visible(spl),f=!permissionPending&&fftOn&&visible(fft);
  const k=String(s)+":"+String(f);
