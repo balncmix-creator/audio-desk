@@ -357,39 +357,28 @@ const demoApps=[
    'radial recent-app segment requests native device icon by package');
   assert.equal((await page.locator('#orbitRecents').textContent()).includes('REAPER'),false,
    'recent apps are represented by icons, not written app names');
-  assert.equal(await page.locator('#orbitAlphabetPointer').count(),1,
-   'alphabet has a fixed pointer to show the currently selected letter');
-  const pointer=await page.evaluate(()=>{
-   const arrow=document.querySelector('#orbitAlphabetPointer path');
-   const box=arrow.getBBox();
-   return {width:box.width,height:box.height,fill:arrow.getAttribute('fill')};
-  });
-  assert.ok(pointer.width>23&&pointer.height>23&&pointer.fill==='#f2fff3',
-   'fixed alphabet arrow is large and high-contrast, not a tiny invisible gap marker');
+  assert.equal(await page.locator('#orbitAlphabetPointer').count(),1);
+  const arrow=await page.locator('#orbitAlphabetPointer path').evaluate(node=>({width:node.getBBox().width,fill:node.getAttribute('fill')}));
+  assert.ok(arrow.width>11&&arrow.width<25&&arrow.fill==='#f2fff3','small, visible fixed arrow');
+  assert.equal(await page.locator('#orbitLetterMenu').count(),0,'no separate floating app popup');
   await page.locator('#orbitLetters [data-orbit-action="letter:A"]').dispatchEvent('click');
-  assert.equal(await page.locator('#orbitLetterMenu').isVisible(),true,
-   'tapping a dial letter opens the small radial app popup');
-  assert.equal(await page.locator('#orbitLetterShade').isVisible(),true,
-   'rest of home has a blur and dim backdrop');
-  assert.equal(await page.locator('#launcherLetterPanel').isVisible(),false,
-   'Orbit uses its own radial popup instead of the full-height alphabetical drawer');
-  assert.equal(await page.locator('#orbitPickerHeading').textContent(),'APPS · A');
-  assert.equal(await page.locator('#orbitPickerFan [data-picker-pkg="com.example.audio"]').count(),1,
-   'alphabet popup contains real installed apps matching its selected letter');
-  assert.equal(await page.locator('#orbitPickerFan image[href="/app-icons/orbit/com.example.audio.png"]').count(),1,
-   'popup uses actual package icons with native icon route');
-  assert.equal(await page.locator('#orbitPickerFan [data-picker-pkg]').count(),1,
-   'the small app popup includes only the selected letter, not all installed apps');
-  await page.locator('#orbitPickerClose').click();
-  assert.equal(await page.locator('#orbitLetterMenu').isVisible(),false);
-
-  // The circular app popup opens the chosen app by native package/activity.
+  assert.equal(await page.locator('#orbitRadialBackdrop').isVisible(),true,'blur backdrop behind active ring');
+  assert.equal(await page.locator('#orbitAppIconLayers [data-picker-pkg="com.example.audio"]').count(),1,'A apps render in recents ring');
+  assert.equal(await page.locator('#orbitAppIconLayers image[href="/app-icons/orbit/com.example.audio.png"]').count(),1,'native installed icon');
+  await page.waitForTimeout(340);
+  assert.equal(await page.locator('#orbitAppIconLayers .orbit-app-layer').count(),1,'single settled icon fan');
+  assert.ok((await page.locator('#orbitAppIconLayers [data-picker-pkg="com.example.audio"]').getAttribute('transform')).includes('translate('));
+  await page.locator('#orbitLetters [data-orbit-action="letter:B"]').dispatchEvent('click');
+  assert.equal(await page.locator('#orbitAppIconLayers .orbit-app-layer').count(),2,'crossfade layers while letter changes');
+  assert.equal(await page.locator('#orbitAppIconLayers [data-picker-pkg="com.example.browser"]').count(),1,'B selects browser');
+  await page.waitForTimeout(340);
+  assert.equal(await page.locator('#orbitAppIconLayers .orbit-app-layer').count(),1,'outgoing app layer cleaned up');
   await page.locator('#orbitLetters [data-orbit-action="letter:A"]').dispatchEvent('click');
-  await page.locator('#orbitPickerFan [data-picker-pkg="com.example.audio"]').dispatchEvent('click');
-  assert.equal(await page.locator('#orbitLetterMenu').isVisible(),false);
-  assert.ok(await page.evaluate(()=>window.appLaunchCalls.some(x=>x[0]==='com.example.audio')),
-   'tapping an app icon in the radial popup launches the installed app');
-    // Synthetic drag, with deterministic pointer coordinates, verifies continuous
+  await page.waitForTimeout(340);
+  await page.locator('#orbitAppIconLayers [data-picker-pkg="com.example.audio"]').dispatchEvent('click');
+  assert.equal(await page.locator('#orbitAppIconLayers').count(),0,'launch restores recent apps');
+  assert.ok(await page.evaluate(()=>window.appLaunchCalls.some(x=>x[0]==='com.example.audio')),'radial app icon launches native app');
+      // Synthetic drag, with deterministic pointer coordinates, verifies continuous
   // visual movement and that the other dials stay at their own positions.
   const momentum=await page.evaluate(async()=>{
    const dial=document.getElementById('orbitDial');
@@ -402,7 +391,7 @@ const demoApps=[
    const dispatch=(name,a)=>dial.dispatchEvent(new PointerEvent(name,{
     bubbles:true,pointerId:7,button:0,...at(a)
    }));
-   const recentsBefore=document.getElementById('orbitRecents').innerHTML;
+   const widgetsBefore=document.getElementById('orbitWidgets').innerHTML;
    dispatch('pointerdown',12);
    await new Promise(r=>setTimeout(r,36));
    dispatch('pointermove',26);
@@ -412,16 +401,13 @@ const demoApps=[
    dispatch('pointerup',39);
    await new Promise(requestAnimationFrame);
    const inertiaHtml=document.getElementById('orbitLetters').innerHTML;
-   return {moved:dragHtml!==inertiaHtml,otherUnchanged:recentsBefore===document.getElementById('orbitRecents').innerHTML};
+   return {moved:dragHtml!==inertiaHtml,otherUnchanged:widgetsBefore===document.getElementById('orbitWidgets').innerHTML};
   });
   assert.equal(momentum.moved,true,'ring continues moving after touch release');
   assert.equal(momentum.otherUnchanged,true,'independent radial app ring stays stationary');
-  assert.equal(await page.locator('#orbitLetterMenu').isVisible(),true,
-   'turning the alphabet poker dial keeps the live radial app menu open');
-  assert.notEqual(await page.locator('#orbitPickerHeading').textContent(),'APPS · A',
-   'rotating under the fixed pointer updates the displayed app letter');
-  await page.locator('#orbitPickerClose').click();
-  assert.equal(await page.locator('#orbitLetterMenu').isVisible(),false);
+  assert.equal(await page.locator('#orbitRadialBackdrop').isVisible(),true,'alphabet momentum keeps the inline picker active');
+  await page.evaluate(()=>document.getElementById('orbitRadialBackdrop').click());
+  assert.equal(await page.locator('#orbitAppIconLayers').count(),0,'dismiss backdrop restores recents');
   await page.waitForTimeout(1000);
   const previousLetters=await page.locator('#orbitLetters').textContent();
   await page.locator('#orbitWidgets [data-orbit-action="widget:1"]').dispatchEvent('click');
