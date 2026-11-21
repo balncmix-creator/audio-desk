@@ -332,6 +332,30 @@ const demoApps=[
   await page.evaluate(()=>{setLauncherPage('home',false);setLauncherTheme('windows')});
   assert.equal(await page.locator('#extremeSearch').isVisible(),false);
   assert.equal(await page.evaluate(()=>launcherTheme),'windows');
+  // Orbit: real search, live clock, three independently rotating dials,
+  // true media state and wallpaper palette; preserve all previous editions.
+  await page.evaluate(()=>setLauncherTheme('orbit'));
+  await page.locator('#orbitHome').waitFor({state:'visible'});
+  assert.equal(await page.locator('#launcherClockWidget').isVisible(),false);
+  assert.equal(await page.locator('#launcherMusicWidget').isVisible(),false);
+  assert.ok((await page.locator('#orbitClock').textContent()).match(/\d/));
+  assert.equal(await page.locator('#orbitWidgets [data-orbit-widget]').count(),3);
+  assert.equal(await page.locator('#orbitWidgets [data-orbit-action="media:toggle"]').count(),1);
+  await page.evaluate(()=>{window.receiveAudioDeskMedia({enabled:true,available:true,playing:true,title:'Orbit test track',artist:'Audio Desk',durationMs:120000,positionMs:45000,canSeek:true,canToggle:true,canPrevious:true,canNext:true})});
+  assert.ok((await page.locator('#orbitWidgets').textContent()).includes('Orbit test track'));
+  assert.equal(await page.locator('#orbitWidgets [role="slider"]').count(),1);
+  await page.evaluate(()=>{window.orbitCommands=[];window.AudioDesk.mediaCommand=x=>window.orbitCommands.push(x);window.AudioDesk.seekMedia=x=>window.orbitCommands.push(x)});
+  await page.locator('#orbitWidgets [data-orbit-action="media:toggle"]').dispatchEvent('click');
+  assert.deepEqual(await page.evaluate(()=>window.orbitCommands),['toggle']);
+  const previousLetters=await page.locator('#orbitLetters').textContent();
+  await page.locator('#orbitWidgets [data-orbit-action="widget:1"]').dispatchEvent('click');
+  assert.equal(await page.locator('#orbitLetters').textContent(),previousLetters);
+  assert.ok((await page.locator('#orbitWidgets').textContent()).includes('Calendar'));
+  await page.locator('#orbitSearch [data-orbit-action="search"]').dispatchEvent('click');
+  assert.equal(await page.evaluate(()=>launcherPage),'apps');
+  assert.equal(await page.locator('#orbitHome').isVisible(),false);
+  await page.evaluate(()=>{setLauncherPage('home',false);setLauncherTheme('windows')});
+  assert.equal(await page.locator('#orbitHome').isVisible(),false);
   assert.deepEqual(errors,[],'no launcher errors');
   console.log('PASS: minimal Home without list, Niagara-style A-Z rail and panel, Windows tiles, pins, search, launches, recents and swipe navigation');
  }finally{await browser.close()}
