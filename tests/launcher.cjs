@@ -22,11 +22,13 @@ const demoApps=[
   await page.addInitScript(apps=>{
    window.appLaunchCalls=[];window.makeDefaultRequests=0;
    window.nativeLayoutRequests=[];window.nativePickerOpen=0;window.nativeDeleteCalls=[];
+   window.systemWallpaperCalls=[];
    window.launcherDemoApps=apps;window.launcherDemoHistory=[];
    window.AudioDesk={
     layoutNativeWidgets(payload){window.nativeLayoutRequests.push(JSON.parse(payload))},
     requestNativeWidgets(){},
     openNativeWidgets(){window.nativePickerOpen++},
+    setSystemWallpaperCustom(data,position,lock,request){window.systemWallpaperCalls.push({data,position,lock,request})},
     deleteNativeWidget(id){window.nativeDeleteCalls.push(id)},
     requestLauncherApps(){setTimeout(()=>window.receiveLauncherApps(
      window.launcherDemoApps,window.launcherDemoHistory,window.makeDefaultRequests>0),0)},
@@ -485,6 +487,42 @@ const demoApps=[
   assert.equal(await page.locator('#orbitWidgets [data-orbit-widget]').count(),3);
   await page.locator('#orbitSettingsContent [data-orbit-preference="showAppWidgets"]').check();
   await page.locator('#orbitSettingsClose').click();
+
+
+  // Integrated large minimalist wallpaper library: no downloads or third-party services.
+  assert.equal(await page.evaluate(()=>window.audioDeskMinimalGalleryCount()),180,
+   '180 original minimalist wallpapers are bundled as scalable on-demand SVG');
+  await page.locator('#orbitSettingsGear').click();
+  await page.locator('#orbitSettingsTabs [data-orbit-tab="wallpaper"]').click();
+  await page.locator('#orbitSettingsContent [data-orbit-settings-action="wallpaper"]').click();
+  assert.equal(await page.locator('#launcherWallpaperDialog').isVisible(),true,
+   'wallpaper picker opens directly from Orbit settings');
+  assert.equal(await page.locator('#minimalGalleryGrid .minimal-gallery-entry').count(),12,
+   'only a lightweight first page of thumbnails is loaded');
+  await page.locator('#minimalGalleryFilters [data-minimal-category="Pixel"]').click();
+  assert.equal(await page.locator('#minimalGalleryCount').textContent(),'24 wallpapers · 12 shown',
+   'collections are grouped by visual theme');
+  await page.locator('#minimalGalleryGrid .minimal-gallery-entry').first().click();
+  assert.ok(await page.evaluate(()=>document.body.dataset.minimalWallpaper.startsWith('mg-')),
+   'choosing a wallpaper immediately updates Audio Desk background');
+  assert.equal(await page.locator('#minimalGalleryWallpaperImage').isVisible(),true);
+  const artSource=await page.locator('#minimalGalleryWallpaperImage').getAttribute('src');
+  assert.ok(artSource.startsWith('data:image/svg+xml;'),'wallpapers are resolution-independent vectors');
+  await page.waitForTimeout(180);
+  assert.ok((await page.evaluate(()=>window.systemWallpaperCalls)).length>0,
+   'selection also applies a full-resolution wallpaper through Android native integration');
+  await page.locator('#wallpaperClose').click();
+  await page.evaluate(()=>setLauncherTheme('warm'));
+  await page.evaluate(()=>setLauncherTheme('orbit'));
+  assert.equal(await page.locator('#minimalGalleryWallpaperImage').isVisible(),true,
+   'selected minimalist wallpaper persists per launcher theme');
+  await page.locator('#orbitSettingsGear').click();
+  await page.locator('#orbitSettingsTabs [data-orbit-tab="wallpaper"]').click();
+  await page.locator('#orbitSettingsContent [data-orbit-settings-action="wallpaper"]').click();
+  await page.locator('#minimalGalleryFilters [data-minimal-category="Dark"]').click();
+  await page.locator('#minimalGalleryGrid .minimal-gallery-entry').first().click();
+  assert.ok(await page.locator('#minimalGalleryWallpaperImage').isVisible());
+  await page.locator('#wallpaperClose').click();
 
 await page.locator('#orbitSearch [data-orbit-action="search"]').dispatchEvent('click');
   assert.equal(await page.evaluate(()=>launcherPage),'apps');
