@@ -288,7 +288,10 @@ function action(code){
   case "clear":if(editing?.kind==="search"){searchTerm="";editing.value="";q("rdfEditorInput").value="";page=0;render()}break;
   case "done":finishEdit(true);break;
   case "save":finishEdit(true);break;
-  case "cancel":finishEdit(false);break;
+  case "cancel":
+   if(mode==="confirm"){mode=selected?"selected":"main";render()}
+   else finishEdit(false);
+   break;
  }
 }
 wheel.addEventListener("click",e=>{
