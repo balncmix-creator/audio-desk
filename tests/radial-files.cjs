@@ -67,6 +67,10 @@ const {chromium}=require('playwright');
    type:'listing',path:['Audio','Project'],entries:items,count:items.length,
    canGoUp:true,writable:true,truncated:false
   }),fixture);
+  assert.match(await page.locator('#rdfHint').innerText(),/Audio/,
+   'choosing Audio from the starter dial should preserve the filter after selecting a folder');
+  await page.locator('#rdfWheel [data-rdf-action="filter"]').click();
+  await page.locator('#rdfWheel [data-rdf-action="filter:all"]').click();
   assert.equal(await page.locator('#rdfWheel #rdfFileRing .rdf-file').count(),6,
     'six actual file/folder wedges, not a text list');
   assert.equal(await page.locator('#rdfWheel #rdfCommandRing .rdf-command').count(),6,
