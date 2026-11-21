@@ -17,7 +17,7 @@ function hiddenByOverlay(){
  if(editing&&!editing.hidden)return true;
  // Both built-in and dynamically-created modal sheets take precedence.
  if(typeof hasLauncherOverlay==="function"&&hasLauncherOverlay())return true;
- return [...document.querySelectorAll('[role="dialog"],[aria-modal="true"],.customize-overlay')].some(el=>!el.hidden&&el.getClientRects().length&&getComputedStyle(el).visibility!=="hidden"&&getComputedStyle(el).display!=="none");
+ return [...document.querySelectorAll('[role="dialog"],[aria-modal="true"],.customize-overlay')].some(el=>el.id!=="orbitWidgetPreview"&&!el.hidden&&el.getClientRects().length&&getComputedStyle(el).visibility!=="hidden"&&getComputedStyle(el).display!=="none");
 }
 function sync(now=performance.now()){
  raf=0;
