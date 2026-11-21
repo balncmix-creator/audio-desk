@@ -16,6 +16,7 @@ const {chromium}=require('playwright');
    window.AudioDesk={
     radialFilesList(){window.nativeFileCalls.push(['list'])},
     radialFilesPick(){window.nativeFileCalls.push(['pick'])},
+    radialFilesRequestFullAccess(location){window.nativeFileCalls.push(['all-files',location])},
     radialFilesUp(){window.nativeFileCalls.push(['up'])},
     radialFilesEnter(id){window.nativeFileCalls.push(['enter',id])},
     radialFilesOpen(id){window.nativeFileCalls.push(['open',id])},
@@ -49,13 +50,17 @@ const {chromium}=require('playwright');
    'six actionable file categories, not an empty blank ring on first launch');
   assert.equal(await page.evaluate(()=>getComputedStyle(document.getElementById('radialFilesPanel')).backgroundColor),
    'rgb(8, 19, 14)','panel must be opaque enough to hide launcher beneath');
-  await page.locator('#rdfFileRing [data-rdf-action="start:audio"]').click();
+  await page.locator('#rdfFileRing [data-rdf-action="start:music"]').click();
+  assert.deepEqual(await page.evaluate(()=>window.nativeFileCalls.at(-1)),['all-files','music'],
+   'Music sector must request direct shared-storage access, not Android folder picker');
+  await page.locator('#rdfFileRing [data-rdf-action="start:folder"]').click();
   assert.deepEqual(await page.evaluate(()=>window.nativeFileCalls.at(-1)),['pick'],
-   'a category on the outer ring must open Android folder picker');
+   'Folder sector must keep the scoped Android folder picker as fallback');
   assert.equal(await page.locator('#rdfList,.rdf-list,.rdf-actions,.rdf-top-actions').count(),0,
     'file list and menu must live only inside radial sectors');
-  await page.locator('#rdfWheel [data-rdf-action="change"]').click();
-  assert.deepEqual(await page.evaluate(()=>window.nativeFileCalls.at(-1)),['pick']);
+  await page.locator('#rdfWheel [data-rdf-action="device"]').click();
+  assert.deepEqual(await page.evaluate(()=>window.nativeFileCalls.at(-1)),['all-files','root'],
+   'Main radial menu offers device-wide shared storage access');
   const fixture=[
    {id:'d1',name:'Session',folder:true,mime:'',size:0,modified:100,writable:true},
    {id:'a1',name:'Foley 01.wav',folder:false,mime:'audio/wav',size:2048,modified:201,writable:true},
@@ -64,19 +69,17 @@ const {chromium}=require('playwright');
    ...Array.from({length:9},(_,i)=>({id:'s'+i,name:'Take '+i+'.wav',folder:false,mime:'audio/wav',size:800+i,modified:50+i,writable:true}))
   ];
   await page.evaluate(items=>window.receiveAudioDeskRadialFiles({
-   type:'listing',path:['Audio','Project'],entries:items,count:items.length,
+   type:'listing',mode:'device',path:['Internal storage','Music'],entries:items,count:items.length,
    canGoUp:true,writable:true,truncated:false
   }),fixture);
-  assert.match(await page.locator('#rdfHint').innerText(),/Audio/,
-   'choosing Audio from the starter dial should preserve the filter after selecting a folder');
-  await page.locator('#rdfWheel [data-rdf-action="filter"]').click();
-  await page.locator('#rdfWheel [data-rdf-action="filter:all"]').click();
+  assert.match(await page.locator('#rdfHint').innerText(),/BROWSE/,
+   'direct device folder browsing should start with all file types available');
   assert.equal(await page.locator('#rdfWheel #rdfFileRing .rdf-file').count(),6,
     'six actual file/folder wedges, not a text list');
   assert.equal(await page.locator('#rdfWheel #rdfCommandRing .rdf-command').count(),6,
     'all navigation buttons are radial sectors');
   assert.equal(await page.locator('img[onerror],svg img').count(),0,'file names are escaped');
-  assert.equal(await page.locator('#rdfPath').innerText(),'Audio / Project');
+  assert.equal(await page.locator('#rdfPath').innerText(),'Internal storage / Music');
   await page.locator('#rdfWheel [data-rdf-action="next"]').click();
   assert.match(await page.locator('#rdfHint').innerText(),/2\/3/);
   await page.locator('#rdfWheel [data-rdf-action="prev"]').click();
@@ -107,6 +110,9 @@ const {chromium}=require('playwright');
   assert.deepEqual(await page.evaluate(()=>window.nativeFileCalls.at(-1)),['delete','a1'],
    'deletion requires a dedicated radial confirmation');
   await page.locator('#rdfWheel [data-rdf-action="more"]').click();
+  await page.locator('#rdfWheel [data-rdf-action="device"]').click();
+  assert.deepEqual(await page.evaluate(()=>window.nativeFileCalls.at(-1)),['all-files','root'],
+    'context radial menu can return to full internal shared storage');
   await page.locator('#rdfWheel [data-rdf-action="new"]').click();
   await page.locator('#rdfEditorInput').fill('New sound folder');
   await page.locator('#rdfWheel [data-rdf-action="save"]').click();

@@ -493,6 +493,16 @@ class MainActivity : Activity() {
         @JavascriptInterface fun radialFilesList() {
             runOnUiThread { if (!destroyed && ::radialFiles.isInitialized) radialFiles.requestListing() }
         }
+        // Only an explicit user tap opens Android's special access settings.
+        // The debug edition declares MANAGE_EXTERNAL_STORAGE; the release
+        // edition keeps scoped SAF access as the Play-compliant fallback.
+        @JavascriptInterface fun radialFilesRequestFullAccess(location: String) {
+            if (location !in setOf("root", "downloads", "music", "documents", "pictures", "dcim")) return
+            runOnUiThread {
+                if (!destroyed && ::radialFiles.isInitialized)
+                    radialFiles.requestDeviceAccess(location)
+            }
+        }
         @JavascriptInterface fun radialFilesPick() {
             runOnUiThread { if (!destroyed && ::radialFiles.isInitialized) radialFiles.chooseFolder() }
         }
@@ -832,6 +842,7 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         if (::nativeWidgets.isInitialized) nativeWidgets.resume()
+        if (::radialFiles.isInitialized) radialFiles.onResume()
         pixelBarSuspended = false
         applyPixelStatusMode()
         if (::mediaWidgetSupport.isInitialized) sendMediaState(mediaWidgetSupport.state())

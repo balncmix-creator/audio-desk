@@ -26,6 +26,10 @@ const wheel=q("rdfWheel");
 const esc=s=>String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const filters=[["all","All","◎"],["folder","Folders","▣"],["audio","Audio","♪"],
  ["image","Images","▧"],["video","Video","▶"],["document","Docs","▤"]];
+const locations=[
+ ["root","Device","◉"],["downloads","Downloads","↓"],["music","Music","♪"],
+ ["pictures","Pictures","▧"],["documents","Documents","▤"],["folder","Folder","▣"]
+];
 const slots=6,rad=Math.PI/180;
 let current={entries:[],path:[],count:0,writable:false,canGoUp:false,truncated:false};
 let page=0,selected="",filter="all",sort="name",mode="main",searchTerm="",editing=null;
@@ -85,7 +89,7 @@ function fileSector(f,i){
 }
 const menu={
  main:()=>[
-  [current.canGoUp?"up":"change",current.canGoUp?"Up":"Choose","↖",true],
+  [current.canGoUp?"up":"device",current.canGoUp?"Up":"Storage",current.canGoUp?"↖":"▣",true],
   ["prev","Prev","‹",shown().length>slots&&page>0],
   ["next","Next","›",shown().length>(page+1)*slots],
   ["filter","Filter","◉",true],
@@ -102,8 +106,8 @@ const menu={
  more:()=>[
   ["search","Search","⌕",true],
   ["sort","Sort","⇅",true],
-  ["change","Choose","▣",true],
-  ["refresh","Refresh","⟳",true],
+  ["device","Storage","◉",true],
+  ["change","Folder","▣",true],
   ["new","New","+",current.writable],
   ["back","Back","↶",true]],
  sort:()=>[
@@ -136,9 +140,9 @@ function render(){
  const visible=files.slice(page*slots,(page+1)*slots);
  let html="";
  if(!current.path.length){
-  // A first-launch dial must be useful rather than six large blank wedges.
-  // These categories open Android's scoped folder picker, never scan storage.
-  html=filters.map(([key,label,symbol],i)=>glyphSector(
+  // Six true radial destinations, not Android's restricted root folder picker.
+  // Device requires user-enabled All files access; Folder keeps scoped SAF.
+  html=locations.map(([key,label,symbol],i)=>glyphSector(
    "start:"+key,label,symbol,i,124,192,"start")).join("");
  }else{
   visible.forEach((f,i)=>{html+=fileSector(f,i)});
@@ -275,9 +279,15 @@ window.receiveAudioDeskRadialFiles=function(payload){
 function action(code){
  if(!code)return;
  if(code.startsWith("start:")){
-  filter=code.slice(6);page=0;selected="";mode="main";
-  status="Choose an Android folder to browse "+(filters.find(f=>f[0]===filter)?.[1]||"files")+".";
-  render();call("radialFilesPick");return;
+  const location=code.slice(6);page=0;selected="";mode="main";filter="all";
+  if(location==="folder"){
+   status="Select a single folder using Android's picker.";render();
+   call("radialFilesPick");
+  }else{
+   status="Allow All files access in Android Settings, then return to Orbit Files.";
+   render();call("radialFilesRequestFullAccess",location);
+  }
+  return;
  }
  if(code.startsWith("select:")){
   const id=code.slice(7),file=current.entries.find(f=>f.id===id);
@@ -296,7 +306,7 @@ function action(code){
    if(mode==="edit"||mode==="search"){q("rdfEditorInput").focus();return}
    if(mode==="confirm")return;
    if(selected){const f=selectedItem();if(f)call(f.folder?"radialFilesEnter":"radialFilesOpen",f.id)}
-   else if(!current.path.length)call("radialFilesPick");
+   else if(!current.path.length)call("radialFilesRequestFullAccess","root");
    else{mode=mode==="more"?"main":"more";render()}
    break;
   case "close":close();break;
@@ -305,6 +315,7 @@ function action(code){
   case "next":pageBy(1);break;
   case "more":case "filter":case "sort":mode=code;render();break;
   case "change":call("radialFilesPick");break;
+  case "device":call("radialFilesRequestFullAccess","root");break;
   case "refresh":call("radialFilesList");break;
   case "back":back();break;
   case "open":{

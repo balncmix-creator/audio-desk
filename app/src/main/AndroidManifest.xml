@@ -33,6 +33,14 @@
         android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher"
         android:theme="@android:style/Theme.Material.NoActionBar"
         android:usesCleartextTraffic="false" android:enableOnBackInvokedCallback="true">
+        <!-- Sharing occurs only after the user selects a file inside Orbit.
+             These content URIs carry temporary read permission. -->
+        <provider android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.orbit.files"
+            android:exported="false" android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/orbit_file_paths" />
+        </provider>
         <!-- Optional user-granted Notification Access permits querying player media
              sessions only. This service never inspects notification contents. -->
         <service android:name=".AudioDeskMediaAccessService"

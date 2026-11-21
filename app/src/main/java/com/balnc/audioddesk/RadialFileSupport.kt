@@ -31,6 +31,11 @@ class RadialFileSupport(private val activity: Activity, private val webView: Web
     }
     private val io = Executors.newSingleThreadExecutor()
     private val store = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    // SAF remains a scoped fallback (and supports SD cards) when broad access
+    // is not enabled or the installed edition doesn't declare the permission.
+    private val shared = SharedStorageSupport(activity, ::emit) {
+        store.edit().putString("last_mode", "device").apply()
+    }
     private val trail = ArrayList<DocumentFile>()
     private var tokens = emptyMap<String, DocumentFile>()
     private var revision = 0
@@ -63,19 +68,34 @@ class RadialFileSupport(private val activity: Activity, private val webView: Web
             .firstOrNull { it.uri == uri }?.isWritePermission != true
         return true
     }
+    fun requestDeviceAccess(location: String) {
+        shared.requestAccess(location)
+    }
+    fun onResume() {
+        shared.onResume()
+    }
     fun requestListing() {
+        if (shared.active) {
+            shared.list()
+            return
+        }
+        if (shared.granted() && store.getString("last_mode", "device") != "tree") {
+            shared.openLocation()
+            return
+        }
         if (trail.isEmpty()) {
             val saved = store.getString(ROOT, null)
             val uri = runCatching { saved?.let(Uri::parse) }.getOrNull()
             if (uri == null || !establish(uri)) {
                 store.edit().remove(ROOT).apply()
-                signal("permission", "Choose a folder to browse. Nothing is scanned without your permission.")
+                signal("permission", "Choose Device storage for Android shared files, or Folder for limited access.")
                 return
             }
         }
         list()
     }
     fun chooseFolder() {
+        shared.deactivate()
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or
                 Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
@@ -104,7 +124,8 @@ class RadialFileSupport(private val activity: Activity, private val webView: Web
         try {
             activity.contentResolver.takePersistableUriPermission(uri, flags)
             if (!establish(uri)) throw SecurityException("Folder not accessible")
-            store.edit().putString(ROOT, uri.toString()).apply()
+            shared.deactivate()
+            store.edit().putString(ROOT, uri.toString()).putString("last_mode", "tree").apply()
             list()
         } catch (_: Exception) {
             signal("error", "Cannot access this folder. Select another folder.")
@@ -139,6 +160,7 @@ class RadialFileSupport(private val activity: Activity, private val webView: Web
                         .put("writable", writable && file.canWrite()))
                 }
                 val data = JSONObject().put("type", "listing")
+                    .put("mode", "folder")
                     .put("path", JSONArray(path))
                     .put("entries", entries)
                     .put("count", children.size)
@@ -160,12 +182,14 @@ class RadialFileSupport(private val activity: Activity, private val webView: Web
         }
     }
     fun enter(id: String) {
+        if (shared.active) return shared.enter(id)
         val target = tokens[id] ?: return
         if (!target.isDirectory) { open(id); return }
         trail.add(target)
         list()
     }
     fun up() {
+        if (shared.active) return shared.up()
         if (trail.size > 1) {
             trail.removeAt(trail.lastIndex)
             list()
@@ -174,6 +198,7 @@ class RadialFileSupport(private val activity: Activity, private val webView: Web
     fun refresh() = requestListing()
     private fun file(id: String): DocumentFile? = tokens[id]?.takeIf { !it.isDirectory }
     fun open(id: String) {
+        if (shared.active) return shared.open(id)
         val selected = file(id) ?: return
         try {
             val intent = Intent(Intent.ACTION_VIEW).apply {
@@ -185,6 +210,7 @@ class RadialFileSupport(private val activity: Activity, private val webView: Web
         } catch (_: Exception) { signal("error", "No compatible app could open this file.") }
     }
     fun share(id: String) {
+        if (shared.active) return shared.share(id)
         val selected = file(id) ?: return
         try {
             val intent = Intent(Intent.ACTION_SEND).apply {
@@ -197,6 +223,7 @@ class RadialFileSupport(private val activity: Activity, private val webView: Web
         } catch (_: Exception) { signal("error", "Cannot share this file.") }
     }
     fun createFolder(name: String) {
+        if (shared.active) return shared.create(name)
         val clean = safeName(name) ?: return signal("error", "Enter a valid folder name.")
         val parent = trail.lastOrNull() ?: return
         if (readOnly) return signal("error", "This folder was granted read-only access.")
@@ -209,6 +236,7 @@ class RadialFileSupport(private val activity: Activity, private val webView: Web
         }
     }
     fun rename(id: String, name: String) {
+        if (shared.active) return shared.rename(id, name)
         val target = tokens[id] ?: return
         val clean = safeName(name) ?: return signal("error", "Enter a valid name.")
         if (readOnly || !target.canWrite()) return signal("error", "This item cannot be renamed.")
@@ -221,6 +249,7 @@ class RadialFileSupport(private val activity: Activity, private val webView: Web
         }
     }
     fun delete(id: String) {
+        if (shared.active) return shared.delete(id)
         val target = tokens[id] ?: return
         if (readOnly || !target.canWrite()) return signal("error", "This item cannot be deleted.")
         io.execute {
@@ -232,6 +261,7 @@ class RadialFileSupport(private val activity: Activity, private val webView: Web
         }
     }
     fun close() {
+        shared.close()
         closed = true
         revision++
         io.shutdownNow()
