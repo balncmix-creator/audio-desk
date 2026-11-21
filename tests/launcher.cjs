@@ -422,6 +422,10 @@ const demoApps=[
   assert.ok((await page.locator('#orbitWidgets').textContent()).includes('Calendar'));
 
   // Approved Orbit settings gear and two independent widget rings.
+  const displayedTime=await page.locator('#orbitClock textPath').first().textContent();
+  const dateParts=await page.evaluate(()=>new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit",hour12:true}).formatToParts(new Date()));
+  assert.equal(displayedTime, dateParts.find(x=>x.type==="hour").value+":"+dateParts.find(x=>x.type==="minute").value,
+   'clock shows the full local 12-hour time, without clipping the first digit');
   assert.equal(await page.locator('#orbitSettingsGear').isVisible(),true,
    'Audio Desk settings gear is discoverable in the top-left');
   assert.equal(await page.locator('#launcherSettingsToggle').isVisible(),false,
@@ -453,17 +457,38 @@ const demoApps=[
   assert.equal(await page.locator('#orbitExternalWidgets [data-orbit-external="17"]').count(),1);
   assert.equal(await page.locator('#orbitExternalWidgets image[href="/app-icons/orbit/com.example.camera.png"]').count(),1,
    'external app widget dial gets the native provider icon');
-  await page.waitForTimeout(110);
-  const nativeBefore=await page.evaluate(()=>window.nativeLayoutRequests.at(-1));
-  assert.equal(nativeBefore.slots.length,1,
-   'only the selected real Android widget is hosted inside the custom ring');
-  assert.equal(nativeBefore.slots[0].id,17);
-  assert.ok(nativeBefore.slots[0].w>95&&nativeBefore.slots[0].h>40);
-  const ownWidgetsBefore=await page.locator('#orbitWidgets').innerHTML();
-  await page.locator('#orbitExternalWidgets [data-orbit-action="external:focus:1"]').dispatchEvent('click');
   await page.waitForTimeout(120);
+  const nativeBefore=await page.evaluate(()=>window.nativeLayoutRequests.at(-1));
+  assert.equal(nativeBefore.slots.length,0,
+   'no native Android widget overlays appear across the radial clock or music dial');
+  const ownWidgetsBefore=await page.locator('#orbitWidgets').innerHTML();
+  await page.locator('#orbitExternalWidgets [data-orbit-action="external:focus:0"]').dispatchEvent('click');
+  assert.equal(await page.locator('#orbitWidgetPreview').isVisible(),true,
+   'tapping the current widget opens a dedicated native widget preview');
+  await page.waitForTimeout(120);
+  const nativeShown=await page.evaluate(()=>window.nativeLayoutRequests.at(-1));
+  assert.equal(nativeShown.slots.length,1,'preview hosts the actual interactive Android widget');
+  assert.equal(nativeShown.slots[0].id,17);
+  const viewRect=await page.locator('#orbitWidgetPreviewSlot').boundingBox();
+  assert.ok(Math.abs(nativeShown.slots[0].x-(viewRect.x+5))<3,
+   'widget is positioned inside its preview, not floating over the radial rings');
+  assert.ok(nativeShown.slots[0].w>95&&nativeShown.slots[0].h>60);
+  await page.locator('#orbitWidgetPreviewClose').click();
+  await page.waitForTimeout(90);
+  assert.equal(await page.evaluate(()=>window.nativeLayoutRequests.at(-1).slots.length),0,
+   'closing preview hides native widget without deleting it');
+  await page.locator('#orbitExternalWidgets [data-orbit-action="external:focus:1"]').dispatchEvent('click');
+  await page.waitForTimeout(90);
+  assert.equal(await page.evaluate(()=>window.nativeLayoutRequests.at(-1).slots.length),0,
+   'rotating app widgets never creates floating native overlays');
+  await page.locator('#orbitExternalWidgets [data-orbit-action="external:focus:1"]').dispatchEvent('click');
+  assert.equal(await page.locator('#orbitWidgetPreviewTitle').textContent(),'YouTube');
+  await page.waitForTimeout(90);
   assert.equal(await page.evaluate(()=>window.nativeLayoutRequests.at(-1).slots[0]?.id),19,
-   'external ring rotates to a second real installed widget');
+   'second real app widget opens and stays inside its own panel');
+  await page.locator('#orbitWidgetPreviewShade').dispatchEvent('click');
+  await page.waitForTimeout(90);
+  assert.equal(await page.evaluate(()=>window.nativeLayoutRequests.at(-1).slots.length),0);
   assert.equal(await page.locator('#orbitWidgets').innerHTML(),ownWidgetsBefore,
    'rotating app widgets does not move Audio Desk built-in widget ring');
   await page.locator('#orbitSettingsGear').click();
