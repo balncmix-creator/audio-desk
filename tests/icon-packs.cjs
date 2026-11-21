@@ -94,7 +94,7 @@ assert.match(studio,/ad_icon_studio_pack_v1_/,'packs are persisted per launcher 
   await page.waitForFunction(()=>document.querySelector('#orbitRecents image[href*="pack-ocean"]'));
   assert.ok(await page.locator('#orbitRecents image[href*="/app-icons/pack-ocean/"]').count()>0,
    'Orbit radial app ring must use the selected pack too');
-  await page.evaluate(()=>setLauncherTheme('minimal'));
+  await page.evaluate(()=>{setLauncherTheme('minimal');setLauncherPage('apps',false)});
   assert.equal(await page.evaluate(()=>audioDeskIconStudio.pack()),'glass',
    'returning to previous theme restores its chosen pack');
   await page.evaluate(()=>audioDeskIconStudio.setMode('original'));
