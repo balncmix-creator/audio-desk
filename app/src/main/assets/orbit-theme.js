@@ -454,6 +454,7 @@ function renderSettings(){
    html='<h3>General</h3>'+
     '<div class="orbit-settings-row"><span>Launcher edition</span><strong>Orbit</strong></div>'+
     '<div class="orbit-settings-buttons">'+settingsButton("Set default Home","make-default")+
+    settingsButton("Radial file manager","files")+
     settingsButton("All launcher options","advanced")+'</div>';
  }
  q("orbitSettingsContent").innerHTML=html;
@@ -519,6 +520,7 @@ q("orbitSettingsContent").addEventListener("click",e=>{
  else if(action==="next-built-in"){indices.widgets=wrap(indices.widgets+1,widgets.length);offsets.widgets=0;drawWidgets();renderSettings()}
  else if(action==="make-default"){closeSettings();q("launcherMakeDefault")?.click()}
  else if(action==="advanced"){closeSettings();q("launcherSettingsToggle")?.click()}
+ else if(action==="files"){closeSettings();window.audioDeskOpenRadialFiles?.()}
 });
 quickPanel.addEventListener("click",e=>{
  const target=e.target.closest("[data-orbit-quick]");if(!target)return;
