@@ -533,7 +533,9 @@ window.addEventListener("audio-desk-native-widgets-changed",()=>{
  if(active()){drawExternalWidgets();renderSettings()}
  window.audioDeskSyncNativeWidgets?.();
 });
-saveOrbitPreferences();
+// Preferences are applied after the widget ring and its state are initialized.
+// On a cold start already using Orbit, running them here used to throw
+// ReferenceError: Cannot access lastExternalNativeId before initialization.
 
 function drawClock(){
  if(!active())return;
@@ -765,4 +767,5 @@ svg.addEventListener("keydown",e=>{const t=e.target.closest("[data-orbit-action]
 for(const type of ["touchstart","touchmove","touchend","touchcancel"])host.addEventListener(type,e=>e.stopPropagation(),{passive:true});
 for(const type of ["audio-desk-theme-changed","launcher-page-changed","audio-desk-foreground"])window.addEventListener(type,sync);
 sync();
+saveOrbitPreferences();
 })();
