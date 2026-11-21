@@ -490,6 +490,13 @@ const demoApps=[
 
 
   // Integrated large minimalist wallpaper library: no downloads or third-party services.
+  if(typeof await page.evaluate(()=>window.audioDeskMinimalGalleryCount)!=='function')
+   throw new Error('Gallery module failed: '+JSON.stringify({errors,loaded:await page.evaluate(()=>({
+    hasStage:!!document.getElementById('wallpaperStage'),
+    hasDialog:!!document.getElementById('launcherWallpaperDialog'),
+    hasModule:[...document.scripts].some(x=>x.src.includes('minimal-gallery.js')),
+    hasGallery:!!document.getElementById('minimalGalleryGrid')
+   }))}));
   assert.equal(await page.evaluate(()=>window.audioDeskMinimalGalleryCount()),180,
    '180 original minimalist wallpapers are bundled as scalable on-demand SVG');
   await page.locator('#orbitSettingsGear').click();
