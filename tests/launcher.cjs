@@ -21,8 +21,13 @@ const demoApps=[
   const errors=[];page.on('pageerror',err=>errors.push(err.message));
   await page.addInitScript(apps=>{
    window.appLaunchCalls=[];window.makeDefaultRequests=0;
+   window.nativeLayoutRequests=[];window.nativePickerOpen=0;window.nativeDeleteCalls=[];
    window.launcherDemoApps=apps;window.launcherDemoHistory=[];
    window.AudioDesk={
+    layoutNativeWidgets(payload){window.nativeLayoutRequests.push(JSON.parse(payload))},
+    requestNativeWidgets(){},
+    openNativeWidgets(){window.nativePickerOpen++},
+    deleteNativeWidget(id){window.nativeDeleteCalls.push(id)},
     requestLauncherApps(){setTimeout(()=>window.receiveLauncherApps(
      window.launcherDemoApps,window.launcherDemoHistory,window.makeDefaultRequests>0),0)},
     launchExternalApp(pkg,activity){
@@ -413,6 +418,74 @@ const demoApps=[
   await page.locator('#orbitWidgets [data-orbit-action="widget:1"]').dispatchEvent('click');
   assert.equal(await page.locator('#orbitLetters').textContent(),previousLetters);
   assert.ok((await page.locator('#orbitWidgets').textContent()).includes('Calendar'));
+
+  // Approved Orbit settings gear and two independent widget rings.
+  assert.equal(await page.locator('#orbitSettingsGear').isVisible(),true,
+   'Audio Desk settings gear is discoverable in the top-left');
+  assert.equal(await page.locator('#launcherSettingsToggle').isVisible(),false,
+   'Orbit does not show two overlapping settings buttons');
+  assert.equal(await page.locator('#orbitExternalWidgets').count(),1,
+   'app widget dial is separate from the built-in Audio Desk dial');
+  assert.equal(await page.locator('#orbitWidgets [data-orbit-widget]').count(),3,
+   'music, calendar and news are retained in their own original ring');
+  await page.evaluate(()=>window.receiveAudioDeskNativeWidgets([
+   {id:17,label:'Weather',pkg:'com.example.camera',accent:'#85bb93',width:180,height:90,minWidth:100,minHeight:56},
+   {id:19,label:'YouTube',pkg:'com.example.player',accent:'#ff3248',width:180,height:90,minWidth:100,minHeight:56}
+  ]));
+  assert.equal(await page.locator('#orbitExternalWidgets [data-orbit-external="17"]').count(),1);
+  assert.equal(await page.locator('#orbitExternalWidgets image[href="/app-icons/orbit/com.example.camera.png"]').count(),1,
+   'external app widget dial gets the native provider icon');
+  await page.waitForTimeout(110);
+  const nativeBefore=await page.evaluate(()=>window.nativeLayoutRequests.at(-1));
+  assert.equal(nativeBefore.slots.length,1,
+   'only the selected real Android widget is hosted inside the custom ring');
+  assert.equal(nativeBefore.slots[0].id,17);
+  assert.ok(nativeBefore.slots[0].w>95&&nativeBefore.slots[0].h>40);
+  const ownWidgetsBefore=await page.locator('#orbitWidgets').innerHTML();
+  await page.locator('#orbitExternalWidgets [data-orbit-action="external:focus:1"]').dispatchEvent('click');
+  await page.waitForTimeout(120);
+  assert.equal(await page.evaluate(()=>window.nativeLayoutRequests.at(-1).slots[0]?.id),19,
+   'external ring rotates to a second real installed widget');
+  assert.equal(await page.locator('#orbitWidgets').innerHTML(),ownWidgetsBefore,
+   'rotating app widgets does not move Audio Desk built-in widget ring');
+  await page.locator('#orbitSettingsGear').click();
+  assert.equal(await page.locator('#orbitSettingsPanel').isVisible(),true);
+  assert.equal(await page.locator('#orbitSettingsPanel [data-orbit-tab]').count(),6,
+   'settings panel has six sections');
+  await page.locator('#orbitSettingsTabs [data-orbit-tab="widgets"]').click();
+  assert.ok((await page.locator('#orbitSettingsContent').textContent()).includes('Audio Desk widgets'));
+  await page.locator('#orbitSettingsContent [data-orbit-settings-action="add-widget"]').click();
+  assert.equal(await page.evaluate(()=>window.nativePickerOpen),1,
+   'add-widget invokes Android native picker rather than a fabricated sample list');
+  await page.locator('#orbitSettingsGear').click();
+  await page.locator('#orbitSettingsTabs [data-orbit-tab="dials"]').click();
+  await page.locator('#orbitSettingsContent [data-orbit-preference="momentum"]').uncheck();
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('ad_orbit_settings_v2')).momentum),false,
+   'dial momentum preference is persistent');
+  await page.locator('#orbitSettingsClose').click();
+  assert.equal(await page.locator('#orbitSettingsPanel').isVisible(),false);
+  await page.evaluate(()=>document.getElementById('launcherHomePage').dispatchEvent(
+   new PointerEvent('pointerdown',{bubbles:true,button:0,pointerId:100,clientX:35,clientY:200})));
+  await page.waitForTimeout(620);
+  assert.equal(await page.locator('#orbitQuickCustomize').isVisible(),true,
+   'long-press on empty Home opens quick customization');
+  await page.locator('#orbitSettingsShade').click();
+  assert.equal(await page.locator('#orbitQuickCustomize').isVisible(),false);
+  await page.locator('#orbitLetters [data-orbit-action="letter:A"]').dispatchEvent('click');
+  assert.equal(await page.locator('#orbitAppIconLayers').count(),1);
+  await page.evaluate(()=>document.getElementById('orbitRadialBackdrop').dispatchEvent(
+   new MouseEvent('click',{bubbles:true})));
+  assert.equal(await page.locator('#orbitAppIconLayers').count(),0,
+   'tapping empty Home dismisses A–Z and restores recent apps');
+  await page.locator('#orbitSettingsGear').click();
+  await page.locator('#orbitSettingsTabs [data-orbit-tab="widgets"]').click();
+  await page.locator('#orbitSettingsContent [data-orbit-preference="showAppWidgets"]').uncheck();
+  assert.equal(await page.locator('#orbitExternalWidgets').isVisible(),false,
+   'user can hide the external widget ring without hiding built-in widgets');
+  assert.equal(await page.locator('#orbitWidgets [data-orbit-widget]').count(),3);
+  await page.locator('#orbitSettingsContent [data-orbit-preference="showAppWidgets"]').check();
+  await page.locator('#orbitSettingsClose').click();
+
 await page.locator('#orbitSearch [data-orbit-action="search"]').dispatchEvent('click');
   assert.equal(await page.evaluate(()=>launcherPage),'apps');
   assert.equal(await page.locator('#orbitHome').isVisible(),false);
