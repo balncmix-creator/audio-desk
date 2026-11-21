@@ -319,6 +319,208 @@ function turnAppPage(delta){
  popupPage=wrap(popupPage+delta,len);popupSignature="";
  refreshPopup();
 }
+
+let settingsVisible=false,quickVisible=false,settingsTab="themes";
+let orbitToastTimer=0,homeHold=null,holdConsumedUntil=0;
+const orbitPrefsKey="ad_orbit_settings_v2";
+const defaultOrbitPreferences={momentum:true,blur:true,haptics:false,showAppWidgets:true};
+let orbitPreferences={...defaultOrbitPreferences};
+try{
+ const stored=JSON.parse(deskStorage.getItem(orbitPrefsKey)||"null");
+ if(stored&&typeof stored==="object")
+  for(const key of Object.keys(defaultOrbitPreferences))
+   if(typeof stored[key]==="boolean")orbitPreferences[key]=stored[key];
+}catch{}
+function saveOrbitPreferences(){
+ deskStorage.setItem(orbitPrefsKey,JSON.stringify(orbitPreferences));
+ document.body.classList.toggle("orbit-no-blur",!orbitPreferences.blur);
+ document.body.classList.toggle("orbit-hide-app-widgets",!orbitPreferences.showAppWidgets);
+ if(active()){drawExternalWidgets();window.audioDeskSyncNativeWidgets?.()}
+}
+function showOrbitToast(text){
+ orbitToast.textContent=String(text).slice(0,170);
+ orbitToast.hidden=false;
+ clearTimeout(orbitToastTimer);
+ orbitToastTimer=setTimeout(()=>{orbitToast.hidden=true},1900);
+}
+const settingsCategories=["themes","wallpaper","dials","widgets","gestures","general"];
+function settingCheck(key,title,detail){
+ return '<label class="orbit-settings-row"><span>'+esc(title)+
+  '<small>'+esc(detail)+'</small></span><input type="checkbox" data-orbit-preference="'+key+'" '+(orbitPreferences[key]?"checked":"")+'></label>';
+}
+function settingsButton(label,code){
+ return '<button type="button" data-orbit-settings-action="'+esc(code)+'">'+esc(label)+'</button>';
+}
+function renderSettings(){
+ if(!settingsVisible)return;
+ for(const button of settingsPanel.querySelectorAll("[data-orbit-tab]"))
+  button.setAttribute("aria-selected",String(button.dataset.orbitTab===settingsTab));
+ const selected=selectedExternal();
+ let html="";
+ switch(settingsTab){
+  case "themes":{
+   const themeNames=[["orbit","Orbit"],["minimal","Minimal A–Z"],["pixel","8-Bit"],["windows","Windows"],["warm","Warm Minimal"],["extreme","Extreme"]];
+   html='<h3>Choose your edition</h3><div class="orbit-settings-buttons">'+
+    themeNames.map(([id,name])=>'<button type="button" data-orbit-settings-action="theme:'+id+'" aria-pressed="'+(launcherTheme===id)+'">'+esc(name)+'</button>').join("")+
+    '</div><p>All launcher themes and their settings remain available.</p>'+
+    settingsButton("All theme options","theme-dialog");
+   break;
+  }
+  case "wallpaper":
+   html='<h3>Wallpaper appearance</h3>'+
+    settingCheck("blur","Blur behind the A–Z app menu","Background blurs smoothly as app icons fan outward.")+
+    '<div class="orbit-settings-row"><span>Wallpapers & animation<small>Choose a wallpaper or accent palette</small></span>'+
+    settingsButton("Choose","wallpaper")+'</div>';
+   break;
+  case "dials":
+   html='<h3>Radial dial behaviour</h3>'+
+    settingCheck("momentum","Smooth momentum","Inertia followed by gentle snapping.")+
+    settingCheck("haptics","Letter haptics","Vibrate briefly when a letter reaches the arrow.")+
+    '<div class="orbit-settings-row"><span>A–Z pointer<small>Small, fixed arrow</small></span><strong>Compact</strong></div>';
+   break;
+  case "widgets":
+   html='<h3>Two independent widget rings</h3>'+
+    settingCheck("showAppWidgets","Show app-widget ring","Android app widgets directly under the clock.")+
+    '<div class="orbit-settings-row"><span>App widgets<small>'+esc(selected.id?selected.label:"Add widget")+'</small></span>'+
+    settingsButton("Next","next-external")+'</div>'+
+    '<div class="orbit-settings-buttons">'+settingsButton("+ Add app widget","add-widget")+
+    (selected.id?settingsButton("Remove selected","remove-widget"):"")+'</div>'+
+    '<div class="orbit-settings-row"><span>Audio Desk widgets<small>'+esc(widgets[indices.widgets])+'</small></span>'+
+    settingsButton("Next","next-built-in")+'</div>'+
+    '<p>Music, calendar and audio news remain in their own dial. Third-party widgets use the Android system picker.</p>';
+   break;
+  case "gestures":
+   html='<h3>Home gestures</h3>'+
+    '<div class="orbit-settings-row"><span>Long-press empty Home<small>Open quick customization</small></span><strong>On</strong></div>'+
+    '<div class="orbit-settings-row"><span>Tap outside the app ring<small>Return to recent apps</small></span><strong>On</strong></div>'+
+    '<div class="orbit-settings-row"><span>Rotate A–Z<small>Show apps under the fixed arrow</small></span><strong>On</strong></div>';
+   break;
+  default:
+   html='<h3>General</h3>'+
+    '<div class="orbit-settings-row"><span>Launcher edition</span><strong>Orbit</strong></div>'+
+    '<div class="orbit-settings-buttons">'+settingsButton("Set default Home","make-default")+
+    settingsButton("All launcher options","advanced")+'</div>';
+ }
+ q("orbitSettingsContent").innerHTML=html;
+}
+function closeSettings(){
+ settingsVisible=false;settingsPanel.hidden=true;
+ settingsShade.hidden=quickVisible?false:true;
+ orbitSettingsGear.setAttribute("aria-expanded","false");
+ window.audioDeskSyncNativeWidgets?.();
+}
+function closeQuick(){
+ quickVisible=false;quickPanel.hidden=true;
+ if(!settingsVisible)settingsShade.hidden=true;
+ window.audioDeskSyncNativeWidgets?.();
+}
+function openSettings(tab="themes"){
+ if(!active())return;
+ hidePopup();stopAllSpins();closeQuick();
+ settingsTab=settingsCategories.includes(tab)?tab:"themes";
+ settingsVisible=true;settingsPanel.hidden=false;settingsShade.hidden=false;
+ orbitSettingsGear.setAttribute("aria-expanded","true");
+ renderSettings();q("orbitSettingsClose").focus();
+ window.audioDeskSyncNativeWidgets?.();
+}
+function openQuick(){
+ if(!active())return;
+ hidePopup();stopAllSpins();closeSettings();
+ quickVisible=true;quickPanel.hidden=false;settingsShade.hidden=false;
+ window.audioDeskSyncNativeWidgets?.();
+}
+orbitSettingsGear.addEventListener("click",()=>settingsVisible?closeSettings():openSettings());
+q("orbitSettingsClose").addEventListener("click",closeSettings);
+settingsShade.addEventListener("click",()=>{closeSettings();closeQuick()});
+q("orbitSettingsTabs").addEventListener("click",e=>{
+ const button=e.target.closest("[data-orbit-tab]");if(!button)return;
+ settingsTab=button.dataset.orbitTab;renderSettings();
+});
+q("orbitSettingsContent").addEventListener("change",e=>{
+ const name=e.target?.dataset.orbitPreference;
+ if(!Object.prototype.hasOwnProperty.call(defaultOrbitPreferences,name))return;
+ orbitPreferences[name]=e.target.checked;
+ saveOrbitPreferences();renderSettings();
+});
+function openExistingDialog(id){
+ closeSettings();
+ q(id)?.click();
+}
+q("orbitSettingsContent").addEventListener("click",e=>{
+ const action=e.target.closest("[data-orbit-settings-action]")?.dataset.orbitSettingsAction;
+ if(!action)return;
+ if(action.startsWith("theme:")){
+  const theme=action.slice(6);
+  if(["orbit","minimal","pixel","windows","warm","extreme"].includes(theme)){
+   closeSettings();setLauncherTheme(theme);
+  }
+ }else if(action==="theme-dialog")openExistingDialog("launcherThemeChoose");
+ else if(action==="wallpaper")openExistingDialog("launcherWallpaperChoose");
+ else if(action==="add-widget")openNativeWidgetPicker();
+ else if(action==="remove-widget"){removeSelectedExternal();renderSettings()}
+ else if(action==="next-external"){rotateExternal(1);renderSettings()}
+ else if(action==="next-built-in"){indices.widgets=wrap(indices.widgets+1,widgets.length);offsets.widgets=0;drawWidgets();renderSettings()}
+ else if(action==="make-default"){closeSettings();q("launcherMakeDefault")?.click()}
+ else if(action==="advanced"){closeSettings();q("launcherSettingsToggle")?.click()}
+});
+quickPanel.addEventListener("click",e=>{
+ const target=e.target.closest("[data-orbit-quick]");if(!target)return;
+ const tab=target.dataset.orbitQuick;
+ if(tab==="wallpaper"){closeQuick();q("launcherWallpaperChoose")?.click()}
+ else openSettings(tab);
+});
+document.addEventListener("keydown",e=>{
+ if(e.key!=="Escape")return;
+ if(settingsVisible)closeSettings();
+ if(quickVisible)closeQuick();
+});
+function cancelHomeHold(){
+ if(homeHold){clearTimeout(homeHold.timer);homeHold=null}
+}
+function blankHomeTarget(target,event){
+ if(!active()||settingsVisible||quickVisible)return false;
+ if(target.closest("#orbitSettingsGear,#orbitSettingsPanel,#orbitQuickCustomize,#launcherHomeOptions,#launcherSettingsToggle"))return false;
+ const b=host.getBoundingClientRect();
+ const dx=(event.clientX-b.right)*334/b.width,dy=(event.clientY-b.bottom)*334/b.height;
+ const r=Math.hypot(dx,dy),a=Math.atan2(-dy,-dx)*180/pi;
+ // Only the clear background or the clock track has a Home long-press.
+ return !b.width||r>330||r<0||a<0||a>90;
+}
+home.addEventListener("pointerdown",e=>{
+ if(e.button!==0||!blankHomeTarget(e.target,e))return;
+ cancelHomeHold();
+ const x=e.clientX,y=e.clientY,id=e.pointerId;
+ homeHold={x,y,id,timer:setTimeout(()=>{
+  homeHold=null;holdConsumedUntil=performance.now()+800;
+  openQuick();
+ },540)};
+});
+home.addEventListener("pointermove",e=>{
+ if(homeHold&&e.pointerId===homeHold.id&&Math.hypot(e.clientX-homeHold.x,e.clientY-homeHold.y)>11)cancelHomeHold();
+});
+for(const name of ["pointerup","pointercancel"])home.addEventListener(name,cancelHomeHold);
+home.addEventListener("contextmenu",e=>{
+ if(!blankHomeTarget(e.target,e))return;
+ e.preventDefault();cancelHomeHold();openQuick();
+});
+home.addEventListener("click",e=>{
+ if(!active()||!popupVisible||e.target.closest("#orbitHome"))return;
+ hidePopup();
+},true);
+window.addEventListener("audio-desk-native-widgets-changed",()=>{
+ const old=new Set(externalWidgets.map(x=>x.id));
+ const oldId=selectedExternal()?.id;
+ externalWidgets=nativeWidgetList();
+ const added=externalWidgets.find(item=>!old.has(item.id));
+ if(added)externalIndex=externalWidgets.findIndex(item=>item.id===added.id);
+ else if(oldId)externalIndex=Math.max(0,externalWidgets.findIndex(x=>x.id===oldId));
+ else externalIndex=Math.min(externalIndex,externalWidgets.length);
+ indices.external=externalIndex;offsets.external=0;
+ if(active()){drawExternalWidgets();renderSettings()}
+ window.audioDeskSyncNativeWidgets?.();
+});
+saveOrbitPreferences();
+
 function drawClock(){
  if(!active())return;
  const now=new Date(),time=now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:false}),date=now.toLocaleDateString([],{weekday:"short",day:"numeric",month:"short"}).toUpperCase();
