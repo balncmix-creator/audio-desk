@@ -204,6 +204,7 @@ function call(name,...args){
 function open(){
  if(!active())return;
  root.hidden=false;mode="main";status="Reading selected folder…";
+ document.body.classList.add("orbit-files-open");
  window.audioDeskSyncNativeWidgets?.();
  // An opaque, dark full-screen file manager needs LIGHT status glyphs.
  // Keep the system's real status bar; restore wallpaper contrast on close.
@@ -212,6 +213,7 @@ function open(){
 }
 function close(){
  root.hidden=true;editing=null;mode="main";
+ document.body.classList.remove("orbit-files-open");
  window.audioDeskSyncNativeWidgets?.();
  window.audioDeskSyncWallpaperStatus?.();
 }
@@ -262,7 +264,7 @@ window.receiveAudioDeskRadialFiles=function(payload){
   current={entries:entries.filter(f=>f&&typeof f.id==="string"&&typeof f.name==="string"),
    path:Array.isArray(payload.path)?payload.path:[],count:Number(payload.count)||0,
    writable:payload.writable===true,canGoUp:payload.canGoUp===true,truncated:payload.truncated===true};
-  if(previous!==current.path.join("/")){page=0;filter="all";searchTerm="";editing=null}
+  if(previous!==current.path.join("/")){page=0;if(previous)filter="all";searchTerm="";editing=null}
   selected="";mode="main";status=current.count+" items in folder";
  }else if(payload.type==="permission"){
   current={entries:[],path:[],count:0,writable:false,canGoUp:false,truncated:false};
