@@ -78,6 +78,18 @@ const {chromium}=require('playwright');
     'six actual file/folder wedges, not a text list');
   assert.equal(await page.locator('#rdfWheel #rdfCommandRing .rdf-command').count(),6,
     'all navigation buttons are radial sectors');
+  // Do not replace curved wedge boundaries with CSS border-radius: SVG
+  // geometry must round all 4 corners at both sides of every radial sector.
+  const fileCorners=await page.locator('#rdfWheel .rdf-hit > path.rdf-wedge')
+    .evaluateAll(paths=>paths.map(p=>p.getAttribute('d')||''));
+  assert.ok(fileCorners.length>=12,'all file and menu sectors have real paths');
+  fileCorners.forEach(d=>{
+   assert.equal((d.match(/ Q/g)||[]).length,4,
+    'each file/menu wedge must have four rounded SVG corners');
+   assert.ok(d.includes(' A124 124')||d.includes(' A192 192')||
+     d.includes(' A64 64')||d.includes(' A119 119'),
+    'new shape keeps the original ring radii');
+  });
   assert.equal(await page.locator('img[onerror],svg img').count(),0,'file names are escaped');
   assert.equal(await page.locator('#rdfPath').innerText(),'Internal storage / Music');
   await page.locator('#rdfWheel [data-rdf-action="next"]').click();

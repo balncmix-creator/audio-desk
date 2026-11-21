@@ -353,6 +353,30 @@ const demoApps=[
   assert.equal(await page.locator('#launcherMusicWidget').isVisible(),false);
   assert.ok((await page.locator('#orbitClock').textContent()).match(/\d/));
   assert.equal(await page.locator('#orbitWidgets [data-orbit-widget]').count(),3);
+  // Every exposed radial band endpoint has four gently rounded corners,
+  // including the quarter-ring foundations and independently moving sectors.
+  const radialCorners=await page.evaluate(()=>{
+   const selectors=[
+    '#orbitClock > path.orbit-ring',
+    '#orbitExternalWidgets > path.orbit-external-base',
+    '#orbitRecents > path.orbit-ring',
+    '#orbitLetters > path.orbit-raised',
+    '#orbitWidgets path[data-orbit-widget]',
+    '#orbitExternalWidgets path[data-orbit-external]'
+   ];
+   return selectors.map(selector=>({
+    selector,paths:[...document.querySelectorAll(selector)].map(p=>p.getAttribute('d')||'')
+   }));
+  });
+  radialCorners.forEach(({selector,paths})=>{
+   assert.ok(paths.length>0,'Orbit radial segment missing: '+selector);
+   paths.forEach(d=>{
+    assert.ok((d.match(/ Q/g)||[]).length===4,
+     'four softly rounded end corners expected for '+selector);
+    assert.equal((d.match(/ Z/g)||[]).length,1,
+     'radial segment must still be closed and clickable: '+selector);
+   });
+  });
   assert.equal(await page.locator('#orbitWidgets [data-orbit-action="connect"]').count(),1,
    'unconnected player has one clear connect action, not redundant transport buttons');
   assert.equal(await page.locator('#orbitWidgets [data-orbit-action="media:toggle"]').count(),0);
