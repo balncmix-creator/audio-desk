@@ -490,7 +490,7 @@ const demoApps=[
 
 
   // Integrated large minimalist wallpaper library: no downloads or third-party services.
-  if(typeof await page.evaluate(()=>window.audioDeskMinimalGalleryCount)!=='function')
+  if(await page.evaluate(()=>typeof window.audioDeskMinimalGalleryCount)!=='function')
    throw new Error('Gallery module failed: '+JSON.stringify({errors,loaded:await page.evaluate(()=>({
     hasStage:!!document.getElementById('wallpaperStage'),
     hasDialog:!!document.getElementById('launcherWallpaperDialog'),
