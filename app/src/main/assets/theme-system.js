@@ -57,53 +57,135 @@ function setWallpaperColors(accent,panel,dark){
  root.setProperty("--theme-ink",panelLuma>.56?"#25252b":"#f9f7f6");
  root.setProperty("--theme-dark",dark);
  root.setProperty("--theme-text",darkLuma>.58?"#17171a":mixColor(a,[250,250,250],.82));
- root.setProperty("--theme-surface",mixColor(d,a,.16));
- root.setProperty("--theme-surface2",mixColor(d,a,.28));
- root.setProperty("--theme-line",mixColor(d,a,.49));
+ // Orbit's large rings should visibly take on the wallpaper hue rather
+ // than retain an almost-black graphite surface with just a colored border.
+ const orbit=launcherTheme==="orbit";
+ root.setProperty("--theme-surface",mixColor(d,a,orbit?.26:.16));
+ root.setProperty("--theme-surface2",mixColor(d,a,orbit?.40:.28));
+ root.setProperty("--theme-line",mixColor(d,a,orbit?.62:.49));
  root.setProperty("--theme-muted",mixColor(a,[240,239,240],.64));
  root.setProperty("--theme-glass",mixColor(p,[244,240,238],.18));
 }
+// Sample the *rendered crop* of the wallpaper, not the full original image.
+// The Orbit dial sits above the lower-right crop, but its overall palette must
+// still reflect the dominant photo, including warm neutrals and muted colors.
+function sampleDisplayedWallpaper(img){
+ if(!img || !img.naturalWidth || !img.naturalHeight) return null;
+ const stage=byId("wallpaperStage"),rect=stage?.getBoundingClientRect();
+ const screenW=Math.max(1,Math.round(rect?.width||innerWidth||360));
+ const screenH=Math.max(1,Math.round(rect?.height||innerHeight||760));
+ const canvas=document.createElement("canvas");
+ canvas.width=72;
+ canvas.height=Math.min(160,Math.max(72,Math.round(72*screenH/screenW)));
+ const ctx=canvas.getContext("2d",{willReadFrequently:true});
+ if(!ctx)return null;
+ const fit=getComputedStyle(img);
+ const position=(fit.objectPosition||img.style.objectPosition||"50% 50%").split(/\\s+/);
+ const pct=(value,defaultValue)=>value?.endsWith("%")?
+  Math.max(0,Math.min(1,Number.parseFloat(value)/100)):defaultValue;
+ const xPercent=pct(position[0],.5);
+ const yPercent=pct(position[1],.5);
+ const scale=Math.max(canvas.width/img.naturalWidth,canvas.height/img.naturalHeight);
+ const displayedW=img.naturalWidth*scale,displayedH=img.naturalHeight*scale;
+ ctx.drawImage(img,(canvas.width-displayedW)*xPercent,(canvas.height-displayedH)*yPercent,displayedW,displayedH);
+ const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+ const general=[0,0,0],bins=Array.from({length:12},()=>({color:[0,0,0],weight:0}));
+ let mass=0,colored=0,valid=0;
+ for(let i=0;i<pixels.length;i+=4){
+  const alpha=pixels[i+3]/255;
+  if(alpha<.2)continue;
+  const r=pixels[i],g=pixels[i+1],b=pixels[i+2];
+  const max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;
+  const luma=(r*.2126+g*.7152+b*.0722)/255;
+  const saturation=max?delta/max:0;
+  // Pale sunlit walls are meaningful colors. Avoid letting small vivid details
+  // drown out a broad beige/blue background; avoid near-black/noisy shadows.
+  const base=alpha*(.40+.60*Math.sqrt(Math.max(0,luma)));
+  general[0]+=r*base;general[1]+=g*base;general[2]+=b*base;
+  mass+=base;valid++;
+  if(saturation<.075||luma<.10||luma>.97)continue;
+  let hue;
+  if(delta===0)continue;
+  if(max===r)hue=((g-b)/delta+6)%6;
+  else if(max===g)hue=(b-r)/delta+2;
+  else hue=(r-g)/delta+4;
+  hue*=60;
+  const bin=Math.min(11,Math.floor(hue/30));
+  const weight=base*(.20+saturation*1.60);
+  bins[bin].color[0]+=r*weight;
+  bins[bin].color[1]+=g*weight;
+  bins[bin].color[2]+=b*weight;
+  bins[bin].weight+=weight;
+  colored+=weight;
+ }
+ if(valid<20||mass<=0)return null;
+ const avg=general.map(x=>x/mass);
+ const best=bins.reduce((a,b)=>b.weight>a.weight?b:a);
+ const dominant=best.weight>Math.max(mass*.035,colored*.17)?
+  best.color.map(x=>x/best.weight):avg;
+ let accent=mixColor(dominant,[248,244,238],.18);
+ // Preserve a visible accent against dark Orbit rings even on dim photos.
+ for(let n=0;n<4;n++){
+  const rgb=colorRgb(accent),lum=(rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722)/255;
+  if(lum>.54)break;
+  accent=mixColor(rgb,[249,246,240],.22);
+ }
+ return {
+  accent,
+  panel:mixColor(avg,[244,241,237],.66),
+  dark:mixColor(dominant,[14,16,18],.81)
+ };
+}
+let wallpaperPaletteFrame=0;
 function refreshWallpaperColors(){
  const p=activePalette();
  if(p){setWallpaperColors(p[4],p[5],p[2]);return}
+ // Audio wallpapers supply their own exact source palette through
+ // audioDeskApplyWallpaperColors rather than sampling an unrelated photo.
  if(document.body.dataset.audioWallpaper)return;
  const img=byId("wallpaperImage");
- if(!img?.naturalWidth){setWallpaperColors("#eedbd4","#f0dad3","#1b181a");return}
+ if(!img?.naturalWidth){
+  if(!document.documentElement.style.getPropertyValue("--theme-accent"))
+   setWallpaperColors("#c5e0c8","#536858","#101211");
+  return;
+ }
  try{
-  const canvas=document.createElement("canvas");canvas.width=32;canvas.height=32;
-  const ctx=canvas.getContext("2d",{willReadFrequently:true});
-  ctx.drawImage(img,0,0,32,32);
-  const pixels=ctx.getImageData(0,0,32,32).data;
-  const sum=[0,0,0],chromatic=[0,0,0];let weight=0,colorWeight=0;
-  for(let i=0;i<pixels.length;i+=4){
-   const r=pixels[i],g=pixels[i+1],b=pixels[i+2];
-   const max=Math.max(r,g,b),min=Math.min(r,g,b);
-   const saturation=(max-min)/255;
-   const visibility=max/255;
-   const w=.3+saturation*.9;
-   sum[0]+=r*w;sum[1]+=g*w;sum[2]+=b*w;weight+=w;
-   // A small, saturated area should set the accent on dark audio wallpapers;
-   // averaging the entire frame otherwise turns every accent grey or pink.
-   const chromaWeight=saturation*saturation*visibility*visibility;
-   if(chromaWeight>.014){
-    chromatic[0]+=r*chromaWeight;chromatic[1]+=g*chromaWeight;
-    chromatic[2]+=b*chromaWeight;colorWeight+=chromaWeight;
-   }
+  const colors=sampleDisplayedWallpaper(img);
+  if(colors){
+   setWallpaperColors(colors.accent,colors.panel,colors.dark);
+   document.body.dataset.wallpaperPaletteSource="photo";
   }
-  const avg=sum.map(x=>x/weight);
-  const dominant=colorWeight>.3?chromatic.map(x=>x/colorWeight):avg;
-  const accent=mixColor(dominant,[250,250,250],.22);
-  const panel=mixColor(avg,[242,240,241],.70);
-  const dark=mixColor(avg,[15,15,20],.83);
-  setWallpaperColors(accent,panel,dark);
- }catch{setWallpaperColors("#eedbd4","#f0dad3","#1b181a")}
+ }catch{
+  // A failed decode / cross-origin photo must not replace the last valid
+  // palette with a static pink or blue-grey fallback.
+ }
+}
+function scheduleWallpaperColors(){
+ if(wallpaperPaletteFrame)cancelAnimationFrame(wallpaperPaletteFrame);
+ wallpaperPaletteFrame=requestAnimationFrame(()=>{
+  wallpaperPaletteFrame=0;
+  refreshWallpaperColors();
+ });
 }
 // The wallpaper picker and imported images all pass through this decoded-image path.
 const originalApplyWallpaper=applyWallpaper;
 applyWallpaper=async function(){
  await originalApplyWallpaper();
- if(!activePalette())refreshWallpaperColors();
+ scheduleWallpaperColors();
 };
+// Also support wallpaper replacement by other built-in/gallery flows. The
+// asynchronous decoded image is inserted into wallpaperStage at the end.
+const wallpaperStage=byId("wallpaperStage");
+if(wallpaperStage){
+ new MutationObserver(records=>{
+  if(records.some(r=>Array.from(r.addedNodes).some(n=>
+   n.nodeType===1&&(n.id==="wallpaperImage"||n.querySelector?.("#wallpaperImage")))))
+   scheduleWallpaperColors();
+ }).observe(wallpaperStage,{childList:true,subtree:true});
+}
+byId("customWallpaperPosition")?.addEventListener("input",scheduleWallpaperColors);
+window.addEventListener("resize",scheduleWallpaperColors);
+window.addEventListener("audio-desk-theme-changed",scheduleWallpaperColors);
 window.audioDeskApplyWallpaperColors=(accent,dark)=>{
  const a=colorRgb(accent);if(!a||!colorRgb(dark))return;
  setWallpaperColors(accent,
