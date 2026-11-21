@@ -1,218 +1,337 @@
-/* Orbit's scoped, quarter-circle file browser. No filesystem is read by
- * JavaScript: native Android SAF returns only explicitly granted folder items. */
+/* Audio Desk Orbit Files — every file, folder, action and menu is a radial
+ * sector. Android SAF owns filesystem access; this view only receives scoped
+ * opaque IDs from the native bridge. No rectangular list or menu is rendered. */
 (()=>{
 "use strict";
 const root=document.createElement("section");
-root.id="radialFilesPanel";root.hidden=true;root.setAttribute("role","dialog");
-root.setAttribute("aria-modal","true");root.setAttribute("aria-label","Orbit file manager");
-root.innerHTML='<header class="rdf-top"><div class="rdf-heading"><small>AUDIO DESK / ORBIT</small><strong>Files</strong></div>'+
- '<div class="rdf-top-actions"><button data-rdf-action="change" type="button">Choose folder</button>'+
- '<button data-rdf-action="close" type="button" aria-label="Close file manager">×</button></div></header>'+
- '<div class="rdf-path" id="rdfPath">Choose a folder to begin</div>'+
- '<div class="rdf-main"><div class="rdf-sidebar">'+
- '<div class="rdf-controls"><input id="rdfSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Search this folder" aria-label="Search files in current folder">'+
- '<select id="rdfSort" aria-label="File sorting"><option value="name">Name</option><option value="date">Newest first</option><option value="size">Largest first</option></select></div>'+
- '<div class="rdf-list" id="rdfList" role="group" aria-label="Files and folders"></div>'+
- '<div class="rdf-actions"><button type="button" data-rdf-action="up">Back</button>'+
- '<button type="button" data-rdf-action="new">+ Folder</button>'+
- '<button type="button" data-rdf-action="refresh">Refresh</button></div>'+
- '<div class="rdf-status" id="rdfStatus" aria-live="polite"></div></div>'+
- '<div class="rdf-wheel-box"><svg id="rdfWheel" viewBox="-330 -330 330 330" role="group" aria-label="Radial file navigation" xmlns="http://www.w3.org/2000/svg"></svg>'+
- '<div class="rdf-pagination"><button data-rdf-action="prev" type="button" aria-label="Previous file page">‹</button>'+
- '<span id="rdfPage">1 / 1</span><button data-rdf-action="next" type="button" aria-label="Next file page">›</button></div></div></div>';
+root.id="radialFilesPanel";root.hidden=true;
+root.setAttribute("role","dialog");root.setAttribute("aria-modal","true");
+root.setAttribute("aria-label","Orbit radial file manager");
+root.innerHTML='<div class="rdf-head"><small>AUDIO DESK / ORBIT</small><strong>FILES</strong>'+
+ '<span id="rdfPath">Choose a folder to begin</span></div>'+
+ '<div class="rdf-stage" id="rdfStage">'+
+ '<svg id="rdfWheel" viewBox="0 0 400 400" role="group" aria-label="Files and commands radial dial">'+
+ '<circle cx="200" cy="200" r="195" class="rdf-outer-guide"/>'+
+ '<g id="rdfFileRing" aria-label="File and folder sectors"></g>'+
+ '<g id="rdfCommandRing" aria-label="Radial commands"></g>'+
+ '<g id="rdfCenter"></g></svg>'+
+ '<div id="rdfEditor" class="rdf-editor" hidden>'+
+ '<label id="rdfEditorLabel" for="rdfEditorInput"></label>'+
+ '<input id="rdfEditorInput" type="text" maxlength="120" spellcheck="false" autocomplete="off" aria-label="File manager input"/></div></div>'+
+ '<div class="rdf-foot"><div id="rdfHint">Select a file on the outer ring</div>'+
+ '<div id="rdfStatus" role="status" aria-live="polite">Choose a folder using the centre dial</div></div>';
 document.body.append(root);
-const trigger=document.createElement("button");
-trigger.type="button";trigger.id="orbitFilesTrigger";trigger.textContent="◔ Files";
-trigger.setAttribute("aria-label","Open Orbit radial file manager");
-document.body.append(trigger);
 const q=id=>document.getElementById(id);
+const wheel=q("rdfWheel");
 const esc=s=>String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
-const categories=[["all","All"],["folder","Folders"],["audio","Audio"],["image","Images"],["video","Video"],["document","Docs"]];
-const slots=5;
+const filters=[["all","All","◎"],["folder","Folders","▣"],["audio","Audio","♪"],
+ ["image","Images","▧"],["video","Video","▶"],["document","Docs","▤"]];
+const slots=6,rad=Math.PI/180;
 let current={entries:[],path:[],count:0,writable:false,canGoUp:false,truncated:false};
-let selected="",filter="all",page=0,sort="name",busy=false,status="Choose a folder to browse";
+let page=0,selected="",filter="all",sort="name",mode="main",searchTerm="",editing=null;
+let busy=false,status="Choose a folder with the centre dial",drag=null,suppressClickUntil=0;
 function active(){return document.body.dataset.launcherTheme==="orbit"&&document.body.dataset.homePage==="home"}
 function selectedItem(){return current.entries.find(f=>f.id===selected)||null}
 function typeOf(f){
  if(f.folder)return "folder";
- const mime=(f.mime||"").toLowerCase(),name=(f.name||"").toLowerCase();
+ const mime=String(f.mime||"").toLowerCase(),name=String(f.name||"").toLowerCase();
  if(mime.startsWith("audio/")||/\.(wav|aiff?|mp3|flac|ogg|m4a|mid|midi|opus)$/.test(name))return "audio";
  if(mime.startsWith("image/")||/\.(png|jpe?g|webp|gif|heic|svg)$/.test(name))return "image";
  if(mime.startsWith("video/")||/\.(mp4|mkv|mov|webm|avi)$/.test(name))return "video";
  return "document";
 }
-function iconOf(f){return f.folder?"▣":typeOf(f)==="audio"?"♪":typeOf(f)==="image"?"▧":typeOf(f)==="video"?"▶":"▤"}
+function fileSymbol(f){return f.folder?"▣":({audio:"♪",image:"▧",video:"▶",document:"▤"})[typeOf(f)]}
 function shown(){
- const query=q("rdfSearch").value.trim().toLocaleLowerCase();
- return current.entries.filter(f=>(filter==="all"||typeOf(f)===filter)&&(!query||f.name.toLocaleLowerCase().includes(query)))
+ const needle=searchTerm.trim().toLocaleLowerCase();
+ return current.entries.filter(f=>(filter==="all"||typeOf(f)===filter)&&(!needle||f.name.toLocaleLowerCase().includes(needle)))
   .sort((a,b)=>Number(b.folder)-Number(a.folder)||
-   (sort==="date"?(b.modified||0)-(a.modified||0):sort==="size"?(b.size||0)-(a.size||0):0)||
-   a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:"base"}));
+    (sort==="date"?(b.modified||0)-(a.modified||0):sort==="size"?(b.size||0)-(a.size||0):0)||
+    a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:"base"}));
 }
-const pi=Math.PI;
-function polar(r,a){const rad=a*pi/180;return [(-r*Math.sin(rad)).toFixed(2),(-r*Math.cos(rad)).toFixed(2)]}
-function section(a,b,inner,outer){
- const p1=polar(outer,a+0.45),p2=polar(outer,b-0.45);
- const p3=polar(inner,b-0.45),p4=polar(inner,a+0.45);
- return "M"+p1+" A"+outer+" "+outer+" 0 0 0 "+p2+" L"+p3+
-  " A"+inner+" "+inner+" 0 0 1 "+p4+" Z";
+function point(r,a){return [+(200+r*Math.sin(a*rad)).toFixed(2),+(200-r*Math.cos(a*rad)).toFixed(2)]}
+function wedge(a,b,inner,outer){
+ const gap=.65,o1=point(outer,a+gap),o2=point(outer,b-gap),i1=point(inner,b-gap),i2=point(inner,a+gap);
+ return 'M'+o1.join(' ')+' A'+outer+' '+outer+' 0 0 1 '+o2.join(' ')+' L'+i1.join(' ')+
+  ' A'+inner+' '+inner+' 0 0 0 '+i2.join(' ')+' Z';
 }
-function svgSegment(kind,index,label,sub,a,b,r0,r1,action,pressed=false,disabled=false){
- const at=(a+b)/2,pos=polar((r0+r1)/2,at),name=esc(label);
- const off=sub?7:0;
- return '<g data-rdf-action="'+esc(action)+'" role="button" tabindex="'+(disabled?"-1":"0")+
-  '" aria-label="'+esc(kind+" "+label)+'" aria-pressed="'+pressed+'" aria-disabled="'+disabled+'">'+
-  '<path class="rdf-segment '+(kind==="Action"?"rdf-action-segment":"")+'" d="'+section(a,b,r0,r1)+'"/>'+
-  '<text x="'+pos[0]+'" y="'+(Number(pos[1])-off)+'" class="'+(kind==="File"?"rdf-small":"")+'">'+name+'</text>'+
-  (sub?'<text class="rdf-small" x="'+pos[0]+'" y="'+(Number(pos[1])+10)+'">'+esc(sub)+'</text>':"")+'</g>';
+function arcLabel(label,angle,radius,className,offset=0){
+ const p=point(radius,angle);
+ return '<text class="'+className+'" x="'+p[0]+'" y="'+(p[1]+offset)+'">'+esc(label)+'</text>';
 }
-function wheel(items){
- let html="";
- const catStep=90/categories.length;
- categories.forEach(([id,label],i)=>{
-  html+=svgSegment("Filter",i,label,"",i*catStep,(i+1)*catStep,277,322,"filter:"+id,filter===id);
- });
- const start=page*slots,visible=items.slice(start,start+slots),fileStep=90/slots;
- for(let i=0;i<slots;i++){
-  const f=visible[i],a=i*fileStep,b=(i+1)*fileStep;
-  if(f)html+=svgSegment("File",i,(f.name||"").slice(0,10),iconOf(f),a,b,145,273,"select:"+f.id,f.id===selected);
-  else html+='<path class="rdf-segment" d="'+section(a,b,145,273)+'" opacity=".30"/>';
- }
- const item=selectedItem();
- const actions=[["open","Open",!!item],["share","Share",!!item&&!item.folder],
-  ["rename","Rename",!!item&&current.writable&&item.writable],
-  ["delete","Delete",!!item&&current.writable&&item.writable],
-  ["new","+ Folder",current.writable]];
- const actStep=90/actions.length;
- actions.forEach(([action,label,enabled],i)=>{
-  html+=svgSegment("Action",i,label,"",i*actStep,(i+1)*actStep,76,141,action,false,!enabled);
- });
- html+='<g role="button" tabindex="0" data-rdf-action="up" aria-label="Go up or close">'+
-  '<path class="rdf-core" d="'+section(0,90,0.2,73)+'"/>'+
-  '<text class="rdf-core-label" x="-26" y="-28">↖</text></g>';
- q("rdfWheel").innerHTML=html;
+function glyphSector(action,label,symbol,i,inner,outer,kind,selectedState=false,disabled=false){
+ const a=i*60,b=(i+1)*60,center=a+30;
+ return '<g class="rdf-hit rdf-'+kind+'" data-rdf-action="'+esc(action)+'"'+
+  ' tabindex="'+(disabled?'-1':'0')+'" role="button"'+
+  ' aria-label="'+esc(label)+'" aria-pressed="'+selectedState+'" aria-disabled="'+disabled+'">'+
+  '<path class="rdf-wedge" d="'+wedge(a,b,inner,outer)+'"/>'+
+  (symbol?arcLabel(symbol,center,(inner+outer)/2-7,"rdf-icon"):"")+
+  arcLabel(label,center,(inner+outer)/2+9,"rdf-menu-text")+'</g>';
 }
-function readableSize(bytes){
- if(!bytes)return "0 B";const units=["B","KB","MB","GB","TB"];
- const i=Math.min(units.length-1,Math.floor(Math.log(bytes)/Math.log(1024)));
- return (bytes/1024**i).toFixed(i?1:0)+" "+units[i];
+function splitName(input){
+ const name=String(input||"Untitled").replace(/\s+/g," ").trim();
+ return [name.slice(0,15),name.length>15?name.slice(15,29)+(name.length>29?"…":""):""];
 }
+function fileSector(f,i){
+ const a=i*60,b=(i+1)*60,center=a+30,pos=point(153,center),[first,last]=splitName(f.name);
+ return '<g class="rdf-hit rdf-file" data-rdf-action="select:'+esc(f.id)+'" data-rdf-file="'+esc(f.id)+'"'+
+  ' role="button" tabindex="0" aria-label="'+esc((f.folder?"Open folder ":"Select file ")+f.name)+'"'+
+  ' aria-pressed="'+(f.id===selected)+'">'+
+  '<path class="rdf-wedge" d="'+wedge(a,b,124,192)+'"/>'+
+  '<text class="rdf-file-icon" x="'+pos[0]+'" y="'+(pos[1]-21)+'">'+fileSymbol(f)+'</text>'+
+  '<text class="rdf-file-text" x="'+pos[0]+'" y="'+(pos[1]-3)+'">'+esc(first)+'</text>'+
+  (last?'<text class="rdf-file-text" x="'+pos[0]+'" y="'+(pos[1]+11)+'">'+esc(last)+'</text>':"")+
+  '<text class="rdf-file-type" x="'+pos[0]+'" y="'+(pos[1]+26)+'">'+(f.folder?"FOLDER":typeOf(f).toUpperCase())+'</text>'+
+  '</g>';
+}
+const menu={
+ main:()=>[
+  [current.canGoUp?"up":"change",current.canGoUp?"Up":"Choose","↖",true],
+  ["prev","Prev","‹",shown().length>slots&&page>0],
+  ["next","Next","›",shown().length>(page+1)*slots],
+  ["filter","Filter","◉",true],
+  ["more","More","⋯",true],
+  ["close","Close","×",true]],
+ selected:()=>[
+  ["open","Open","↗",!!selectedItem()],
+  ["share","Share","↗",!!selectedItem()&&!selectedItem().folder],
+  ["rename","Rename","✎",!!selectedItem()?.writable&&current.writable],
+  ["delete","Delete","×",!!selectedItem()?.writable&&current.writable],
+  ["new","New","+",current.writable],
+  ["back","Back","↶",true]],
+ filter:()=>filters.map(([key,label,symbol])=>["filter:"+key,label,symbol,true]),
+ more:()=>[
+  ["search","Search","⌕",true],
+  ["sort","Sort","⇅",true],
+  ["change","Choose","▣",true],
+  ["refresh","Refresh","⟳",true],
+  ["new","New","+",current.writable],
+  ["back","Back","↶",true]],
+ sort:()=>[
+  ["sort:name","Name","A",true],
+  ["sort:date","Newest","↘",true],
+  ["sort:size","Largest","▥",true],
+  ["prev","Prev","‹",shown().length>slots&&page>0],
+  ["next","Next","›",shown().length>(page+1)*slots],
+  ["back","Back","↶",true]],
+ search:()=>[
+  ["done","Done","✓",true],
+  ["clear","Clear","×",!!searchTerm],
+  ["prev","Prev","‹",shown().length>slots&&page>0],
+  ["next","Next","›",shown().length>(page+1)*slots],
+  ["filter","Filter","◉",true],
+  ["cancel","Back","↶",true]],
+ edit:()=>[
+  ["save","Save","✓",true],
+  ["cancel","Cancel","×",true],
+  ["","—","",false],["","—","",false],["","—","",false],["","—","",false]],
+ confirm:()=>[
+  ["confirm-delete","Delete","!",true],
+  ["cancel","Cancel","×",true],
+  ["","—","",false],["","—","",false],["","—","",false],["","—","",false]]
+};
+function size(bytes){if(!bytes)return "0 B";const i=Math.min(4,Math.floor(Math.log(bytes)/Math.log(1024)));return (bytes/1024**i).toFixed(i?1:0)+" "+["B","KB","MB","GB","TB"][i]}
 function render(){
  const files=shown(),pages=Math.max(1,Math.ceil(files.length/slots));
- page=Math.min(page,pages-1);
- q("rdfPath").textContent=current.path.length?current.path.join(" / "):"No folder access yet";
- q("rdfList").innerHTML=files.length?files.map(f=>'<button type="button" class="rdf-item" data-rdf-action="select:'+esc(f.id)+
-  '" aria-pressed="'+(f.id===selected)+'" title="'+esc(f.name)+'">'+
-  '<span class="rdf-file-icon" aria-hidden="true">'+iconOf(f)+'</span>'+
-  '<span class="rdf-item-text"><strong>'+esc(f.name)+'</strong><small>'+
-  (f.folder?"Folder":readableSize(f.size))+'</small></span></button>').join("") :
-  '<div class="rdf-empty">'+(busy?"Loading files…":current.path.length?"No matching items. Choose another category or clear search.":"Choose folder to grant access using Android Files.")+'</div>';
- wheel(files);
- q("rdfPage").textContent=(page+1)+" / "+pages;
- root.querySelector('[data-rdf-action="prev"]').disabled=page===0;
- root.querySelector('[data-rdf-action="next"]').disabled=page>=pages-1;
- root.querySelector('[data-rdf-action="new"]').disabled=!current.writable;
- root.querySelector('[data-rdf-action="up"]').disabled=!current.canGoUp;
- q("rdfStatus").textContent=(selectedItem()?.name||status)+
-  (current.truncated?" · First 700 items shown":"")+
-  (current.path.length&&!current.writable?" · Read only":"");
+ page=Math.max(0,Math.min(page,pages-1));
+ const visible=files.slice(page*slots,(page+1)*slots);
+ let html="";
+ visible.forEach((f,i)=>{html+=fileSector(f,i)});
+ for(let i=visible.length;i<slots;i++)
+  html+='<path class="rdf-empty-sector" d="'+wedge(i*60,(i+1)*60,124,192)+'"/>';
+ q("rdfFileRing").innerHTML=html;
+ const options=(menu[mode]||menu.main)();
+ q("rdfCommandRing").innerHTML=options.map(([code,label,icon,enabled],i)=>glyphSector(
+  code,label,icon,i,64,119,"command",
+  code==="filter:"+filter||code==="sort:"+sort,
+  !enabled)).join("");
+ const chosen=selectedItem(),hubLabel=mode==="confirm"?"DELETE?":
+  mode==="edit"?"EDIT":mode==="search"?"SEARCH":
+  chosen?chosen.folder?"FOLDER":"FILE":"FOLDERS";
+ let centerMarkup='<circle cx="200" cy="200" r="58" class="rdf-hub-surface"/>';
+ centerMarkup+='<g data-rdf-action="hub" role="button" tabindex="0" aria-label="'+
+  esc(chosen?"Open "+chosen.name:current.path.length?"Show folder actions":"Choose a folder")+'">';
+ centerMarkup+='<circle cx="200" cy="200" r="52" fill="transparent"/>';
+ centerMarkup+=arcLabel(hubLabel,0,0,"rdf-hub-label",-29).replace(/x="200" y="171"/,'x="200" y="176"');
+ const lines=chosen?splitName(chosen.name):splitName(current.path.at(-1)||"No folder");
+ centerMarkup+='<text x="200" y="196" class="rdf-hub-name">'+esc(lines[0])+'</text>'+
+  (lines[1]?'<text x="200" y="209" class="rdf-hub-name">'+esc(lines[1])+'</text>':"");
+ const detail=chosen?(chosen.folder?"Open folder":size(chosen.size)):files.length+" items";
+ centerMarkup+='<text x="200" y="228" class="rdf-hub-meta">'+esc(detail)+'</text></g>';
+ q("rdfCenter").innerHTML=centerMarkup;
+ q("rdfPath").textContent=current.path.length?current.path.join("  /  "):"No folder selected";
+ const modeTitle=({main:"BROWSE",selected:"SELECTED",filter:"FILTER",more:"OPTIONS",sort:"SORT",
+  search:"SEARCH",edit:"SAVE NAME",confirm:"DELETE?"})[mode]||"BROWSE";
+ q("rdfHint").textContent=modeTitle+" · "+(page+1)+"/"+pages+
+  (filter!=="all"?" · "+filters.find(f=>f[0]===filter)?.[1]:"")+
+  (searchTerm?" · “"+searchTerm.slice(0,23)+"”":"");
+ q("rdfStatus").textContent=busy?"Reading folder…":status+
+   (current.truncated?" · First 700 entries loaded":"")+
+   (current.path.length&&!current.writable?" · Read-only":"");
+ const editor=q("rdfEditor");
+ editor.hidden=!editing;
+ if(editing){
+  q("rdfEditorLabel").textContent=editing==="search"?"FIND":"NAME";
+  if(document.activeElement!==q("rdfEditorInput")&&q("rdfEditorInput").value!==editing.value)
+   q("rdfEditorInput").value=editing.value;
+ }
 }
 function call(name,...args){
  const fn=window.AudioDesk?.[name];
- if(typeof fn!=="function"){status="Install the Android build to browse device files.";render();return false}
- try{fn(...args);return true}catch{status="Android could not complete the operation.";render();return false}
+ if(typeof fn!=="function"){
+  status="Android APK required for real files.";render();return false;
+ }
+ try{fn(...args);return true}catch{
+  status="Android could not complete that operation.";render();return false;
+ }
 }
-function show(){
+function open(){
  if(!active())return;
- root.hidden=false;document.body.classList.add("orbit-files-open");
+ root.hidden=false;mode="main";status="Reading selected folder…";
  window.audioDeskSyncNativeWidgets?.();
- status="Loading folder";render();
- call("radialFilesList");q("rdfSearch").focus();
+ render();call("radialFilesList");
 }
-function close(){
- root.hidden=true;document.body.classList.remove("orbit-files-open");
- window.audioDeskSyncNativeWidgets?.();
+function close(){root.hidden=true;editing=null;mode="main";window.audioDeskSyncNativeWidgets?.()}
+function pageBy(amount){
+ const count=Math.max(1,Math.ceil(shown().length/slots));
+ page=Math.max(0,Math.min(count-1,page+amount));
+ selected="";mode="main";status="Page "+(page+1)+" of "+count;render();
 }
-window.audioDeskOpenRadialFiles=show;
-window.audioDeskRadialFilesBack=()=>{
- if(root.hidden)return false;
- if(current.canGoUp){call("radialFilesUp");return true}
- close();return true;
-};
-const nativeBack=window.launcherBack;
-window.launcherBack=function(...args){
- if(window.audioDeskRadialFilesBack())return;
- if(typeof nativeBack==="function")return nativeBack.apply(this,args);
-};
+function startEdit(kind,value=""){
+ editing={kind,value};mode=kind==="search"?"search":"edit";render();
+ const input=q("rdfEditorInput");
+ input.value=value;input.focus();input.select();
+}
+function finishEdit(save){
+ if(!editing)return;
+ const ed=editing,value=q("rdfEditorInput").value.trim();
+ if(save){
+  if(ed.kind==="search"){searchTerm=value;page=0;status=value?"Search applied":"Search cleared"}
+  else if(!value||value==="."||value===".."||/[\\/\x00-\x1f]/.test(value)){
+   status="Enter a valid file or folder name.";render();return;
+  }else if(ed.kind==="new")call("radialFilesCreate",value);
+  else if(ed.kind==="rename"&&selected)call("radialFilesRename",selected,value);
+ }else if(ed.kind==="search"){searchTerm=ed.value;page=0;}
+ editing=null;
+ mode=selected?"selected":"main";render();
+}
+function back(){
+ if(!root.hidden){
+  if(mode==="edit"||mode==="search"){finishEdit(false);return true}
+  if(mode==="confirm"){mode=selected?"selected":"main";render();return true}
+  if(mode!=="main"){mode="main";selected="";render();return true}
+  if(current.canGoUp){call("radialFilesUp");return true}
+  close();return true;
+ }
+ return false;
+}
+const previousBack=window.launcherBack;
+window.launcherBack=function(...args){if(back())return;return previousBack?.apply(this,args)};
+window.audioDeskOpenRadialFiles=open;
+window.audioDeskRadialFilesBack=back;
 window.receiveAudioDeskRadialFiles=function(payload){
  if(!payload||typeof payload!=="object")return;
- if(payload.type==="loading"){busy=true;status="Loading files…";render();return}
+ if(payload.type==="loading"){busy=true;status="Reading folder…";render();return}
  busy=false;
  if(payload.type==="listing"){
-  const previousPath=current.path.join("/");
-  current={
-   entries:Array.isArray(payload.entries)?payload.entries:[],
-   path:Array.isArray(payload.path)?payload.path:[],
-   count:Number(payload.count)||0,
-   writable:payload.writable===true,
-   canGoUp:payload.canGoUp===true,
-   truncated:payload.truncated===true
-  };
-  if(previousPath!==current.path.join("/")){q("rdfSearch").value="";page=0;filter="all";}
-  selected="";status=current.entries.length+" items";
+  const previous=current.path.join("/");
+  const entries=Array.isArray(payload.entries)?payload.entries:[];
+  current={entries:entries.filter(f=>f&&typeof f.id==="string"&&typeof f.name==="string"),
+   path:Array.isArray(payload.path)?payload.path:[],count:Number(payload.count)||0,
+   writable:payload.writable===true,canGoUp:payload.canGoUp===true,truncated:payload.truncated===true};
+  if(previous!==current.path.join("/")){page=0;filter="all";searchTerm="";editing=null}
+  selected="";mode="main";status=current.count+" items in folder";
  }else if(payload.type==="permission"){
   current={entries:[],path:[],count:0,writable:false,canGoUp:false,truncated:false};
-  selected="";status=payload.message||"Choose a folder";
- }else if(payload.type==="error")status=payload.message||"Cannot access this folder";
+  selected="";page=0;mode="main";status=payload.message||"Choose a folder";
+ }else if(payload.type==="error")status=payload.message||"Cannot access the folder.";
  render();
 };
-function act(code){
+function action(code){
  if(!code)return;
- if(code==="close"){close();return}
- if(code==="change"){call("radialFilesPick");return}
- if(code==="refresh"){call("radialFilesList");return}
- if(code==="up"){if(current.canGoUp)call("radialFilesUp");else close();return}
- if(code==="next"||code==="prev"){page+=code==="next"?1:-1;render();return}
- if(code.startsWith("filter:")){filter=code.slice(7);page=0;selected="";render();return}
  if(code.startsWith("select:")){
-  const id=code.slice(7);
-  if(id===selected){const f=selectedItem();if(f?.folder)call("radialFilesEnter",id);else call("radialFilesOpen",id)}
-  else{selected=id;render()}
-  return;
+  const id=code.slice(7),file=current.entries.find(f=>f.id===id);
+  if(!file)return;
+  if(id===selected){call(file.folder?"radialFilesEnter":"radialFilesOpen",id);return}
+  selected=id;mode="selected";editing=null;status=file.name;render();return;
  }
- if(code==="new"){
-  if(!current.writable)return;
-  const name=prompt("New folder name");
-  if(name!==null&&name.trim())call("radialFilesCreate",name);
-  return;
+ if(code.startsWith("filter:")){
+  filter=code.slice(7);selected="";page=0;mode="main";status="Showing "+filters.find(f=>f[0]===filter)?.[1];render();return;
  }
- const item=selectedItem();
- if(!item)return;
- if(code==="open")call(item.folder?"radialFilesEnter":"radialFilesOpen",item.id);
- else if(code==="share"&&!item.folder)call("radialFilesShare",item.id);
- else if(code==="rename"&&current.writable&&item.writable){
-  const name=prompt("Rename item",item.name);
-  if(name!==null&&name.trim()&&name!==item.name)call("radialFilesRename",item.id,name);
- }else if(code==="delete"&&current.writable&&item.writable){
-  if(confirm('Permanently delete "'+item.name+'"? This cannot be undone.'))
-   call("radialFilesDelete",item.id);
+ if(code.startsWith("sort:")){
+  sort=code.slice(5);selected="";page=0;mode="main";status="Sorted by "+sort;render();return;
+ }
+ switch(code){
+  case "hub":
+   if(mode==="edit"||mode==="search"){q("rdfEditorInput").focus();return}
+   if(mode==="confirm")return;
+   if(selected){const f=selectedItem();if(f)call(f.folder?"radialFilesEnter":"radialFilesOpen",f.id)}
+   else if(!current.path.length)call("radialFilesPick");
+   else{mode=mode==="more"?"main":"more";render()}
+   break;
+  case "close":close();break;
+  case "up":if(current.canGoUp)call("radialFilesUp");break;
+  case "prev":pageBy(-1);break;
+  case "next":pageBy(1);break;
+  case "more":case "filter":case "sort":mode=code;render();break;
+  case "change":call("radialFilesPick");break;
+  case "refresh":call("radialFilesList");break;
+  case "back":back();break;
+  case "open":{
+   const f=selectedItem();if(f)call(f.folder?"radialFilesEnter":"radialFilesOpen",f.id);break;
+  }
+  case "share":if(selectedItem()&&!selectedItem().folder)call("radialFilesShare",selected);break;
+  case "new":if(current.writable)startEdit("new");break;
+  case "rename":if(selectedItem()?.writable&&current.writable)startEdit("rename",selectedItem().name);break;
+  case "delete":if(selectedItem()?.writable&&current.writable){mode="confirm";render()}break;
+  case "confirm-delete":if(mode==="confirm"&&selected){call("radialFilesDelete",selected);status="Delete requested";mode="main";selected="";render()}break;
+  case "search":startEdit("search",searchTerm);break;
+  case "clear":if(editing?.kind==="search"){searchTerm="";editing.value="";q("rdfEditorInput").value="";page=0;render()}break;
+  case "done":finishEdit(true);break;
+  case "save":finishEdit(true);break;
+  case "cancel":finishEdit(false);break;
  }
 }
-root.addEventListener("click",e=>{
+wheel.addEventListener("click",e=>{
+ if(performance.now()<suppressClickUntil)return;
  const hit=e.target.closest("[data-rdf-action]");
- if(hit&&hit.getAttribute("aria-disabled")!=="true"&&!hit.disabled)act(hit.dataset.rdfAction);
+ if(hit&&hit.getAttribute("aria-disabled")!=="true")action(hit.dataset.rdfAction);
 });
-root.addEventListener("keydown",e=>{
- if(e.key!=="Enter"&&e.key!==" ")return;
- const hit=e.target.closest("svg [data-rdf-action]");
- if(hit){e.preventDefault();if(hit.getAttribute("aria-disabled")!=="true")act(hit.dataset.rdfAction)}
+wheel.addEventListener("keydown",e=>{
+ if(!["Enter"," "].includes(e.key))return;
+ const hit=e.target.closest("[data-rdf-action]");
+ if(hit&&hit.getAttribute("aria-disabled")!=="true"){e.preventDefault();action(hit.dataset.rdfAction)}
 });
-trigger.addEventListener("click",show);
-q("rdfSearch").addEventListener("input",()=>{page=0;render()});
-q("rdfSort").addEventListener("change",e=>{sort=e.target.value;page=0;render()});
-document.addEventListener("keydown",e=>{
- if(!root.hidden&&e.key==="Escape"){e.preventDefault();close()}
+q("rdfEditorInput").addEventListener("input",e=>{
+ if(editing){editing.value=e.target.value;if(editing.kind==="search"){searchTerm=e.target.value;page=0;render()}}
 });
+q("rdfEditorInput").addEventListener("keydown",e=>{
+ if(e.key==="Enter"){e.preventDefault();finishEdit(true)}
+ if(e.key==="Escape"){e.preventDefault();finishEdit(false)}
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!root.hidden){e.preventDefault();back()}});
+function pointerAngle(e){
+ const box=wheel.getBoundingClientRect();
+ const x=e.clientX-(box.left+box.width/2),y=(box.top+box.height/2)-e.clientY;
+ return Math.atan2(x,y)*180/Math.PI;
+}
+function angleDelta(end,start){let d=end-start;while(d>180)d-=360;while(d< -180)d+=360;return d}
+wheel.addEventListener("pointerdown",e=>{
+ const hit=e.target.closest("[data-rdf-file]");
+ if(!hit||e.button!==0)return;
+ drag={id:e.pointerId,angle:pointerAngle(e),moved:false,difference:0};
+});
+wheel.addEventListener("pointermove",e=>{
+ if(!drag||e.pointerId!==drag.id)return;
+ drag.difference=angleDelta(pointerAngle(e),drag.angle);
+ if(Math.abs(drag.difference)>19)drag.moved=true;
+});
+wheel.addEventListener("pointerup",e=>{
+ if(!drag||e.pointerId!==drag.id)return;
+ const moved=drag.moved,dir=drag.difference;
+ drag=null;
+ if(moved){e.preventDefault();suppressClickUntil=performance.now()+400;pageBy(dir>0?1:-1)}
+});
+wheel.addEventListener("pointercancel",()=>{drag=null});
 for(const name of ["launcher-page-changed","audio-desk-theme-changed"])
  window.addEventListener(name,()=>{if(!active()&&!root.hidden)close()});
 render();
