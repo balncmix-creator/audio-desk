@@ -23,6 +23,7 @@ style.textContent+="\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitRadial
 style.textContent+="\n#orbitWidgetPreviewShade[hidden],#orbitWidgetPreview[hidden]{display:none!important}\n#orbitWidgetPreviewShade{position:fixed;inset:0;z-index:20;background:#060e0abc;backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}\n#orbitWidgetPreview{position:fixed;z-index:21;top:50%;left:50%;transform:translate(-50%,-50%);width:min(328px,calc(100vw - 32px));max-width:calc(100vw - 32px);box-sizing:border-box;border:1px solid var(--theme-line,#688471);border-radius:18px;background:var(--theme-surface,#22352b);box-shadow:0 18px 55px #000a;color:var(--theme-text,#ecf3eb);font-family:system-ui,sans-serif;padding:13px}\n#orbitWidgetPreview .orbit-widget-preview-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}\n#orbitWidgetPreview .orbit-widget-preview-head>div{display:flex;flex-direction:column;gap:4px;min-width:0}\n#orbitWidgetPreview .orbit-widget-preview-head small{font-size:9px;letter-spacing:.15em;color:var(--theme-accent,#accdb6)}\n#orbitWidgetPreviewTitle{font-size:16px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n#orbitWidgetPreviewClose{background:var(--theme-surface2,#334b3b);border:1px solid var(--theme-line,#607865);border-radius:9px;color:inherit;width:33px;height:33px;font:23px system-ui,sans-serif}\n#orbitWidgetPreviewSlot{height:min(195px,26dvh);min-height:128px;border-radius:12px;background:var(--theme-surface2,#2c4234);border:1px solid var(--theme-line,#607865);overflow:hidden;position:relative}\n#orbitWidgetPreview .orbit-widget-preview-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;font:10px system-ui,sans-serif;color:var(--theme-text,#d8e7db);opacity:.9;margin-top:11px}\n#orbitWidgetPreviewRemove{font:11px system-ui,sans-serif;border:1px solid var(--theme-line,#6b866e);border-radius:8px;color:inherit;background:var(--theme-surface2,#334b3b);padding:7px 10px}\n#orbitExternalWidgets .orbit-external-segment{fill:var(--theme-surface,#28352e);stroke:var(--theme-line,#58715f);stroke-opacity:.27;stroke-width:.7}\n#orbitExternalWidgets .orbit-external-focused{fill:var(--theme-surface2,#405845);stroke:var(--theme-accent,#b4d9ba);stroke-opacity:.45;stroke-width:.85}\n#orbitExternalWidgets .orbit-external-label{letter-spacing:.05em}\n#orbitWidgets .orbit-ring{opacity:.87}\n";
 style.textContent+="\n/* QA#15: preserve radial ink bounds and enlarge settings without obscuring Home. */\n#orbitClock text{text-rendering:geometricPrecision;letter-spacing:.035em}\n#orbitSettingsGear{min-width:44px!important;min-height:44px!important}\n#orbitSettingsPanel{width:min(385px,calc(100vw - 24px))!important;max-height:82dvh!important;top:max(70px,calc(var(--status-top,24px) + 48px))!important}\n#orbitSettingsPanel .orbit-settings-header{padding:15px 17px 13px}\n#orbitSettingsPanel .orbit-settings-header strong{font-size:23px}\n#orbitSettingsTabs{grid-template-columns:repeat(2,minmax(0,1fr));padding:0 12px 12px;gap:7px}\n#orbitSettingsTabs button{min-height:42px;font-size:13px!important;padding:10px 6px!important}\n#orbitSettingsContent{padding:15px!important;font-size:14px!important}\n#orbitSettingsContent h3{font-size:16px!important}\n#orbitSettingsContent p,#orbitSettingsContent .orbit-settings-row small{font-size:12px!important;line-height:1.5}\n#orbitSettingsContent button{min-height:42px;font-size:13px!important;padding:9px 12px!important}\n#orbitSettingsContent .orbit-settings-row{min-height:48px;gap:12px;line-height:1.35}\n#orbitQuickCustomize button{min-height:42px;font-size:13px}\nbody[data-launcher-theme=orbit] #launcherOptionsSheet{width:min(390px,calc(100vw - 20px));max-height:80dvh;overflow-y:auto;overscroll-behavior:contain}\nbody[data-launcher-theme=orbit] #launcherOptionsSheet .launcher-options-action{min-height:45px;font-size:13px}\nbody[data-launcher-theme=orbit][data-app-layout=grid] #launcherAppsGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:11px!important}\nbody[data-launcher-theme=orbit] #launcherAppsGrid .app-name{font-size:13px!important;line-height:1.35!important}\n";
 style.textContent+="\n/* QA15: compact the previously endless legacy options sheet without hiding actions or altering other themes. */\nbody[data-launcher-theme=orbit] #launcherOptionsSheet{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;align-content:start;padding:14px 13px 18px;box-sizing:border-box}\nbody[data-launcher-theme=orbit] #launcherOptionsSheet>:is(.launcher-options-heading,.n-home-shortcuts,#launcherHomeSetup,#launcherRecentDrawer){grid-column:1/-1}\nbody[data-launcher-theme=orbit] #launcherOptionsSheet>.launcher-options-action{width:100%;min-width:0;margin:0!important;padding:11px 9px!important;text-align:center;white-space:normal;overflow-wrap:break-word;line-height:1.4;font-size:12px;min-height:52px}\nbody[data-launcher-theme=orbit] #launcherOptionsSheet .n-home-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}\nbody[data-launcher-theme=orbit] #launcherOptionsSheet .n-home-shortcuts button{min-width:0;min-height:43px;white-space:normal}\n@media(max-width:350px){body[data-launcher-theme=orbit] #launcherOptionsSheet{grid-template-columns:1fr}body[data-launcher-theme=orbit] #launcherOptionsSheet>.launcher-options-action{min-height:44px}}\n";
+style.textContent+="\n/* The real wallpaper remains rendered behind the Orbit SVG. A translucent\n   surface reveals those exact underlying pixels: no duplicate images, network\n   requests, generated texture, or memory-heavy canvas snapshots. This is\n   opt-in, restricted to Orbit, and preserves solid text and icon contrast. */\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"] #orbitDial .orbit-ring,\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"] #orbitDial .orbit-raised,\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"] #orbitDial .orbit-app-ring,\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"] #orbitDial .orbit-external-segment{fill-opacity:.74!important}\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"] #orbitDial .orbit-external-focused{fill-opacity:.81!important}\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"] #orbitDial .orbit-external-base{fill-opacity:.17!important}\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"][data-wallpaper-light=\"true\"] #orbitDial :is(.orbit-ring,.orbit-raised,.orbit-app-ring,.orbit-external-segment){fill-opacity:.87!important}\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"][data-wallpaper-light=\"true\"] #orbitDial .orbit-external-focused{fill-opacity:.92!important}\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"] #orbitDial :is(text,image,.orbit-accent,.orbit-ink){opacity:1}\n";
 document.head.append(style);
 
 const orbitSettingsGear=document.createElement("button");
@@ -374,7 +375,7 @@ q("orbitWidgetPreviewRemove").addEventListener("click",()=>{
 });
 let orbitToastTimer=0,homeHold=null,holdConsumedUntil=0;
 const orbitPrefsKey="ad_orbit_settings_v2";
-const defaultOrbitPreferences={momentum:true,blur:true,haptics:false,showAppWidgets:true};
+const defaultOrbitPreferences={momentum:true,blur:true,haptics:false,showAppWidgets:true,wallpaperTexture:false};
 let orbitPreferences={...defaultOrbitPreferences};
 try{
  const stored=JSON.parse(deskStorage.getItem(orbitPrefsKey)||"null");
@@ -386,6 +387,7 @@ function saveOrbitPreferences(){
  deskStorage.setItem(orbitPrefsKey,JSON.stringify(orbitPreferences));
  document.body.classList.toggle("orbit-no-blur",!orbitPreferences.blur);
  document.body.classList.toggle("orbit-hide-app-widgets",!orbitPreferences.showAppWidgets);
+  document.body.classList.toggle("orbit-wallpaper-texture",orbitPreferences.wallpaperTexture);
  if(active()){drawExternalWidgets();window.audioDeskSyncNativeWidgets?.()}
 }
 function showOrbitToast(text){
@@ -420,6 +422,7 @@ function renderSettings(){
   case "wallpaper":
    html='<h3>Wallpaper appearance</h3>'+
     settingCheck("blur","Blur behind the A–Z app menu","Background blurs smoothly as app icons fan outward.")+
+     settingCheck("wallpaperTexture","Wallpaper texture on dials","Let the actual wallpaper show subtly through each dial while keeping text and icons clear.")+
     '<div class="orbit-settings-row"><span>Wallpapers & animation<small>Choose a wallpaper or accent palette</small></span>'+
     settingsButton("Choose","wallpaper")+'</div>';
    break;
@@ -606,13 +609,13 @@ function drawExternalWidgets(offset=offsets.external){
  // dial. Only one real RemoteViews surface is hosted at a time (at 45°).
  const list=externalWidgetsList();
  const selected=list[wrap(externalIndex,list.length)];
- let h="";
+ let h=path(ring(300,250),"orbit-ring orbit-external-base");
  for(let i=-2;i<=2;i++){
   const a=45+i*externalRingStep+offset;
   if(a+19<0||a-19>90)continue;
   const item=list[wrap(externalIndex+i,list.length)];
   const isAdd=item.id===0,chosen=i===0;
-  h+=path(sector(a-18.5,a+18.5,299,252),chosen?"orbit-external-focused":"orbit-external-segment",
+  h+=path(sector(a-19,a+19,299,251),chosen?"orbit-external-focused":"orbit-external-segment",
    'data-orbit-external="'+esc(String(item.id))+'"');
   const symbol=isAdd?"+":(String(item.label||"Widget").trim().charAt(0).toUpperCase()||"▦");
   const iconUrl=!isAdd&&item.pkg?iconSource({pkg:item.pkg}):"";
@@ -777,7 +780,7 @@ function angularDifference(from,to){
 svg.addEventListener("pointerdown",e=>{
  if(!active()||drag||e.button!==0)return;
  const loc=coordinates(e),target=e.target.closest("[data-orbit-action]"),code=target?.dataset.orbitAction;
- const which=loc.r>=252&&loc.r<=299&&orbitPreferences.showAppWidgets?"external":loc.r>=182&&loc.r<=249?"widgets":loc.r>=112&&loc.r<=178?"recents":loc.r>=64&&loc.r<=108?"letters":null;
+ const which=loc.r>=250&&loc.r<=300&&orbitPreferences.showAppWidgets?"external":loc.r>=182&&loc.r<=249?"widgets":loc.r>=112&&loc.r<=178?"recents":loc.r>=64&&loc.r<=108?"letters":null;
  // A tap anywhere outside A–Z or the app icons closes the inline picker.
  if(popupVisible&&which!=="letters"&&which!=="recents"){hidePopup();return}
  if(!which&&!code)return;
