@@ -428,6 +428,22 @@ const demoApps=[
    'Orbit does not show two overlapping settings buttons');
   assert.equal(await page.locator('#orbitExternalWidgets').count(),1,
    'app widget dial is separate from the built-in Audio Desk dial');
+  assert.equal(await page.locator('#orbitClock textPath').count(),2,
+   'time and date follow actual clock arc paths');
+  assert.ok((await page.locator('#orbitWidgets textPath').count())>=2,
+   'Audio Desk widget titles and subtitles curve along their dial');
+  assert.ok((await page.locator('#orbitExternalWidgets textPath').count())>=1,
+   'custom app-widget names follow the outer widget dial');
+  assert.ok((await page.locator('#orbitLetters textPath').count())>=4,
+   'alphabet letters are oriented on their radial trajectory');
+  assert.equal(await page.evaluate(()=>{
+   const paths=[...document.querySelectorAll('#orbitDial textPath')];
+   return paths.every(p=>{
+    const href=p.getAttribute('href');
+    const track=href&&document.querySelector(href);
+    return track?.getAttribute('d')?.includes(' A');
+   });
+  }),true,'all curved Orbit text attaches to real elliptical-arc SVG geometry');
   assert.equal(await page.locator('#orbitWidgets [data-orbit-widget]').count(),3,
    'music, calendar and news are retained in their own original ring');
   await page.evaluate(()=>window.receiveAudioDeskNativeWidgets([
@@ -475,6 +491,8 @@ const demoApps=[
   assert.equal(await page.locator('#orbitQuickCustomize').isVisible(),false);
   await page.locator('#orbitLetters [data-orbit-action^="letter:"]').first().dispatchEvent('click');
   assert.equal(await page.locator('#orbitAppIconLayers').count(),1);
+  assert.equal(await page.locator('#orbitFanCount textPath').count(),1,
+   'alphabet app count also follows the recents ring curve');
   await page.evaluate(()=>document.getElementById('orbitRadialBackdrop').dispatchEvent(
    new MouseEvent('click',{bubbles:true})));
   assert.equal(await page.locator('#orbitAppIconLayers').count(),0,
