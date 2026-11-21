@@ -52,7 +52,7 @@ const {chromium}=require('playwright');
   assert.equal(await page.locator('#rdfWheel #rdfCommandRing .rdf-command').count(),6,
     'all navigation buttons are radial sectors');
   assert.equal(await page.locator('img[onerror],svg img').count(),0,'file names are escaped');
-  assert.equal(await page.locator('#rdfPath').innerText(),'Audio  /  Project');
+  assert.equal(await page.locator('#rdfPath').innerText(),'Audio / Project');
   await page.locator('#rdfWheel [data-rdf-action="next"]').click();
   assert.match(await page.locator('#rdfHint').innerText(),/2\/3/);
   await page.locator('#rdfWheel [data-rdf-action="prev"]').click();
