@@ -681,8 +681,17 @@ function drawRecents(offset=offsets.recents){
  q("orbitRecents").innerHTML=h;
 }
 function music(a,slot){
+ // When no player is connected, show one clear action rather than stacked,
+ // redundant labels and three disabled transport controls.
+ if(!media.enabled){
+  let h=curveText("MUSIC",237,a,43,12,"","music-title-"+slot);
+  h+=g(209,a,'<rect x="-43" y="-15" width="86" height="30" rx="9" class="orbit-accent"/>',
+   button("connect","Connect music player"));
+  h+=curveText("CONNECT PLAYER",209,a,43,9,"orbit-ink","music-connect-"+slot);
+  return h;
+ }
  let h=curveText(trunc(media.available?media.title:"Music player",17),238,a,45,11,"","music-title-"+slot);
- h+=curveText(trunc(media.available?media.artist:(media.enabled?"Start a player":"Tap to connect"),19),225,a,45,9,"orbit-muted","music-artist-"+slot);
+ h+=curveText(trunc(media.available?media.artist:"No active player",19),225,a,45,9,"orbit-muted","music-artist-"+slot);
  const items=[["previous","Previous track","|◀",media.available&&media.canPrevious],["toggle",media.playing?"Pause":"Play",media.playing?"Ⅱ":"▶",media.available&&media.canToggle],["next","Next track","▶|",media.available&&media.canNext]];
  items.forEach((x,i)=>{const on=i===1;h+=g(206,a+(i-1)*17,'<rect x="-22" y="-12" width="44" height="24" rx="7" class="'+(on?"orbit-accent":"orbit-raised")+'"/><text y="4" text-anchor="middle" font-size="13" class="'+(on?"orbit-ink":"")+'">'+x[2]+'</text>',button("media:"+x[0],x[1],!x[3]))});
  const duration=Number(media.durationMs),position=Number(media.positionMs);
@@ -691,10 +700,7 @@ function music(a,slot){
  h+=path(arc(188,start,end),"orbit-line",'stroke-width="3" stroke-linecap="round"');
  if(progress>0)h+=path(arc(188,start,start+48*progress),"orbit-line",'style="stroke:var(--theme-accent)" stroke-width="3" stroke-linecap="round"');
  if(media.canSeek)h+='<path d="'+arc(188,start,end)+'" fill="none" stroke="transparent" stroke-width="19" data-orbit-action="seek" data-orbit-angle="'+a+'" role="slider" aria-label="Playback position" aria-valuemin="0" aria-valuemax="'+duration+'" aria-valuenow="'+Math.round(position)+'" tabindex="0"/>';
- }else if(!media.enabled){
-  h+=g(191,a,'<rect x="-35" y="-9" width="70" height="18" rx="5" fill="transparent"/>',button("connect","Enable media controls"));
-  h+=curveText("CONNECT",191,a,32,9,"","music-connect-"+slot);
- }else h+=curveText(media.available?"Playback time unavailable":"No active player",191,a,47,9,"orbit-muted","music-status-"+slot);
+ }else if(!media.available)h+=curveText("NO ACTIVE PLAYER",191,a,43,9,"orbit-muted","music-status-"+slot);
  return h;
 }
 function drawWidgets(offset=offsets.widgets){
