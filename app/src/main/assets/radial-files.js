@@ -54,9 +54,21 @@ function shown(){
 }
 function point(r,a){return [+(200+r*Math.sin(a*rad)).toFixed(2),+(200-r*Math.cos(a*rad)).toFixed(2)]}
 function wedge(a,b,inner,outer){
- const gap=.65,o1=point(outer,a+gap),o2=point(outer,b-gap),i1=point(inner,b-gap),i2=point(inner,a+gap);
- return 'M'+o1.join(' ')+' A'+outer+' '+outer+' 0 0 1 '+o2.join(' ')+' L'+i1.join(' ')+
-  ' A'+inner+' '+inner+' 0 0 0 '+i2.join(' ')+' Z';
+ // Give every file and menu wedge the same subtle four rounded corners as
+ // Orbit's home dial. Keep the .65-degree seams and full SVG hit areas.
+ const gap=.65,corner=Math.min(6,(outer-inner)*.16,inner*.12);
+ const A=a+gap,B=b-gap;
+ const o=corner/outer*180/Math.PI,i=corner/inner*180/Math.PI;
+ const at=(r,angle)=>point(r,angle).join(' ');
+ return 'M'+at(outer,A+o)+
+  ' A'+outer+' '+outer+' 0 0 1 '+at(outer,B-o)+
+  ' Q'+at(outer,B)+' '+at(outer-corner,B)+
+  ' L'+at(inner+corner,B)+
+  ' Q'+at(inner,B)+' '+at(inner,B-i)+
+  ' A'+inner+' '+inner+' 0 0 0 '+at(inner,A+i)+
+  ' Q'+at(inner,A)+' '+at(inner+corner,A)+
+  ' L'+at(outer-corner,A)+
+  ' Q'+at(outer,A)+' '+at(outer,A+o)+' Z';
 }
 function arcLabel(label,angle,radius,className,offset=0){
  const p=point(radius,angle);
