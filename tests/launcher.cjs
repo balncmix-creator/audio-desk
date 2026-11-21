@@ -507,6 +507,11 @@ const demoApps=[
   assert.equal(await page.locator('#orbitSettingsPanel').isVisible(),true);
   assert.equal(await page.locator('#orbitSettingsPanel [data-orbit-tab]').count(),6,
    'settings panel has six sections');
+  assert.equal(await page.locator('#launcherOptionsSheet').evaluate(el=>getComputedStyle(el).display),'grid',
+   'Orbit advanced Home Options uses a compact grid rather than one endless vertical list');
+  assert.equal(await page.locator('#nativeWidgetsOpen').isVisible(),false,
+   'compacting advanced controls never unhides Orbit-incompatible widget entry points');
+
   const settingsMetrics=await page.evaluate(()=>{
    const r=document.getElementById('orbitSettingsPanel').getBoundingClientRect();
    return {width:r.width,right:r.right,vw:innerWidth,
