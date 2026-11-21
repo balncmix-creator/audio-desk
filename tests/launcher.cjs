@@ -22,13 +22,14 @@ const demoApps=[
   await page.addInitScript(apps=>{
    window.appLaunchCalls=[];window.makeDefaultRequests=0;
    window.nativeLayoutRequests=[];window.nativePickerOpen=0;window.nativeDeleteCalls=[];
-   window.systemWallpaperCalls=[];
+   window.systemWallpaperCalls=[];window.statusThemeRequests=[];
    window.launcherDemoApps=apps;window.launcherDemoHistory=[];
    window.AudioDesk={
     layoutNativeWidgets(payload){window.nativeLayoutRequests.push(JSON.parse(payload))},
     requestNativeWidgets(){},
     openNativeWidgets(){window.nativePickerOpen++},
     setSystemWallpaperCustom(data,position,lock,request){window.systemWallpaperCalls.push({data,position,lock,request})},
+     setStatusBarTheme(theme,light){window.statusThemeRequests.push({theme,light})},
     deleteNativeWidget(id){window.nativeDeleteCalls.push(id)},
     requestLauncherApps(){setTimeout(()=>window.receiveLauncherApps(
      window.launcherDemoApps,window.launcherDemoHistory,window.makeDefaultRequests>0),0)},
@@ -67,7 +68,7 @@ const demoApps=[
    if(url.startsWith('https://images.unsplash.com/'))
     return route.fulfill({status:200,contentType:'image/png',
      headers:{'Access-Control-Allow-Origin':'*'},
-     body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAADCAIAAAA2iEnWAAAAFElEQVR4nGP0LethYGBgYmBgQFAAGPIBVaOwJEQAAAAASUVORK5CYII=','base64')});
+     body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAQAAAAICAIAAABRUclSAAAAFElEQVR4nGP88OEDAwwwMSAB6nIAIpcC4EzOwwYAAAAASUVORK5CYII=','base64')});
    return route.abort();
   });
   await page.goto('https://appassets.androidplatform.net/assets/index.html');
@@ -625,6 +626,24 @@ const demoApps=[
   await page.waitForTimeout(180);
   assert.ok((await page.evaluate(()=>window.systemWallpaperCalls)).length>0,
    'native wallpaper API receives decoded raster photograph');
+  assert.equal(await page.evaluate(()=>document.body.dataset.wallpaperStatusLight),'true',
+   'photo top-strip luminance is sampled rather than relying on static photo labels');
+  assert.ok(await page.evaluate(()=>window.statusThemeRequests.some(x=>x.theme==='orbit'&&x.light===true)),
+   'Android status bar icon contrast switches to dark on light wallpaper');
+  const dialLightPhoto=await page.evaluate(()=>{
+   const selectors=['#orbitClock .orbit-ring','#orbitWidgets .orbit-ring',
+    '#orbitWidgets .orbit-raised','#orbitExternalWidgets .orbit-external-base',
+    '#orbitExternalWidgets .orbit-external-segment','#orbitExternalWidgets .orbit-external-focused'];
+   return selectors.map(sel=>{
+    const el=document.querySelector(sel);
+    return {sel,opacity:el?Number(getComputedStyle(el).fillOpacity):null};
+   });
+  });
+  assert.ok(dialLightPhoto.every(x=>x.opacity!==null&&x.opacity>=.90),
+   'every radial surface uses sufficient tint with the same bright wallpaper: '+JSON.stringify(dialLightPhoto));
+  assert.ok(Math.max(...dialLightPhoto.map(x=>x.opacity))-Math.min(...dialLightPhoto.map(x=>x.opacity))<=.07,
+   'adjacent widget rings no longer have inconsistent transparency and empty-looking wedges');
+
   await page.locator('#wallpaperClose').click();
   await page.evaluate(()=>setLauncherTheme('warm'));
   await page.evaluate(()=>setLauncherTheme('orbit'));
@@ -671,6 +690,22 @@ const demoApps=[
 await page.locator('#orbitSearch [data-orbit-action="search"]').dispatchEvent('click');
   assert.equal(await page.evaluate(()=>launcherPage),'apps');
   assert.equal(await page.locator('#orbitHome').isVisible(),false);
+  const photoAppStyles=await page.evaluate(()=>{
+   const overlay=getComputedStyle(document.getElementById('wallpaperStage'),'::after');
+   const label=document.querySelector('#launcherAppsGrid .app-name');
+   const search=document.getElementById('launcherAppSearch');
+   return {overlay:overlay.backgroundColor,z:Number(overlay.zIndex),
+    label:label?{font:getComputedStyle(label).fontFamily,color:getComputedStyle(label).color}:null,
+    search:getComputedStyle(search).fontFamily,
+    status:window.statusThemeRequests.at(-1)};
+  });
+  assert.ok(photoAppStyles.overlay.includes('0.85')&&photoAppStyles.z>=8,
+   'the photo image is dimmed by a layer above its z-indexed image');
+  assert.ok(photoAppStyles.label?.font.includes('system-ui')&&photoAppStyles.search.includes('system-ui'),
+   'Orbit app-list text uses modern system fonts, not pixel lettering');
+  assert.equal(photoAppStyles.label?.color,'rgb(246, 248, 249)');
+  assert.equal(photoAppStyles.status?.light,false,
+   'Android status icons return to light against the dark All Apps top bar');
   await page.evaluate(()=>{setLauncherPage('home',false);setLauncherTheme('windows')});
   assert.equal(await page.locator('#orbitHome').isVisible(),false);
   assert.deepEqual(errors,[],'no launcher errors');

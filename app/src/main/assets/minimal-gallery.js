@@ -27,7 +27,8 @@ style.textContent=[
 "#minimalGalleryWallpaperImage[hidden]{display:none!important}",
 "#minimalGalleryWallpaperImage{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:4;pointer-events:none}",
 "body[data-minimal-wallpaper] #wallpaperStage .wallpaper-image{opacity:0!important}",
-"body[data-minimal-wallpaper] #wallpaperStage::after{background:transparent!important}",
+"body[data-minimal-wallpaper][data-home-page=home] #wallpaperStage::after{background:transparent!important}",
+"body[data-minimal-wallpaper][data-home-page=apps] #wallpaperStage::after{content:'';position:absolute;inset:0;z-index:8!important;background:rgba(8,14,21,.84)!important}",
 "body[data-minimal-wallpaper] #wallpaperEffect,body[data-minimal-wallpaper] #audioArtworkImage{display:none!important}",
 "#minimalGalleryStudio{margin:10px 0 14px;padding:12px;border:1px solid var(--ds-line,#435448);border-radius:14px;background:var(--ds-panel,#222e26);color:var(--ds-text,#f4f4f4)}",
 "#minimalGalleryStudio h3{margin:0 0 4px;font:650 16px system-ui,sans-serif}",
@@ -108,23 +109,49 @@ function applyAndroid(p,loaded){
   notice.textContent="Applying "+p.name+" to Android Home"+($("wallpaperApplyLock").checked?" and Lock":"")+"…";
  }catch{notice.textContent="Photo preview works, but this image could not be exported to Android."}
 }
+// Match status-bar and dial contrast to the actual photograph crop, not the
+// manually assigned theme or the overall image average. A bright ocean can
+// have a dark lower half while its status-bar strip is almost white.
+function samplePhotoTone(photo){
+ try{
+  const width=72,height=Math.max(110,Math.round(72*innerHeight/Math.max(1,innerWidth)));
+  const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;
+  const ctx=canvas.getContext("2d",{willReadFrequently:true});
+  const scale=Math.max(width/photo.naturalWidth,height/photo.naturalHeight);
+  const dw=photo.naturalWidth*scale,dh=photo.naturalHeight*scale;
+  ctx.drawImage(photo,(width-dw)/2,(height-dh)/2,dw,dh);
+  const brightness=(start,length)=>{
+   const rgba=ctx.getImageData(0,start,width,length).data;let sum=0,weight=0;
+   for(let i=0;i<rgba.length;i+=4){
+    const opacity=rgba[i+3]/255;
+    sum+=(rgba[i]*.2126+rgba[i+1]*.7152+rgba[i+2]*.0722)*opacity;weight+=opacity;
+   }
+   return weight?sum/weight:0;
+  };
+  return {status:brightness(0,Math.max(8,Math.min(24,Math.round(height*.045))))>151,
+   body:brightness(Math.round(height*.12),Math.max(8,Math.round(height*.45)))>156};
+ }catch{return null}
+}
 function select(id,persist=true){
  const p=byId(id);if(!p){clear(persist);return}
- const seq=++requestId;const previous=current;
+ const seq=++requestId,themeWhenChosen=launcherTheme;const previous=current;
  current=p.id;status.textContent="Loading "+p.name+" by "+p.author+"…";render();
  const loaded=new Image();loaded.crossOrigin="anonymous";loaded.decoding="async";
  loaded.onload=()=>{
-  if(seq!==requestId)return;
+  if(seq!==requestId||launcherTheme!==themeWhenChosen)return;
   image.src=loaded.src;image.hidden=false;
   document.body.dataset.minimalWallpaper=p.id;
-  document.body.dataset.wallpaperLight=String(p.light);document.body.dataset.wallpaperStatusLight=String(p.light);
+  const tone=samplePhotoTone(loaded);
+  document.body.dataset.wallpaperLight=String(tone?.body??p.light);
+  document.body.dataset.wallpaperStatusLight=String(tone?.status??p.light);
+  window.audioDeskSyncWallpaperStatus?.();
   window.audioDeskApplyWallpaperColors?.(p.accent,p.base);
   if(persist)deskStorage.setItem(storageKey(launcherTheme),p.id);
   status.innerHTML='Photo by <strong>'+esc(p.author)+'</strong> on Unsplash · <a href="'+esc(p.page)+'" rel="noopener noreferrer" target="_blank">Photo &amp; license</a>';
   render();if(persist)applyAndroid(p,loaded);
  };
  loaded.onerror=()=>{
-  if(seq!==requestId)return;current=previous;
+  if(seq!==requestId||launcherTheme!==themeWhenChosen)return;current=previous;
   status.textContent="Could not load this photograph. Check your connection; your previous wallpaper is unchanged.";render();
  };
  loaded.src=url(p,1440,86,2560);
