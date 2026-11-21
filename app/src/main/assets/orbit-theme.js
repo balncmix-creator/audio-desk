@@ -585,10 +585,13 @@ function drawClock(){
   (parts.find(x=>x.type==="minute")?.value||String(now.getMinutes()).padStart(2,"0"));
  const date=now.toLocaleDateString([],{weekday:"short",day:"numeric",month:"short"}).toUpperCase();
  if(lastClock===time+date&&q("orbitClock").childNodes.length)return;lastClock=time+date;
- let h=path(ring(330,301),"orbit-ring");
+ let h=path(ring(330,301),"orbit-ring")+
+  '<defs><clipPath id="orbitClockInkBand"><path d="'+ring(328,303)+'"/></clipPath></defs>';
  for(let i=0;i<=22;i++){const a=1+i*4;h+='<line x1="'+point(326,a)[0]+'" y1="'+point(324,a)[1]+'" x2="'+point(i%3===0?322:324,a)[0]+'" y2="'+point(i%3===0?317:321,a)[1]+'" class="orbit-line" stroke-width="1"/>'}
+ h+='<g clip-path="url(#orbitClockInkBand)">';
  h+=curveText(time,313,45,34,16,"","clock-time");
  h+=curveText(date,304,45,46,8,"orbit-muted","clock-date");
+ h+='</g>';
  q("orbitClock").innerHTML=h;
 }
 function currentRecents(){
