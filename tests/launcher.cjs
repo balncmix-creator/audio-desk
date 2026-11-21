@@ -471,7 +471,7 @@ const demoApps=[
    'long-press on empty Home opens quick customization');
   await page.locator('#orbitSettingsShade').dispatchEvent('click'); // outside-tap handler
   assert.equal(await page.locator('#orbitQuickCustomize').isVisible(),false);
-  await page.locator('#orbitLetters [data-orbit-action="letter:A"]').dispatchEvent('click');
+  await page.locator('#orbitLetters [data-orbit-action^="letter:"]').first().dispatchEvent('click');
   assert.equal(await page.locator('#orbitAppIconLayers').count(),1);
   await page.evaluate(()=>document.getElementById('orbitRadialBackdrop').dispatchEvent(
    new MouseEvent('click',{bubbles:true})));
