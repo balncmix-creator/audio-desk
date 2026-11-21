@@ -116,7 +116,7 @@ function select(id,persist=true){
   document.body.dataset.wallpaperLight=String(p.light);document.body.dataset.wallpaperStatusLight=String(p.light);
   window.audioDeskApplyWallpaperColors?.(p.accent,p.base);
   if(persist)deskStorage.setItem(storageKey(launcherTheme),p.id);
-  status.innerHTML='Photo by <strong>'+esc(p.author)+'</strong> · <a href="'+esc(p.page)+'" rel="noopener noreferrer" target="_blank">Source &amp; license</a>';
+  status.innerHTML='Photo by <strong>'+esc(p.author)+'</strong> on Unsplash · <a href="'+esc(p.page)+'" rel="noopener noreferrer" target="_blank">Photo &amp; license</a>';
   render();if(persist)applyAndroid(p,loaded);
  };
  loaded.onerror=()=>{
