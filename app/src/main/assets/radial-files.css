@@ -4,7 +4,9 @@
 #radialFilesPanel{position:fixed;inset:0;z-index:36;display:flex;flex-direction:column;
  align-items:center;justify-content:space-between;box-sizing:border-box;overflow:hidden;
  padding:max(19px,calc(var(--status-top,24px) + 11px)) 9px max(16px,calc(var(--system-bottom,10px) + 10px));
- background:radial-gradient(ellipse at 52% 58%,rgba(40,61,49,.85),rgba(7,15,12,.95) 66%,rgba(3,8,6,.98));
+ /* All stops are opaque: the launcher must not shine through the file dial. */
+ background:#08130e;
+ background-image:radial-gradient(ellipse at 50% 52%,#20352a 0%,#14241c 53%,#08130e 100%);
  color:var(--theme-text,#ebf1ea);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;
  user-select:none;-webkit-user-select:none}
 #radialFilesPanel *{box-sizing:border-box}
@@ -28,9 +30,12 @@
 #rdfWheel .rdf-hit[aria-pressed=true] .rdf-wedge{fill:var(--theme-accent,#c0e7cc);
  stroke:var(--theme-accent,#c0e7cc);stroke-width:2.5}
 #rdfWheel .rdf-hit[aria-pressed=true] text{fill:var(--theme-accent-ink,#14261b)!important}
-#rdfWheel .rdf-hit[aria-disabled=true]{opacity:.32;pointer-events:none;cursor:default}
+#rdfWheel .rdf-hit[aria-disabled=true]{opacity:.49;pointer-events:none;cursor:default}
 #rdfWheel .rdf-hit:focus-visible .rdf-wedge{stroke:var(--theme-accent,#d0f2d3);stroke-width:3.5}
-#rdfWheel .rdf-empty-sector{fill:rgba(28,42,35,.58);
+#rdfWheel .rdf-start .rdf-wedge{fill:var(--theme-surface2,#365a42);
+ stroke:var(--theme-line,#8eac95);stroke-width:1.8}
+#rdfWheel .rdf-start .rdf-menu-text{font-size:12.5px}
+#rdfWheel .rdf-empty-sector{fill:#1c2a23;
  stroke:var(--theme-line,#587564);stroke-width:1;stroke-dasharray:3 4}
 #rdfWheel text{pointer-events:none;text-anchor:middle;dominant-baseline:middle;
  fill:var(--theme-text,#e8f3ea);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
