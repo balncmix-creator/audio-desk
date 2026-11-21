@@ -548,6 +548,13 @@ class MainActivity : Activity() {
                     sendMediaState(mediaWidgetSupport.state())
             }
         }
+        @JavascriptInterface fun seekMedia(positionMs: Long) {
+            if (positionMs < 0L) return
+            runOnUiThread {
+                if (!destroyed && ::mediaWidgetSupport.isInitialized)
+                    sendMediaState(mediaWidgetSupport.seek(positionMs))
+            }
+        }
         @JavascriptInterface fun mediaCommand(action: String) {
             if (action !in setOf("next", "previous", "toggle")) return
             runOnUiThread {
