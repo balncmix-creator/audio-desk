@@ -145,3 +145,91 @@ body[data-launcher-theme="windows"] .icon-studio-panel button{
 @media(prefers-reduced-motion:reduce){
  .ad-icon-shell *{transition:none!important}
 }
+
+
+/* Twenty original icon families generated from installed apps. The skin and
+   glyph palette come from local constants; no third-party icon assets ship. */
+.ad-icon-shell[data-icon-pack]{
+ background:var(--pack-bg)!important;
+ border:1.5px solid var(--pack-edge)!important;
+ border-radius:var(--pack-radius)!important;
+ box-shadow:var(--pack-shadow)!important;
+ overflow:hidden;
+}
+.ad-icon-shell[data-icon-pack] .ad-icon-image{
+ object-fit:contain!important;
+ padding:5px!important;
+ image-rendering:auto!important;
+ filter:none!important;
+}
+.ad-icon-shell[data-icon-pack="ink"],
+.ad-icon-shell[data-icon-pack="blueprint"]{border-width:2px!important}
+.ad-icon-shell[data-icon-pack="ink"] .ad-icon-image,
+.ad-icon-shell[data-icon-pack="blueprint"] .ad-icon-image{
+ padding:6px!important;
+}
+.ad-icon-shell[data-icon-pack="paper"]{
+ border-width:0!important;
+ box-shadow:2px 3px 0 #0003, inset 0 0 0 2px #755b4560!important;
+}
+.ad-icon-shell[data-icon-pack="neon"]{
+ border:1px solid var(--pack-edge)!important;
+}
+.ad-icon-shell[data-icon-pack="arcade"]{
+ border-radius:0!important;border:2px solid var(--pack-edge)!important;
+ box-shadow:2px 2px 0 #080611!important;
+}
+.ad-icon-shell[data-icon-pack="arcade"] .ad-icon-image{
+ image-rendering:pixelated!important;
+ padding:5px!important;
+}
+.ad-icon-shell[data-icon-pack="glass"]{
+ border-color:#ffffff88!important;
+ backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+ box-shadow:inset 0 1px 0 #ffffff99,0 3px 12px #0004!important;
+}
+.ad-icon-shell[data-icon-pack="glass"] .ad-icon-image{
+ padding:3px!important;
+}
+.ad-icon-shell[data-icon-pack] .ad-icon-fallback{
+ color:var(--pack-edge,var(--ds-text))!important;
+}
+.icon-studio-packs{
+ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+ gap:8px;padding:3px 1px;max-height:min(38dvh,340px);overflow-y:auto;
+ scrollbar-width:thin;
+}
+.icon-studio-packs button{
+ display:flex;flex-direction:column;align-items:center;
+ justify-content:flex-start;gap:5px;min-height:112px;
+ min-width:0;padding:8px 4px!important;
+ text-align:center;overflow:hidden;
+}
+.icon-studio-packs button[aria-pressed="true"]{
+ border-color:var(--ds-accent)!important;
+ outline:2px solid var(--ds-accent);outline-offset:0;
+}
+.icon-studio-packs .ad-icon-shell{
+ flex:0 0 43px!important;width:43px!important;height:43px!important;
+ min-height:43px;margin:0 auto!important;
+}
+.icon-studio-packs strong{
+ color:var(--ds-text);font:700 11px/1.25 system-ui,sans-serif;
+ max-width:100%;overflow:hidden;text-overflow:ellipsis;
+ white-space:nowrap;
+}
+.icon-studio-packs small{
+ color:var(--ds-muted);font:400 9px/1.25 system-ui,sans-serif;
+ display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+ overflow:hidden;max-width:100%;
+}
+.ad-pack-placeholder{
+ display:grid;place-items:center;width:100%;height:100%;
+ font-size:26px;color:var(--pack-edge,#fff);
+}
+@media(max-width:350px){
+ .icon-studio-packs{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(prefers-reduced-motion:reduce){
+ .icon-studio-packs *{transition:none!important}
+}

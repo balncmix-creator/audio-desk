@@ -210,8 +210,8 @@ const fanPageSize=5,svgNS="http://www.w3.org/2000/svg";
 function iconSource(app){
  const pkg=String(app.pkg||"");
  if(!/^[A-Za-z0-9_.]{4,180}$/.test(pkg))return "";
- const mode=window.audioDeskIconStudio?.mode?.()==="original"?"original":"orbit";
- return "/app-icons/"+mode+"/"+encodeURIComponent(pkg)+".png";
+ return window.audioDeskIconStudio?.iconUrlFor?.(app)||
+  (!window.audioDeskIconStudio?"/app-icons/orbit/"+encodeURIComponent(pkg)+".png":"");
 }
 function stopFan(){
  if(fanAnimation)cancelAnimationFrame(fanAnimation);
@@ -417,7 +417,8 @@ function renderSettings(){
    html='<h3>Choose your edition</h3><div class="orbit-settings-buttons">'+
     themeNames.map(([id,name])=>'<button type="button" data-orbit-settings-action="theme:'+id+'" aria-pressed="'+(launcherTheme===id)+'">'+esc(name)+'</button>').join("")+
     '</div><p>All launcher themes and their settings remain available.</p>'+
-    settingsButton("All theme options","theme-dialog");
+    settingsButton("All theme options","theme-dialog")+
+    settingsButton("20 free icon packs","icon-packs");
    break;
   }
   case "wallpaper":
@@ -521,6 +522,7 @@ q("orbitSettingsContent").addEventListener("click",e=>{
  else if(action==="make-default"){closeSettings();q("launcherMakeDefault")?.click()}
  else if(action==="advanced"){closeSettings();q("launcherSettingsToggle")?.click()}
  else if(action==="files"){closeSettings();window.audioDeskOpenRadialFiles?.()}
+ else if(action==="icon-packs"){closeSettings();window.audioDeskIconStudio?.open?.()}
 });
 quickPanel.addEventListener("click",e=>{
  const target=e.target.closest("[data-orbit-quick]");if(!target)return;
@@ -679,9 +681,7 @@ function drawRecents(offset=offsets.recents){
  // The Android launcher scan provides package names, not image bytes.
  // Reuse the device-local icon provider used by Audio Desk's app drawer.
  const pkg=String(app.pkg||"");
- const theme=window.audioDeskIconStudio?.mode?.()==="original"?"original":"orbit";
- const iconUrl=/^[A-Za-z0-9_.]{4,180}$/.test(pkg)?
-  "/app-icons/"+theme+"/"+encodeURIComponent(pkg)+".png":"";
+ const iconUrl=iconSource(app);
  const fallback=txt(trunc(app.label,2).toUpperCase(),5,12);
  const icon=fallback+(iconUrl?'<image href="'+iconUrl+'" x="-15" y="-15" width="30" height="30" preserveAspectRatio="xMidYMid meet" class="orbit-app-icon"/>':"");
  h+=g(147,a,'<circle r="19" class="orbit-raised"/>'+icon,button("recent:"+k,"Open "+app.label),false)}
@@ -834,6 +834,8 @@ svg.addEventListener("click",e=>{
 svg.addEventListener("keydown",e=>{const t=e.target.closest("[data-orbit-action]");if(!t)return;if(e.key==="Enter"||e.key===" "){e.preventDefault();if(t.getAttribute("aria-disabled")!=="true")action(t.dataset.orbitAction)}else if(t.dataset.orbitAction==="seek"&&["ArrowLeft","ArrowRight"].includes(e.key)){e.preventDefault();window.AudioDesk?.seekMedia?.(Math.max(0,Math.min(media.durationMs,media.positionMs+(e.key==="ArrowLeft"?-5000:5000))))}});
 for(const type of ["touchstart","touchmove","touchend","touchcancel"])host.addEventListener(type,e=>e.stopPropagation(),{passive:true});
 for(const type of ["audio-desk-theme-changed","launcher-page-changed","audio-desk-foreground"])window.addEventListener(type,sync);
+// Icon Studio reuses the exact same native pack URL for radial app icons.
+window.audioDeskOrbitRedrawIcons=()=>{if(active()){drawRecents();drawExternalWidgets()}};
 sync();
 saveOrbitPreferences();
 })();
