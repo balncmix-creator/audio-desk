@@ -31,6 +31,7 @@ function syncWallpaperMotion(){
   saver?"Low-power mode keeps the wallpaper still. Choose an animation manually to enable it.":
   effect==="none"?"Static wallpaper. Choose an effect to animate it.":"Live "+effect+" effect · pauses when Home is hidden.";
 }
+window.audioDeskSyncWallpaperStatus=syncWallpaperMotion;
 window.launcherWallpaperActive=function(active){nativeWallpaperActive=active;syncWallpaperMotion()};
 document.addEventListener("visibilitychange",syncWallpaperMotion);
 window.addEventListener("launcher-page-changed",syncWallpaperMotion);
