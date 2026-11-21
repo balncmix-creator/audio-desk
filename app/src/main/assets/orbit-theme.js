@@ -28,6 +28,7 @@ const button=(action,label,disabled=false)=>'role="button" tabindex="'+(disabled
 const path=(d,cls,more="")=>'<path d="'+d+'" class="'+cls+'" '+more+'/>';
 const trunc=(s,n)=>Array.from(String(s||"")).slice(0,n).join("")+(Array.from(String(s||"")).length>n?"…":"");
 const letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ#".split("");
+const pointerAngle=45; // fixed poker-dial indicator, independent of each ring
 const widgets=["music","calendar","news"];
 let indices={letters:0,recents:0,widgets:0},drag=null,suppressNativeClickUntil=0;
 // Each dial has a continuously changing angle; the other dials stay still.
@@ -112,13 +113,19 @@ function currentRecents(){
 }
 function drawLetters(offset=offsets.letters){
  let h=path(ring(108,64),"orbit-raised");
- for(let i=-2;i<10;i++){const l=letters[wrap(indices.letters+i,letters.length)],a=(i+.5)*11.25+offset;
- if(a< -10||a>100)continue;h+=g(86,a,'<rect x="-9" y="-20" width="18" height="40" rx="5" fill="transparent"/>'+txt(l,4,12),button("letter:"+l,"Browse apps beginning with "+l),false)}
+ for(let i=-5;i<=5;i++){const l=letters[wrap(indices.letters+i,letters.length)],a=pointerAngle+i*11.25+offset;
+ if(a< -10||a>100)continue;
+ const atPointer=Math.abs(a-pointerAngle)<5.625;
+ h+=g(86,a,'<rect x="-9" y="-20" width="18" height="40" rx="5" fill="transparent"/>'+(atPointer?'<circle r="11" class="orbit-accent"/>':"")+txt(l,4,12,atPointer?"orbit-ink":""),button("letter:"+l,"Browse apps beginning with "+l),false);
+ }
+ // A fixed triangle marks the selected letter while the alphabet rotates.
+ h+='<path d="M'+p(102,pointerAngle)+' L'+p(115,pointerAngle-2.6)+' L'+p(115,pointerAngle+2.6)+' Z" class="orbit-accent" id="orbitAlphabetPointer"/>';
  q("orbitLetters").innerHTML=h;
+ if(popupVisible)refreshPopup();
 }
 function drawRecents(offset=offsets.recents){
  let h=path(ring(178,112),"orbit-ring");
- if(!recentList.length){h+=g(145,45,txt("Recent apps",1,13)+txt("Open an app to begin",15,9,"orbit-muted"));q("orbitRecents").innerHTML=h;return}
+ if(!recentList.length){h+=g(145,45,txt("↺",6,22,"orbit-muted"));q("orbitRecents").innerHTML=h;return}
  const count=Math.min(5,recentList.length),step=90/count;
  for(let i=-2;i<count+2;i++){const k=wrap(indices.recents+i,recentList.length),a=(i+.5)*step+offset;if(a< -15||a>105)continue;
  const app=recentList[k];
@@ -130,7 +137,7 @@ function drawRecents(offset=offsets.recents){
   "/app-icons/"+theme+"/"+encodeURIComponent(pkg)+".png":"";
  const fallback=txt(trunc(app.label,2).toUpperCase(),5,12);
  const icon=fallback+(iconUrl?'<image href="'+iconUrl+'" x="-15" y="-15" width="30" height="30" preserveAspectRatio="xMidYMid meet" class="orbit-app-icon"/>':"");
- h+=g(147,a,'<circle r="19" class="orbit-raised"/>'+icon+txt(trunc(app.label,8),30,8),button("recent:"+k,"Open "+app.label),false)}
+ h+=g(147,a,'<circle r="19" class="orbit-raised"/>'+icon,button("recent:"+k,"Open "+app.label),false)}
  q("orbitRecents").innerHTML=h;
 }
 function music(a){
@@ -172,8 +179,8 @@ function drawWidgets(offset=offsets.widgets){
  q("orbitWidgets").innerHTML=h;
 }
 function drawSearch(){q("orbitSearch").innerHTML='<g '+button("search","Search installed apps")+'><path d="'+arc(60,0,90)+' L0,0 Z" class="orbit-raised"/><circle cx="-28" cy="-30" r="9" fill="none" stroke="var(--theme-text,#e5f0e7)" stroke-width="2.5"/><path d="M-21.5,-23.5 L-14,-16" fill="none" stroke="var(--theme-text,#e5f0e7)" stroke-width="2.5" stroke-linecap="round"/></g>'}
-function draw(){if(!active())return;host.hidden=false;recentList=currentRecents();drawClock();drawWidgets();drawRecents();drawLetters();drawSearch()}
-function sync(){stopAllSpins();host.hidden=!active();drag=null;if(active())draw()}
+function draw(){if(!active())return;host.hidden=false;recentList=currentRecents();drawClock();drawWidgets();drawRecents();drawLetters();drawSearch();if(popupVisible)refreshPopup()}
+function sync(){stopAllSpins();hidePopup();host.hidden=!active();drag=null;if(active())draw()}
 const oldHome=renderLauncherHome;
 renderLauncherHome=function(){oldHome();if(active()&&!drag)draw()};
 const oldClock=formatLauncherClock;formatLauncherClock=function(){oldClock();drawClock()};
@@ -182,7 +189,7 @@ const oldMedia=window.receiveAudioDeskMedia;window.receiveAudioDeskMedia=functio
 function action(code){
  if(!code)return;
  if(code==="search")openLauncherSearch();
- else if(code.startsWith("letter:"))showLauncherLetter(code.slice(7));
+ else if(code.startsWith("letter:"))selectLetter(code.slice(7));
  else if(code.startsWith("recent:")){const app=recentList[Number(code.slice(7))];if(app)window.AudioDesk?.launchExternalApp?.(app.pkg,app.activity)}
  else if(code.startsWith("media:")){window.AudioDesk?.mediaCommand?.(code.slice(6))}
  else if(code==="connect")window.AudioDesk?.requestMediaAccess?.();
@@ -204,6 +211,7 @@ svg.addEventListener("pointerdown",e=>{
  const which=loc.r>=182&&loc.r<=266?"widgets":loc.r>=112&&loc.r<=178?"recents":loc.r>=64&&loc.r<=108?"letters":null;
  if(!which&&!code)return;
  if(which)stopSpin(which);
+ if(which==="letters")showPopup();
  const t=performance.now();
  drag={id:e.pointerId,which,lastAngle:loc.a,code,
   disabled:target?.getAttribute("aria-disabled")==="true",
