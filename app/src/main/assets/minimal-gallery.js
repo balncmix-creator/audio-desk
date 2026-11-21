@@ -1,145 +1,246 @@
-/* Audio Desk Minimal Gallery: 180 original SVG wallpapers, generated on demand.
-   15 original compositions x 12 original color palettes, offline and resolution-independent. */
+/* Audio Desk Studio Wallpapers — a curated gallery of 42 original designs.
+   Offline, vector-sharp, with four previews per page. No scraped, copyrighted packs. */
 (()=>{
 "use strict";
 const byId=id=>document.getElementById(id);
 const stage=byId("wallpaperStage"),dialog=byId("launcherWallpaperDialog");
 if(!stage||!dialog)return;
-const palettes=[
-["obsidian","Obsidian","#0a1011","#243235","#b4d0c4",false],
-["graphite","Graphite","#181b20","#444d57","#c0c8d2",false],
-["ivory","Ivory","#f2ede4","#d8d0c2","#59626c",true],
-["sand","Warm Sand","#ead7bd","#cdb49b","#816958",true],
-["rose","Muted Rose","#e8d7d9","#be9eac","#855b68",true],
-["sage","Soft Sage","#d9e4d8","#9db6a8","#557b6c",true],
-["forest","Forest","#0d1c18","#24483c","#a2d5b2",false],
-["navy","Midnight Blue","#0a1627","#223e60","#7cb4ed",false],
-["indigo","Indigo","#151b36","#434b80","#b0b9f5",false],
-["copper","Copper","#2b1c1b","#754638","#efbc85",false],
-["teal","Sea Glass","#102c31","#2b6771","#91d7d6",false],
-["lavender","Lavender","#e0dbe9","#a89ac4","#655a89",true]];
-const patterns=[
-["Still Horizon","Nature","horizon"],["Silent Monolith","Geometric","monolith"],
-["Concentric Calm","Geometric","rings"],["Infinite Arc","Geometric","arcs"],
-["Volume Study","Audio","bars"],["Slow Frequency","Audio","frequency"],
-["Dune Layers","Nature","dunes"],["Quiet Staircase","Geometric","steps"],
-["Orbital Study","Geometric","orbits"],["Star Field","Nature","stars"],
-["Pixel Valley","Pixel","pixels"],["Gentle Strata","Nature","strata"],
-["Prism Silence","Geometric","prism"],["Moonrise","Nature","moon"],
-["Grid Garden","Pixel","grid"]];
-const artworks=patterns.flatMap((pattern,i)=>palettes.map((palette,j)=>({
-id:"mg-"+pattern[2]+"-"+palette[0],name:pattern[0]+" · "+palette[1],
-pattern:pattern[2],category:pattern[1],palette,light:palette[5],sort:i*12+j
-})));
-const enc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
-const n=x=>Number(x).toFixed(1);
-const key=theme=>"ad_minimal_gallery_v1_"+theme;
-const find=id=>artworks.find(a=>a.id===id);
-function illustration(x){
- const k=x.pattern,base=x.palette[2],mid=x.palette[3],accent=x.palette[4];
- let v="";
- if(k==="horizon")v='<circle cx="540" cy="1040" r="280" fill="'+accent+'" opacity=".17"/><path d="M0 1075H1080" stroke="'+accent+'" stroke-width="3" opacity=".5"/><path d="M0 1078H1080V1920H0Z" fill="'+mid+'" opacity=".4"/><circle cx="520" cy="1070" r="140" fill="'+accent+'" opacity=".28"/>';
- else if(k==="monolith")v='<path d="M310 370L705 300L750 1710L275 1740Z" fill="'+mid+'" opacity=".48"/><path d="M550 350L705 300L750 1710L595 1700Z" fill="'+accent+'" opacity=".16"/>';
- else if(k==="rings")for(let i=0;i<18;i++)v+='<circle cx="725" cy="970" r="'+(100+i*34)+'" fill="none" stroke="'+accent+'" stroke-width="'+(i%4?1.5:4)+'" opacity="'+n(.09+.017*(i%6))+'"/>';
- else if(k==="arcs")for(let i=0;i<18;i++)v+='<path d="M'+(-115-i*8)+' '+(1100+i*16)+' A'+(620+i*26)+' '+(620+i*26)+' 0 0 1 '+(1100+i*8)+' '+(315+i*5)+'" fill="none" stroke="'+accent+'" stroke-width="'+(i%5?2:5)+'" opacity="'+n(.12+.013*(i%5))+'"/>';
- else if(k==="bars")for(let i=0;i<44;i++){const h=36+220*Math.abs(Math.sin(i*.47)*Math.cos(i*.16))+170*Math.exp(-Math.pow((i-24)/11,2));v+='<rect x="'+n(i*25.5-7)+'" y="'+n(1130-h/2)+'" width="10" height="'+n(h)+'" rx="4" fill="'+accent+'" opacity="'+n(.15+.42*Math.abs(Math.sin(i*.13)))+'"/>'}
- else if(k==="frequency")for(let j=0;j<22;j++){let d="";for(let i=-40;i<=1120;i+=24){const y=1070+Math.sin(i*.009+j*.16)*95+Math.cos(i*.004+j*.22)*105+(j-11)*13;d+=(i===-40?"M":"L")+i+","+n(y)+" "}v+='<path d="'+d+'" stroke="'+accent+'" stroke-width="'+(j===11?3:1.6)+'" opacity="'+n(.08+.32*(1-Math.abs(j-11)/11))+'" fill="none"/>'}
- else if(k==="dunes")for(let j=0;j<8;j++){const y=950+j*115;v+='<path d="M-90 '+n(y+130)+'Q260 '+n(y-240)+' 580 '+n(y+45)+'T1180 '+n(y-70)+'L1180 2000H-90Z" fill="'+(j%2?mid:accent)+'" opacity="'+n(.07+j*.024)+'"/>'}
- else if(k==="steps")for(let j=0;j<10;j++)v+='<rect x="'+(115+j*61)+'" y="'+(470+j*99)+'" width="'+(800-j*67)+'" height="'+(1300-j*80)+'" rx="2" fill="none" stroke="'+accent+'" stroke-width="'+(j%3?2:5)+'" opacity="'+n(.11+j*.016)+'"/>';
- else if(k==="orbits"){for(let j=0;j<13;j++)v+='<ellipse cx="620" cy="980" rx="'+(190+j*28)+'" ry="'+(80+j*20)+'" transform="rotate('+(j*15)+' 620 980)" fill="none" stroke="'+accent+'" stroke-width="2" opacity="'+n(.12+.013*j)+'"/>';v+='<circle cx="620" cy="980" r="85" fill="'+accent+'" opacity=".20"/>'}
- else if(k==="stars"){for(let j=0;j<132;j++)v+='<circle cx="'+n((j*317.71+79)%1080)+'" cy="'+n((j*557.17+143)%1920)+'" r="'+(j%19===0?3.6:1.4)+'" fill="'+accent+'" opacity="'+n(.12+((j*11)%19)*.022)+'"/>';v+='<circle cx="740" cy="490" r="165" fill="none" stroke="'+accent+'" opacity=".22" stroke-width="2"/>'}
- else if(k==="pixels")for(let j=0;j<35;j++)for(let m=0;m<16;m++){if(m<Math.sin(j*.31)*3+Math.cos(j*.17)*3+7)continue;v+='<rect x="'+(j*34-4)+'" y="'+(1120+m*35)+'" width="32" height="33" fill="'+(m%3?mid:accent)+'" opacity="'+n(.09+.019*m)+'"/>'}
- else if(k==="strata")for(let j=0;j<24;j++){const y=690+j*33;v+='<path d="M-20 '+n(y)+'Q250 '+n(y+Math.sin(j*.57)*160)+' 580 '+n(y-80*Math.cos(j*.46))+'T1100 '+n(y+Math.cos(j*.31)*90)+'" fill="none" stroke="'+accent+'" stroke-width="'+(j%6?1.4:4)+'" opacity="'+n(.10+.012*j)+'"/>'}
- else if(k==="prism")v='<path d="M540 235L980 1060L520 1620L120 1110Z" fill="'+mid+'" opacity=".43"/><path d="M540 235L980 1060L520 1620Z" fill="'+accent+'" opacity=".19"/><path d="M540 235L520 1620L120 1110Z" fill="none" stroke="'+accent+'" opacity=".45" stroke-width="4"/>';
- else if(k==="moon")v='<circle cx="660" cy="650" r="215" fill="'+accent+'" opacity=".46"/><circle cx="750" cy="572" r="217" fill="'+base+'"/><path d="M0 1400Q400 1250 1080 1400V1920H0Z" fill="'+mid+'" opacity=".43"/>';
- else if(k==="grid"){for(let j=0;j<22;j++)v+='<path d="M'+(j*55-20)+' 160V1810M0 '+(j*76+160)+'H1080" stroke="'+accent+'" stroke-width="1.5" opacity=".17"/>';v+='<rect x="310" y="675" width="460" height="460" rx="8" fill="'+mid+'" opacity=".32"/><circle cx="540" cy="905" r="146" fill="none" stroke="'+accent+'" opacity=".42" stroke-width="5"/>'}
- return v;
+const P=[
+ // Each palette has its own intentional mood, not a uniform 12-color recolor grid.
+ ["Night Fog","Gradient","#0c1322","#243553","#8caacb",false],
+ ["Porcelain Air","Gradient","#eef1f0","#c4d1d7","#97acc9",true],
+ ["Moss Haze","Gradient","#101c19","#356356","#8eb49f",false],
+ ["Solar Silk","Gradient","#eee4d7","#d7a9a6","#b77c66",true],
+ ["Digital Dusk","Gradient","#15152e","#594c83","#a997c9",false],
+ ["Sea Glass","Gradient","#d6eee8","#8fbebc","#467e94",true],
+ ["Satin Chrome","Sculpture","#18212c","#607285","#c1d2d8",false],
+ ["Alabaster","Sculpture","#edeae2","#c6c4c0","#919da8",true],
+ ["Soft Titanium","Sculpture","#373640","#797d85","#d6c7c7",false],
+ ["Bronze Fold","Sculpture","#211b23","#8d625e","#cfaaa0",false],
+ ["Glacial Curve","Sculpture","#ccd9e4","#83a5ba","#f4fafc",true],
+ ["Lime Glass","Sculpture","#142421","#547e66","#a3c0aa",false],
+ ["Afterglow","Atmosphere","#1a1c38","#805e8e","#d9a5ae",false],
+ ["Blue Hour","Atmosphere","#0b2035","#375c7c","#9ac2cd",false],
+ ["Warm Silence","Atmosphere","#ece0d0","#c8a68a","#eacdb4",true],
+ ["Coastal Mist","Atmosphere","#dbe4e4","#9ab2b3","#678d91",true],
+ ["Copper Dusk","Atmosphere","#25212b","#79565a","#c88e7a",false],
+ ["Quiet Valley","Atmosphere","#1c2a26","#526d5e","#c0bea2",false],
+ ["Arc Study","Geometry","#171c27","#444b5d","#cad4de",false],
+ ["Sand Forms","Geometry","#e6dfd3","#c7b4a7","#8e817e",true],
+ ["Concrete","Geometry","#d7d7d5","#9da5a6","#5c6970",true],
+ ["Midnight Frames","Geometry","#15171e","#363f4e","#7391b9",false],
+ ["Clay Geometry","Geometry","#e1d4ca","#bd9b8e","#735d61",true],
+ ["Slate Lines","Geometry","#202d31","#4d6469","#c0d3ca",false],
+ ["Deep Current","AMOLED","#030608","#081723","#2f9cb5",false],
+ ["Black Pearl","AMOLED","#030405","#131923","#8894b6",false],
+ ["Moon Ink","AMOLED","#020409","#18242e","#b7c6cd",false],
+ ["Neon Olive","AMOLED","#040708","#122019","#85b58f",false],
+ ["Burnt Neon","AMOLED","#060304","#241216","#d07170",false],
+ ["Nocturne","AMOLED","#05070f","#181e35","#8582d6",false],
+ ["Petal","Soft Color","#f0e4e6","#dbbfc7","#ba97af",true],
+ ["Iced Lavender","Soft Color","#e8e9f0","#c5c9e5","#9799cb",true],
+ ["Pistachio","Soft Color","#e9efe4","#becfbd","#82a79c",true],
+ ["Peach Halo","Soft Color","#f3e6da","#e1bbaa","#c28c7c",true],
+ ["Cloud Blue","Soft Color","#e0e9f0","#b6c9db","#799ab8",true],
+ ["Apricot","Soft Color","#f5e7d6","#d5b5a5","#bd927d",true],
+ ["Signal One","Audio","#0b181b","#1f4350","#83c6b5",false],
+ ["Oscillation","Audio","#151924","#323d5c","#8da1e0",false],
+ ["Pulse","Audio","#141820","#39454e","#a4c5bb",false],
+ ["Soundfield","Audio","#dce6e1","#a3b7ad","#527e78",true],
+ ["Resonance","Audio","#1a1a24","#57465c","#c7a9bd",false],
+ ["Quiet Note","Audio","#eeeae3","#c8c9c1","#778c88",true]
+];
+const works=P.map((p,i)=>({id:"mg-studio-"+String(i+1).padStart(2,"0"),name:p[0],
+category:p[1],bg:p[2],mid:p[3],accent:p[4],light:p[5],variant:i%6,index:i}));
+const groups=["Featured","Gradient","Sculpture","Atmosphere","Geometry","AMOLED","Soft Color","Audio"];
+const favoriteOrder=[6,0,24,31,9,12,18,36,29,5,13,33];
+const featured=favoriteOrder.map(i=>works[i]);
+const storageKey=theme=>"ad_minimal_gallery_v1_"+theme;
+const encode=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+const find=id=>works.find(x=>x.id===id);
+const fmt=n=>Number(n).toFixed(1);
+function composition(w){
+ const a=w.accent,b=w.mid,k=w.variant,t=w.category;
+ const stroke='stroke="'+a+'" fill="none"';
+ if(t==="Gradient"){
+  const pos=[[960,550],[180,800],[775,1420],[100,360],[700,510],[350,1500]][k];
+  return '<ellipse cx="'+pos[0]+'" cy="'+pos[1]+'" rx="650" ry="920" fill="url(#glow)" opacity=".9"/>'+
+   '<ellipse cx="'+(1040-pos[0]/2)+'" cy="'+(1700-pos[1]/3)+'" rx="650" ry="690" fill="url(#glow2)" opacity=".85"/>'+
+   (k%2?'<path d="M-120 1370 Q560 1070 1200 1600" '+stroke+' stroke-width="2" opacity=".11"/>':'');
+ }
+ if(t==="Sculpture"){
+  if(k===0)return '<path d="M90 550 C380 215 970 400 910 730 S450 940 310 1290 S480 1760 1000 1460" fill="none" stroke="url(#metal)" stroke-width="190" stroke-linecap="round" opacity=".90"/>'+
+   '<path d="M90 550 C380 215 970 400 910 730 S450 940 310 1290 S480 1760 1000 1460" fill="none" stroke="'+a+'" stroke-width="2" opacity=".58"/>';
+  if(k===1)return '<path d="M155 410Q390 205 810 370L900 1380Q670 1660 190 1470Z" fill="url(#metal)"/><path d="M155 410Q530 620 810 370" fill="none" stroke="'+a+'" stroke-width="5" opacity=".27"/>';
+  if(k===2)return '<ellipse cx="550" cy="950" rx="355" ry="480" transform="rotate(-22 550 950)" fill="url(#orb)" opacity=".85"/><path d="M250 1100Q530 1450 890 880" '+stroke+' stroke-width="4" opacity=".45"/>';
+  if(k===3)return '<path d="M200 270C730 220 1050 730 760 1010S450 1450 920 1730" fill="none" stroke="url(#metal)" stroke-width="210" stroke-linecap="round"/><path d="M210 270C730 220 1050 730 760 1010S450 1450 920 1730" fill="none" stroke="'+a+'" stroke-width="3" opacity=".32"/>';
+  if(k===4)return '<path d="M230 350A360 360 0 0 1 950 350V1410A360 360 0 0 1 230 1410Z" fill="url(#metal)" opacity=".87"/><path d="M350 540A245 245 0 0 1 840 540V1250A245 245 0 0 1 350 1250Z" fill="'+w.bg+'" opacity=".42"/>';
+  return '<ellipse cx="590" cy="1010" rx="375" ry="375" fill="url(#orb)"/><ellipse cx="590" cy="1010" rx="410" ry="140" transform="rotate(-31 590 1010)" '+stroke+' stroke-width="5" opacity=".48"/>';
+ }
+ if(t==="Atmosphere"){
+  const height=[900,1130,1100,820,1300,1030][k];
+  return '<ellipse cx="'+(410+k*85)+'" cy="'+(height-110)+'" rx="570" ry="630" fill="url(#glow)" opacity=".69"/>'+
+   '<path d="M0 '+height+' Q420 '+(height-95-k*18)+' 1080 '+(height+40)+'V1920H0Z" fill="'+b+'" opacity=".37"/>'+
+   '<path d="M0 '+(height+240)+' Q560 '+(height+60)+' 1080 '+(height+210)+'V1920H0Z" fill="'+a+'" opacity=".17"/>'+
+   (k%2===0?'<circle cx="'+(780-k*33)+'" cy="'+(height-225)+'" r="90" fill="url(#orb)" opacity=".46"/>':'');
+ }
+ if(t==="Geometry"){
+  if(k===0)return '<path d="M-120 1120A710 710 0 0 1 1300 1120" '+stroke+' stroke-width="6" opacity=".45"/><path d="M-50 1120A640 640 0 0 1 1230 1120" '+stroke+' stroke-width="2" opacity=".32"/><path d="M160 1350L900 1350" '+stroke+' stroke-width="3" opacity=".45"/>';
+  if(k===1)return '<rect x="215" y="410" width="650" height="1140" rx="300" fill="url(#metal)" opacity=".6"/><rect x="305" y="520" width="470" height="940" rx="235" fill="'+w.bg+'" opacity=".55"/>';
+  if(k===2)return '<path d="M135 250L950 500L720 1600L55 1300Z" fill="url(#metal)" opacity=".68"/><path d="M135 250L720 1600L55 1300Z" fill="'+b+'" opacity=".27"/>';
+  if(k===3)return Array.from({length:5},(_,i)=>'<rect x="'+(70+i*44)+'" y="'+(290+i*83)+'" width="'+(900-i*88)+'" height="'+(1220-i*158)+'" rx="42" '+stroke+' stroke-width="'+(i===0?4:2)+'" opacity="'+fmt(.41-i*.045)+'"/>').join("");
+  if(k===4)return '<circle cx="540" cy="930" r="365" fill="url(#orb)" opacity=".55"/><path d="M0 940H1080M540 230V1670" '+stroke+' stroke-width="2" opacity=".37"/>';
+  return Array.from({length:7},(_,i)=>'<path d="M'+(135+i*110)+' 350V1530" '+stroke+' stroke-width="'+(i===3?6:2)+'" opacity="'+fmt(.18+i*.026)+'"/>').join("");
+ }
+ if(t==="AMOLED"){
+  if(k===0)return '<path d="M-180 1400Q420 240 1210 1040" fill="none" stroke="url(#metal)" stroke-width="92" opacity=".86"/>';
+  if(k===1)return '<ellipse cx="620" cy="970" rx="255" ry="330" fill="url(#orb)" opacity=".69"/>';
+  if(k===2)return '<circle cx="555" cy="1030" r="315" fill="'+w.bg+'"/><circle cx="555" cy="1030" r="310" '+stroke+' stroke-width="6" opacity=".77"/><circle cx="555" cy="1030" r="355" '+stroke+' stroke-width="1" opacity=".30"/>';
+  if(k===3)return '<path d="M0 1250Q390 650 1150 1080" '+stroke+' stroke-width="17" opacity=".65"/><path d="M0 1320Q390 720 1150 1150" '+stroke+' stroke-width="2" opacity=".25"/>';
+  if(k===4)return '<path d="M220 1410Q320 350 850 610Q1120 840 680 1400Z" fill="url(#metal)" opacity=".51"/>';
+  return '<ellipse cx="520" cy="1020" rx="255" ry="460" transform="rotate(34 520 1020)" fill="none" stroke="url(#metal)" stroke-width="42" opacity=".81"/>';
+ }
+ if(t==="Soft Color"){
+  if(k===0)return '<ellipse cx="830" cy="800" rx="470" ry="630" fill="url(#glow)" opacity=".95"/><path d="M140 1390Q480 620 1030 1190" '+stroke+' stroke-width="2" opacity=".18"/>';
+  if(k===1)return '<ellipse cx="250" cy="680" rx="530" ry="650" fill="url(#glow)" opacity=".85"/><ellipse cx="890" cy="1240" rx="540" ry="690" fill="url(#glow2)" opacity=".80"/>';
+  if(k===2)return '<circle cx="700" cy="900" r="385" fill="url(#orb)" opacity=".64"/><circle cx="700" cy="900" r="420" '+stroke+' stroke-width="1" opacity=".12"/>';
+  if(k===3)return '<path d="M-120 860Q350 540 810 800T1180 1160" stroke="url(#metal)" stroke-width="300" opacity=".45" fill="none"/>';
+  if(k===4)return '<path d="M0 480Q520 820 1080 480V1920H0Z" fill="'+b+'" opacity=".20"/><ellipse cx="555" cy="780" rx="630" ry="670" fill="url(#glow)" opacity=".85"/>';
+  return '<circle cx="540" cy="940" r="330" fill="url(#orb)" opacity=".58"/><ellipse cx="540" cy="940" rx="465" ry="465" fill="none" stroke="'+a+'" opacity=".16" stroke-width="2"/>';
+ }
+ // Audio: graphic restraint with very thin, precise signal curves.
+ if(k===0)return '<path d="M-80 1090C270 1090 280 830 490 830S730 1370 940 1100S1130 1050 1240 1050" '+stroke+' stroke-width="5" opacity=".65"/>';
+ if(k===1)return Array.from({length:9},(_,i)=>{
+ const y=710+i*63;return '<path d="M-30 '+y+'Q300 '+(y-130*Math.sin(i*.6))+' 570 '+y+'T1140 '+(y+60*Math.cos(i*.5))+'" '+stroke+' stroke-width="'+(i===4?4:1.5)+'" opacity="'+fmt(.10+(i===4?.4:i*.018))+'"/>';
+ }).join("");
+ if(k===2)return Array.from({length:25},(_,i)=>{
+ const v=Math.abs(Math.sin(i*.47)*Math.cos(i*.15));
+ return '<rect x="'+(i*44+10)+'" y="'+fmt(1060-v*265)+'" width="5" height="'+fmt(v*530)+'" rx="2.5" fill="'+a+'" opacity="'+fmt(.18+v*.43)+'"/>';
+ }).join("");
+ if(k===3)return '<circle cx="560" cy="990" r="180" '+stroke+' stroke-width="3" opacity=".38"/><circle cx="560" cy="990" r="290" '+stroke+' stroke-width="2" opacity=".25"/><circle cx="560" cy="990" r="400" '+stroke+' stroke-width="1" opacity=".16"/>';
+ if(k===4)return '<path d="M-20 970Q300 910 400 1030T720 1030T1100 930" '+stroke+' stroke-width="3" opacity=".68"/><ellipse cx="520" cy="960" rx="280" ry="430" fill="url(#glow)" opacity=".3"/>';
+ return '<path d="M-40 1110H400Q520 1110 535 975Q550 1110 700 1110H1120" '+stroke+' stroke-width="4" opacity=".48"/>';
 }
-function svg(x){
- const p=x.palette;
- return '<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">'+
- '<defs><linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop stop-color="'+p[2]+'"/><stop offset=".64" stop-color="'+p[3]+'"/><stop offset="1" stop-color="'+p[2]+'"/></linearGradient><radialGradient id="g"><stop stop-color="'+p[4]+'" stop-opacity=".12"/><stop offset="1" stop-color="'+p[4]+'" stop-opacity="0"/></radialGradient></defs>'+
- '<rect width="1080" height="1920" fill="url(#b)"/><ellipse cx="800" cy="840" rx="720" ry="840" fill="url(#g)"/>'+illustration(x)+'</svg>';
+function svg(w){
+ const bg=w.bg,mid=w.mid,a=w.accent;
+ return '<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="2560" viewBox="0 0 1080 1920">'+
+ '<defs><linearGradient id="base" x1="0" y1="0" x2="1" y2="1"><stop stop-color="'+bg+'"/><stop offset=".56" stop-color="'+mid+'"/><stop offset="1" stop-color="'+bg+'"/></linearGradient>'+
+ '<radialGradient id="glow"><stop stop-color="'+a+'" stop-opacity=".7"/><stop offset=".53" stop-color="'+a+'" stop-opacity=".26"/><stop offset="1" stop-color="'+a+'" stop-opacity="0"/></radialGradient>'+
+ '<radialGradient id="glow2"><stop stop-color="'+mid+'" stop-opacity=".74"/><stop offset="1" stop-color="'+mid+'" stop-opacity="0"/></radialGradient>'+
+ '<linearGradient id="metal" x1="0" y1="0" x2=".95" y2="1"><stop stop-color="'+bg+'"/><stop offset=".28" stop-color="'+a+'"/><stop offset=".51" stop-color="'+mid+'"/><stop offset=".74" stop-color="'+a+'"/><stop offset="1" stop-color="'+bg+'"/></linearGradient>'+
+ '<radialGradient id="orb" cx=".32" cy=".23" r=".85"><stop stop-color="#fff" stop-opacity=".8"/><stop offset=".18" stop-color="'+a+'" stop-opacity=".85"/><stop offset=".65" stop-color="'+mid+'"/><stop offset="1" stop-color="'+bg+'"/></radialGradient></defs>'+
+ '<rect width="1080" height="1920" fill="url(#base)"/>'+composition(w)+'</svg>';
 }
-const src=x=>"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg(x));
-const image=document.createElement("img");image.id="minimalGalleryWallpaperImage";image.alt="";image.decoding="async";image.setAttribute("aria-hidden","true");image.hidden=true;stage.append(image);
+const src=w=>"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg(w));
+const image=document.createElement("img");
+image.id="minimalGalleryWallpaperImage";image.alt="";image.decoding="async";
+image.setAttribute("aria-hidden","true");image.hidden=true;stage.append(image);
 const css=document.createElement("style");css.textContent=
  '#minimalGalleryWallpaperImage[hidden]{display:none!important}#minimalGalleryWallpaperImage{position:absolute;z-index:4;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}'+
  'body[data-minimal-wallpaper] #wallpaperStage .wallpaper-image{opacity:0!important}body[data-minimal-wallpaper] #wallpaperStage::after{background:transparent!important}body[data-minimal-wallpaper] #wallpaperEffect,body[data-minimal-wallpaper] #audioArtworkImage{display:none!important}'+
- '#minimalGalleryGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0}.minimal-gallery-entry{display:flex;flex-direction:column;gap:6px;min-width:0;padding:6px!important;border:2px solid var(--ds-line,#444)!important;border-radius:var(--ds-radius,12px)!important;background:var(--ds-panel2,#252a28)!important;color:var(--ds-text,#fff)!important;font:500 11px/1.2 system-ui,sans-serif!important;box-shadow:none!important;text-align:left!important}'+
- '.minimal-gallery-entry img{display:block;width:100%;height:140px;object-fit:cover;border-radius:8px;background:#29322b}.minimal-gallery-entry span{padding:0 2px 2px}.minimal-gallery-entry[aria-pressed="true"]{border-color:var(--ds-accent,#b9dec0)!important;outline:1px solid var(--ds-accent,#b9dec0)}'+
- '#minimalGalleryFilters{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 10px}#minimalGalleryFilters button,#minimalGalleryMore{font:500 11px system-ui,sans-serif;color:var(--ds-text,#fff);padding:9px 11px;border:1px solid var(--ds-line,#657063);border-radius:9px;background:var(--ds-panel2,#333)}#minimalGalleryFilters button[aria-pressed="true"]{border-color:var(--ds-accent,#b9dec0);font-weight:700}#minimalGalleryMore{width:100%;margin:5px 0 15px}#minimalGalleryCount{font-size:11px;opacity:.78}';document.head.append(css);
-const heading=document.createElement("div");heading.className="theme-wallpaper-heading";heading.innerHTML='<strong>Minimal Gallery · 180 wallpapers</strong><small>Original, offline, high-resolution vectors</small>';
-const filters=document.createElement("div");filters.id="minimalGalleryFilters";filters.setAttribute("aria-label","Wallpaper collection filters");
-const counter=document.createElement("div");counter.id="minimalGalleryCount";
-const grid=document.createElement("div");grid.id="minimalGalleryGrid";grid.setAttribute("role","group");grid.setAttribute("aria-label","180 minimalist wallpapers");
-const more=document.createElement("button");more.id="minimalGalleryMore";more.type="button";more.textContent="Show more wallpapers";
-const anchor=byId("audioWallpaperGrid")||byId("wallpaperGrid");
-anchor.after(heading,filters,counter,grid,more);
-const categories=["All","Dark","Light","Geometric","Nature","Audio","Pixel"];
-let category="All",shown=12,current="";
-const filtered=()=>artworks.filter(x=>category==="All"||category==="Dark"&&!x.light||category==="Light"&&x.light||x.category===category);
+ '#minimalGalleryStudio{margin:14px 0 12px;padding:12px;border:1px solid var(--ds-line,#435448);border-radius:16px;background:var(--ds-panel,#202a25)}'+
+ '#minimalGalleryStudio h3{margin:0;font:650 15px system-ui,sans-serif;color:var(--ds-text,#f0f5f0)}#minimalGalleryStudio .studio-caption{font:11px/1.5 system-ui,sans-serif;opacity:.72;margin:5px 0 10px}'+
+ '#minimalGalleryFilters{display:flex;overflow-x:auto;scrollbar-width:none;gap:6px;padding:2px 0 10px;overscroll-behavior-x:contain}#minimalGalleryFilters::-webkit-scrollbar{display:none}'+
+ '#minimalGalleryFilters button{white-space:nowrap;flex:0 0 auto;border:1px solid var(--ds-line,#455c49);background:var(--ds-panel2,#304438);color:var(--ds-text,#fff);border-radius:99px;padding:8px 12px;font:500 11px system-ui,sans-serif}'+
+ '#minimalGalleryFilters button[aria-pressed="true"]{border-color:var(--ds-accent,#b9ddc0);background:var(--ds-accent,#b9ddc0);color:var(--ds-accent-ink,#16281b);font-weight:700}'+
+ '#minimalGalleryGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:3px 0 10px}'+
+ '#minimalGalleryGrid .minimal-gallery-entry{display:flex;flex-direction:column;gap:5px;min-width:0;padding:5px!important;border:1px solid var(--ds-line,#4d6555)!important;border-radius:11px!important;background:var(--ds-panel2,#26362e)!important;color:var(--ds-text,#fff)!important;font:500 11px system-ui,sans-serif!important;text-align:left!important;box-shadow:none!important}'+
+ '#minimalGalleryGrid img{display:block;width:100%;height:160px;object-fit:cover;object-position:center;background:#172020;border-radius:8px}'+
+ '#minimalGalleryGrid .minimal-gallery-entry span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 3px 3px}'+
+ '#minimalGalleryGrid .minimal-gallery-entry[aria-pressed="true"]{border-color:var(--ds-accent,#bedfc4)!important;box-shadow:inset 0 0 0 1px var(--ds-accent,#bedfc4)!important}'+
+ '#minimalGalleryPager{display:flex;align-items:center;gap:7px;justify-content:space-between}#minimalGalleryPager button{border:1px solid var(--ds-line,#526b57);border-radius:9px;background:var(--ds-panel2,#304438);color:var(--ds-text,#fff);padding:8px 12px;font:600 11px system-ui,sans-serif}'+
+ '#minimalGalleryPager button:disabled{opacity:.35}#minimalGalleryCount{font:11px system-ui,sans-serif;opacity:.75;text-align:center;flex:1}'+
+ '#wallpaperMoreOptions{margin:14px 0}#wallpaperMoreOptions>summary{cursor:pointer;border-radius:11px;padding:13px 12px;color:var(--ds-text,#fff);background:var(--ds-panel2,#303d34);font:600 12px system-ui,sans-serif}'+
+ '#wallpaperMoreOptions[open]{border:1px solid var(--ds-line,#536a58);padding:0 8px 10px;border-radius:12px}'+
+ '@media(max-width:350px){#minimalGalleryGrid img{height:130px}#minimalGalleryStudio{padding:9px}}';document.head.append(css);
+const studio=document.createElement("section");studio.id="minimalGalleryStudio";
+studio.innerHTML='<h3>Studio Wallpapers</h3><p class="studio-caption">42 original, modern wallpapers · sharp, offline, curated</p>';
+const filters=document.createElement("div");filters.id="minimalGalleryFilters";filters.setAttribute("role","group");filters.setAttribute("aria-label","Wallpaper collections");
+const grid=document.createElement("div");grid.id="minimalGalleryGrid";grid.setAttribute("role","group");grid.setAttribute("aria-label","Curated modern wallpapers");
+const pager=document.createElement("div");pager.id="minimalGalleryPager";
+pager.innerHTML='<button type="button" id="minimalGalleryPrev" aria-label="Previous wallpaper page">‹ Previous</button><span id="minimalGalleryCount" aria-live="polite"></span><button type="button" id="minimalGalleryNext" aria-label="Next wallpaper page">Next ›</button>';
+studio.append(filters,grid,pager);
+byId("wallpaperSystemStatus").after(studio);
+// Keep pre-existing Audio Desk wallpaper choices, but don't force a huge
+// scrolling catalogue before the curated collection.
+const more=document.createElement("details");more.id="wallpaperMoreOptions";
+more.innerHTML='<summary>More wallpaper options · Colors, audio & photos</summary>';
+const colors=byId("themePaletteGrid"),photos=byId("wallpaperGrid"),audio=byId("audioWallpaperGrid");
+const colorsTitle=colors?.previousElementSibling,photosTitle=colors?.nextElementSibling,audioTitle=audio?.previousElementSibling;
+if(colorsTitle)more.append(colorsTitle);
+if(colors)more.append(colors);
+if(photosTitle&&photosTitle!==audioTitle)more.append(photosTitle);
+if(audioTitle)more.append(audioTitle);
+if(audio)more.append(audio);
+if(photos)more.append(photos);
+studio.after(more);
+let category="Featured",page=0,current="";
+const pageSize=4;
+const list=()=>category==="Featured"?featured:works.filter(w=>w.category===category);
 function render(){
  if(dialog.hidden)return;
- filters.innerHTML=categories.map(c=>'<button type="button" data-minimal-category="'+c+'" aria-pressed="'+(c===category)+'">'+c+'</button>').join("");
- const list=filtered();counter.textContent=list.length+" wallpapers · "+Math.min(shown,list.length)+" shown";
- grid.innerHTML=list.slice(0,shown).map(x=>'<button type="button" class="minimal-gallery-entry" data-minimal-id="'+x.id+'" aria-pressed="'+(x.id===current)+'"><img loading="lazy" decoding="async" alt="" src="'+enc(src(x))+'"><span>'+enc(x.name)+'</span></button>').join("");
- more.hidden=shown>=list.length;
+ filters.innerHTML=groups.map(g=>'<button type="button" data-minimal-category="'+encode(g)+'" aria-pressed="'+(g===category)+'">'+encode(g)+'</button>').join("");
+ const all=list(),max=Math.max(1,Math.ceil(all.length/pageSize));page=Math.max(0,Math.min(page,max-1));
+ grid.innerHTML=all.slice(page*pageSize,(page+1)*pageSize).map(w=>
+  '<button type="button" class="minimal-gallery-entry" data-minimal-id="'+w.id+'" aria-label="Select '+encode(w.name)+' wallpaper" aria-pressed="'+(w.id===current)+'">'+
+  '<img loading="lazy" decoding="async" alt="" src="'+encode(src(w))+'"><span>'+encode(w.name)+'</span></button>').join("");
+ byId("minimalGalleryCount").textContent=(page+1)+" / "+max+" · "+all.length+" designs";
+ byId("minimalGalleryPrev").disabled=page===0;
+ byId("minimalGalleryNext").disabled=page>=max-1;
 }
 function select(id,persist=true){
- const art=find(id);current=art?.id||"";
- if(persist)deskStorage.setItem(key(launcherTheme),current);
- if(!art){image.hidden=true;image.removeAttribute("src");delete document.body.dataset.minimalWallpaper;render();return}
- image.src=src(art);image.hidden=false;document.body.dataset.minimalWallpaper=art.id;
- document.body.dataset.wallpaperLight=String(art.light);document.body.dataset.wallpaperStatusLight=String(art.light);
- window.audioDeskApplyWallpaperColors?.(art.palette[4],art.palette[2]);render();
+ const w=find(id);current=w?.id||"";
+ if(persist)deskStorage.setItem(storageKey(launcherTheme),current);
+ if(!w){image.hidden=true;image.removeAttribute("src");delete document.body.dataset.minimalWallpaper;render();return}
+ image.src=src(w);image.hidden=false;document.body.dataset.minimalWallpaper=w.id;
+ document.body.dataset.wallpaperLight=String(w.light);document.body.dataset.wallpaperStatusLight=String(w.light);
+ window.audioDeskApplyWallpaperColors?.(w.accent,w.bg);render();
 }
 function clear(){if(current)select("")}
 function applyAndroid(){
- const art=find(current);if(!art)return false;
- const api=window.AudioDesk,status=byId("wallpaperSystemStatus");
- if(typeof api?.setSystemWallpaperCustom!=="function"){status.textContent="Saved in Audio Desk. Applying Android wallpaper requires the installed APK.";return true}
+ const w=find(current);if(!w)return false;
+ const native=window.AudioDesk,status=byId("wallpaperSystemStatus");
+ if(typeof native?.setSystemWallpaperCustom!=="function"){status.textContent="Saved in Audio Desk. Native Android wallpaper changes require the installed APK.";return true}
  const request=++systemWallpaperRequest,img=new Image();
  img.onload=()=>{
   if(request!==systemWallpaperRequest)return;
   try{
-   const canvas=document.createElement("canvas");canvas.width=1080;canvas.height=1920;
-   canvas.getContext("2d").drawImage(img,0,0,1080,1920);
-   api.setSystemWallpaperCustom(canvas.toDataURL("image/jpeg",.91),50,byId("wallpaperApplyLock").checked,request);
-   status.textContent="Applying 1080 × 1920 Minimal Gallery wallpaper to Android…";
-  }catch{status.textContent="Unable to export this wallpaper."}
+   const canvas=document.createElement("canvas");canvas.width=1440;canvas.height=2560;
+   canvas.getContext("2d").drawImage(img,0,0,1440,2560);
+   native.setSystemWallpaperCustom(canvas.toDataURL("image/jpeg",.93),50,byId("wallpaperApplyLock").checked,request);
+   status.textContent="Applying 1440 × 2560 Studio wallpaper to Android…";
+  }catch{status.textContent="Could not export this wallpaper."}
  };
- img.onerror=()=>{status.textContent="Unable to decode the selected wallpaper."};img.src=src(art);
+ img.onerror=()=>{status.textContent="Could not decode the selected wallpaper."};img.src=src(w);
  return true;
 }
-filters.addEventListener("click",e=>{
- const cat=e.target.closest("[data-minimal-category]")?.dataset.minimalCategory;
- if(!categories.includes(cat))return;category=cat;shown=12;render();
-});
-more.addEventListener("click",()=>{shown+=12;render()});
-grid.addEventListener("click",e=>{
- const id=e.target.closest("[data-minimal-id]")?.dataset.minimalId;
- if(!find(id))return;
- window.audioDeskClearAudioWallpaper?.();
- select(id);applyAndroid();
-});
+filters.addEventListener("click",e=>{const c=e.target.closest("[data-minimal-category]")?.dataset.minimalCategory;
+ if(!groups.includes(c))return;category=c;page=0;render()});
+byId("minimalGalleryPrev").addEventListener("click",()=>{page--;render()});
+byId("minimalGalleryNext").addEventListener("click",()=>{page++;render()});
+grid.addEventListener("click",e=>{const id=e.target.closest("[data-minimal-id]")?.dataset.minimalId;
+ if(!find(id))return;window.audioDeskClearAudioWallpaper?.();select(id);applyAndroid()});
 for(const id of ["themePaletteGrid","wallpaperGrid","audioWallpaperGrid","customWallpaperRestore"]){
- byId(id)?.addEventListener("click",e=>{
-  if(id==="themePaletteGrid"&&!e.target.closest("[data-palette]"))return;
-  if(id==="wallpaperGrid"&&!e.target.closest("[data-wallpaper]"))return;
-  if(id==="audioWallpaperGrid"&&!e.target.closest("[data-audio-art]"))return;
-  clear();
- },true);
+ byId(id)?.addEventListener("click",e=>{if(id==="themePaletteGrid"&&!e.target.closest("[data-palette]"))return;
+ if(id==="wallpaperGrid"&&!e.target.closest("[data-wallpaper]"))return;
+ if(id==="audioWallpaperGrid"&&!e.target.closest("[data-audio-art]"))return;clear()},true);
 }
-byId("customWallpaperFile").addEventListener("change",e=>{if(e.target.files?.length)clear()});
-const baseApply=applySystemWallpaper;
-applySystemWallpaper=function(){return current?applyAndroid():baseApply()};
+byId("customWallpaperFile")?.addEventListener("change",e=>{if(e.target.files?.length)clear()});
+const baseApply=applySystemWallpaper;applySystemWallpaper=function(){return current?applyAndroid():baseApply()};
 byId("wallpaperApplySystem").onclick=()=>applySystemWallpaper();
 const baseTheme=setLauncherTheme;
-setLauncherTheme=function(theme){baseTheme(theme);select(deskStorage.getItem(key(theme))||"",false)};
-const basePicker=renderWallpaperPicker;
-renderWallpaperPicker=function(){basePicker();render()};
+setLauncherTheme=function(theme){baseTheme(theme);select(deskStorage.getItem(storageKey(theme))||"",false)};
+const basePicker=renderWallpaperPicker;renderWallpaperPicker=function(){basePicker();render()};
 new MutationObserver(()=>{if(!dialog.hidden)render()}).observe(dialog,{attributes:true,attributeFilter:["hidden"]});
-select(deskStorage.getItem(key(launcherTheme))||"",false);
-window.audioDeskMinimalGalleryCount=()=>artworks.length;
+// Old 180-piece wallpapers are intentionally retired. An existing selection
+// migrates to a similar modern choice without clearing the user's theme.
+let saved=deskStorage.getItem(storageKey(launcherTheme))||"";
+if(saved.startsWith("mg-")&&!find(saved)){
+ const oldPalette=saved.split("-").slice(-1)[0];
+ const migrate={obsidian:24,graphite:0,ivory:7,sand:14,rose:30,sage:32,forest:2,navy:1,indigo:4,copper:16,teal:5,lavender:31};
+ saved=works[migrate[oldPalette]??0].id;deskStorage.setItem(storageKey(launcherTheme),saved);
+}
+select(saved,false);
+window.audioDeskMinimalGalleryCount=()=>works.length;
+window.audioDeskStudioGallery=()=>({count:works.length,collections:groups.slice(),pageSize});
 })();
