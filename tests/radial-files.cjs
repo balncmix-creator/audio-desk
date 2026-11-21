@@ -22,8 +22,19 @@ const {chromium}=require('playwright');
     radialFilesShare(id){window.nativeFileCalls.push(['share',id])},
     radialFilesRename(id,name){window.nativeFileCalls.push(['rename',id,name])},
     radialFilesDelete(id){window.nativeFileCalls.push(['delete',id])},
-    radialFilesCreate(name){window.nativeFileCalls.push(['create',name])}
+    radialFilesCreate(name){window.nativeFileCalls.push(['create',name])},
+    setStatusBarTheme(theme,light){window.nativeFileCalls.push(['statusTheme',theme,light])}
    };
+   // Simulate Android's @JavascriptInterface receiver requirement.
+   // This catches the real-device failure: detached bridge methods throw.
+   const bridge=window.AudioDesk;
+   for(const [name,original] of Object.entries(bridge)){
+    bridge[name]=function(...args){
+     if(this!==bridge)throw new Error('Detached Android bridge: '+name);
+     return original.apply(this,args);
+    };
+   }
+   window.audioDeskSyncWallpaperStatus=()=>window.nativeFileCalls.push(['restoreStatus']);
   });
   await page.addScriptTag({path:path.resolve('app/src/main/assets/radial-files.js')});
   assert.equal(await page.locator('#radialFilesPanel').isVisible(),false);
@@ -31,7 +42,16 @@ const {chromium}=require('playwright');
   await page.evaluate(()=>window.audioDeskOpenRadialFiles());
   assert.equal(await page.locator('#radialFilesPanel').isVisible(),true);
   assert.deepEqual(await page.evaluate(()=>window.nativeFileCalls.at(-1)),['list']);
+  assert.ok(await page.evaluate(()=>window.nativeFileCalls.some(x=>x[0]==='statusTheme'&&x[1]==='orbit'&&x[2]===false)),
+   'dark file manager must use light Android status glyphs');
   assert.equal(await page.locator('#rdfWheel #rdfFileRing').count(),1);
+  assert.equal(await page.locator('#rdfFileRing .rdf-start').count(),6,
+   'six actionable file categories, not an empty blank ring on first launch');
+  assert.equal(await page.evaluate(()=>getComputedStyle(document.getElementById('radialFilesPanel')).backgroundColor),
+   'rgb(8, 19, 14)','panel must be opaque enough to hide launcher beneath');
+  await page.locator('#rdfFileRing [data-rdf-action="start:audio"]').click();
+  assert.deepEqual(await page.evaluate(()=>window.nativeFileCalls.at(-1)),['pick'],
+   'a category on the outer ring must open Android folder picker');
   assert.equal(await page.locator('#rdfList,.rdf-list,.rdf-actions,.rdf-top-actions').count(),0,
     'file list and menu must live only inside radial sectors');
   await page.locator('#rdfWheel [data-rdf-action="change"]').click();
@@ -101,6 +121,8 @@ const {chromium}=require('playwright');
   assert.deepEqual(await page.evaluate(()=>window.nativeFileCalls.at(-1)),['up']);
   await page.locator('#rdfWheel [data-rdf-action="close"]').click();
   assert.equal(await page.locator('#radialFilesPanel').isVisible(),false);
+  assert.deepEqual(await page.evaluate(()=>window.nativeFileCalls.at(-1)),['restoreStatus'],
+   'restore wallpaper-based Android status icon contrast after leaving file manager');
   const bounds=await page.evaluate(()=>{
    const b=document.querySelector('#rdfWheel').getBoundingClientRect();
    return {x:b.x,y:b.y,right:b.right,bottom:b.bottom,width:innerWidth,height:innerHeight}
