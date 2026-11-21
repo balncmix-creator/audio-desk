@@ -469,7 +469,7 @@ const demoApps=[
   await page.waitForTimeout(620);
   assert.equal(await page.locator('#orbitQuickCustomize').isVisible(),true,
    'long-press on empty Home opens quick customization');
-  await page.locator('#orbitSettingsShade').click();
+  await page.mouse.click(350,350); // outside the small quick menu, on the dimmed Home
   assert.equal(await page.locator('#orbitQuickCustomize').isVisible(),false);
   await page.locator('#orbitLetters [data-orbit-action="letter:A"]').dispatchEvent('click');
   assert.equal(await page.locator('#orbitAppIconLayers').count(),1);
