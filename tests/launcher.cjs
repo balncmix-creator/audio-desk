@@ -630,6 +630,20 @@ const demoApps=[
    'photo top-strip luminance is sampled rather than relying on static photo labels');
   assert.ok(await page.evaluate(()=>window.statusThemeRequests.some(x=>x.theme==='orbit'&&x.light===true)),
    'Android status bar icon contrast switches to dark on light wallpaper');
+  const dialLightPhoto=await page.evaluate(()=>{
+   const selectors=['#orbitClock .orbit-ring','#orbitWidgets .orbit-ring',
+    '#orbitWidgets .orbit-raised','#orbitExternalWidgets .orbit-external-base',
+    '#orbitExternalWidgets .orbit-external-segment','#orbitExternalWidgets .orbit-external-focused'];
+   return selectors.map(sel=>{
+    const el=document.querySelector(sel);
+    return {sel,opacity:el?Number(getComputedStyle(el).fillOpacity):null};
+   });
+  });
+  assert.ok(dialLightPhoto.every(x=>x.opacity!==null&&x.opacity>=.90),
+   'every radial surface uses sufficient tint with the same bright wallpaper: '+JSON.stringify(dialLightPhoto));
+  assert.ok(Math.max(...dialLightPhoto.map(x=>x.opacity))-Math.min(...dialLightPhoto.map(x=>x.opacity))<=.07,
+   'adjacent widget rings no longer have inconsistent transparency and empty-looking wedges');
+
   await page.locator('#wallpaperClose').click();
   await page.evaluate(()=>setLauncherTheme('warm'));
   await page.evaluate(()=>setLauncherTheme('orbit'));
