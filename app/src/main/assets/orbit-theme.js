@@ -96,7 +96,7 @@ const path=(d,cls,more="")=>'<path d="'+d+'" class="'+cls+'" '+more+'/>';
 const trunc=(s,n)=>Array.from(String(s||"")).slice(0,n).join("")+(Array.from(String(s||"")).length>n?"…":"");
 const letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ#".split("");
 const pointerAngle=45; // fixed poker-dial indicator, independent of each ring
-const widgets=["music","calendar","news"];
+const widgets=["music","calendar","news","files"];
 let externalWidgets=[],externalIndex=0;
 const externalRingStep=38;
 const externalWidgetsList=()=>[...externalWidgets,{id:0,label:"Add widget",pkg:"",accent:""}];
@@ -442,7 +442,7 @@ function renderSettings(){
     (selected.id?settingsButton("Remove selected","remove-widget"):"")+'</div>'+
     '<div class="orbit-settings-row"><span>Audio Desk widgets<small>'+esc(widgets[indices.widgets])+'</small></span>'+
     settingsButton("Next","next-built-in")+'</div>'+
-    '<p>Music, calendar and audio news remain in their own dial. Third-party widgets use the Android system picker.</p>';
+    '<p>Music, calendar, audio news and Orbit Files remain in their own dial. Third-party widgets use the Android system picker.</p>';
    break;
   case "gestures":
    html='<h3>Home gestures</h3>'+
@@ -718,18 +718,18 @@ function drawWidgets(offset=offsets.widgets){
  h+=path(sector(a-30,a+30),i===0?"orbit-raised":"orbit-ring",'data-orbit-widget="'+name+'"');
  if(name==="music"&&i===0)h+=music(a,i);
  else if(i===0){
-  const isCal=name==="calendar",now=new Date();
-  h+=curveText(isCal?"Calendar":"Audio Desk",235,a,48,12,"","widget-title-"+i);
-  h+=curveText(isCal?now.toLocaleDateString([],{weekday:"short",day:"numeric",month:"short"}):"Audio news",219,a,46,9,"orbit-muted","widget-detail-"+i);
-  h+=g(199,a,'<rect x="-28" y="-9" width="56" height="18" rx="6" class="orbit-accent"/>',button(name,isCal?"Open calendar":"Open Audio Desk news"));
+  const isCal=name==="calendar",isFiles=name==="files",now=new Date();
+  h+=curveText(isCal?"Calendar":isFiles?"Orbit Files":"Audio Desk",235,a,48,12,"","widget-title-"+i);
+  h+=curveText(isCal?now.toLocaleDateString([],{weekday:"short",day:"numeric",month:"short"}):isFiles?"Radial file manager":"Audio news",219,a,46,9,"orbit-muted","widget-detail-"+i);
+  h+=g(199,a,'<rect x="-28" y="-9" width="56" height="18" rx="6" class="orbit-accent"/>',button(name,isCal?"Open calendar":isFiles?"Browse files":"Open Audio Desk news"));
   h+=curveText("OPEN",199,a,24,9,"orbit-ink","widget-open-"+i);
- }else h+=g(224,a,txt(name==="music"?"♫":name==="calendar"?"▦":"≋",5,21,"orbit-muted"));
+ }else h+=g(224,a,txt(name==="music"?"♫":name==="calendar"?"▦":name==="files"?"▣":"≋",5,21,"orbit-muted"));
 
  }
  // Readable hints for the clipped neighbouring cards.
  if(Math.abs(offset)<.01){
  const prev=widgets[wrap(indices.widgets-1,widgets.length)],next=widgets[wrap(indices.widgets+1,widgets.length)];
- const symbol=x=>x==="music"?"♫":x==="calendar"?"▦":"≋";
+ const symbol=x=>x==="music"?"♫":x==="calendar"?"▦":x==="files"?"▣":"≋";
  h+=g(218,7.5,'<rect x="-13" y="-22" width="26" height="44" rx="5" fill="transparent"/>'+txt(symbol(prev),5,19),button("widget:-1","Previous widget: "+prev));
  h+=g(218,82.5,'<rect x="-13" y="-22" width="26" height="44" rx="5" fill="transparent"/>'+txt(symbol(next),5,19),button("widget:1","Next widget: "+next));
  }
@@ -770,6 +770,7 @@ function action(code,target){
  else if(code==="connect")window.AudioDesk?.requestMediaAccess?.();
  else if(code==="calendar")openLauncherCalendar();
  else if(code==="news")setLauncherPage("events");
+ else if(code==="files")window.audioDeskOpenRadialFiles?.();
  else if(code.startsWith("widget:")){indices.widgets=wrap(indices.widgets+Number(code.slice(7)),widgets.length);drawWidgets()}
 }
 function coordinates(e){const rect=svg.getBoundingClientRect(),x=(e.clientX-rect.right)*334/rect.width,y=(e.clientY-rect.bottom)*334/rect.height;return {r:Math.hypot(x,y),a:Math.atan2(-y,-x)*180/pi}}
