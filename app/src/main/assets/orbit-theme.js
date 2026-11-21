@@ -577,12 +577,17 @@ window.addEventListener("audio-desk-native-widgets-changed",()=>{
 
 function drawClock(){
  if(!active())return;
- const now=new Date(),time=now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:false}),date=now.toLocaleDateString([],{weekday:"short",day:"numeric",month:"short"}).toUpperCase();
+ const now=new Date();
+ // Show the whole 12-hour clock rather than clipping the leading "1" from 17:41.
+ const parts=new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit",hour12:true}).formatToParts(now);
+ const time=(parts.find(x=>x.type==="hour")?.value||String((now.getHours()%12)||12))+":"+
+  (parts.find(x=>x.type==="minute")?.value||String(now.getMinutes()).padStart(2,"0"));
+ const date=now.toLocaleDateString([],{weekday:"short",day:"numeric",month:"short"}).toUpperCase();
  if(lastClock===time+date&&q("orbitClock").childNodes.length)return;lastClock=time+date;
  let h=path(ring(330,301),"orbit-ring");
  for(let i=0;i<=22;i++){const a=1+i*4;h+='<line x1="'+point(326,a)[0]+'" y1="'+point(324,a)[1]+'" x2="'+point(i%3===0?322:324,a)[0]+'" y2="'+point(i%3===0?317:321,a)[1]+'" class="orbit-line" stroke-width="1"/>'}
- h+=curveText(time,317,45,37,24,"","clock-time");
- h+=curveText(date,303,45,58,9,"orbit-muted","clock-date");
+ h+=curveText(time,317,45,31,24,"","clock-time");
+ h+=curveText(date,303,45,43,9,"orbit-muted","clock-date");
  q("orbitClock").innerHTML=h;
 }
 function currentRecents(){
@@ -610,7 +615,9 @@ function drawExternalWidgets(offset=offsets.external){
    (iconUrl?'<image href="'+iconUrl+'" x="-11" y="-19" width="22" height="22" class="orbit-app-icon"/>':txt(symbol,-2,18));
   h+=g(275,a,content,button(isAdd?"external:add":"external:focus:"+wrap(externalIndex+i,list.length),
    isAdd?"Add an Android app widget":"Select "+item.label+" app widget"),true);
-  h+=curveText(trunc(isAdd?"ADD WIDGET":item.label,15).toUpperCase(),258,a,34,9,"orbit-external-label","external-"+i);
+  // Only the active app widget gets a name; its neighbours remain icons.
+  if(chosen)h+=curveText(trunc(isAdd?"ADD WIDGET":item.label,11).toUpperCase(),
+   256,a,29,9,"orbit-external-label","external-selected");
  }
  q("orbitExternalWidgets").innerHTML=h;
  // Don't move native RemoteViews until the selected index actually changes.
@@ -670,8 +677,8 @@ function drawRecents(offset=offsets.recents){
  q("orbitRecents").innerHTML=h;
 }
 function music(a,slot){
- let h=curveText(trunc(media.available?media.title:"Music player",22),238,a,48,12,"","music-title-"+slot);
- h+=curveText(trunc(media.available?media.artist:(media.enabled?"Start a player":"Tap to connect"),25),225,a,51,9,"orbit-muted","music-artist-"+slot);
+ let h=curveText(trunc(media.available?media.title:"Music player",17),238,a,45,11,"","music-title-"+slot);
+ h+=curveText(trunc(media.available?media.artist:(media.enabled?"Start a player":"Tap to connect"),19),225,a,45,9,"orbit-muted","music-artist-"+slot);
  const items=[["previous","Previous track","|◀",media.available&&media.canPrevious],["toggle",media.playing?"Pause":"Play",media.playing?"Ⅱ":"▶",media.available&&media.canToggle],["next","Next track","▶|",media.available&&media.canNext]];
  items.forEach((x,i)=>{const on=i===1;h+=g(206,a+(i-1)*17,'<rect x="-22" y="-12" width="44" height="24" rx="7" class="'+(on?"orbit-accent":"orbit-raised")+'"/><text y="4" text-anchor="middle" font-size="13" class="'+(on?"orbit-ink":"")+'">'+x[2]+'</text>',button("media:"+x[0],x[1],!x[3]))});
  const duration=Number(media.durationMs),position=Number(media.positionMs);
@@ -692,14 +699,15 @@ function drawWidgets(offset=offsets.widgets){
  const a=45+i*60+offset;if(a+30<0||a-30>90)continue;
  const name=widgets[wrap(indices.widgets+i,widgets.length)];
  h+=path(sector(a-30,a+30),i===0?"orbit-raised":"orbit-ring",'data-orbit-widget="'+name+'"');
- if(name==="music")h+=music(a,i);
- else {
- const isCal=name==="calendar",now=new Date();
- h+=curveText(isCal?"Calendar":"Audio Desk",235,a,49,13,"","widget-title-"+i);
- h+=curveText(isCal?now.toLocaleDateString([],{weekday:"short",day:"numeric",month:"short"}):"Audio news & discoveries",219,a,52,10,"orbit-muted","widget-detail-"+i);
- h+=g(199,a,'<rect x="-32" y="-10" width="64" height="20" rx="6" class="orbit-accent"/>',button(name,isCal?"Open calendar":"Open Audio Desk news"));
- h+=curveText("OPEN",199,a,28,10,"orbit-ink","widget-open-"+i);
- }
+ if(name==="music"&&i===0)h+=music(a,i);
+ else if(i===0){
+  const isCal=name==="calendar",now=new Date();
+  h+=curveText(isCal?"Calendar":"Audio Desk",235,a,48,12,"","widget-title-"+i);
+  h+=curveText(isCal?now.toLocaleDateString([],{weekday:"short",day:"numeric",month:"short"}):"Audio news",219,a,46,9,"orbit-muted","widget-detail-"+i);
+  h+=g(199,a,'<rect x="-28" y="-9" width="56" height="18" rx="6" class="orbit-accent"/>',button(name,isCal?"Open calendar":"Open Audio Desk news"));
+  h+=curveText("OPEN",199,a,24,9,"orbit-ink","widget-open-"+i);
+ }else h+=g(224,a,txt(name==="music"?"♫":name==="calendar"?"▦":"≋",5,21,"orbit-muted"));
+
  }
  // Readable hints for the clipped neighbouring cards.
  if(Math.abs(offset)<.01){
