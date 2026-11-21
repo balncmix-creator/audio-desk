@@ -73,10 +73,22 @@ const pi=Math.PI,rad=a=>a*pi/180;
 const point=(r,a)=>[-r*Math.cos(rad(a)),-r*Math.sin(rad(a))];
 const p=(r,a)=>point(r,a).map(v=>v.toFixed(3)).join(",");
 const arc=(r,a,b)=>"M"+p(r,a)+" A"+r+","+r+" 0 0 1 "+p(r,b);
-const ring=(R,r)=>arc(R,0,90)+" L"+p(r,90)+" A"+r+","+r+" 0 0 0 "+p(r,0)+" Z";
+// Round both exposed ends of each quarter-ring while retaining its original
+// outer/inner radii. Only the segment corners move; ring width and hit targets
+// remain unchanged. A 6-unit corner is deliberately subtle on a 330-unit dial.
+const ring=(R,r)=>{
+ const c=Math.min(6,(R-r)/3,r*.18);
+ const outer=c/R*180/pi,inner=c/r*180/pi;
+ return "M"+p(R,outer)+" A"+R+","+R+" 0 0 1 "+p(R,90-outer)+
+  " Q"+p(R,90)+" "+p(R-c,90)+
+  " L"+p(r+c,90)+" Q"+p(r,90)+" "+p(r,90-inner)+
+  " A"+r+","+r+" 0 0 0 "+p(r,inner)+
+  " Q"+p(r,0)+" "+p(r+c,0)+
+  " L"+p(R-c,0)+" Q"+p(R,0)+" "+p(R,outer)+" Z";
+};
 const sector=(a,b,R=249,r=182)=>{
- // Parallel 2-unit insets on both radial edges give a constant 4-unit gap.
- const gap=2,c=6,outer=Math.asin(gap/R)*180/pi,inner=Math.asin(gap/r)*180/pi;
+ // Preserve the same 4-unit sector spacing; modestly soften all four ends.
+ const gap=2,c=Math.min(7,(R-r)*.18),outer=Math.asin(gap/R)*180/pi,inner=Math.asin(gap/r)*180/pi;
  const A=a+outer,B=b-outer,C=a+inner,D=b-inner;
  const rs=R-c,rt=r+c,e=Math.asin(gap/rs)*180/pi,f=Math.asin(gap/rt)*180/pi;
  return arc(R,A+c/R*180/pi,B-c/R*180/pi)+" Q"+p(R,B)+" "+p(rs,b-e)+" L"+p(rt,b-f)+" Q"+p(r,D)+" "+p(r,D-c/r*180/pi)+" A"+r+","+r+" 0 0 0 "+p(r,C+c/r*180/pi)+" Q"+p(r,C)+" "+p(rt,a+f)+" L"+p(rs,a+e)+" Q"+p(R,A)+" "+p(R,A+c/R*180/pi)+" Z";
