@@ -18,7 +18,7 @@ const photos=[
 const groups=["Featured","Architecture","Nature","Monochrome"],featured=["photo-lloyd","photo-annie","photo-nir","photo-harrison"];
 const byId=id=>photos.find(p=>p.id===id);
 const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
-const url=(p,width,q=84)=>"https://images.unsplash.com/"+p.photo+"?auto=format&fit=crop&w="+width+"&q="+q;
+const url=(p,width,q=84,height=0)=>"https://images.unsplash.com/"+p.photo+"?auto=format&fit=crop&crop=entropy&w="+width+(height?"&h="+height:"")+"&q="+q;
 const storageKey=theme=>"ad_minimal_gallery_v1_"+theme;
 const image=document.createElement("img");
 image.id="minimalGalleryWallpaperImage";image.alt="";image.crossOrigin="anonymous";image.decoding="async";image.hidden=true;stage.append(image);
@@ -82,7 +82,7 @@ function render(){
  const available=list(),total=Math.max(1,Math.ceil(available.length/pageSize));
  page=Math.max(0,Math.min(page,total-1));
  grid.innerHTML=available.slice(page*pageSize,(page+1)*pageSize).map(p=>
-  '<button type="button" class="minimal-gallery-entry" data-minimal-id="'+p.id+'" aria-pressed="'+(p.id===current)+'" aria-label="Choose '+esc(p.name)+' by '+esc(p.author)+'"><span class="minimal-gallery-photo"><img alt="" loading="lazy" src="'+esc(url(p,480,72))+'"><span class="minimal-gallery-unavailable">Preview needs internet</span></span><strong>'+esc(p.name)+'</strong><small>Photo: '+esc(p.author)+'</small></button>').join("");
+  '<button type="button" class="minimal-gallery-entry" data-minimal-id="'+p.id+'" aria-pressed="'+(p.id===current)+'" aria-label="Choose '+esc(p.name)+' by '+esc(p.author)+'"><span class="minimal-gallery-photo"><img alt="" loading="lazy" src="'+esc(url(p,480,72,680))+'"><span class="minimal-gallery-unavailable">Preview needs internet</span></span><strong>'+esc(p.name)+'</strong><small>Photo: '+esc(p.author)+'</small></button>').join("");
  $("minimalGalleryCount").textContent=(page+1)+" / "+total+" · "+available.length+" photos";
  $("minimalGalleryPrev").disabled=page===0;$("minimalGalleryNext").disabled=page>=total-1;
 }
@@ -127,7 +127,7 @@ function select(id,persist=true){
   if(seq!==requestId)return;current=previous;
   status.textContent="Could not load this photograph. Check your connection; your previous wallpaper is unchanged.";render();
  };
- loaded.src=url(p,1600,86);
+ loaded.src=url(p,1440,86,2560);
 }
 filters.addEventListener("click",e=>{const c=e.target.closest("[data-minimal-category]")?.dataset.minimalCategory;
  if(!groups.includes(c))return;category=c;page=0;render()});
