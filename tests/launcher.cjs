@@ -442,6 +442,21 @@ const demoApps=[
    'Orbit does not show two overlapping settings buttons');
   assert.equal(await page.locator('#orbitExternalWidgets').count(),1,
    'app widget dial is separate from the built-in Audio Desk dial');
+  const appWidgetRing=await page.locator('#orbitExternalWidgets').evaluate(el=>({
+   base:!!el.querySelector('path.orbit-external-base'),
+   segmentCount:el.querySelectorAll('path.orbit-external-focused,path.orbit-external-segment').length,
+   outer:el.querySelector('path.orbit-external-base')?.getAttribute('d')||"",
+   touchesBuiltIn:!!document.querySelector('#orbitWidgets path[data-orbit-widget]')
+  }));
+  assert.equal(appWidgetRing.base,true,'the app-widget ring has a continuous background annulus with no oversized empty wedge');
+  assert.ok(appWidgetRing.segmentCount>=3,'independent app-widget segments fill the full visible quadrant');
+  assert.ok(appWidgetRing.outer.includes('A300,300')&&appWidgetRing.outer.includes('A250,250'),
+   'new app widget band uses adjacent radii to match the other 1–3 unit dial separators');
+  assert.equal(appWidgetRing.touchesBuiltIn,true);
+  const orbitGeometrySource=fs.readFileSync(path.join(__dirname,'../app/src/main/assets/orbit-theme.js'),'utf8');
+  assert.ok(orbitGeometrySource.includes('sector(a-19,a+19,299,251)'),
+   'external-widget angular sweep fills its entire 38-degree notch without the previous extra blank degree');
+
   assert.equal(await page.locator('#orbitClock textPath').count(),2,
    'time and date follow actual clock arc paths');
   assert.deepEqual(await page.locator('#orbitClock text').evaluateAll(els=>els.map(t=>Number(t.getAttribute('font-size')))),[16,8],
@@ -520,6 +535,25 @@ const demoApps=[
   });
   assert.ok(settingsMetrics.width>=Math.min(350,settingsMetrics.vw-24)&&settingsMetrics.right<=settingsMetrics.vw, "Settings geometry: "+JSON.stringify(settingsMetrics));
   assert.ok(settingsMetrics.minHit>=40,'settings controls must be finger accessible');
+  await page.locator('#orbitSettingsTabs [data-orbit-tab="wallpaper"]').click();
+  const textureControl=page.locator('#orbitSettingsContent [data-orbit-preference="wallpaperTexture"]');
+  assert.equal(await textureControl.isChecked(),false,'wallpaper texture is opt-in; existing solid-dial appearance remains default');
+  const dialOpacity=async()=>page.locator('#orbitClock .orbit-ring').evaluate(el=>Number(getComputedStyle(el).fillOpacity));
+  const beforeTexture=await dialOpacity();
+  await textureControl.check();
+  assert.equal(await page.evaluate(()=>document.body.classList.contains('orbit-wallpaper-texture')),true,
+   'wallpaper texture setting changes the dial backdrop instantly');
+  assert.ok((await dialOpacity())<beforeTexture,
+   'actual wallpaper shows through translucent dials while text stays solid');
+  assert.equal(await page.locator('#orbitClock text').first().evaluate(el=>getComputedStyle(el).opacity),'1',
+   'texture mode keeps clock text fully opaque');
+  assert.equal(await page.locator('#orbitExternalWidgets image').first().evaluate(el=>getComputedStyle(el).opacity),'1',
+   'texture mode never fades installed-app widget icons');
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('ad_orbit_settings_v2')).wallpaperTexture),true,
+   'wallpaper texture choice is saved for future launches');
+  await textureControl.uncheck();
+  assert.equal(await dialOpacity(),beforeTexture,'solid dial colors can be restored immediately');
+  await textureControl.check();
   await page.locator('#orbitSettingsTabs [data-orbit-tab="widgets"]').click();
   assert.ok((await page.locator('#orbitSettingsContent').textContent()).includes('Audio Desk widgets'));
   await page.locator('#orbitSettingsContent [data-orbit-settings-action="add-widget"]').click();
@@ -613,6 +647,10 @@ const demoApps=[
   await page.waitForFunction(()=>launcherApps.length===8);
   assert.equal(await page.evaluate(()=>launcherTheme),'orbit',
    'Orbit is restored on cold start without needing to switch themes');
+  assert.equal(await page.evaluate(()=>document.body.classList.contains('orbit-wallpaper-texture')),true,
+   'saved wallpaper texture mode survives cold startup');
+  assert.ok(await page.locator('#orbitClock .orbit-ring').evaluate(el=>Number(getComputedStyle(el).fillOpacity)<1),
+   'translucent wall-texture surfaces are restored before returning to Home');
   await page.locator('#orbitHome').waitFor({state:'visible'});
   assert.equal(await page.locator('#orbitSettingsGear').isVisible(),true);
   assert.ok((await page.locator('#orbitClock path').count())>0,
