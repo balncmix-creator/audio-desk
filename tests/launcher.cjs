@@ -352,9 +352,14 @@ const demoApps=[
   assert.equal(await page.locator('#launcherMusicWidget').isVisible(),false);
   assert.ok((await page.locator('#orbitClock').textContent()).match(/\d/));
   assert.equal(await page.locator('#orbitWidgets [data-orbit-widget]').count(),3);
-  assert.equal(await page.locator('#orbitWidgets [data-orbit-action="media:toggle"]').count(),1);
+  assert.equal(await page.locator('#orbitWidgets [data-orbit-action="connect"]').count(),1,
+   'unconnected player has one clear connect action, not redundant transport buttons');
+  assert.equal(await page.locator('#orbitWidgets [data-orbit-action="media:toggle"]').count(),0);
+  assert.ok((await page.locator('#orbitWidgets').textContent()).includes('CONNECT PLAYER'));
   await page.evaluate(()=>{window.receiveAudioDeskMedia({enabled:true,available:true,playing:true,title:'Orbit test track',artist:'Audio Desk',durationMs:120000,positionMs:45000,canSeek:true,canToggle:true,canPrevious:true,canNext:true})});
   assert.ok((await page.locator('#orbitWidgets').textContent()).includes('Orbit test track'));
+  assert.equal(await page.locator('#orbitWidgets [data-orbit-action="media:toggle"]').count(),1,
+   'transport controls appear only when a real player is active');
   assert.equal(await page.locator('#orbitWidgets [role="slider"]').count(),1);
   await page.evaluate(()=>{window.orbitCommands=[];window.AudioDesk.mediaCommand=x=>window.orbitCommands.push(x);window.AudioDesk.seekMedia=x=>window.orbitCommands.push(x)});
   await page.locator('#orbitWidgets [data-orbit-action="media:toggle"]').dispatchEvent('click');
@@ -563,6 +568,9 @@ const demoApps=[
   assert.equal(await page.locator('#minimalGalleryCount').textContent(),'1 / 1 · 4 photos');
   assert.equal(await page.locator('#minimalGalleryNext').isEnabled(),false);
   assert.ok((await page.locator('#minimalGalleryGrid').textContent()).includes('Photo:'));
+  await page.locator('#minimalGalleryGrid img').first().dispatchEvent('error');
+  assert.equal(await page.locator('#minimalGalleryGrid .minimal-gallery-unavailable').first().isVisible(),true,
+   'failed thumbnail displays a human-readable offline state, not a blank card');
   await page.locator('#minimalGalleryFilters [data-minimal-category="Nature"]').click();
   assert.equal(await page.locator('#minimalGalleryCount').textContent(),'1 / 1 · 4 photos');
   await page.locator('#minimalGalleryFilters [data-minimal-category="Architecture"]').click();
