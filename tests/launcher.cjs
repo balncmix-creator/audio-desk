@@ -549,6 +549,32 @@ const demoApps=[
   assert.ok(await page.locator('#minimalGalleryWallpaperImage').isVisible());
   await page.locator('#wallpaperClose').click();
 
+
+  // Regression: actual Android users cold-start directly into their saved Orbit theme.
+  // Previously startup saved preferences before initializing lastExternalNativeId,
+  // throwing an exception and leaving a visible gear over a completely blank Home.
+  assert.equal(await page.evaluate(()=>localStorage.getItem('ad_launcher_theme_v1')),'orbit');
+  await page.reload({waitUntil:'load'});
+  await page.waitForFunction(()=>launcherApps.length===8);
+  assert.equal(await page.evaluate(()=>launcherTheme),'orbit',
+   'Orbit is restored on cold start without needing to switch themes');
+  await page.locator('#orbitHome').waitFor({state:'visible'});
+  assert.equal(await page.locator('#orbitSettingsGear').isVisible(),true);
+  assert.ok((await page.locator('#orbitClock path').count())>0,
+   'clock ring actually renders on startup, not only the top-left settings button');
+  assert.ok((await page.locator('#orbitWidgets [data-orbit-widget]').count())>=2,
+   'built-in widget ring is visible on startup');
+  assert.ok((await page.locator('#orbitExternalWidgets path').count())>0,
+   'third-party app-widget ring renders on startup');
+  assert.ok((await page.locator('#orbitLetters textPath').count())>=4,
+   'alphabet ring has curved visible labels after cold start');
+  const orbitColdStart=await page.locator('#orbitHome').evaluate(el=>{
+   const svg=el.querySelector('svg');
+   return {host:el.getBoundingClientRect().toJSON(),dial:svg.getBoundingClientRect().toJSON(),
+    rings:svg.querySelectorAll('#orbitClock path,#orbitWidgets path,#orbitExternalWidgets path,#orbitLetters path').length};
+  });
+  assert.ok(orbitColdStart.host.width>100&&orbitColdStart.host.height>100&&orbitColdStart.rings>9,
+   'startup layout has correctly sized and populated radial dials: '+JSON.stringify(orbitColdStart));
 await page.locator('#orbitSearch [data-orbit-action="search"]').dispatchEvent('click');
   assert.equal(await page.evaluate(()=>launcherPage),'apps');
   assert.equal(await page.locator('#orbitHome').isVisible(),false);
