@@ -347,6 +347,45 @@ const demoApps=[
   await page.evaluate(()=>{window.orbitCommands=[];window.AudioDesk.mediaCommand=x=>window.orbitCommands.push(x);window.AudioDesk.seekMedia=x=>window.orbitCommands.push(x)});
   await page.locator('#orbitWidgets [data-orbit-action="media:toggle"]').dispatchEvent('click');
   assert.deepEqual(await page.evaluate(()=>window.orbitCommands),['toggle']);
+  // Orbit uses private on-device adaptive icons rather than expecting a data: icon
+  // in the package manager's app listing.
+  await page.evaluate(()=>{
+   launcherRecents=window.launcherDemoApps.slice(0,5).map((app,i)=>({...app,opened:Date.now()-i*60000}));
+   renderLauncherHome();
+  });
+  assert.equal(await page.locator('#orbitRecents image[href="/app-icons/orbit/com.example.reaper.png"]').count(),1,
+   'radial recent-app segment requests native device icon by package');
+  assert.ok((await page.locator('#orbitRecents').textContent()).includes('REAPER'),
+   'radial app labels remain visible as icon fallback');
+
+  // Synthetic drag, with deterministic pointer coordinates, verifies continuous
+  // visual movement and that the other dials stay at their own positions.
+  const momentum=await page.evaluate(async()=>{
+   const dial=document.getElementById('orbitDial');
+   const rect=dial.getBoundingClientRect();
+   dial.setPointerCapture=()=>{};
+   const at=a=>({
+    clientX:rect.right-86*Math.cos(a*Math.PI/180)*rect.width/334,
+    clientY:rect.bottom-86*Math.sin(a*Math.PI/180)*rect.height/334
+   });
+   const dispatch=(name,a)=>dial.dispatchEvent(new PointerEvent(name,{
+    bubbles:true,pointerId:7,button:0,...at(a)
+   }));
+   const recentsBefore=document.getElementById('orbitRecents').innerHTML;
+   dispatch('pointerdown',12);
+   await new Promise(r=>setTimeout(r,36));
+   dispatch('pointermove',26);
+   await new Promise(r=>setTimeout(r,36));
+   dispatch('pointermove',39);
+   const dragHtml=document.getElementById('orbitLetters').innerHTML;
+   dispatch('pointerup',39);
+   await new Promise(requestAnimationFrame);
+   const inertiaHtml=document.getElementById('orbitLetters').innerHTML;
+   return {moved:dragHtml!==inertiaHtml,otherUnchanged:recentsBefore===document.getElementById('orbitRecents').innerHTML};
+  });
+  assert.equal(momentum.moved,true,'ring continues moving after touch release');
+  assert.equal(momentum.otherUnchanged,true,'independent radial app ring stays stationary');
+  await page.waitForTimeout(1000);
   const previousLetters=await page.locator('#orbitLetters').textContent();
   await page.locator('#orbitWidgets [data-orbit-action="widget:1"]').dispatchEvent('click');
   assert.equal(await page.locator('#orbitLetters').textContent(),previousLetters);
