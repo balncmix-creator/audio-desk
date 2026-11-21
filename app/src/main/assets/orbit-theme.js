@@ -5,8 +5,18 @@ const home=document.getElementById("launcherHomePage");
 const host=document.createElement("div");host.id="orbitHome";host.hidden=true;
 host.innerHTML='<svg id="orbitDial" viewBox="-334 -334 334 334" role="group" aria-label="Orbit radial launcher"><defs><clipPath id="orbitQuarter"><rect x="-334" y="-334" width="334" height="334"/></clipPath></defs><g clip-path="url(#orbitQuarter)"><g id="orbitClock"></g><g id="orbitWidgets"></g><g id="orbitRecents"></g><g id="orbitLetters"></g><g id="orbitSearch"></g></g></svg>';
 home.prepend(host);
+
+// Keep the alphabet wheel interactive while the rest of the Home is blurred.
+const shade=document.createElement("div");shade.id="orbitLetterShade";shade.hidden=true;shade.setAttribute("aria-hidden","true");
+const picker=document.createElement("section");picker.id="orbitLetterMenu";picker.hidden=true;
+picker.setAttribute("role","dialog");picker.setAttribute("aria-modal","false");
+picker.setAttribute("aria-label","Applications by selected alphabet letter");
+picker.innerHTML='<div class="orbit-picker-head"><span id="orbitPickerHeading">APPS · A</span><button id="orbitPickerClose" type="button" aria-label="Close radial app menu">×</button></div><svg id="orbitPickerFan" viewBox="0 0 300 215" role="group" aria-label="Installed apps in the selected letter"></svg><div class="orbit-picker-bottom"><button type="button" id="orbitPickerPrevious" aria-label="Previous app icons">‹</button><span id="orbitPickerStatus"></span><button type="button" id="orbitPickerNext" aria-label="Next app icons">›</button></div>';
+document.body.append(shade,picker);
+
 const style=document.createElement("style");
 style.textContent='#orbitHome[hidden]{display:none!important}#orbitHome{position:fixed;right:0;bottom:0;bottom:env(safe-area-inset-bottom,0px);width:min(100vw,calc(100dvh - 100px),600px);aspect-ratio:1;z-index:3;touch-action:none;user-select:none;-webkit-user-select:none}#orbitDial{display:block;width:100%;height:100%;overflow:hidden;font-family:system-ui,sans-serif;touch-action:none}#orbitDial text{pointer-events:none;fill:var(--theme-text,#e5f0e7)}#orbitDial .orbit-ring{fill:var(--theme-surface,#202622)}#orbitDial .orbit-raised{fill:var(--theme-surface2,#35483c)}#orbitDial .orbit-line{stroke:var(--theme-line,#617568);fill:none}#orbitDial .orbit-accent{fill:var(--theme-accent,#c5e0c8)}#orbitDial .orbit-ink{fill:var(--theme-accent-ink,#18251d)}#orbitDial .orbit-muted{opacity:.75}#orbitDial .orbit-app-icon{image-rendering:auto;pointer-events:none}#orbitDial [role=button]{cursor:pointer;outline:none}#orbitDial [role=button]:focus-visible{outline:2px solid var(--theme-accent)}#orbitDial [aria-disabled=true]{opacity:.4}body[data-launcher-theme=orbit][data-home-page=home] #launcherHomePage{padding:0!important;min-height:100dvh!important;height:100dvh!important;max-width:none!important}body[data-launcher-theme=orbit][data-home-page=home] #launcherHomePage>:not(#orbitHome):not(#launcherLetterPanel):not(#launcherHomeOptions):not(#launcherSettingsToggle):not(#launcherShortcutMenu){display:none!important}body[data-launcher-theme=orbit][data-home-page=home] #launcherAlphaIndex,body[data-launcher-theme=orbit][data-home-page=home] #launcherAlphaBubble{display:none!important}body[data-launcher-theme=orbit][data-home-page=home] #launcherSettingsToggle{position:fixed!important;left:12px!important;right:auto!important;top:max(36px,calc(var(--status-top,24px) + 12px))!important;bottom:auto!important;z-index:8!important}body[data-launcher-theme=orbit] :is(#launcherClockChoose,#nativeWidgetsOpen,#acousticAddSpl,#acousticAddFft,#youtubeWidgetToggle,#agendaWidgetVisibility){display:none!important}.orbit-preview{background:#101211!important;position:relative;overflow:hidden}.orbit-preview:after{content:"";position:absolute;right:0;bottom:0;width:85%;aspect-ratio:1;background:radial-gradient(circle at bottom right,#35483c 0 17%,#101211 17% 19%,#303a32 19% 32%,#101211 32% 34%,#202622 34% 53%,#101211 53% 55%,#35483c 55% 79%,#101211 79% 81%,#29392e 81% 98%,transparent 98%)}.orbit-preview i{z-index:1;position:relative}';
+style.textContent+="\n#orbitLetterShade[hidden],#orbitLetterMenu[hidden]{display:none!important}\n#orbitLetterShade{position:fixed;inset:0;z-index:19;background:rgba(5,10,8,.46);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)}\nbody.orbit-popup-open[data-launcher-theme=\"orbit\"] #orbitHome{z-index:21!important}\nbody.orbit-popup-open[data-launcher-theme=\"orbit\"] #orbitDial #orbitClock,\nbody.orbit-popup-open[data-launcher-theme=\"orbit\"] #orbitDial #orbitWidgets,\nbody.orbit-popup-open[data-launcher-theme=\"orbit\"] #orbitDial #orbitRecents,\nbody.orbit-popup-open[data-launcher-theme=\"orbit\"] #orbitDial #orbitSearch{filter:blur(2.5px);opacity:.58}\n#orbitLetterMenu{position:fixed;top:clamp(90px,16dvh,185px);left:clamp(8px,4vw,26px);z-index:23;box-sizing:border-box;width:min(300px,91vw);padding:11px 12px 12px;border-radius:20px;border:1px solid var(--theme-line,#526b5b);background:color-mix(in srgb,var(--theme-dark,#111b15) 92%,#101211);box-shadow:0 16px 45px #0009;color:var(--theme-text,#edf2ee);font-family:system-ui,sans-serif}\n#orbitLetterMenu .orbit-picker-head{display:flex;justify-content:space-between;align-items:center;padding:0 1px 3px;font:600 12px/1.5 system-ui,sans-serif;letter-spacing:.08em}\n#orbitLetterMenu button{border:0;background:transparent;color:inherit;font:inherit;cursor:pointer}\n#orbitLetterMenu #orbitPickerClose{width:34px;height:30px;border-radius:9px;font-size:23px;line-height:25px}\n#orbitLetterMenu #orbitPickerFan{width:100%;height:auto;display:block;overflow:visible;touch-action:manipulation}\n#orbitPickerFan .orbit-picker-ring{fill:var(--theme-surface2,#35483c);stroke:var(--theme-line,#5f7c68);stroke-width:1}\n#orbitPickerFan .orbit-picker-app{cursor:pointer}\n#orbitPickerFan .orbit-picker-app circle{fill:var(--theme-surface,#202622);stroke:var(--theme-line,#607468);stroke-width:1.2}\n#orbitPickerFan .orbit-picker-app:focus-visible circle{stroke:var(--theme-accent,#c5e0c8);stroke-width:3}\n#orbitPickerFan .orbit-picker-app image{pointer-events:none}\n#orbitPickerFan text{fill:var(--theme-text,#e7eee8);font-family:system-ui,sans-serif;pointer-events:none}\n#orbitPickerFan .orbit-picker-letter{font-size:29px;font-weight:600;fill:var(--theme-accent,#c5e0c8)}\n#orbitPickerFan .orbit-picker-count{font-size:10px;opacity:.8}\n#orbitLetterMenu .orbit-picker-bottom{display:flex;justify-content:space-between;align-items:center;min-height:32px;font:400 11px system-ui,sans-serif;color:var(--theme-text,#d5dfd8)}\n#orbitLetterMenu .orbit-picker-bottom button{background:var(--theme-surface2,#35483c);border-radius:8px;min-width:35px;height:30px}\n#orbitLetterMenu .orbit-picker-bottom button:disabled{opacity:.3}\n@media(prefers-reduced-motion:reduce){#orbitLetterShade{backdrop-filter:none;-webkit-backdrop-filter:none}body.orbit-popup-open #orbitDial>g>g{transition:none!important}}\n";
 document.head.append(style);
 const svg=host.querySelector("svg"),q=id=>document.getElementById(id);
 const pi=Math.PI,rad=a=>a*pi/180;
@@ -97,6 +107,85 @@ function settleRing(which,velocity=0){
 }
 let recentList=[],media={},lastClock="";
 const active=()=>launcherTheme==="orbit"&&launcherPage==="home";
+
+let popupVisible=false,popupLetter="",popupPage=0,popupSignature="";
+const fanPageSize=6;
+function iconSource(app){
+ const pkg=String(app.pkg||"");
+ if(!/^[A-Za-z0-9_.]{4,180}$/.test(pkg))return "";
+ const mode=window.audioDeskIconStudio?.mode?.()==="original"?"original":"orbit";
+ return "/app-icons/"+mode+"/"+encodeURIComponent(pkg)+".png";
+}
+function hidePopup(){
+ popupVisible=false;popupSignature="";shade.hidden=true;picker.hidden=true;
+ document.body.classList.remove("orbit-popup-open");
+}
+function showPopup(){
+ if(!active())return;
+ popupVisible=true;shade.hidden=false;picker.hidden=false;
+ document.body.classList.add("orbit-popup-open");
+ refreshPopup();
+}
+function selectLetter(letter){
+ const index=letters.indexOf(letter);
+ if(index<0)return;
+ stopSpin("letters");
+ indices.letters=index;offsets.letters=0;
+ drawLetters();
+ showPopup();
+}
+function refreshPopup(){
+ if(!popupVisible||!active())return;
+ const letter=letters[indices.letters];
+ if(letter!==popupLetter){popupLetter=letter;popupPage=0;popupSignature=""}
+ const apps=launcherGroups.get(letter)||[];
+ const totalPages=Math.max(1,Math.ceil(apps.length/fanPageSize));
+ popupPage=Math.min(popupPage,totalPages-1);
+ const current=apps.slice(popupPage*fanPageSize,(popupPage+1)*fanPageSize);
+ const signature=letter+":"+popupPage+":"+apps.map(app=>launcherAppKey(app)).join("|")+":"+window.audioDeskIconStudio?.mode?.();
+ if(signature===popupSignature)return;
+ popupSignature=signature;
+ picker.setAttribute("aria-label",letter+": "+apps.length+" installed applications");
+ q("orbitPickerHeading").textContent="APPS · "+letter;
+ q("orbitPickerStatus").textContent=apps.length?(popupPage+1)+" / "+totalPages+" · "+apps.length+" apps":"No apps";
+ q("orbitPickerPrevious").disabled=popupPage===0;
+ q("orbitPickerNext").disabled=popupPage>=totalPages-1;
+ let h='<path d="M 18,184 A 132,132 0 0 1 282,184 L 225,184 A 75,75 0 0 0 75,184 Z" class="orbit-picker-ring"/>';
+ h+='<circle cx="150" cy="184" r="40" fill="var(--theme-dark,#101211)" stroke="var(--theme-line,#546a59)" stroke-width="1"/>';
+ h+='<text x="150" y="182" text-anchor="middle" class="orbit-picker-letter">'+esc(letter)+'</text>';
+ h+='<text x="150" y="199" text-anchor="middle" class="orbit-picker-count">'+apps.length+' APPS</text>';
+ current.forEach((app,i)=>{
+  const a=current.length===1?90:156-i*132/(current.length-1);
+  const x=(150+108*Math.cos(rad(a))).toFixed(2);
+  const y=(184-108*Math.sin(rad(a))).toFixed(2);
+  const url=iconSource(app),fallback=trunc(app.label,2).toUpperCase();
+  h+='<g transform="translate('+x+' '+y+')" class="orbit-picker-app" role="button" tabindex="0" aria-label="Open '+esc(app.label)+'" data-picker-pkg="'+esc(app.pkg)+'" data-picker-activity="'+esc(app.activity)+'"><circle r="24"/><text text-anchor="middle" y="5" font-size="12">'+esc(fallback)+'</text>';
+  if(url)h+='<image href="'+url+'" x="-19" y="-19" width="38" height="38" preserveAspectRatio="xMidYMid meet"/>';
+  h+='</g>';
+ });
+ if(!apps.length)h+='<text x="150" y="77" text-anchor="middle" font-size="13">No installed apps</text>';
+ q("orbitPickerFan").innerHTML=h;
+}
+shade.addEventListener("click",hidePopup);
+q("orbitPickerClose").addEventListener("click",hidePopup);
+q("orbitPickerPrevious").addEventListener("click",()=>{popupPage=Math.max(0,popupPage-1);popupSignature="";refreshPopup()});
+q("orbitPickerNext").addEventListener("click",()=>{popupPage++;popupSignature="";refreshPopup()});
+function launchPickerApp(target){
+ const app=target.closest("[data-picker-pkg][data-picker-activity]");
+ if(!app)return;
+ const chosen=launcherApps.find(x=>x.pkg===app.dataset.pickerPkg&&x.activity===app.dataset.pickerActivity);
+ if(!chosen)return;
+ hidePopup();
+ window.AudioDesk?.launchExternalApp?.(chosen.pkg,chosen.activity);
+}
+q("orbitPickerFan").addEventListener("click",e=>launchPickerApp(e.target));
+q("orbitPickerFan").addEventListener("keydown",e=>{
+ if(e.key!=="Enter"&&e.key!==" ")return;
+ if(!e.target.closest("[data-picker-pkg]"))return;
+ e.preventDefault();launchPickerApp(e.target);
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&popupVisible)hidePopup()});
+
 function drawClock(){
  if(!active())return;
  const now=new Date(),time=now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:false}),date=now.toLocaleDateString([],{weekday:"short",day:"numeric",month:"short"}).toUpperCase();
