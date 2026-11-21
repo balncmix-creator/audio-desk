@@ -87,8 +87,15 @@
  },true);
  document.addEventListener("error",e=>{
   const img=e.target;
-  if(img instanceof HTMLImageElement&&img.classList.contains("ad-icon-image"))
-   img.closest(".ad-icon-shell")?.classList.remove("icon-loaded");
+  if(!(img instanceof HTMLImageElement)||!img.classList.contains("ad-icon-image"))return;
+  // If a generated pack rendition cannot be decoded, use the actual native
+  // app icon before ever showing a generic letter or theme silhouette.
+  if(!img.dataset.nativeOriginalRetry&&/\/app-icons\/pack-[a-z]+\//.test(img.src)){
+   img.dataset.nativeOriginalRetry="yes";
+   img.src=img.src.replace(/\/app-icons\/pack-[a-z]+\//,"/app-icons/original/");
+   return;
+  }
+  img.closest(".ad-icon-shell")?.classList.remove("icon-loaded");
  },true);
  function rerender(){
   // Recents normally skip identical app lists; icons change even when apps do not.
@@ -183,6 +190,13 @@
   nativeReady,
   mode:()=>selected(),
   pack:()=>selectedPack(),
+  // SVG Orbit renderer uses the SAME pack's surfaces and shapes as Apps;
+  // never derive a separate fixed gray icon style inside the radial dial.
+  appearance:()=>{
+   if(selected()!=="pack")return null;
+   const p=packById.get(selectedPack());
+   return p?{id:p[0],background:p[3],edge:p[4],radius:p[5],finish:p[6]}:null;
+  },
   packs:()=>packs.map(([id,name,description])=>({id,name,description})),
   iconUrlFor:app=>{
    const pkg=String(app?.pkg||"");
