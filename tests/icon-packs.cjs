@@ -30,7 +30,7 @@ assert.match(studio,/ad_icon_studio_pack_v1_/,'packs are persisted per launcher 
   await page.addInitScript(apps=>{
    window.AudioDesk={
     supportsAdaptiveAppIcons(){return true},
-    requestLauncherApps(){window.receiveLauncherApps?.(apps,[],true)},
+    requestLauncherApps(){window.receiveLauncherApps?.(apps,[{...apps[0],opened:Date.now()}],true)},
     requestMediaState(){window.receiveAudioDeskMedia?.({enabled:false,available:false})},
     setStatusBarTheme(){},setRefreshEnabled(){},isDefaultLauncher(){return false}
    };
