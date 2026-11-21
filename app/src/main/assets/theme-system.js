@@ -5,6 +5,7 @@
 "use strict";
 const byId=id=>document.getElementById(id);
 const palettes={
+ orbit:[["forest","Forest"," #101211".trim(),"#35483c","#c5e0c8","#536858"],["graphite","Graphite","#111315","#353b42","#d1d7de","#505b68"],["navy","Midnight","#101621","#283d56","#a8c8f2","#455e7b"],["amber","Amber","#171410","#493a26","#e6c89a","#725638"]],
  extreme:[["black","Pure black","#000000","#000000","#f1f1f1","#151515"]],
  minimal:[
   ["ink","Ink black","#080a0d","#24282b","#e1e5e7","#f5f5f5"],
@@ -31,7 +32,7 @@ const palettes={
   ["blush","Soft blush","#30272c","#665154","#f4e0d9","#e5c8bf"]
  ]
 };
-const defaults={extreme:"palette:black",minimal:"bundled:0",pixel:"palette:arcade",windows:"palette:metro",warm:"palette:black"};
+const defaults={orbit:"palette:forest",extreme:"palette:black",minimal:"bundled:0",pixel:"palette:arcade",windows:"palette:metro",warm:"palette:black"};
 const key=theme=>"ad_wallpaper_by_theme_v2_"+theme;
 let paletteId=null;
 let switching=false;
@@ -307,7 +308,7 @@ function refreshMedia(){
  clearTimeout(mediaTimer);
  const music=byId("launcherMusicWidget");
  if(launcherTheme==="extreme"||document.hidden||window.audioDeskForeground===false||launcherPage!=="home"||
-  (music.hasAttribute("data-widget-removed")&&launcherTheme!=="windows"))return;
+  (music.hasAttribute("data-widget-removed")&&launcherTheme!=="windows"&&launcherTheme!=="orbit"))return;
  window.AudioDesk?.requestMediaState?.();
  mediaTimer=setTimeout(refreshMedia,lowPowerMode()?(mediaState.playing?6000:18000):(mediaState.playing?3500:9000));
 }
