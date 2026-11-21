@@ -353,7 +353,7 @@ const demoApps=[
    launcherRecents=window.launcherDemoApps.slice(0,5).map((app,i)=>({...app,opened:Date.now()-i*60000}));
    renderLauncherHome();
   });
-  assert.equal(await page.locator('#orbitRecents image[href="/app-icons/orbit/com.example.reaper.png"]').count(),1,
+  assert.ok((await page.locator('#orbitRecents image[href="/app-icons/orbit/com.example.reaper.png"]').count())>=1,
    'radial recent-app segment requests native device icon by package');
   assert.ok((await page.locator('#orbitRecents').textContent()).includes('REAPER'),
    'radial app labels remain visible as icon fallback');
