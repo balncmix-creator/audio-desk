@@ -84,7 +84,7 @@ assert.match(orbit,/orbitIconMarkup/,'recents, fan, and widget icon layouts shou
   assert.ok(brokenSlots.length>=1,'unavailable app renders a fallback tile');
   assert.ok(brokenSlots.every(s=>s.fallback!=='none'),
    'failed image still has a readable single-letter fallback');
-  const widgetText=await page.locator('#orbitWidgets').innerText();
+  const widgetText=await page.locator('#orbitWidgets').textContent();
   assert.ok((widgetText.match(/NO ACTIVE PLAYER/g)||[]).length<=1,
    'idle media panel does not duplicate status labels');
   assert.equal(await page.locator('#orbitWidgets [data-orbit-action="media:toggle"]').count(),0,
