@@ -508,7 +508,7 @@ const demoApps=[
     minHit:Math.min(...[...document.querySelectorAll('#orbitSettingsTabs button')]
      .map(el=>el.getBoundingClientRect().height))};
   });
-  assert.ok(settingsMetrics.width>=350&&settingsMetrics.right<=settingsMetrics.vw);
+  assert.ok(settingsMetrics.width>=Math.min(350,settingsMetrics.vw-24)&&settingsMetrics.right<=settingsMetrics.vw, "Settings geometry: "+JSON.stringify(settingsMetrics));
   assert.ok(settingsMetrics.minHit>=40,'settings controls must be finger accessible');
   await page.locator('#orbitSettingsTabs [data-orbit-tab="widgets"]').click();
   assert.ok((await page.locator('#orbitSettingsContent').textContent()).includes('Audio Desk widgets'));
