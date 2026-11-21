@@ -11,7 +11,7 @@ assert.match(native,/WebViewAssetLoader\.PathHandler/,'native icons are delivere
 assert.match(native,/getApplicationIcon\(pkg\)/,'icons use actual installed app resources');
 assert.match(native,/isLaunchable\(pkg\)/,'icon requests may only target verified installed launcher apps');
 assert.match(native,/LruCache<String, ByteArray>/,'on-device icon bytes have bounded RAM caching');
-assert.match(native,/if \(theme == "pixel"\) 32 else 128/,'8-bit gets deliberately pixelated resources');
+assert.match(native,/if \(theme == "pixel" \|\| theme == "pack-arcade"\) 32 else 128/,'8-bit and Arcade pack use deliberately pixelated resources');
 for(const theme of ['pixel','windows','warm','original'])
  assert.ok(native.includes('"'+theme+'"'),'native icon generator must recognize '+theme);
 assert.match(native,/original\|minimal\|pixel\|windows\|warm/,
