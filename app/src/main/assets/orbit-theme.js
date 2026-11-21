@@ -17,6 +17,7 @@ style.textContent='#orbitHome[hidden]{display:none!important}#orbitHome{position
 style.textContent+="\n#orbitRadialBackdrop{position:fixed;inset:0;z-index:2;opacity:0;visibility:hidden;pointer-events:none;background:rgba(8,17,11,.34);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:opacity .28s ease,visibility .28s ease}\nbody.orbit-letter-active[data-launcher-theme=\"orbit\"] #orbitRadialBackdrop{opacity:1;visibility:visible;pointer-events:auto}\nbody.orbit-letter-active[data-launcher-theme=\"orbit\"] #orbitDial #orbitClock,\nbody.orbit-letter-active[data-launcher-theme=\"orbit\"] #orbitDial #orbitWidgets,\nbody.orbit-letter-active[data-launcher-theme=\"orbit\"] #orbitDial #orbitSearch{filter:blur(2.5px);opacity:.55}\n#orbitDial #orbitClock,#orbitDial #orbitWidgets,#orbitDial #orbitSearch{transition:filter .26s ease,opacity .26s ease}\n#orbitRecents .orbit-app-ring{stroke:var(--theme-line,#6c8873);stroke-width:1;fill:var(--theme-surface2,#35483c)}\n#orbitRecents .orbit-fan-item{cursor:pointer}\n#orbitRecents .orbit-fan-item circle{fill:var(--theme-surface,#263d30);stroke:var(--theme-line,#91ab97);stroke-width:1}\n#orbitRecents .orbit-fan-item:focus-visible circle{stroke:var(--theme-accent,#c6e9c8);stroke-width:3}\n#orbitRecents .orbit-fan-item image{pointer-events:none}\n#orbitRecents #orbitFanCount{font-size:10px;opacity:.83}\n#orbitRecents .orbit-page-button{cursor:pointer}\n#orbitRecents .orbit-page-button text{font-size:14px;fill:var(--theme-text,#e5f0e7)}\nbody[data-launcher-theme=orbit] #launcherHomePage>:not(#orbitHome):not(#orbitRadialBackdrop):not(#launcherLetterPanel):not(#launcherHomeOptions):not(#launcherSettingsToggle):not(#launcherShortcutMenu){display:none!important}\n@media(prefers-reduced-motion:reduce){#orbitRadialBackdrop,#orbitDial #orbitClock,#orbitDial #orbitWidgets,#orbitDial #orbitSearch{transition:none!important}#orbitRadialBackdrop{backdrop-filter:none;-webkit-backdrop-filter:none}}\n";
 // A transparent backdrop must remain layout-visible; opacity and hit-testing own its state.
 style.textContent+='#orbitRadialBackdrop{display:block!important;visibility:visible!important}';
+style.textContent+="\n/* Native SVG app icons must be atomic: never paint the fallback text under a semi-transparent pack glyph. */\n#orbitDial .orbit-icon-slot .orbit-app-icon{visibility:hidden;pointer-events:none}\n#orbitDial .orbit-icon-slot.orbit-icon-loaded .orbit-app-icon{visibility:visible}\n#orbitDial .orbit-icon-slot.orbit-icon-loaded .orbit-icon-fallback{display:none!important}\n#orbitDial .orbit-icon-slot.orbit-icon-failed .orbit-app-icon{display:none!important}\n#orbitDial .orbit-icon-slot .orbit-icon-fallback{fill:var(--theme-text,#fff);font-weight:700;font-size:12px;text-anchor:middle}\n#orbitDial .orbit-icon-slot .orbit-icon-tile{stroke-width:1.4;vector-effect:non-scaling-stroke}\n";
 style.textContent+="\n#orbitExternalWidgets .orbit-external-segment{fill:var(--theme-surface,#304b37);stroke:var(--theme-line,#58715f);stroke-width:1}\n#orbitExternalWidgets .orbit-external-focused{fill:var(--theme-surface2,#416348);stroke:var(--theme-accent,#b4d9ba);stroke-width:1.7}\n#orbitExternalWidgets [data-orbit-action]{cursor:pointer;outline:none}\n";
 style.textContent+="\n#orbitSettingsGear{display:none;position:fixed;top:max(34px,calc(var(--status-top,24px) + 10px));left:12px;z-index:8;width:38px;height:38px;place-items:center;border-radius:12px;border:1px solid var(--theme-line,#607b66);background:var(--theme-surface2,#2d4837);color:var(--theme-accent,#cce8d0);box-shadow:0 3px 15px #0003;cursor:pointer}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"home\"] #orbitSettingsGear{display:grid}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"home\"] #launcherSettingsToggle{display:none!important}\n#orbitSettingsShade[hidden],#orbitSettingsPanel[hidden],#orbitQuickCustomize[hidden],#orbitToast[hidden]{display:none!important}\n#orbitSettingsShade{position:fixed;inset:0;z-index:26;background:#061008a6;backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}\n#orbitSettingsPanel,#orbitQuickCustomize{font-family:system-ui,sans-serif;position:fixed;z-index:27;box-sizing:border-box;color:var(--theme-text,#e2f0e5);border:1px solid var(--theme-line,#718d78);background:var(--theme-surface,#223729);box-shadow:0 15px 45px #0008}\n#orbitSettingsPanel{left:12px;top:max(69px,calc(var(--status-top,24px) + 46px));width:min(310px,calc(100vw - 24px));max-height:min(74dvh,600px);border-radius:17px;display:flex;flex-direction:column;overflow:hidden}\n#orbitSettingsPanel .orbit-settings-header{display:flex;align-items:center;justify-content:space-between;padding:14px 15px 12px;gap:15px}\n#orbitSettingsPanel .orbit-settings-header>div{display:flex;flex-direction:column;gap:4px}\n#orbitSettingsPanel .orbit-settings-header small{font-size:10px;letter-spacing:.12em;opacity:.72}\n#orbitSettingsPanel .orbit-settings-header strong{font-size:21px}\n#orbitSettingsPanel button,#orbitQuickCustomize button{font:inherit;cursor:pointer;color:inherit}\n#orbitSettingsClose{width:32px;height:30px;border:0;background:var(--theme-surface2,#365540);border-radius:9px;font-size:23px}\n#orbitSettingsTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:0 12px 12px;border-bottom:1px solid var(--theme-line,#58745f)}\n#orbitSettingsTabs button{min-width:0;padding:8px 2px;background:var(--theme-surface2,#365540);border:0;border-radius:8px;font-size:11px}\n#orbitSettingsTabs button[aria-selected=\"true\"]{background:var(--theme-accent,#c9e3ce);color:var(--theme-accent-ink,#183120);font-weight:700}\n#orbitSettingsContent{min-height:120px;overflow:auto;overscroll-behavior:contain;padding:13px 14px 16px;font-size:12px}\n#orbitSettingsContent h3{font-size:14px;font-weight:650;margin:0 0 11px}\n#orbitSettingsContent p{opacity:.77;font-size:11px;line-height:1.5;margin:7px 0 12px}\n#orbitSettingsContent .orbit-settings-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--theme-line,#4d6655)}\n#orbitSettingsContent .orbit-settings-row small{display:block;font-size:10px;opacity:.72;padding-top:4px}\n#orbitSettingsContent button{background:var(--theme-surface2,#3f5c49);border:1px solid var(--theme-line,#627c68);border-radius:9px;padding:8px 10px;font-size:11px}\n#orbitSettingsContent .orbit-settings-buttons{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}\n#orbitSettingsContent .orbit-settings-buttons button[aria-pressed=\"true\"]{border-color:var(--theme-accent,#d7ebd9);font-weight:700}\n#orbitSettingsContent input[type=checkbox]{accent-color:var(--theme-accent,#c5dec8);width:17px;height:17px;flex-shrink:0}\n#orbitQuickCustomize{top:max(108px,calc(var(--status-top,24px) + 88px));left:13px;width:min(230px,calc(100vw - 30px));padding:9px;border-radius:14px}\n#orbitQuickCustomize strong{display:block;padding:7px 8px 9px;color:var(--theme-accent,#bad8c2);font-size:12px}\n#orbitQuickCustomize button{display:block;text-align:left;width:100%;border:0;border-radius:9px;padding:10px 8px;background:transparent;font-size:12px}\n#orbitQuickCustomize button:active{background:var(--theme-surface2,#3f5c49)}\n#orbitToast{position:fixed;z-index:35;bottom:max(48px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--theme-accent,#d8eedb);color:var(--theme-accent-ink,#193522);padding:10px 14px;border-radius:10px;font:12px system-ui,sans-serif;box-shadow:0 7px 25px #0007;max-width:90vw}\n@media(prefers-reduced-motion:reduce){#orbitSettingsShade{backdrop-filter:none;-webkit-backdrop-filter:none}}\n";
 style.textContent+="\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitRadialBackdrop{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitDial #orbitClock,\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitDial #orbitWidgets,\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitDial #orbitExternalWidgets,\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitDial #orbitSearch{filter:none!important}\nbody.orbit-letter-active[data-launcher-theme=orbit] #orbitDial #orbitExternalWidgets{filter:blur(2.5px);opacity:.55;transition:filter .26s ease,opacity .26s ease}\nbody.orbit-hide-app-widgets[data-launcher-theme=orbit] #orbitExternalWidgets{display:none}\n";
@@ -208,11 +209,58 @@ let popupVisible=false,popupLetter="",popupPage=0,popupSignature="";
 let fanCurrent=null,fanAnimation=0;
 const fanPageSize=5,svgNS="http://www.w3.org/2000/svg";
 function iconSource(app){
- const pkg=String(app.pkg||"");
+ const pkg=String(app?.pkg||"");
  if(!/^[A-Za-z0-9_.]{4,180}$/.test(pkg))return "";
  return window.audioDeskIconStudio?.iconUrlFor?.(app)||
   (!window.audioDeskIconStudio?"/app-icons/orbit/"+encodeURIComponent(pkg)+".png":"");
 }
+// This SVG implementation shares the native icon family, background and
+// silhouette with the app drawer. The fallback is at most ONE character and
+// is never visible simultaneously with a successfully loaded PNG.
+function orbitIconMarkup(app,size=30){
+ const meta=window.audioDeskIconStudio?.appearance?.();
+ const safeColor=value=>/^#[0-9a-f]{6}$/i.test(value||"")?value:null;
+ const bg=safeColor(meta?.background)||"var(--theme-surface2,#35483c)";
+ const edge=safeColor(meta?.edge)||"var(--theme-line,#77937b)";
+ const pixel=meta?.id==="arcade"||meta?.id==="blueprint";
+ const radius=pixel?0:meta?.id==="ink"?6:8;
+ const side=size+4,half=side/2,offset=size/2;
+ const label=String(app?.label||"").trim();
+ const letter=Array.from(label)[0]?.toLocaleUpperCase()||"◈";
+ const url=iconSource(app);
+ return '<g class="orbit-icon-slot" aria-hidden="true">'+
+  '<rect class="orbit-icon-tile" x="'+(-half)+'" y="'+(-half)+
+  '" width="'+side+'" height="'+side+'" rx="'+radius+
+  '" fill="'+bg+'" stroke="'+edge+'"/>'+
+  '<text class="orbit-icon-fallback" x="0" y="4">'+esc(letter)+'</text>'+
+  (url?'<image class="orbit-app-icon" href="'+esc(url)+'" x="'+(-offset)+
+   '" y="'+(-offset)+'" width="'+size+'" height="'+size+
+   '" preserveAspectRatio="xMidYMid meet"/>':"")+
+  '</g>';
+}
+// SVG <image> fires load/error asynchronously. Avoid both the "BH…" fallback
+// showing through transparent logo pixels and blank/broken icon placeholders.
+function onOrbitIconImage(event,loaded){
+ const img=event.target;
+ if(img?.nodeName?.toLowerCase()!=="image"||!img.classList.contains("orbit-app-icon"))return;
+ const slot=img.closest(".orbit-icon-slot");
+ if(!slot)return;
+ if(loaded){
+  slot.classList.remove("orbit-icon-failed");
+  slot.classList.add("orbit-icon-loaded");
+  return;
+ }
+ const href=img.getAttribute("href")||"";
+ if(!img.dataset.triedOriginal&&/^\/app-icons\/pack-[a-z]+\//.test(href)){
+  img.dataset.triedOriginal="yes";
+  img.setAttribute("href",href.replace(/^\/app-icons\/pack-[a-z]+\//,"/app-icons/original/"));
+  return;
+ }
+ slot.classList.remove("orbit-icon-loaded");
+ slot.classList.add("orbit-icon-failed");
+}
+svg.addEventListener("load",event=>onOrbitIconImage(event,true),true);
+svg.addEventListener("error",event=>onOrbitIconImage(event,false),true);
 function stopFan(){
  if(fanAnimation)cancelAnimationFrame(fanAnimation);
  fanAnimation=0;
@@ -267,20 +315,9 @@ function makeLayer(apps){
   node.dataset.pickerPkg=app.pkg;
   node.dataset.pickerActivity=app.activity;
   const circle=document.createElementNS(svgNS,"circle");circle.setAttribute("r","19");
-  const label=document.createElementNS(svgNS,"text");
-  label.setAttribute("text-anchor","middle");label.setAttribute("font-size","12");label.setAttribute("y","4");
-  label.textContent=trunc(app.label,2).toUpperCase();
-  node.append(circle,label);
-  const url=iconSource(app);
-  if(url){
-   const icon=document.createElementNS(svgNS,"image");
-   icon.setAttribute("href",url);
-   icon.setAttribute("x","-15");icon.setAttribute("y","-15");
-   icon.setAttribute("width","30");icon.setAttribute("height","30");
-   icon.setAttribute("preserveAspectRatio","xMidYMid meet");
-   icon.setAttribute("class","orbit-app-icon");
-   node.append(icon);
-  }
+  node.append(circle);
+  // Identical atomic icon loading rules for the A–Z fan and recent-app ring.
+  node.insertAdjacentHTML("beforeend",orbitIconMarkup(app,30));
   layer.append(node);
   entries.push({node,a,r:145,opacity:1,scale:1});
  });
@@ -333,7 +370,8 @@ function refreshPopup(){
  const totalPages=Math.max(1,Math.ceil(apps.length/fanPageSize));
  popupPage=wrap(popupPage,totalPages);
  const subset=apps.slice(popupPage*fanPageSize,(popupPage+1)*fanPageSize);
- const signature=letter+":"+popupPage+":"+apps.map(a=>launcherAppKey(a)).join("|")+":"+window.audioDeskIconStudio?.mode?.();
+ const signature=letter+":"+popupPage+":"+apps.map(a=>launcherAppKey(a)).join("|")+
+  ":"+window.audioDeskIconStudio?.mode?.()+":"+window.audioDeskIconStudio?.pack?.();
  if(signature===popupSignature)return;
  popupSignature=signature;
  // Use the EXISTING recent-apps ring; never create a floating top-left dialog.
@@ -625,7 +663,7 @@ function drawExternalWidgets(offset=offsets.external){
   const symbol=isAdd?"+":(String(item.label||"Widget").trim().charAt(0).toUpperCase()||"▦");
   const iconUrl=!isAdd&&item.pkg?iconSource({pkg:item.pkg}):"";
   let content='<rect x="-39" y="-23" width="78" height="46" rx="9" fill="transparent"/>'+
-   (iconUrl?'<image href="'+iconUrl+'" x="-11" y="-19" width="22" height="22" class="orbit-app-icon"/>':txt(symbol,-2,18));
+   (iconUrl?g(0,0,orbitIconMarkup({pkg:item.pkg,label:item.label},22),"",false):txt(symbol,-2,18));
   h+=g(275,a,content,button(isAdd?"external:add":"external:focus:"+wrap(externalIndex+i,list.length),
    isAdd?"Add an Android app widget":"Select "+item.label+" app widget"),true);
   // Only the active app widget gets a name; its neighbours remain icons.
@@ -680,10 +718,7 @@ function drawRecents(offset=offsets.recents){
  const app=recentList[k];
  // The Android launcher scan provides package names, not image bytes.
  // Reuse the device-local icon provider used by Audio Desk's app drawer.
- const pkg=String(app.pkg||"");
- const iconUrl=iconSource(app);
- const fallback=txt(trunc(app.label,2).toUpperCase(),5,12);
- const icon=fallback+(iconUrl?'<image href="'+iconUrl+'" x="-15" y="-15" width="30" height="30" preserveAspectRatio="xMidYMid meet" class="orbit-app-icon"/>':"");
+ const icon=orbitIconMarkup(app,30);
  h+=g(147,a,'<circle r="19" class="orbit-raised"/>'+icon,button("recent:"+k,"Open "+app.label),false)}
  q("orbitRecents").innerHTML=h;
 }
@@ -697,7 +732,14 @@ function music(a,slot){
   h+=curveText("CONNECT PLAYER",209,a,43,9,"orbit-ink","music-connect-"+slot);
   return h;
  }
- let h=curveText(trunc(media.available?media.title:"Music player",17),238,a,45,11,"","music-title-"+slot);
+ if(!media.available){
+  // A connected-but-idle player needs one status, not three disabled
+  // transports plus two duplicate curved "No active player" labels.
+  let h=curveText("MUSIC PLAYER",236,a,43,11,"","music-title-"+slot);
+  h+=curveText("NO ACTIVE PLAYER",211,a,43,9,"orbit-muted","music-idle-"+slot);
+  return h;
+ }
+ let h=curveText(trunc(media.title,17),238,a,45,11,"","music-title-"+slot);
  h+=curveText(trunc(media.available?media.artist:"No active player",19),225,a,45,9,"orbit-muted","music-artist-"+slot);
  const items=[["previous","Previous track","|◀",media.available&&media.canPrevious],["toggle",media.playing?"Pause":"Play",media.playing?"Ⅱ":"▶",media.available&&media.canToggle],["next","Next track","▶|",media.available&&media.canNext]];
  items.forEach((x,i)=>{const on=i===1;h+=g(206,a+(i-1)*17,'<rect x="-22" y="-12" width="44" height="24" rx="7" class="'+(on?"orbit-accent":"orbit-raised")+'"/><text y="4" text-anchor="middle" font-size="13" class="'+(on?"orbit-ink":"")+'">'+x[2]+'</text>',button("media:"+x[0],x[1],!x[3]))});
@@ -707,7 +749,7 @@ function music(a,slot){
  h+=path(arc(188,start,end),"orbit-line",'stroke-width="3" stroke-linecap="round"');
  if(progress>0)h+=path(arc(188,start,start+48*progress),"orbit-line",'style="stroke:var(--theme-accent)" stroke-width="3" stroke-linecap="round"');
  if(media.canSeek)h+='<path d="'+arc(188,start,end)+'" fill="none" stroke="transparent" stroke-width="19" data-orbit-action="seek" data-orbit-angle="'+a+'" role="slider" aria-label="Playback position" aria-valuemin="0" aria-valuemax="'+duration+'" aria-valuenow="'+Math.round(position)+'" tabindex="0"/>';
- }else if(!media.available)h+=curveText("NO ACTIVE PLAYER",191,a,43,9,"orbit-muted","music-status-"+slot);
+ }
  return h;
 }
 function drawWidgets(offset=offsets.widgets){
@@ -835,7 +877,12 @@ svg.addEventListener("keydown",e=>{const t=e.target.closest("[data-orbit-action]
 for(const type of ["touchstart","touchmove","touchend","touchcancel"])host.addEventListener(type,e=>e.stopPropagation(),{passive:true});
 for(const type of ["audio-desk-theme-changed","launcher-page-changed","audio-desk-foreground"])window.addEventListener(type,sync);
 // Icon Studio reuses the exact same native pack URL for radial app icons.
-window.audioDeskOrbitRedrawIcons=()=>{if(active()){drawRecents();drawExternalWidgets()}};
+window.audioDeskOrbitRedrawIcons=()=>{
+ if(!active())return;
+ if(popupVisible){popupSignature="";refreshPopup()}
+ else drawRecents();
+ drawExternalWidgets();
+};
 sync();
 saveOrbitPreferences();
 })();
