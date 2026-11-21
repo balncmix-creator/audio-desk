@@ -147,7 +147,7 @@ function step(direction){
 let lastRefreshAt=0;
 function refresh(force=false){
  if(document.hidden||window.audioDeskForeground===false)return;
- if(!force&&overlay.hidden&&(launcherTheme==="extreme"||widget.hidden||widget.hasAttribute("data-widget-removed")||launcherPage!=="home"))return;
+ if(!force&&overlay.hidden&&(launcherTheme==="extreme"||launcherTheme==="orbit"||widget.hidden||widget.hasAttribute("data-widget-removed")||launcherPage!=="home"))return;
  if(!force&&Date.now()-lastRefreshAt<45000)return;
  lastRefreshAt=Date.now();
  window.AudioDesk.requestAgenda();
