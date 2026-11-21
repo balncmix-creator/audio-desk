@@ -17,6 +17,7 @@ style.textContent='#orbitHome[hidden]{display:none!important}#orbitHome{position
 style.textContent+="\n#orbitRadialBackdrop{position:fixed;inset:0;z-index:2;opacity:0;visibility:hidden;pointer-events:none;background:rgba(8,17,11,.34);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:opacity .28s ease,visibility .28s ease}\nbody.orbit-letter-active[data-launcher-theme=\"orbit\"] #orbitRadialBackdrop{opacity:1;visibility:visible;pointer-events:auto}\nbody.orbit-letter-active[data-launcher-theme=\"orbit\"] #orbitDial #orbitClock,\nbody.orbit-letter-active[data-launcher-theme=\"orbit\"] #orbitDial #orbitWidgets,\nbody.orbit-letter-active[data-launcher-theme=\"orbit\"] #orbitDial #orbitSearch{filter:blur(2.5px);opacity:.55}\n#orbitDial #orbitClock,#orbitDial #orbitWidgets,#orbitDial #orbitSearch{transition:filter .26s ease,opacity .26s ease}\n#orbitRecents .orbit-app-ring{stroke:var(--theme-line,#6c8873);stroke-width:1;fill:var(--theme-surface2,#35483c)}\n#orbitRecents .orbit-fan-item{cursor:pointer}\n#orbitRecents .orbit-fan-item circle{fill:var(--theme-surface,#263d30);stroke:var(--theme-line,#91ab97);stroke-width:1}\n#orbitRecents .orbit-fan-item:focus-visible circle{stroke:var(--theme-accent,#c6e9c8);stroke-width:3}\n#orbitRecents .orbit-fan-item image{pointer-events:none}\n#orbitRecents #orbitFanCount{font-size:10px;opacity:.83}\n#orbitRecents .orbit-page-button{cursor:pointer}\n#orbitRecents .orbit-page-button text{font-size:14px;fill:var(--theme-text,#e5f0e7)}\nbody[data-launcher-theme=orbit] #launcherHomePage>:not(#orbitHome):not(#orbitRadialBackdrop):not(#launcherLetterPanel):not(#launcherHomeOptions):not(#launcherSettingsToggle):not(#launcherShortcutMenu){display:none!important}\n@media(prefers-reduced-motion:reduce){#orbitRadialBackdrop,#orbitDial #orbitClock,#orbitDial #orbitWidgets,#orbitDial #orbitSearch{transition:none!important}#orbitRadialBackdrop{backdrop-filter:none;-webkit-backdrop-filter:none}}\n";
 // A transparent backdrop must remain layout-visible; opacity and hit-testing own its state.
 style.textContent+='#orbitRadialBackdrop{display:block!important;visibility:visible!important}';
+style.textContent+="\n#orbitExternalWidgets .orbit-external-segment{fill:var(--theme-surface,#304b37);stroke:var(--theme-line,#58715f);stroke-width:1}\n#orbitExternalWidgets .orbit-external-focused{fill:var(--theme-surface2,#416348);stroke:var(--theme-accent,#b4d9ba);stroke-width:1.7}\n#orbitExternalWidgets [data-orbit-action]{cursor:pointer;outline:none}\n";
 document.head.append(style);
 const svg=host.querySelector("svg"),q=id=>document.getElementById(id);
 const pi=Math.PI,rad=a=>a*pi/180;
@@ -89,7 +90,7 @@ function ringLength(which){
 }
 function paintRing(which){
  if(which==="widgets")drawWidgets();
- else if(which==="external"){externalIndex=indices.external;drawExternalWidgets();window.audioDeskSyncNativeWidgets?.();}
+ else if(which==="external"){externalIndex=indices.external;drawExternalWidgets();}
  else if(which==="letters")drawLetters();
  else drawRecents();
 }
@@ -302,6 +303,50 @@ function currentRecents(){
  // Actual launches only, no invented app labels. Deduplicate activities.
  const seen=new Set();return launcherRecents.filter(a=>{const k=launcherAppKey(a);if(seen.has(k))return false;seen.add(k);return true});
 }
+
+function drawExternalWidgets(offset=offsets.external){
+ // The outer App Widget dial is independent from Audio Desk's native widget
+ // dial. Only one real RemoteViews surface is hosted at a time (at 45°).
+ const list=externalWidgetsList();
+ const selected=list[wrap(externalIndex,list.length)];
+ let h="";
+ for(let i=-2;i<=2;i++){
+  const a=45+i*externalRingStep+offset;
+  if(a+19<0||a-19>90)continue;
+  const item=list[wrap(externalIndex+i,list.length)];
+  const isAdd=item.id===0,chosen=i===0;
+  h+=path(sector(a-18.5,a+18.5,299,252),chosen?"orbit-external-focused":"orbit-external-segment",
+   'data-orbit-external="'+esc(String(item.id))+'"');
+  const symbol=isAdd?"+":(String(item.label||"Widget").trim().charAt(0).toUpperCase()||"▦");
+  const iconUrl=!isAdd&&item.pkg?iconSource({pkg:item.pkg}):"";
+  let content='<rect x="-39" y="-23" width="78" height="46" rx="9" fill="transparent"/>'+
+   (iconUrl?'<image href="'+iconUrl+'" x="-11" y="-19" width="22" height="22" class="orbit-app-icon"/>':txt(symbol,-2,18))+
+   txt(trunc(isAdd?"ADD WIDGET":item.label,15).toUpperCase(),17,8);
+  h+=g(275,a,content,button(isAdd?"external:add":"external:focus:"+wrap(externalIndex+i,list.length),
+   isAdd?"Add an Android app widget":"Select "+item.label+" app widget"),true);
+ }
+ q("orbitExternalWidgets").innerHTML=h;
+ // Don't move native RemoteViews until the selected index actually changes.
+ if(selected?.id!==lastExternalNativeId){
+  lastExternalNativeId=selected?.id||0;
+  window.audioDeskSyncNativeWidgets?.();
+ }
+}
+let lastExternalNativeId=-1;
+function openNativeWidgetPicker(){
+ hidePopup();closeSettings();closeQuick();
+ if(typeof window.AudioDesk?.openNativeWidgets==="function"){
+  window.AudioDesk.openNativeWidgets();
+ }else{
+  showOrbitToast("Android's widget picker is available in the installed APK.");
+ }
+}
+function removeSelectedExternal(){
+ const chosen=selectedExternal();
+ if(!chosen?.id)return;
+ if(!confirm("Remove "+chosen.label+"? This also removes it from other Audio Desk themes."))return;
+ window.AudioDesk?.deleteNativeWidget?.(chosen.id);
+}
 function drawLetters(offset=offsets.letters){
  let h=path(ring(108,64),"orbit-raised");
  for(let i=-5;i<=5;i++){const l=letters[wrap(indices.letters+i,letters.length)],a=pointerAngle+i*11.25+offset;
@@ -392,6 +437,8 @@ function action(code,target){
  }
  if(code.startsWith("fan-page:")){turnAppPage(Number(code.slice(9))||0);return}
  if(code==="search")openLauncherSearch();
+ else if(code==="external:add")openNativeWidgetPicker();
+ else if(code.startsWith("external:focus:")){externalIndex=wrap(Number(code.slice("external:focus:".length))||0,externalWidgetsList().length);indices.external=externalIndex;offsets.external=0;drawExternalWidgets()}
  else if(code.startsWith("letter:"))selectLetter(code.slice(7));
  else if(code.startsWith("recent:")){const app=recentList[Number(code.slice(7))];if(app)window.AudioDesk?.launchExternalApp?.(app.pkg,app.activity)}
  else if(code.startsWith("media:")){window.AudioDesk?.mediaCommand?.(code.slice(6))}
