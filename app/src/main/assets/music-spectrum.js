@@ -90,7 +90,7 @@ function refreshSpectrumPalette(){
  lastPaletteAt=performance.now();
 }
 function fontColor(){if(!cachedAccent||performance.now()-lastPaletteAt>700)refreshSpectrumPalette();return cachedAccent}
-function activeHome(){return launcherTheme!=="extreme"&&wanted&&launcherPage==="home"&&!document.hidden&&window.audioDeskForeground!==false&&!widget.hasAttribute("data-widget-removed")&&(widget.dataset.musicLayout||"full")==="full"}
+function activeHome(){return launcherTheme!=="extreme"&&launcherTheme!=="orbit"&&wanted&&launcherPage==="home"&&!document.hidden&&window.audioDeskForeground!==false&&!widget.hasAttribute("data-widget-removed")&&(widget.dataset.musicLayout||"full")==="full"}
 function updateMusicLayout(){
  const rect=widget.getBoundingClientRect();
  if(rect.width<=0||rect.height<=0)return;
