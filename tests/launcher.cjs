@@ -555,7 +555,7 @@ const demoApps=[
   // throwing an exception and leaving a visible gear over a completely blank Home.
   assert.equal(await page.evaluate(()=>localStorage.getItem('ad_launcher_theme_v1')),'orbit');
   await page.reload({waitUntil:'load'});
-  await page.waitForFunction(()=>window.launcherApps?.length===8);
+  await page.waitForFunction(()=>launcherApps.length===8);
   assert.equal(await page.evaluate(()=>launcherTheme),'orbit',
    'Orbit is restored on cold start without needing to switch themes');
   await page.locator('#orbitHome').waitFor({state:'visible'});
