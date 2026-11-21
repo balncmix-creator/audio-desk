@@ -19,6 +19,7 @@ style.textContent+="\n#orbitRadialBackdrop{position:fixed;inset:0;z-index:2;opac
 style.textContent+='#orbitRadialBackdrop{display:block!important;visibility:visible!important}';
 style.textContent+="\n#orbitExternalWidgets .orbit-external-segment{fill:var(--theme-surface,#304b37);stroke:var(--theme-line,#58715f);stroke-width:1}\n#orbitExternalWidgets .orbit-external-focused{fill:var(--theme-surface2,#416348);stroke:var(--theme-accent,#b4d9ba);stroke-width:1.7}\n#orbitExternalWidgets [data-orbit-action]{cursor:pointer;outline:none}\n";
 style.textContent+="\n#orbitSettingsGear{display:none;position:fixed;top:max(34px,calc(var(--status-top,24px) + 10px));left:12px;z-index:8;width:38px;height:38px;place-items:center;border-radius:12px;border:1px solid var(--theme-line,#607b66);background:var(--theme-surface2,#2d4837);color:var(--theme-accent,#cce8d0);box-shadow:0 3px 15px #0003;cursor:pointer}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"home\"] #orbitSettingsGear{display:grid}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"home\"] #launcherSettingsToggle{display:none!important}\n#orbitSettingsShade[hidden],#orbitSettingsPanel[hidden],#orbitQuickCustomize[hidden],#orbitToast[hidden]{display:none!important}\n#orbitSettingsShade{position:fixed;inset:0;z-index:26;background:#061008a6;backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}\n#orbitSettingsPanel,#orbitQuickCustomize{font-family:system-ui,sans-serif;position:fixed;z-index:27;box-sizing:border-box;color:var(--theme-text,#e2f0e5);border:1px solid var(--theme-line,#718d78);background:var(--theme-surface,#223729);box-shadow:0 15px 45px #0008}\n#orbitSettingsPanel{left:12px;top:max(69px,calc(var(--status-top,24px) + 46px));width:min(310px,calc(100vw - 24px));max-height:min(74dvh,600px);border-radius:17px;display:flex;flex-direction:column;overflow:hidden}\n#orbitSettingsPanel header{display:flex;align-items:center;justify-content:space-between;padding:14px 15px 12px;gap:15px}\n#orbitSettingsPanel header>div{display:flex;flex-direction:column;gap:4px}\n#orbitSettingsPanel header small{font-size:10px;letter-spacing:.12em;opacity:.72}\n#orbitSettingsPanel header strong{font-size:21px}\n#orbitSettingsPanel button,#orbitQuickCustomize button{font:inherit;cursor:pointer;color:inherit}\n#orbitSettingsClose{width:32px;height:30px;border:0;background:var(--theme-surface2,#365540);border-radius:9px;font-size:23px}\n#orbitSettingsTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:0 12px 12px;border-bottom:1px solid var(--theme-line,#58745f)}\n#orbitSettingsTabs button{min-width:0;padding:8px 2px;background:var(--theme-surface2,#365540);border:0;border-radius:8px;font-size:11px}\n#orbitSettingsTabs button[aria-selected=\"true\"]{background:var(--theme-accent,#c9e3ce);color:var(--theme-accent-ink,#183120);font-weight:700}\n#orbitSettingsContent{min-height:120px;overflow:auto;overscroll-behavior:contain;padding:13px 14px 16px;font-size:12px}\n#orbitSettingsContent h3{font-size:14px;font-weight:650;margin:0 0 11px}\n#orbitSettingsContent p{opacity:.77;font-size:11px;line-height:1.5;margin:7px 0 12px}\n#orbitSettingsContent .orbit-settings-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--theme-line,#4d6655)}\n#orbitSettingsContent .orbit-settings-row small{display:block;font-size:10px;opacity:.72;padding-top:4px}\n#orbitSettingsContent button{background:var(--theme-surface2,#3f5c49);border:1px solid var(--theme-line,#627c68);border-radius:9px;padding:8px 10px;font-size:11px}\n#orbitSettingsContent .orbit-settings-buttons{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}\n#orbitSettingsContent .orbit-settings-buttons button[aria-pressed=\"true\"]{border-color:var(--theme-accent,#d7ebd9);font-weight:700}\n#orbitSettingsContent input[type=checkbox]{accent-color:var(--theme-accent,#c5dec8);width:17px;height:17px;flex-shrink:0}\n#orbitQuickCustomize{top:max(108px,calc(var(--status-top,24px) + 88px));left:13px;width:min(230px,calc(100vw - 30px));padding:9px;border-radius:14px}\n#orbitQuickCustomize strong{display:block;padding:7px 8px 9px;color:var(--theme-accent,#bad8c2);font-size:12px}\n#orbitQuickCustomize button{display:block;text-align:left;width:100%;border:0;border-radius:9px;padding:10px 8px;background:transparent;font-size:12px}\n#orbitQuickCustomize button:active{background:var(--theme-surface2,#3f5c49)}\n#orbitToast{position:fixed;z-index:35;bottom:max(48px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--theme-accent,#d8eedb);color:var(--theme-accent-ink,#193522);padding:10px 14px;border-radius:10px;font:12px system-ui,sans-serif;box-shadow:0 7px 25px #0007;max-width:90vw}\n@media(prefers-reduced-motion:reduce){#orbitSettingsShade{backdrop-filter:none;-webkit-backdrop-filter:none}}\n";
+style.textContent+="\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitRadialBackdrop{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitDial #orbitClock,\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitDial #orbitWidgets,\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitDial #orbitExternalWidgets,\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitDial #orbitSearch{filter:none!important}\nbody.orbit-letter-active[data-launcher-theme=orbit] #orbitDial #orbitExternalWidgets{filter:blur(2.5px);opacity:.55;transition:filter .26s ease,opacity .26s ease}\nbody.orbit-hide-app-widgets[data-launcher-theme=orbit] #orbitExternalWidgets{display:none}\n";
 document.head.append(style);
 
 const orbitSettingsGear=document.createElement("button");
@@ -82,11 +83,12 @@ function redrawExternal(){
  if(!active())return;
  externalWidgets=nativeWidgetList();
  externalIndex=wrap(externalIndex,externalWidgetsList().length);
+ indices.external=externalIndex;
  drawExternalWidgets();
  window.audioDeskSyncNativeWidgets?.();
 }
 window.audioDeskOrbitWidgetSlot=()=>{
- if(!active()||popupVisible||settingsVisible||quickVisible||host.hidden)return null;
+ if(!active()||popupVisible||settingsVisible||quickVisible||!orbitPreferences.showAppWidgets||host.hidden)return null;
  const selected=selectedExternal();
  if(!selected?.id)return null;
  const rect=host.getBoundingClientRect();
@@ -101,6 +103,7 @@ function rotateExternal(delta){
  const count=externalWidgetsList().length;
  if(!count)return;
  externalIndex=wrap(externalIndex+delta,count);
+ indices.external=externalIndex;offsets.external=0;
  drawExternalWidgets();window.audioDeskSyncNativeWidgets?.();
 }
 
@@ -130,6 +133,7 @@ function advanceRing(which,delta){
  // Cross a notch without changing the visual angle: no snapping jump.
  const crossings=Math.round(offsets[which]/step);
  if(crossings){
+  if(which==="letters"&&orbitPreferences.haptics)try{navigator.vibrate?.(6)}catch{}
   indices[which]=wrap(indices[which]-crossings,len);
   if(which==="external")externalIndex=indices.external;
   offsets[which]-=crossings*step;
@@ -147,7 +151,7 @@ function settleRing(which,velocity=0){
  if(prefersReducedMotion.matches){
   advanceRing(which,-offsets[which]);return;
  }
- let v=Math.max(-0.75,Math.min(0.75,velocity)); // deg/ms
+ let v=orbitPreferences.momentum?Math.max(-0.75,Math.min(0.75,velocity)):0; // deg/ms
  let last=performance.now();
  function frame(now){
   if(!active()||document.hidden||window.audioDeskForeground===false){
@@ -194,6 +198,7 @@ function showPopup(){
  if(popupVisible){refreshPopup();return}
  popupVisible=true;popupLetter="";popupPage=0;popupSignature="";
  document.body.classList.add("orbit-letter-active");
+ window.audioDeskSyncNativeWidgets?.();
  drawRecents();
  refreshPopup();
 }
@@ -203,6 +208,7 @@ function hidePopup(){
  document.body.classList.remove("orbit-letter-active");
  stopFan();fanCurrent=null;
  if(wasVisible&&active())drawRecents();
+ window.audioDeskSyncNativeWidgets?.();
 }
 softBackdrop.addEventListener("click",hidePopup);
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&popupVisible)hidePopup()});
@@ -537,6 +543,7 @@ function currentRecents(){
 }
 
 function drawExternalWidgets(offset=offsets.external){
+ q("orbitExternalWidgets").style.display=orbitPreferences.showAppWidgets?"":"none";
  // The outer App Widget dial is independent from Audio Desk's native widget
  // dial. Only one real RemoteViews surface is hosted at a time (at 45°).
  const list=externalWidgetsList();
@@ -653,7 +660,12 @@ function drawWidgets(offset=offsets.widgets){
 }
 function drawSearch(){q("orbitSearch").innerHTML='<g '+button("search","Search installed apps")+'><path d="'+arc(60,0,90)+' L0,0 Z" class="orbit-raised"/><circle cx="-28" cy="-30" r="9" fill="none" stroke="var(--theme-text,#e5f0e7)" stroke-width="2.5"/><path d="M-21.5,-23.5 L-14,-16" fill="none" stroke="var(--theme-text,#e5f0e7)" stroke-width="2.5" stroke-linecap="round"/></g>'}
 function draw(){if(!active())return;host.hidden=false;recentList=currentRecents();drawClock();drawExternalWidgets();drawWidgets();drawRecents();drawLetters();drawSearch();if(popupVisible)refreshPopup()}
-function sync(){stopAllSpins();hidePopup();host.hidden=!active();drag=null;if(active()){redrawExternal();draw()}}
+function sync(){
+ stopAllSpins();hidePopup();closeSettings();closeQuick();
+ host.hidden=!active();drag=null;orbitToast.hidden=true;cancelHomeHold();
+ if(active()){redrawExternal();draw()}
+ window.audioDeskSyncNativeWidgets?.();
+}
 const oldHome=renderLauncherHome;
 renderLauncherHome=function(){oldHome();if(active()&&!drag)draw()};
 const oldClock=formatLauncherClock;formatLauncherClock=function(){oldClock();drawClock()};
@@ -690,7 +702,9 @@ function angularDifference(from,to){
 svg.addEventListener("pointerdown",e=>{
  if(!active()||drag||e.button!==0)return;
  const loc=coordinates(e),target=e.target.closest("[data-orbit-action]"),code=target?.dataset.orbitAction;
- const which=loc.r>=182&&loc.r<=266?"widgets":loc.r>=112&&loc.r<=178?"recents":loc.r>=64&&loc.r<=108?"letters":null;
+ const which=loc.r>=252&&loc.r<=299&&orbitPreferences.showAppWidgets?"external":loc.r>=182&&loc.r<=249?"widgets":loc.r>=112&&loc.r<=178?"recents":loc.r>=64&&loc.r<=108?"letters":null;
+ // A tap anywhere outside A–Z or the app icons closes the inline picker.
+ if(popupVisible&&which!=="letters"&&which!=="recents"){hidePopup();return}
  if(!which&&!code)return;
  if(which)stopSpin(which);
  if(which==="letters")showPopup();
@@ -699,7 +713,8 @@ svg.addEventListener("pointerdown",e=>{
   disabled:target?.getAttribute("aria-disabled")==="true",
   center:Number(target?.dataset.orbitAngle),total:0,moved:false,
   samples:[{t,angle:0}]};
- svg.setPointerCapture(e.pointerId);e.preventDefault();
+ try{svg.setPointerCapture(e.pointerId)}catch{}
+ e.preventDefault();
 });
 svg.addEventListener("pointermove",e=>{
  if(!drag||drag.id!==e.pointerId)return;
