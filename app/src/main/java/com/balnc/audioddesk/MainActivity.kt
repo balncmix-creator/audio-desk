@@ -53,6 +53,7 @@ class MainActivity : Activity() {
     private lateinit var agendaSupport: AgendaSupport
     private lateinit var acousticSupport: AcousticMeterSupport
     private lateinit var nativeWidgets: NativeWidgetPanel
+    private lateinit var radialFiles: RadialFileSupport
     private lateinit var youtubeWidget: YouTubeWidgetPanel
     private val acousticPermissionRequest = 6212
     private val agendaPermissionRequest = 6211
@@ -198,6 +199,7 @@ class MainActivity : Activity() {
             }
         }
         nativeWidgets = NativeWidgetPanel(this, appWebView)
+        radialFiles = RadialFileSupport(this, appWebView)
         appWebView.addJavascriptInterface(AppBridge(), "AudioDesk")
         appWebView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
@@ -488,6 +490,34 @@ class MainActivity : Activity() {
                 acousticSupport.setActive(spl && visible, fft && visible)
             }
         }
+        @JavascriptInterface fun radialFilesList() {
+            runOnUiThread { if (!destroyed && ::radialFiles.isInitialized) radialFiles.requestListing() }
+        }
+        @JavascriptInterface fun radialFilesPick() {
+            runOnUiThread { if (!destroyed && ::radialFiles.isInitialized) radialFiles.chooseFolder() }
+        }
+        @JavascriptInterface fun radialFilesUp() {
+            runOnUiThread { if (!destroyed && ::radialFiles.isInitialized) radialFiles.up() }
+        }
+        @JavascriptInterface fun radialFilesEnter(id: String) {
+            runOnUiThread { if (!destroyed && ::radialFiles.isInitialized) radialFiles.enter(id) }
+        }
+        @JavascriptInterface fun radialFilesOpen(id: String) {
+            runOnUiThread { if (!destroyed && ::radialFiles.isInitialized) radialFiles.open(id) }
+        }
+        @JavascriptInterface fun radialFilesShare(id: String) {
+            runOnUiThread { if (!destroyed && ::radialFiles.isInitialized) radialFiles.share(id) }
+        }
+        @JavascriptInterface fun radialFilesCreate(name: String) {
+            runOnUiThread { if (!destroyed && ::radialFiles.isInitialized) radialFiles.createFolder(name) }
+        }
+        @JavascriptInterface fun radialFilesRename(id: String, name: String) {
+            runOnUiThread { if (!destroyed && ::radialFiles.isInitialized) radialFiles.rename(id, name) }
+        }
+        @JavascriptInterface fun radialFilesDelete(id: String) {
+            runOnUiThread { if (!destroyed && ::radialFiles.isInitialized) radialFiles.delete(id) }
+        }
+
         @JavascriptInterface fun openNativeWidgets() {
             runOnUiThread { if (!destroyed && !pixelBarSuspended) nativeWidgets.open() }
         }
@@ -848,6 +878,7 @@ class MainActivity : Activity() {
     @Deprecated("Activity result compatibility for minSdk 23")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (::radialFiles.isInitialized && radialFiles.result(requestCode, resultCode, data)) return
         if (::nativeWidgets.isInitialized && nativeWidgets.result(requestCode, resultCode)) return
         if (requestCode == spectrumProjectionRequest) {
             if (resultCode == RESULT_OK && data != null && spectrumVisible &&
@@ -941,6 +972,7 @@ class MainActivity : Activity() {
         if (::launcherSupport.isInitialized) launcherSupport.close()
         if (::agendaSupport.isInitialized) agendaSupport.close()
         if (::acousticSupport.isInitialized) acousticSupport.stop()
+        if (::radialFiles.isInitialized) radialFiles.close()
         if (::nativeWidgets.isInitialized) nativeWidgets.close()
         if (::youtubeWidget.isInitialized) youtubeWidget.close()
         stopSpectrumProjection()
