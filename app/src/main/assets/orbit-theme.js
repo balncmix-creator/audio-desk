@@ -13,7 +13,7 @@ softBackdrop.setAttribute("aria-hidden","true");
 home.prepend(softBackdrop);
 
 const style=document.createElement("style");
-style.textContent='#orbitHome[hidden]{display:none!important}#orbitHome{position:fixed;right:0;bottom:0;bottom:env(safe-area-inset-bottom,0px);width:min(100vw,calc(100dvh - 100px),600px);aspect-ratio:1;z-index:3;touch-action:none;user-select:none;-webkit-user-select:none}#orbitDial{display:block;width:100%;height:100%;overflow:hidden;font-family:system-ui,sans-serif;touch-action:none}#orbitDial text{pointer-events:none;fill:var(--theme-text,#e5f0e7)}#orbitDial .orbit-ring{fill:var(--theme-surface,#202622)}#orbitDial .orbit-raised{fill:var(--theme-surface2,#35483c)}#orbitDial .orbit-line{stroke:var(--theme-line,#617568);fill:none}#orbitDial .orbit-accent{fill:var(--theme-accent,#c5e0c8)}#orbitDial .orbit-ink{fill:var(--theme-accent-ink,#18251d)}#orbitDial .orbit-muted{opacity:.75}#orbitDial .orbit-app-icon{image-rendering:auto;pointer-events:none}#orbitDial [role=button]{cursor:pointer;outline:none}#orbitDial [role=button]:focus-visible{outline:2px solid var(--theme-accent)}#orbitDial [aria-disabled=true]{opacity:.4}body[data-launcher-theme=orbit][data-home-page=home] #launcherHomePage{padding:0!important;min-height:100dvh!important;height:100dvh!important;max-width:none!important}body[data-launcher-theme=orbit][data-home-page=home] #launcherHomePage>:not(#orbitHome):not(#launcherLetterPanel):not(#launcherHomeOptions):not(#launcherSettingsToggle):not(#launcherShortcutMenu){display:none!important}body[data-launcher-theme=orbit][data-home-page=home] #launcherAlphaIndex,body[data-launcher-theme=orbit][data-home-page=home] #launcherAlphaBubble{display:none!important}body[data-launcher-theme=orbit][data-home-page=home] #launcherSettingsToggle{position:fixed!important;left:12px!important;right:auto!important;top:max(36px,calc(var(--status-top,24px) + 12px))!important;bottom:auto!important;z-index:8!important}body[data-launcher-theme=orbit] :is(#launcherClockChoose,#nativeWidgetsOpen,#acousticAddSpl,#acousticAddFft,#youtubeWidgetToggle,#agendaWidgetVisibility){display:none!important}.orbit-preview{background:#101211!important;position:relative;overflow:hidden}.orbit-preview:after{content:"";position:absolute;right:0;bottom:0;width:85%;aspect-ratio:1;background:radial-gradient(circle at bottom right,#35483c 0 17%,#101211 17% 19%,#303a32 19% 32%,#101211 32% 34%,#202622 34% 53%,#101211 53% 55%,#35483c 55% 79%,#101211 79% 81%,#29392e 81% 98%,transparent 98%)}.orbit-preview i{z-index:1;position:relative}';
+style.textContent='#orbitHome[hidden]{display:none!important}#orbitHome{position:fixed;right:0;bottom:0;bottom:env(safe-area-inset-bottom,0px);width:min(100vw,calc(100dvh - 100px),600px);aspect-ratio:1;z-index:3;touch-action:none;user-select:none;-webkit-user-select:none}#orbitDial{display:block;width:100%;height:100%;overflow:hidden;font-family:system-ui,sans-serif;touch-action:none}#orbitDial text{pointer-events:none;fill:var(--theme-text,#e5f0e7)}#orbitDial .orbit-ring{fill:var(--theme-surface,#202622)}#orbitDial .orbit-raised{fill:var(--theme-surface2,#35483c)}#orbitDial .orbit-line{stroke:var(--theme-line,#617568);fill:none}#orbitDial .orbit-accent{fill:var(--theme-accent,#c5e0c8)}#orbitDial .orbit-ink{fill:var(--theme-accent-ink,#18251d)}#orbitDial .orbit-muted{opacity:.75}#orbitDial .orbit-app-icon{image-rendering:auto;pointer-events:none}#orbitDial [role=button]{cursor:pointer;outline:none}#orbitDial [role=button]:focus-visible{outline:2px solid var(--theme-accent)}#orbitDial [aria-disabled=true]{opacity:.4}body[data-launcher-theme=orbit][data-home-page=home] #launcherHomePage{padding:0!important;min-height:100dvh!important;height:100dvh!important;max-width:none!important}body[data-launcher-theme=orbit][data-home-page=home] #launcherHomePage>:not(#orbitHome):not(#orbitRadialBackdrop):not(#launcherLetterPanel):not(#launcherHomeOptions):not(#launcherSettingsToggle):not(#launcherShortcutMenu){display:none!important}body[data-launcher-theme=orbit][data-home-page=home] #launcherAlphaIndex,body[data-launcher-theme=orbit][data-home-page=home] #launcherAlphaBubble{display:none!important}body[data-launcher-theme=orbit][data-home-page=home] #launcherSettingsToggle{position:fixed!important;left:12px!important;right:auto!important;top:max(36px,calc(var(--status-top,24px) + 12px))!important;bottom:auto!important;z-index:8!important}body[data-launcher-theme=orbit] :is(#launcherClockChoose,#nativeWidgetsOpen,#acousticAddSpl,#acousticAddFft,#youtubeWidgetToggle,#agendaWidgetVisibility){display:none!important}.orbit-preview{background:#101211!important;position:relative;overflow:hidden}.orbit-preview:after{content:"";position:absolute;right:0;bottom:0;width:85%;aspect-ratio:1;background:radial-gradient(circle at bottom right,#35483c 0 17%,#101211 17% 19%,#303a32 19% 32%,#101211 32% 34%,#202622 34% 53%,#101211 53% 55%,#35483c 55% 79%,#101211 79% 81%,#29392e 81% 98%,transparent 98%)}.orbit-preview i{z-index:1;position:relative}';
 style.textContent+="\n#orbitRadialBackdrop{position:fixed;inset:0;z-index:2;opacity:0;visibility:hidden;pointer-events:none;background:rgba(8,17,11,.34);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:opacity .28s ease,visibility .28s ease}\nbody.orbit-letter-active[data-launcher-theme=\"orbit\"] #orbitRadialBackdrop{opacity:1;visibility:visible;pointer-events:auto}\nbody.orbit-letter-active[data-launcher-theme=\"orbit\"] #orbitDial #orbitClock,\nbody.orbit-letter-active[data-launcher-theme=\"orbit\"] #orbitDial #orbitWidgets,\nbody.orbit-letter-active[data-launcher-theme=\"orbit\"] #orbitDial #orbitSearch{filter:blur(2.5px);opacity:.55}\n#orbitDial #orbitClock,#orbitDial #orbitWidgets,#orbitDial #orbitSearch{transition:filter .26s ease,opacity .26s ease}\n#orbitRecents .orbit-app-ring{stroke:var(--theme-line,#6c8873);stroke-width:1;fill:var(--theme-surface2,#35483c)}\n#orbitRecents .orbit-fan-item{cursor:pointer}\n#orbitRecents .orbit-fan-item circle{fill:var(--theme-surface,#263d30);stroke:var(--theme-line,#91ab97);stroke-width:1}\n#orbitRecents .orbit-fan-item:focus-visible circle{stroke:var(--theme-accent,#c6e9c8);stroke-width:3}\n#orbitRecents .orbit-fan-item image{pointer-events:none}\n#orbitRecents #orbitFanCount{font-size:10px;opacity:.83}\n#orbitRecents .orbit-page-button{cursor:pointer}\n#orbitRecents .orbit-page-button text{font-size:14px;fill:var(--theme-text,#e5f0e7)}\nbody[data-launcher-theme=orbit] #launcherHomePage>:not(#orbitHome):not(#orbitRadialBackdrop):not(#launcherLetterPanel):not(#launcherHomeOptions):not(#launcherSettingsToggle):not(#launcherShortcutMenu){display:none!important}\n@media(prefers-reduced-motion:reduce){#orbitRadialBackdrop,#orbitDial #orbitClock,#orbitDial #orbitWidgets,#orbitDial #orbitSearch{transition:none!important}#orbitRadialBackdrop{backdrop-filter:none;-webkit-backdrop-filter:none}}\n";
 document.head.append(style);
 const svg=host.querySelector("svg"),q=id=>document.getElementById(id);
@@ -272,15 +272,16 @@ function drawLetters(offset=offsets.letters){
  h+=g(86,a,'<rect x="-9" y="-20" width="18" height="40" rx="5" fill="transparent"/>'+(atPointer?'<circle r="11" class="orbit-accent"/>':"")+txt(l,4,12,atPointer?"orbit-ink":""),button("letter:"+l,"Browse apps beginning with "+l),false);
  }
  // A fixed triangle marks the selected letter while the alphabet rotates.
+ // Compact fixed arrow: small enough not to overwhelm the alphabet glyphs.
  h+='<g id="orbitAlphabetPointer" aria-label="Fixed alphabet selection arrow" pointer-events="none">'+
-  '<path d="M'+p(102,pointerAngle)+' L'+p(135,pointerAngle-5.8)+' Q'+p(144,pointerAngle)+' '+p(135,pointerAngle+5.8)+' Z" fill="#f2fff3" stroke="#112b1c" stroke-width="3" stroke-linejoin="round" style="filter:drop-shadow(0px 1px 3px #000b)"/>'+
-  '<circle cx="'+point(127,pointerAngle)[0]+'" cy="'+point(127,pointerAngle)[1]+'" r="3" fill="#315b3e"/>'+
+  '<path d="M'+p(104,pointerAngle)+' L'+p(122,pointerAngle-2.2)+' L'+p(122,pointerAngle+2.2)+' Z" fill="#f2fff3" stroke="#162d1d" stroke-width="1.4" stroke-linejoin="round"/>'+
   '</g>';
  q("orbitLetters").innerHTML=h;
  // The wheel alone moves; the arrow is redrawn at its fixed angle.
  if(popupVisible)refreshPopup();
 }
 function drawRecents(offset=offsets.recents){
+ if(popupVisible){ensureAppRing();refreshPopup();return}
  let h=path(ring(178,112),"orbit-ring");
  if(!recentList.length){h+=g(145,45,txt("↺",6,22,"orbit-muted"));q("orbitRecents").innerHTML=h;return}
  const count=Math.min(5,recentList.length),step=90/count;
@@ -343,8 +344,15 @@ renderLauncherHome=function(){oldHome();if(active()&&!drag)draw()};
 const oldClock=formatLauncherClock;formatLauncherClock=function(){oldClock();drawClock()};
 const oldMedia=window.receiveAudioDeskMedia;window.receiveAudioDeskMedia=function(data){oldMedia(data);media=data||{};if(active()&&!drag)drawWidgets()};
 // Media data arrives asynchronously via receiveAudioDeskMedia; no cross-module globals.
-function action(code){
+function action(code,target){
  if(!code)return;
+ if(code==="picker:launch"){
+  const pkg=target?.dataset.pickerPkg,activity=target?.dataset.pickerActivity;
+  const match=launcherApps.find(a=>a.pkg===pkg&&a.activity===activity);
+  if(match){hidePopup();window.AudioDesk?.launchExternalApp?.(match.pkg,match.activity)}
+  return;
+ }
+ if(code.startsWith("fan-page:")){turnAppPage(Number(code.slice(9))||0);return}
  if(code==="search")openLauncherSearch();
  else if(code.startsWith("letter:"))selectLetter(code.slice(7));
  else if(code.startsWith("recent:")){const app=recentList[Number(code.slice(7))];if(app)window.AudioDesk?.launchExternalApp?.(app.pkg,app.activity)}
@@ -370,7 +378,7 @@ svg.addEventListener("pointerdown",e=>{
  if(which)stopSpin(which);
  if(which==="letters")showPopup();
  const t=performance.now();
- drag={id:e.pointerId,which,lastAngle:loc.a,code,
+ drag={id:e.pointerId,which,lastAngle:loc.a,code,target,
   disabled:target?.getAttribute("aria-disabled")==="true",
   center:Number(target?.dataset.orbitAngle),total:0,moved:false,
   samples:[{t,angle:0}]};
@@ -383,7 +391,7 @@ svg.addEventListener("pointermove",e=>{
  const now=performance.now();
  drag.samples.push({t:now,angle:drag.total});
  drag.samples=drag.samples.filter(x=>now-x.t<=110);
- if(drag.code==="seek"||!drag.which)return;
+ if(drag.code==="seek"||!drag.which||drag.which==="recents"&&popupVisible)return;
  if(Math.abs(drag.total)>3)drag.moved=true;
  if(drag.moved)advanceRing(drag.which,change);
 });
@@ -393,20 +401,21 @@ function finish(e,cancel=false){
  suppressNativeClickUntil=performance.now()+350;
  if(cancel){if(d.which)settleRing(d.which);return}
  if(d.code==="seek"){seekAt(coordinates(e).a,d.center);return}
+ if(d.which==="recents"&&popupVisible&&d.moved){turnAppPage(d.total<0?1:-1);return}
  if(d.which&&d.moved){
   const last=d.samples[d.samples.length-1],first=d.samples[0];
   const elapsed=last.t-first.t;
   let speed=elapsed>=12?(last.angle-first.angle)/elapsed:0;
   if(performance.now()-last.t>90)speed=0;
   settleRing(d.which,speed);
- }else if(!d.disabled)action(d.code);
+ }else if(!d.disabled)action(d.code,d.target);
 }
 svg.addEventListener("pointerup",e=>finish(e));
 svg.addEventListener("pointercancel",e=>finish(e,true));
 svg.addEventListener("click",e=>{
  if(e.isTrusted&&performance.now()<suppressNativeClickUntil)return;
  const t=e.target.closest("[data-orbit-action]");
- if(t&&t.getAttribute("aria-disabled")!=="true")action(t.dataset.orbitAction);
+ if(t&&t.getAttribute("aria-disabled")!=="true")action(t.dataset.orbitAction,t);
 });
 svg.addEventListener("keydown",e=>{const t=e.target.closest("[data-orbit-action]");if(!t)return;if(e.key==="Enter"||e.key===" "){e.preventDefault();if(t.getAttribute("aria-disabled")!=="true")action(t.dataset.orbitAction)}else if(t.dataset.orbitAction==="seek"&&["ArrowLeft","ArrowRight"].includes(e.key)){e.preventDefault();window.AudioDesk?.seekMedia?.(Math.max(0,Math.min(media.durationMs,media.positionMs+(e.key==="ArrowLeft"?-5000:5000))))}});
 for(const type of ["touchstart","touchmove","touchend","touchcancel"])host.addEventListener(type,e=>e.stopPropagation(),{passive:true});
