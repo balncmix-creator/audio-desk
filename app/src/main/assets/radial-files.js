@@ -135,9 +135,16 @@ function render(){
  page=Math.max(0,Math.min(page,pages-1));
  const visible=files.slice(page*slots,(page+1)*slots);
  let html="";
- visible.forEach((f,i)=>{html+=fileSector(f,i)});
- for(let i=visible.length;i<slots;i++)
-  html+='<path class="rdf-empty-sector" d="'+wedge(i*60,(i+1)*60,124,192)+'"/>';
+ if(!current.path.length){
+  // A first-launch dial must be useful rather than six large blank wedges.
+  // These categories open Android's scoped folder picker, never scan storage.
+  html=filters.map(([key,label,symbol],i)=>glyphSector(
+   "start:"+key,label,symbol,i,124,192,"start")).join("");
+ }else{
+  visible.forEach((f,i)=>{html+=fileSector(f,i)});
+  for(let i=visible.length;i<slots;i++)
+   html+='<path class="rdf-empty-sector" d="'+wedge(i*60,(i+1)*60,124,192)+'"/>';
+ }
  q("rdfFileRing").innerHTML=html;
  const options=(menu[mode]||menu.main)();
  q("rdfCommandRing").innerHTML=options.map(([code,label,icon,enabled],i)=>glyphSector(
@@ -170,27 +177,44 @@ function render(){
  const editor=q("rdfEditor");
  editor.hidden=!editing;
  if(editing){
-  q("rdfEditorLabel").textContent=editing==="search"?"FIND":"NAME";
+  q("rdfEditorLabel").textContent=editing.kind==="search"?"FIND":"NAME";
   if(document.activeElement!==q("rdfEditorInput")&&q("rdfEditorInput").value!==editing.value)
    q("rdfEditorInput").value=editing.value;
  }
 }
 function call(name,...args){
- const fn=window.AudioDesk?.[name];
- if(typeof fn!=="function"){
-  status="Android APK required for real files.";render();return false;
+ const bridge=window.AudioDesk;
+ if(typeof bridge?.[name]!=="function"){
+  status="File access is unavailable in this APK.";render();return false;
  }
- try{fn(...args);return true}catch{
-  status="Android could not complete that operation.";render();return false;
+ try{
+  // @JavascriptInterface methods must be invoked WITH their injected object.
+  // Extracting AudioDesk[name] then calling fn(...) loses the Java bridge
+  // receiver and throws on real Android WebView (but not in simple mocks).
+  bridge[name](...args);
+  return true;
+ }catch(error){
+  status=name==="radialFilesPick"
+   ?"Unable to open Android's folder picker."
+   :"Android file access failed. Close Files and try again.";
+  render();
+  return false;
  }
 }
 function open(){
  if(!active())return;
  root.hidden=false;mode="main";status="Reading selected folder…";
  window.audioDeskSyncNativeWidgets?.();
+ // An opaque, dark full-screen file manager needs LIGHT status glyphs.
+ // Keep the system's real status bar; restore wallpaper contrast on close.
+ window.AudioDesk?.setStatusBarTheme?.("orbit",false);
  render();call("radialFilesList");
 }
-function close(){root.hidden=true;editing=null;mode="main";window.audioDeskSyncNativeWidgets?.()}
+function close(){
+ root.hidden=true;editing=null;mode="main";
+ window.audioDeskSyncNativeWidgets?.();
+ window.audioDeskSyncWallpaperStatus?.();
+}
 function pageBy(amount){
  const count=Math.max(1,Math.ceil(shown().length/slots));
  page=Math.max(0,Math.min(count-1,page+amount));
@@ -248,6 +272,11 @@ window.receiveAudioDeskRadialFiles=function(payload){
 };
 function action(code){
  if(!code)return;
+ if(code.startsWith("start:")){
+  filter=code.slice(6);page=0;selected="";mode="main";
+  status="Choose an Android folder to browse "+(filters.find(f=>f[0]===filter)?.[1]||"files")+".";
+  render();call("radialFilesPick");return;
+ }
  if(code.startsWith("select:")){
   const id=code.slice(7),file=current.entries.find(f=>f.id===id);
   if(!file)return;
