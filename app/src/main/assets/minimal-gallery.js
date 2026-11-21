@@ -1,256 +1,160 @@
-/* Audio Desk Studio Wallpapers — a curated gallery of 42 original designs.
-   Offline, vector-sharp, with four previews per page. No scraped, copyrighted packs. */
+/* QA#15 — Original photographs by named photographers, not generated wallpapers.
+   Source pages and Unsplash License confirmed 2026-11-21. Online on first load. */
 (()=>{
 "use strict";
-const byId=id=>document.getElementById(id);
-const stage=byId("wallpaperStage"),dialog=byId("launcherWallpaperDialog");
+const $=id=>document.getElementById(id),stage=$("wallpaperStage"),dialog=$("launcherWallpaperDialog");
 if(!stage||!dialog)return;
-const P=[
- // Each palette has its own intentional mood, not a uniform 12-color recolor grid.
- ["Night Fog","Gradient","#0c1322","#243553","#8caacb",false],
- ["Porcelain Air","Gradient","#eef1f0","#c4d1d7","#97acc9",true],
- ["Moss Haze","Gradient","#101c19","#356356","#8eb49f",false],
- ["Solar Silk","Gradient","#eee4d7","#d7a9a6","#b77c66",true],
- ["Digital Dusk","Gradient","#15152e","#594c83","#a997c9",false],
- ["Sea Glass","Gradient","#d6eee8","#8fbebc","#467e94",true],
- ["Satin Chrome","Sculpture","#18212c","#607285","#c1d2d8",false],
- ["Alabaster","Sculpture","#edeae2","#c6c4c0","#919da8",true],
- ["Soft Titanium","Sculpture","#373640","#797d85","#d6c7c7",false],
- ["Bronze Fold","Sculpture","#211b23","#8d625e","#cfaaa0",false],
- ["Glacial Curve","Sculpture","#ccd9e4","#83a5ba","#f4fafc",true],
- ["Lime Glass","Sculpture","#142421","#547e66","#a3c0aa",false],
- ["Afterglow","Atmosphere","#1a1c38","#805e8e","#d9a5ae",false],
- ["Blue Hour","Atmosphere","#0b2035","#375c7c","#9ac2cd",false],
- ["Warm Silence","Atmosphere","#ece0d0","#c8a68a","#eacdb4",true],
- ["Coastal Mist","Atmosphere","#dbe4e4","#9ab2b3","#678d91",true],
- ["Copper Dusk","Atmosphere","#25212b","#79565a","#c88e7a",false],
- ["Quiet Valley","Atmosphere","#1c2a26","#526d5e","#c0bea2",false],
- ["Arc Study","Geometry","#171c27","#444b5d","#cad4de",false],
- ["Sand Forms","Geometry","#e6dfd3","#c7b4a7","#8e817e",true],
- ["Concrete","Geometry","#d7d7d5","#9da5a6","#5c6970",true],
- ["Midnight Frames","Geometry","#15171e","#363f4e","#7391b9",false],
- ["Clay Geometry","Geometry","#e1d4ca","#bd9b8e","#735d61",true],
- ["Slate Lines","Geometry","#202d31","#4d6469","#c0d3ca",false],
- ["Deep Current","AMOLED","#030608","#081723","#2f9cb5",false],
- ["Black Pearl","AMOLED","#030405","#131923","#8894b6",false],
- ["Moon Ink","AMOLED","#020409","#18242e","#b7c6cd",false],
- ["Neon Olive","AMOLED","#040708","#122019","#85b58f",false],
- ["Burnt Neon","AMOLED","#060304","#241216","#d07170",false],
- ["Nocturne","AMOLED","#05070f","#181e35","#8582d6",false],
- ["Petal","Soft Color","#f0e4e6","#dbbfc7","#ba97af",true],
- ["Iced Lavender","Soft Color","#e8e9f0","#c5c9e5","#9799cb",true],
- ["Pistachio","Soft Color","#e9efe4","#becfbd","#82a79c",true],
- ["Peach Halo","Soft Color","#f3e6da","#e1bbaa","#c28c7c",true],
- ["Cloud Blue","Soft Color","#e0e9f0","#b6c9db","#799ab8",true],
- ["Apricot","Soft Color","#f5e7d6","#d5b5a5","#bd927d",true],
- ["Signal One","Audio","#0b181b","#1f4350","#83c6b5",false],
- ["Oscillation","Audio","#151924","#323d5c","#8da1e0",false],
- ["Pulse","Audio","#141820","#39454e","#a4c5bb",false],
- ["Soundfield","Audio","#dce6e1","#a3b7ad","#527e78",true],
- ["Resonance","Audio","#1a1a24","#57465c","#c7a9bd",false],
- ["Quiet Note","Audio","#eeeae3","#c8c9c1","#778c88",true]
-];
-const works=P.map((p,i)=>({id:"mg-studio-"+String(i+1).padStart(2,"0"),name:p[0],
-category:p[1],bg:p[2],mid:p[3],accent:p[4],light:p[5],variant:i%6,index:i}));
-const groups=["Featured","Gradient","Sculpture","Atmosphere","Geometry","AMOLED","Soft Color","Audio"];
-const favoriteOrder=[6,0,24,31,9,12,18,36,29,5,13,33];
-const featured=favoriteOrder.map(i=>works[i]);
+const photos=[
+["harrison","Architectural Silence","Architecture","Harrison Lin","https://unsplash.com/photos/minimalist-architecture-with-clean-lines-against-sky-BdeFclXOQ2Y","photo-1774249415644-276c3ac1bfaa","#9bbac4","#172532",true],
+["lloyd","Modern Lines","Architecture","Lloyd Dirks","https://unsplash.com/photos/modern-architecture-with-a-minimalist-and-clean-aesthetic-5vh1Ss84EGA","photo-1742602400465-ca99195e3383","#789b9e","#18212a",false],
+["jimmy","Concrete Shadows","Architecture","Jimmy Liu","https://unsplash.com/photos/concrete-stairs-leading-into-darkness-with-dramatic-lighting-JmtEV6N3YQ4","photo-1776589583350-16fae6a4cacb","#a6b0ba","#1c2025",false],
+["annie","Monochrome Ocean","Monochrome","Annie Spratt","https://unsplash.com/photos/a-black-and-white-photo-of-waves-in-the-ocean-yN1lXxg5oKk","photo-1735024172375-0d95f4921ade","#b6c4cc","#171c23",false],
+["nir","Desert Shadow","Nature","NIR HIMI","https://unsplash.com/photos/dark-sand-dunes-under-a-hazy-sky-Nl8huOhdcQA","photo-1772289093079-2778f6d8ece4","#b6a294","#272126",false],
+["royce","White Dunes","Nature","Royce Fonseca","https://unsplash.com/photos/soft-white-sand-dunes-under-a-pale-sky-2gyUzlvTuRM","photo-1765498069277-dc9bc08b54ea","#d1c7b2","#e5e0d7",true],
+["viktoriia","Misty Mountains","Nature","Viktoriia Ananeva","https://unsplash.com/photos/dark-moody-mountain-landscape-shrouded-in-mist-Bp3QHODgRNs","photo-1762878099772-4ba09dfdc9aa","#8095a3","#15242c",false],
+["vlad","Still Water","Monochrome","Vlad Zaytsev","https://unsplash.com/photos/calm-water-surface-with-two-dark-structures-T47J5syBYt8","photo-1773982055669-b537fd6d010c","#a4adb3","#222a30",false],
+["mario","Desert Horizon","Nature","Mario Dominguez","https://unsplash.com/photos/desert-sand-dunes-under-a-gradient-blue-sky-RvTRcfVm4Rw","photo-1769536426519-615007af6f7a","#9fb1be","#182a3c",false]
+].map(([slug,name,category,author,page,photo,accent,base,light])=>({id:"photo-"+slug,name,category,author,page,photo,accent,base,light}));
+const groups=["Featured","Architecture","Nature","Monochrome"],featured=["photo-lloyd","photo-annie","photo-nir","photo-harrison"];
+const byId=id=>photos.find(p=>p.id===id);
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+const url=(p,width,q=84)=>"https://images.unsplash.com/"+p.photo+"?auto=format&fit=crop&w="+width+"&q="+q;
 const storageKey=theme=>"ad_minimal_gallery_v1_"+theme;
-const encode=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
-const find=id=>works.find(x=>x.id===id);
-const fmt=n=>Number(n).toFixed(1);
-function composition(w){
- const a=w.accent,b=w.mid,k=w.variant,t=w.category;
- const stroke='stroke="'+a+'" fill="none"';
- if(t==="Gradient"){
-  const pos=[[960,550],[180,800],[775,1420],[100,360],[700,510],[350,1500]][k];
-  return '<ellipse cx="'+pos[0]+'" cy="'+pos[1]+'" rx="650" ry="920" fill="url(#glow)" opacity=".9"/>'+
-   '<ellipse cx="'+(1040-pos[0]/2)+'" cy="'+(1700-pos[1]/3)+'" rx="650" ry="690" fill="url(#glow2)" opacity=".85"/>'+
-   (k%2?'<path d="M-120 1370 Q560 1070 1200 1600" '+stroke+' stroke-width="2" opacity=".11"/>':'');
- }
- if(t==="Sculpture"){
-  if(k===0)return '<path d="M90 550 C380 215 970 400 910 730 S450 940 310 1290 S480 1760 1000 1460" fill="none" stroke="url(#metal)" stroke-width="190" stroke-linecap="round" opacity=".90"/>'+
-   '<path d="M90 550 C380 215 970 400 910 730 S450 940 310 1290 S480 1760 1000 1460" fill="none" stroke="'+a+'" stroke-width="2" opacity=".58"/>';
-  if(k===1)return '<path d="M155 410Q390 205 810 370L900 1380Q670 1660 190 1470Z" fill="url(#metal)"/><path d="M155 410Q530 620 810 370" fill="none" stroke="'+a+'" stroke-width="5" opacity=".27"/>';
-  if(k===2)return '<ellipse cx="550" cy="950" rx="355" ry="480" transform="rotate(-22 550 950)" fill="url(#orb)" opacity=".85"/><path d="M250 1100Q530 1450 890 880" '+stroke+' stroke-width="4" opacity=".45"/>';
-  if(k===3)return '<path d="M200 270C730 220 1050 730 760 1010S450 1450 920 1730" fill="none" stroke="url(#metal)" stroke-width="210" stroke-linecap="round"/><path d="M210 270C730 220 1050 730 760 1010S450 1450 920 1730" fill="none" stroke="'+a+'" stroke-width="3" opacity=".32"/>';
-  if(k===4)return '<path d="M230 350A360 360 0 0 1 950 350V1410A360 360 0 0 1 230 1410Z" fill="url(#metal)" opacity=".87"/><path d="M350 540A245 245 0 0 1 840 540V1250A245 245 0 0 1 350 1250Z" fill="'+w.bg+'" opacity=".42"/>';
-  return '<ellipse cx="590" cy="1010" rx="375" ry="375" fill="url(#orb)"/><ellipse cx="590" cy="1010" rx="410" ry="140" transform="rotate(-31 590 1010)" '+stroke+' stroke-width="5" opacity=".48"/>';
- }
- if(t==="Atmosphere"){
-  const height=[900,1130,1100,820,1300,1030][k];
-  return '<ellipse cx="'+(410+k*85)+'" cy="'+(height-110)+'" rx="570" ry="630" fill="url(#glow)" opacity=".69"/>'+
-   '<path d="M0 '+height+' Q420 '+(height-95-k*18)+' 1080 '+(height+40)+'V1920H0Z" fill="'+b+'" opacity=".37"/>'+
-   '<path d="M0 '+(height+240)+' Q560 '+(height+60)+' 1080 '+(height+210)+'V1920H0Z" fill="'+a+'" opacity=".17"/>'+
-   (k%2===0?'<circle cx="'+(780-k*33)+'" cy="'+(height-225)+'" r="90" fill="url(#orb)" opacity=".46"/>':'');
- }
- if(t==="Geometry"){
-  if(k===0)return '<path d="M-120 1120A710 710 0 0 1 1300 1120" '+stroke+' stroke-width="6" opacity=".45"/><path d="M-50 1120A640 640 0 0 1 1230 1120" '+stroke+' stroke-width="2" opacity=".32"/><path d="M160 1350L900 1350" '+stroke+' stroke-width="3" opacity=".45"/>';
-  if(k===1)return '<rect x="215" y="410" width="650" height="1140" rx="300" fill="url(#metal)" opacity=".6"/><rect x="305" y="520" width="470" height="940" rx="235" fill="'+w.bg+'" opacity=".55"/>';
-  if(k===2)return '<path d="M135 250L950 500L720 1600L55 1300Z" fill="url(#metal)" opacity=".68"/><path d="M135 250L720 1600L55 1300Z" fill="'+b+'" opacity=".27"/>';
-  if(k===3)return Array.from({length:5},(_,i)=>'<rect x="'+(70+i*44)+'" y="'+(290+i*83)+'" width="'+(900-i*88)+'" height="'+(1220-i*158)+'" rx="42" '+stroke+' stroke-width="'+(i===0?4:2)+'" opacity="'+fmt(.41-i*.045)+'"/>').join("");
-  if(k===4)return '<circle cx="540" cy="930" r="365" fill="url(#orb)" opacity=".55"/><path d="M0 940H1080M540 230V1670" '+stroke+' stroke-width="2" opacity=".37"/>';
-  return Array.from({length:7},(_,i)=>'<path d="M'+(135+i*110)+' 350V1530" '+stroke+' stroke-width="'+(i===3?6:2)+'" opacity="'+fmt(.18+i*.026)+'"/>').join("");
- }
- if(t==="AMOLED"){
-  if(k===0)return '<path d="M-180 1400Q420 240 1210 1040" fill="none" stroke="url(#metal)" stroke-width="92" opacity=".86"/>';
-  if(k===1)return '<ellipse cx="620" cy="970" rx="255" ry="330" fill="url(#orb)" opacity=".69"/>';
-  if(k===2)return '<circle cx="555" cy="1030" r="315" fill="'+w.bg+'"/><circle cx="555" cy="1030" r="310" '+stroke+' stroke-width="6" opacity=".77"/><circle cx="555" cy="1030" r="355" '+stroke+' stroke-width="1" opacity=".30"/>';
-  if(k===3)return '<path d="M0 1250Q390 650 1150 1080" '+stroke+' stroke-width="17" opacity=".65"/><path d="M0 1320Q390 720 1150 1150" '+stroke+' stroke-width="2" opacity=".25"/>';
-  if(k===4)return '<path d="M220 1410Q320 350 850 610Q1120 840 680 1400Z" fill="url(#metal)" opacity=".51"/>';
-  return '<ellipse cx="520" cy="1020" rx="255" ry="460" transform="rotate(34 520 1020)" fill="none" stroke="url(#metal)" stroke-width="42" opacity=".81"/>';
- }
- if(t==="Soft Color"){
-  if(k===0)return '<ellipse cx="830" cy="800" rx="470" ry="630" fill="url(#glow)" opacity=".95"/><path d="M140 1390Q480 620 1030 1190" '+stroke+' stroke-width="2" opacity=".18"/>';
-  if(k===1)return '<ellipse cx="250" cy="680" rx="530" ry="650" fill="url(#glow)" opacity=".85"/><ellipse cx="890" cy="1240" rx="540" ry="690" fill="url(#glow2)" opacity=".80"/>';
-  if(k===2)return '<circle cx="700" cy="900" r="385" fill="url(#orb)" opacity=".64"/><circle cx="700" cy="900" r="420" '+stroke+' stroke-width="1" opacity=".12"/>';
-  if(k===3)return '<path d="M-120 860Q350 540 810 800T1180 1160" stroke="url(#metal)" stroke-width="300" opacity=".45" fill="none"/>';
-  if(k===4)return '<path d="M0 480Q520 820 1080 480V1920H0Z" fill="'+b+'" opacity=".20"/><ellipse cx="555" cy="780" rx="630" ry="670" fill="url(#glow)" opacity=".85"/>';
-  return '<circle cx="540" cy="940" r="330" fill="url(#orb)" opacity=".58"/><ellipse cx="540" cy="940" rx="465" ry="465" fill="none" stroke="'+a+'" opacity=".16" stroke-width="2"/>';
- }
- // Audio: graphic restraint with very thin, precise signal curves.
- if(k===0)return '<path d="M-80 1090C270 1090 280 830 490 830S730 1370 940 1100S1130 1050 1240 1050" '+stroke+' stroke-width="5" opacity=".65"/>';
- if(k===1)return Array.from({length:9},(_,i)=>{
- const y=710+i*63;return '<path d="M-30 '+y+'Q300 '+(y-130*Math.sin(i*.6))+' 570 '+y+'T1140 '+(y+60*Math.cos(i*.5))+'" '+stroke+' stroke-width="'+(i===4?4:1.5)+'" opacity="'+fmt(.10+(i===4?.4:i*.018))+'"/>';
- }).join("");
- if(k===2)return Array.from({length:25},(_,i)=>{
- const v=Math.abs(Math.sin(i*.47)*Math.cos(i*.15));
- return '<rect x="'+(i*44+10)+'" y="'+fmt(1060-v*265)+'" width="5" height="'+fmt(v*530)+'" rx="2.5" fill="'+a+'" opacity="'+fmt(.18+v*.43)+'"/>';
- }).join("");
- if(k===3)return '<circle cx="560" cy="990" r="180" '+stroke+' stroke-width="3" opacity=".38"/><circle cx="560" cy="990" r="290" '+stroke+' stroke-width="2" opacity=".25"/><circle cx="560" cy="990" r="400" '+stroke+' stroke-width="1" opacity=".16"/>';
- if(k===4)return '<path d="M-20 970Q300 910 400 1030T720 1030T1100 930" '+stroke+' stroke-width="3" opacity=".68"/><ellipse cx="520" cy="960" rx="280" ry="430" fill="url(#glow)" opacity=".3"/>';
- return '<path d="M-40 1110H400Q520 1110 535 975Q550 1110 700 1110H1120" '+stroke+' stroke-width="4" opacity=".48"/>';
-}
-function svg(w){
- const bg=w.bg,mid=w.mid,a=w.accent;
- return '<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="2560" viewBox="0 0 1080 1920">'+
- '<defs><linearGradient id="base" x1="0" y1="0" x2="1" y2="1"><stop stop-color="'+bg+'"/><stop offset=".56" stop-color="'+mid+'"/><stop offset="1" stop-color="'+bg+'"/></linearGradient>'+
- '<radialGradient id="glow"><stop stop-color="'+a+'" stop-opacity=".7"/><stop offset=".53" stop-color="'+a+'" stop-opacity=".26"/><stop offset="1" stop-color="'+a+'" stop-opacity="0"/></radialGradient>'+
- '<radialGradient id="glow2"><stop stop-color="'+mid+'" stop-opacity=".74"/><stop offset="1" stop-color="'+mid+'" stop-opacity="0"/></radialGradient>'+
- '<linearGradient id="metal" x1="0" y1="0" x2=".95" y2="1"><stop stop-color="'+bg+'"/><stop offset=".28" stop-color="'+a+'"/><stop offset=".51" stop-color="'+mid+'"/><stop offset=".74" stop-color="'+a+'"/><stop offset="1" stop-color="'+bg+'"/></linearGradient>'+
- '<radialGradient id="orb" cx=".32" cy=".23" r=".85"><stop stop-color="#fff" stop-opacity=".8"/><stop offset=".18" stop-color="'+a+'" stop-opacity=".85"/><stop offset=".65" stop-color="'+mid+'"/><stop offset="1" stop-color="'+bg+'"/></radialGradient></defs>'+
- '<rect width="1080" height="1920" fill="url(#base)"/>'+composition(w)+'</svg>';
-}
-const src=w=>"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg(w));
 const image=document.createElement("img");
-image.id="minimalGalleryWallpaperImage";image.alt="";image.decoding="async";
-image.setAttribute("aria-hidden","true");image.hidden=true;stage.append(image);
-const css=document.createElement("style");css.textContent=
- '#minimalGalleryWallpaperImage[hidden]{display:none!important}#minimalGalleryWallpaperImage{position:absolute;z-index:4;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}'+
- 'body[data-minimal-wallpaper] #wallpaperStage .wallpaper-image{opacity:0!important}body[data-minimal-wallpaper] #wallpaperStage::after{background:transparent!important}body[data-minimal-wallpaper] #wallpaperEffect,body[data-minimal-wallpaper] #audioArtworkImage{display:none!important}'+
- '#minimalGalleryStudio{margin:14px 0 12px;padding:12px;border:1px solid var(--ds-line,#435448);border-radius:16px;background:var(--ds-panel,#202a25)}'+
- '#minimalGalleryStudio h3{margin:0;font:650 15px system-ui,sans-serif;color:var(--ds-text,#f0f5f0)}#minimalGalleryStudio .studio-caption{font:11px/1.5 system-ui,sans-serif;opacity:.72;margin:5px 0 10px}'+
- '#minimalGalleryFilters{display:flex;overflow-x:auto;scrollbar-width:none;gap:6px;padding:2px 0 10px;overscroll-behavior-x:contain}#minimalGalleryFilters::-webkit-scrollbar{display:none}'+
- '#minimalGalleryFilters button{white-space:nowrap;flex:0 0 auto;border:1px solid var(--ds-line,#455c49);background:var(--ds-panel2,#304438);color:var(--ds-text,#fff);border-radius:99px;padding:8px 12px;font:500 11px system-ui,sans-serif}'+
- '#minimalGalleryFilters button[aria-pressed="true"]{border-color:var(--ds-accent,#b9ddc0);background:var(--ds-accent,#b9ddc0);color:var(--ds-accent-ink,#16281b);font-weight:700}'+
- '#minimalGalleryGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:3px 0 10px}'+
- '#minimalGalleryGrid .minimal-gallery-entry{display:flex;flex-direction:column;gap:5px;min-width:0;padding:5px!important;border:1px solid var(--ds-line,#4d6555)!important;border-radius:11px!important;background:var(--ds-panel2,#26362e)!important;color:var(--ds-text,#fff)!important;font:500 11px system-ui,sans-serif!important;text-align:left!important;box-shadow:none!important}'+
- '#minimalGalleryGrid img{display:block;width:100%;height:160px;object-fit:cover;object-position:center;background:#172020;border-radius:8px}'+
- '#minimalGalleryGrid .minimal-gallery-entry span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 3px 3px}'+
- '#minimalGalleryGrid .minimal-gallery-entry[aria-pressed="true"]{border-color:var(--ds-accent,#bedfc4)!important;box-shadow:inset 0 0 0 1px var(--ds-accent,#bedfc4)!important}'+
- '#minimalGalleryPager{display:flex;align-items:center;gap:7px;justify-content:space-between}#minimalGalleryPager button{border:1px solid var(--ds-line,#526b57);border-radius:9px;background:var(--ds-panel2,#304438);color:var(--ds-text,#fff);padding:8px 12px;font:600 11px system-ui,sans-serif}'+
- '#minimalGalleryPager button:disabled{opacity:.35}#minimalGalleryCount{font:11px system-ui,sans-serif;opacity:.75;text-align:center;flex:1}'+
- '#wallpaperMoreOptions{margin:14px 0}#wallpaperMoreOptions>summary{cursor:pointer;border-radius:11px;padding:13px 12px;color:var(--ds-text,#fff);background:var(--ds-panel2,#303d34);font:600 12px system-ui,sans-serif}'+
- '#wallpaperMoreOptions[open]{border:1px solid var(--ds-line,#536a58);padding:0 8px 10px;border-radius:12px}'+
- '@media(max-width:350px){#minimalGalleryGrid img{height:130px}#minimalGalleryStudio{padding:9px}}';document.head.append(css);
+image.id="minimalGalleryWallpaperImage";image.alt="";image.crossOrigin="anonymous";image.decoding="async";image.hidden=true;stage.append(image);
+const style=document.createElement("style");
+style.textContent=[
+"#minimalGalleryWallpaperImage[hidden]{display:none!important}",
+"#minimalGalleryWallpaperImage{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:4;pointer-events:none}",
+"body[data-minimal-wallpaper] #wallpaperStage .wallpaper-image{opacity:0!important}",
+"body[data-minimal-wallpaper] #wallpaperStage::after{background:transparent!important}",
+"body[data-minimal-wallpaper] #wallpaperEffect,body[data-minimal-wallpaper] #audioArtworkImage{display:none!important}",
+"#minimalGalleryStudio{margin:10px 0 14px;padding:12px;border:1px solid var(--ds-line,#435448);border-radius:14px;background:var(--ds-panel,#222e26);color:var(--ds-text,#f4f4f4)}",
+"#minimalGalleryStudio h3{margin:0 0 4px;font:650 16px system-ui,sans-serif}",
+"#minimalGalleryStudio .studio-caption{font:12px/1.45 system-ui,sans-serif;opacity:.82;margin:0 0 10px}",
+"#minimalGalleryFilters{display:flex;overflow-x:auto;scrollbar-width:none;gap:7px;padding:2px 0 10px}",
+"#minimalGalleryFilters button{white-space:nowrap;flex:0 0 auto;border:1px solid var(--ds-line,#455c49);background:var(--ds-panel2,#304438);color:var(--ds-text,#fff);border-radius:32px;min-height:40px;padding:8px 12px;font:600 12px system-ui,sans-serif}",
+"#minimalGalleryFilters button[aria-pressed=true]{border-color:var(--ds-accent,#b9ddc0);background:var(--ds-accent,#b9ddc0);color:var(--ds-accent-ink,#16281b)}",
+"#minimalGalleryGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:4px 0 10px}",
+"#minimalGalleryGrid .minimal-gallery-entry{display:flex;flex-direction:column;min-width:0;gap:4px;padding:5px!important;border:1px solid var(--ds-line,#4d6555)!important;border-radius:12px!important;background:var(--ds-panel2,#26362e)!important;color:var(--ds-text,#fff)!important;text-align:left!important;box-shadow:none!important}",
+"#minimalGalleryGrid .minimal-gallery-entry img{width:100%;height:145px;display:block;object-fit:cover;border-radius:8px;background:#242b2a}",
+"#minimalGalleryGrid .minimal-gallery-entry strong{font:600 12px/1.25 system-ui,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:2px 3px 0}",
+"#minimalGalleryGrid .minimal-gallery-entry small{font:11px/1.35 system-ui,sans-serif;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 3px 3px}",
+"#minimalGalleryGrid .minimal-gallery-entry[aria-pressed=true]{border-color:var(--ds-accent,#bddfbf)!important}",
+"#minimalGalleryPager{display:flex;gap:7px;align-items:center;justify-content:space-between}",
+"#minimalGalleryPager button{min-height:40px;border:1px solid var(--ds-line,#526b57);border-radius:9px;background:var(--ds-panel2,#304438);color:var(--ds-text,#fff);padding:8px 12px;font:600 12px system-ui,sans-serif}",
+"#minimalGalleryPager button:disabled{opacity:.4}",
+"#minimalGalleryCount{font:12px system-ui,sans-serif;opacity:.83;text-align:center;flex:1}",
+"#minimalGalleryStatus{margin:10px 0 0;font:11px/1.5 system-ui,sans-serif;opacity:.88}",
+"#minimalGalleryStatus a{color:var(--ds-accent,#cce6d0)}",
+"#wallpaperMoreOptions{margin:12px 0}",
+"#wallpaperMoreOptions>summary{cursor:pointer;border-radius:11px;padding:13px 12px;color:var(--ds-text,#fff);background:var(--ds-panel2,#303d34);font:600 12px system-ui,sans-serif}",
+"#wallpaperMoreOptions[open]{border:1px solid var(--ds-line,#536a58);padding:0 8px 10px;border-radius:12px}",
+"@media(max-width:350px){#minimalGalleryGrid .minimal-gallery-entry img{height:117px}}"
+].join("");
+document.head.append(style);
 const studio=document.createElement("section");studio.id="minimalGalleryStudio";
-studio.innerHTML='<h3>Studio Wallpapers</h3><p class="studio-caption">42 original, modern wallpapers · sharp, offline, curated</p>';
-const filters=document.createElement("div");filters.id="minimalGalleryFilters";filters.setAttribute("role","group");filters.setAttribute("aria-label","Wallpaper collections");
-const grid=document.createElement("div");grid.id="minimalGalleryGrid";grid.setAttribute("role","group");grid.setAttribute("aria-label","Curated modern wallpapers");
+studio.innerHTML='<h3>Photographer Collection</h3><p class="studio-caption">Real photographs, real artists · Internet required for first load</p>';
+const filters=document.createElement("div");filters.id="minimalGalleryFilters";
+const grid=document.createElement("div");grid.id="minimalGalleryGrid";
 const pager=document.createElement("div");pager.id="minimalGalleryPager";
-pager.innerHTML='<button type="button" id="minimalGalleryPrev" aria-label="Previous wallpaper page">‹ Previous</button><span id="minimalGalleryCount" aria-live="polite"></span><button type="button" id="minimalGalleryNext" aria-label="Next wallpaper page">Next ›</button>';
-studio.append(filters,grid,pager);
-byId("wallpaperSystemStatus").after(studio);
-// Keep pre-existing Audio Desk wallpaper choices, but don't force a huge
-// scrolling catalogue before the curated collection.
+pager.innerHTML='<button type="button" id="minimalGalleryPrev">‹ Previous</button><span id="minimalGalleryCount" aria-live="polite"></span><button type="button" id="minimalGalleryNext">Next ›</button>';
+const status=document.createElement("p");status.id="minimalGalleryStatus";status.setAttribute("role","status");
+studio.append(filters,grid,pager,status);
+$("customWallpaperStatus").after(studio);
 const more=document.createElement("details");more.id="wallpaperMoreOptions";
-more.innerHTML='<summary>More wallpaper options · Colors, audio & photos</summary>';
-const colors=byId("themePaletteGrid"),photos=byId("wallpaperGrid"),audio=byId("audioWallpaperGrid");
-const colorsTitle=colors?.previousElementSibling,photosTitle=colors?.nextElementSibling,audioTitle=audio?.previousElementSibling;
-if(colorsTitle)more.append(colorsTitle);
-if(colors)more.append(colors);
-if(photosTitle&&photosTitle!==audioTitle)more.append(photosTitle);
-if(audioTitle)more.append(audioTitle);
-if(audio)more.append(audio);
-if(photos)more.append(photos);
+more.innerHTML='<summary>More options · Built-in wallpapers and colours</summary>';
+const colors=$("themePaletteGrid"),bundled=$("wallpaperGrid"),audio=$("audioWallpaperGrid");
+const colorHeading=colors?.previousElementSibling,bundledHeading=bundled?.previousElementSibling,audioHeading=audio?.previousElementSibling;
+for(const node of [colorHeading,colors,audioHeading,audio,bundledHeading,bundled])if(node)more.append(node);
 studio.after(more);
-// Keep established wallpaper controls immediately visible in non-Orbit editions;
-// Orbit uses the intentionally compact Studio view unless More is expanded.
 more.open=launcherTheme!=="orbit";
-let category="Featured",page=0,current="";
+let category="Featured",page=0,current="",requestId=0;
 const pageSize=4;
-const list=()=>category==="Featured"?featured:works.filter(w=>w.category===category);
+const list=()=>category==="Featured"?featured.map(byId).filter(Boolean):photos.filter(p=>p.category===category);
 function render(){
  if(dialog.hidden)return;
- filters.innerHTML=groups.map(g=>'<button type="button" data-minimal-category="'+encode(g)+'" aria-pressed="'+(g===category)+'">'+encode(g)+'</button>').join("");
- const all=list(),max=Math.max(1,Math.ceil(all.length/pageSize));page=Math.max(0,Math.min(page,max-1));
- grid.innerHTML=all.slice(page*pageSize,(page+1)*pageSize).map(w=>
-  '<button type="button" class="minimal-gallery-entry" data-minimal-id="'+w.id+'" aria-label="Select '+encode(w.name)+' wallpaper" aria-pressed="'+(w.id===current)+'">'+
-  '<img loading="lazy" decoding="async" alt="" src="'+encode(src(w))+'"><span>'+encode(w.name)+'</span></button>').join("");
- byId("minimalGalleryCount").textContent=(page+1)+" / "+max+" · "+all.length+" designs";
- byId("minimalGalleryPrev").disabled=page===0;
- byId("minimalGalleryNext").disabled=page>=max-1;
+ filters.innerHTML=groups.map(c=>'<button type="button" data-minimal-category="'+c+'" aria-pressed="'+(c===category)+'">'+c+'</button>').join("");
+ const available=list(),total=Math.max(1,Math.ceil(available.length/pageSize));
+ page=Math.max(0,Math.min(page,total-1));
+ grid.innerHTML=available.slice(page*pageSize,(page+1)*pageSize).map(p=>
+  '<button type="button" class="minimal-gallery-entry" data-minimal-id="'+p.id+'" aria-pressed="'+(p.id===current)+'" aria-label="Choose '+esc(p.name)+' by '+esc(p.author)+'"><img alt="" loading="lazy" src="'+esc(url(p,480,72))+'"><strong>'+esc(p.name)+'</strong><small>Photo: '+esc(p.author)+'</small></button>').join("");
+ $("minimalGalleryCount").textContent=(page+1)+" / "+total+" · "+available.length+" photos";
+ $("minimalGalleryPrev").disabled=page===0;$("minimalGalleryNext").disabled=page>=total-1;
+}
+function clear(persist=true){
+ requestId++;current="";image.hidden=true;image.removeAttribute("src");
+ delete document.body.dataset.minimalWallpaper;
+ if(persist)deskStorage.setItem(storageKey(launcherTheme),"");
+ render();
+}
+function applyAndroid(p,loaded){
+ const native=window.AudioDesk,notice=$("wallpaperSystemStatus");
+ if(typeof native?.setSystemWallpaperCustom!=="function"){
+  notice.textContent="Selected in Audio Desk. Android wallpaper changes require the installed app.";return;
+ }
+ const request=++systemWallpaperRequest;
+ try{
+  const canvas=document.createElement("canvas");canvas.width=1440;canvas.height=2560;
+  const ctx=canvas.getContext("2d");ctx.fillStyle=p.base;ctx.fillRect(0,0,1440,2560);
+  const zoom=Math.max(1440/loaded.naturalWidth,2560/loaded.naturalHeight);
+  const w=loaded.naturalWidth*zoom,h=loaded.naturalHeight*zoom;
+  ctx.drawImage(loaded,(1440-w)/2,(2560-h)/2,w,h);
+  native.setSystemWallpaperCustom(canvas.toDataURL("image/jpeg",.85),50,$("wallpaperApplyLock").checked,request);
+  notice.textContent="Applying "+p.name+" to Android Home"+($("wallpaperApplyLock").checked?" and Lock":"")+"…";
+ }catch{notice.textContent="Photo preview works, but this image could not be exported to Android."}
 }
 function select(id,persist=true){
- const w=find(id);current=w?.id||"";
- if(persist)deskStorage.setItem(storageKey(launcherTheme),current);
- if(!w){image.hidden=true;image.removeAttribute("src");delete document.body.dataset.minimalWallpaper;render();return}
- image.src=src(w);image.hidden=false;document.body.dataset.minimalWallpaper=w.id;
- document.body.dataset.wallpaperLight=String(w.light);document.body.dataset.wallpaperStatusLight=String(w.light);
- window.audioDeskApplyWallpaperColors?.(w.accent,w.bg);render();
-}
-function clear(){if(current)select("")}
-function applyAndroid(){
- const w=find(current);if(!w)return false;
- const native=window.AudioDesk,status=byId("wallpaperSystemStatus");
- if(typeof native?.setSystemWallpaperCustom!=="function"){status.textContent="Saved in Audio Desk. Native Android wallpaper changes require the installed APK.";return true}
- const request=++systemWallpaperRequest,img=new Image();
- img.onload=()=>{
-  if(request!==systemWallpaperRequest)return;
-  try{
-   const canvas=document.createElement("canvas");canvas.width=1440;canvas.height=2560;
-   canvas.getContext("2d").drawImage(img,0,0,1440,2560);
-   native.setSystemWallpaperCustom(canvas.toDataURL("image/jpeg",.93),50,byId("wallpaperApplyLock").checked,request);
-   status.textContent="Applying 1440 × 2560 Studio wallpaper to Android…";
-  }catch{status.textContent="Could not export this wallpaper."}
+ const p=byId(id);if(!p){clear(persist);return}
+ const seq=++requestId;const previous=current;
+ current=p.id;status.textContent="Loading "+p.name+" by "+p.author+"…";render();
+ const loaded=new Image();loaded.crossOrigin="anonymous";loaded.decoding="async";
+ loaded.onload=()=>{
+  if(seq!==requestId)return;
+  image.src=loaded.src;image.hidden=false;
+  document.body.dataset.minimalWallpaper=p.id;
+  document.body.dataset.wallpaperLight=String(p.light);document.body.dataset.wallpaperStatusLight=String(p.light);
+  window.audioDeskApplyWallpaperColors?.(p.accent,p.base);
+  if(persist)deskStorage.setItem(storageKey(launcherTheme),p.id);
+  status.innerHTML='Photo by <strong>'+esc(p.author)+'</strong> · <a href="'+esc(p.page)+'" rel="noopener noreferrer" target="_blank">Source &amp; license</a>';
+  render();if(persist)applyAndroid(p,loaded);
  };
- img.onerror=()=>{status.textContent="Could not decode the selected wallpaper."};img.src=src(w);
- return true;
+ loaded.onerror=()=>{
+  if(seq!==requestId)return;current=previous;
+  status.textContent="Could not load this photograph. Check your connection; your previous wallpaper is unchanged.";render();
+ };
+ loaded.src=url(p,1600,86);
 }
 filters.addEventListener("click",e=>{const c=e.target.closest("[data-minimal-category]")?.dataset.minimalCategory;
  if(!groups.includes(c))return;category=c;page=0;render()});
-byId("minimalGalleryPrev").addEventListener("click",()=>{page--;render()});
-byId("minimalGalleryNext").addEventListener("click",()=>{page++;render()});
+$("minimalGalleryPrev").onclick=()=>{page--;render()};
+$("minimalGalleryNext").onclick=()=>{page++;render()};
 grid.addEventListener("click",e=>{const id=e.target.closest("[data-minimal-id]")?.dataset.minimalId;
- if(!find(id))return;window.audioDeskClearAudioWallpaper?.();select(id);applyAndroid()});
+ if(byId(id)){window.audioDeskClearAudioWallpaper?.();select(id)}});
 for(const id of ["themePaletteGrid","wallpaperGrid","audioWallpaperGrid","customWallpaperRestore"]){
- byId(id)?.addEventListener("click",e=>{if(id==="themePaletteGrid"&&!e.target.closest("[data-palette]"))return;
- if(id==="wallpaperGrid"&&!e.target.closest("[data-wallpaper]"))return;
- if(id==="audioWallpaperGrid"&&!e.target.closest("[data-audio-art]"))return;clear()},true);
+ $(id)?.addEventListener("click",e=>{
+  if(id==="themePaletteGrid"&&!e.target.closest("[data-palette]"))return;
+  if(id==="wallpaperGrid"&&!e.target.closest("[data-wallpaper]"))return;
+  if(id==="audioWallpaperGrid"&&!e.target.closest("[data-audio-art]"))return;
+  clear();
+ },true);
 }
-byId("customWallpaperFile")?.addEventListener("change",e=>{if(e.target.files?.length)clear()});
-const baseApply=applySystemWallpaper;applySystemWallpaper=function(){return current?applyAndroid():baseApply()};
-byId("wallpaperApplySystem").onclick=()=>applySystemWallpaper();
-function savedForTheme(theme){
- let id=deskStorage.getItem(storageKey(theme))||"";
- if(id.startsWith("mg-")&&!find(id)){
-  const oldPalette=id.split("-").slice(-1)[0];
-  const migrate={obsidian:24,graphite:0,ivory:7,sand:14,rose:30,sage:32,forest:2,navy:1,indigo:4,copper:16,teal:5,lavender:31};
-  id=works[migrate[oldPalette]??0].id;
-  deskStorage.setItem(storageKey(theme),id);
- }
- return id;
-}
-const baseTheme=setLauncherTheme;
-setLauncherTheme=function(theme){
- baseTheme(theme);more.open=theme!=="orbit";
- select(savedForTheme(theme),false);
+$("customWallpaperFile")?.addEventListener("change",e=>{if(e.target.files?.length)clear()});
+const baseApply=applySystemWallpaper;
+applySystemWallpaper=function(){
+ const p=byId(current);if(!p)return baseApply();
+ if(image.complete&&image.naturalWidth){applyAndroid(p,image);return}
+ $("wallpaperSystemStatus").textContent="The selected photograph is loading. Check your connection and retry.";
 };
+$("wallpaperApplySystem").onclick=()=>applySystemWallpaper();
+const baseTheme=setLauncherTheme;
+setLauncherTheme=function(theme){baseTheme(theme);more.open=theme!=="orbit";select(deskStorage.getItem(storageKey(theme))||"",false)};
 const basePicker=renderWallpaperPicker;
 renderWallpaperPicker=function(){basePicker();more.open=launcherTheme!=="orbit";render()};
 new MutationObserver(()=>{if(!dialog.hidden)render()}).observe(dialog,{attributes:true,attributeFilter:["hidden"]});
-// Legacy saved selections are migrated lazily per theme on first use.
-select(savedForTheme(launcherTheme),false);
-window.audioDeskMinimalGalleryCount=()=>works.length;
-window.audioDeskStudioGallery=()=>({count:works.length,collections:groups.slice(),pageSize});
+const saved=deskStorage.getItem(storageKey(launcherTheme))||"";
+if(byId(saved))select(saved,false);
+else if(saved.startsWith("mg-"))deskStorage.setItem(storageKey(launcherTheme),"");
+window.audioDeskMinimalGalleryCount=()=>photos.length;
+window.audioDeskStudioGallery=()=>({count:photos.length,collections:groups.slice(),pageSize,credited:photos.every(p=>p.author&&p.page&&p.photo)});
 })();
