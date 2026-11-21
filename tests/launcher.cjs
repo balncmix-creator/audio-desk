@@ -578,7 +578,10 @@ const demoApps=[
   await page.locator('#minimalGalleryGrid .minimal-gallery-entry').first().click();
   await page.waitForFunction(()=>document.body.dataset.minimalWallpaper?.startsWith('photo-'));
   assert.equal(await page.locator('#minimalGalleryWallpaperImage').isVisible(),true);
-  assert.ok((await page.locator('#minimalGalleryWallpaperImage').getAttribute('src')).startsWith('https://images.unsplash.com/photo-'));
+  const loadedPhotoSrc=await page.locator('#minimalGalleryWallpaperImage').getAttribute('src');
+  assert.ok(loadedPhotoSrc.startsWith('https://images.unsplash.com/photo-'));
+  assert.ok(loadedPhotoSrc.includes('w=1440')&&loadedPhotoSrc.includes('h=2560'),
+   'real photos use a high-resolution portrait crop without stretching a low-resolution landscape');
   assert.ok((await page.locator('#minimalGalleryStatus').textContent()).includes('Unsplash'));
   await page.waitForTimeout(180);
   assert.ok((await page.evaluate(()=>window.systemWallpaperCalls)).length>0,
