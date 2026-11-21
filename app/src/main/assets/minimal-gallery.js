@@ -174,6 +174,9 @@ if(audioTitle)more.append(audioTitle);
 if(audio)more.append(audio);
 if(photos)more.append(photos);
 studio.after(more);
+// Keep established wallpaper controls immediately visible in non-Orbit editions;
+// Orbit uses the intentionally compact Studio view unless More is expanded.
+more.open=launcherTheme!=="orbit";
 let category="Featured",page=0,current="";
 const pageSize=4;
 const list=()=>category==="Featured"?featured:works.filter(w=>w.category===category);
@@ -228,19 +231,26 @@ for(const id of ["themePaletteGrid","wallpaperGrid","audioWallpaperGrid","custom
 byId("customWallpaperFile")?.addEventListener("change",e=>{if(e.target.files?.length)clear()});
 const baseApply=applySystemWallpaper;applySystemWallpaper=function(){return current?applyAndroid():baseApply()};
 byId("wallpaperApplySystem").onclick=()=>applySystemWallpaper();
-const baseTheme=setLauncherTheme;
-setLauncherTheme=function(theme){baseTheme(theme);select(deskStorage.getItem(storageKey(theme))||"",false)};
-const basePicker=renderWallpaperPicker;renderWallpaperPicker=function(){basePicker();render()};
-new MutationObserver(()=>{if(!dialog.hidden)render()}).observe(dialog,{attributes:true,attributeFilter:["hidden"]});
-// Old 180-piece wallpapers are intentionally retired. An existing selection
-// migrates to a similar modern choice without clearing the user's theme.
-let saved=deskStorage.getItem(storageKey(launcherTheme))||"";
-if(saved.startsWith("mg-")&&!find(saved)){
- const oldPalette=saved.split("-").slice(-1)[0];
- const migrate={obsidian:24,graphite:0,ivory:7,sand:14,rose:30,sage:32,forest:2,navy:1,indigo:4,copper:16,teal:5,lavender:31};
- saved=works[migrate[oldPalette]??0].id;deskStorage.setItem(storageKey(launcherTheme),saved);
+function savedForTheme(theme){
+ let id=deskStorage.getItem(storageKey(theme))||"";
+ if(id.startsWith("mg-")&&!find(id)){
+  const oldPalette=id.split("-").slice(-1)[0];
+  const migrate={obsidian:24,graphite:0,ivory:7,sand:14,rose:30,sage:32,forest:2,navy:1,indigo:4,copper:16,teal:5,lavender:31};
+  id=works[migrate[oldPalette]??0].id;
+  deskStorage.setItem(storageKey(theme),id);
+ }
+ return id;
 }
-select(saved,false);
+const baseTheme=setLauncherTheme;
+setLauncherTheme=function(theme){
+ baseTheme(theme);more.open=theme!=="orbit";
+ select(savedForTheme(theme),false);
+};
+const basePicker=renderWallpaperPicker;
+renderWallpaperPicker=function(){basePicker();more.open=launcherTheme!=="orbit";render()};
+new MutationObserver(()=>{if(!dialog.hidden)render()}).observe(dialog,{attributes:true,attributeFilter:["hidden"]});
+// Legacy saved selections are migrated lazily per theme on first use.
+select(savedForTheme(launcherTheme),false);
 window.audioDeskMinimalGalleryCount=()=>works.length;
 window.audioDeskStudioGallery=()=>({count:works.length,collections:groups.slice(),pageSize});
 })();
