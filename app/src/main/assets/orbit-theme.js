@@ -65,6 +65,14 @@ const sector=(a,b,R=249,r=182)=>{
 };
 const wrap=(n,l)=>((n%l)+l)%l;
 const txt=(s,y=4,size=13,cls="")=>'<text text-anchor="middle" y="'+y+'" font-size="'+size+'" class="'+cls+'">'+esc(String(s))+'</text>';
+// Render label text as a real textPath tangent to its parent ring.
+// Stable per-ring IDs avoid SVG link collisions across incremental redraws.
+const curveText=(label,radius,angle,width,size,cls,key)=>{
+ const id="orbitCurve-"+String(key).replace(/[^a-z0-9_-]/gi,"-");
+ return '<defs><path id="'+id+'" d="'+arc(radius,angle-width/2,angle+width/2)+'"/></defs>'+
+  '<text text-anchor="middle" font-size="'+size+'" class="'+(cls||"")+'">'+
+  '<textPath href="#'+id+'" startOffset="50%">'+esc(String(label))+'</textPath></text>';
+};
 const g=(r,a,body,attrs="",rotate=true)=>'<g transform="translate('+p(r,a)+')'+(rotate?' rotate('+(a-90)+')':'')+'" '+attrs+'>'+body+'</g>';
 const button=(action,label,disabled=false)=>'role="button" tabindex="'+(disabled?-1:0)+'" aria-label="'+esc(label)+'" data-orbit-action="'+esc(action)+'"'+(disabled?' aria-disabled="true"':'');
 const path=(d,cls,more="")=>'<path d="'+d+'" class="'+cls+'" '+more+'/>';
@@ -313,7 +321,7 @@ function refreshPopup(){
  popupSignature=signature;
  // Use the EXISTING recent-apps ring; never create a floating top-left dialog.
  transitionAppIcons(subset);
- q("orbitFanCount").innerHTML=g(169,45,txt(letter+" · "+apps.length,4,10));
+ q("orbitFanCount").innerHTML=curveText(letter+" · "+apps.length,169,45,46,10,"orbit-muted","fan-count");
  q("orbitFanPaging").innerHTML=totalPages>1?
   g(123,8,'<circle r="11" fill="transparent"/>'+txt("‹",5,16),button("fan-page:-1","Previous "+letter+" apps"),false)+
   g(123,82,'<circle r="11" fill="transparent"/>'+txt("›",5,16),button("fan-page:1","Next "+letter+" apps"),false):"";
@@ -533,9 +541,9 @@ function drawClock(){
  if(lastClock===time+date&&q("orbitClock").childNodes.length)return;lastClock=time+date;
  let h=path(ring(330,301),"orbit-ring");
  for(let i=0;i<=22;i++){const a=1+i*4;h+='<line x1="'+point(326,a)[0]+'" y1="'+point(324,a)[1]+'" x2="'+point(i%3===0?322:324,a)[0]+'" y2="'+point(i%3===0?317:321,a)[1]+'" class="orbit-line" stroke-width="1"/>'}
- const digits=Array.from(time);
- digits.forEach((v,i)=>{h+=g(317,45+(i-(digits.length-1)/2)*4.1,txt(v,8,24))});
- h+=g(302,45,txt(date,3,8,"orbit-muted"));q("orbitClock").innerHTML=h;
+ h+=curveText(time,317,45,37,24,"","clock-time");
+ h+=curveText(date,303,45,58,9,"orbit-muted","clock-date");
+ q("orbitClock").innerHTML=h;
 }
 function currentRecents(){
  // Actual launches only, no invented app labels. Deduplicate activities.
@@ -559,10 +567,10 @@ function drawExternalWidgets(offset=offsets.external){
   const symbol=isAdd?"+":(String(item.label||"Widget").trim().charAt(0).toUpperCase()||"▦");
   const iconUrl=!isAdd&&item.pkg?iconSource({pkg:item.pkg}):"";
   let content='<rect x="-39" y="-23" width="78" height="46" rx="9" fill="transparent"/>'+
-   (iconUrl?'<image href="'+iconUrl+'" x="-11" y="-19" width="22" height="22" class="orbit-app-icon"/>':txt(symbol,-2,18))+
-   txt(trunc(isAdd?"ADD WIDGET":item.label,15).toUpperCase(),17,8);
+   (iconUrl?'<image href="'+iconUrl+'" x="-11" y="-19" width="22" height="22" class="orbit-app-icon"/>':txt(symbol,-2,18));
   h+=g(275,a,content,button(isAdd?"external:add":"external:focus:"+wrap(externalIndex+i,list.length),
    isAdd?"Add an Android app widget":"Select "+item.label+" app widget"),true);
+  h+=curveText(trunc(isAdd?"ADD WIDGET":item.label,15).toUpperCase(),258,a,34,9,"orbit-external-label","external-"+i);
  }
  q("orbitExternalWidgets").innerHTML=h;
  // Don't move native RemoteViews until the selected index actually changes.
@@ -591,7 +599,8 @@ function drawLetters(offset=offsets.letters){
  for(let i=-5;i<=5;i++){const l=letters[wrap(indices.letters+i,letters.length)],a=pointerAngle+i*11.25+offset;
  if(a< -10||a>100)continue;
  const atPointer=Math.abs(a-pointerAngle)<5.625;
- h+=g(86,a,'<rect x="-9" y="-20" width="18" height="40" rx="5" fill="transparent"/>'+(atPointer?'<circle r="11" class="orbit-accent"/>':"")+txt(l,4,12,atPointer?"orbit-ink":""),button("letter:"+l,"Browse apps beginning with "+l),false);
+ h+=g(86,a,'<rect x="-9" y="-20" width="18" height="40" rx="5" fill="transparent"/>'+(atPointer?'<circle r="11" class="orbit-accent"/>':""),button("letter:"+l,"Browse apps beginning with "+l),false);
+ h+=curveText(l,86,a,10.5,12,atPointer?"orbit-ink":"","alpha-"+i);
  }
  // A fixed triangle marks the selected letter while the alphabet rotates.
  // Compact fixed arrow: small enough not to overwhelm the alphabet glyphs.
@@ -620,9 +629,9 @@ function drawRecents(offset=offsets.recents){
  h+=g(147,a,'<circle r="19" class="orbit-raised"/>'+icon,button("recent:"+k,"Open "+app.label),false)}
  q("orbitRecents").innerHTML=h;
 }
-function music(a){
- let h=g(238,a,txt(trunc(media.available?media.title:"Music player",22),3,12));
- h+=g(225,a,txt(trunc(media.available?media.artist:(media.enabled?"Start a player":"Tap to connect"),25),3,9,"orbit-muted"));
+function music(a,slot){
+ let h=curveText(trunc(media.available?media.title:"Music player",22),238,a,48,12,"","music-title-"+slot);
+ h+=curveText(trunc(media.available?media.artist:(media.enabled?"Start a player":"Tap to connect"),25),225,a,51,9,"orbit-muted","music-artist-"+slot);
  const items=[["previous","Previous track","|◀",media.available&&media.canPrevious],["toggle",media.playing?"Pause":"Play",media.playing?"Ⅱ":"▶",media.available&&media.canToggle],["next","Next track","▶|",media.available&&media.canNext]];
  items.forEach((x,i)=>{const on=i===1;h+=g(206,a+(i-1)*17,'<rect x="-22" y="-12" width="44" height="24" rx="7" class="'+(on?"orbit-accent":"orbit-raised")+'"/><text y="4" text-anchor="middle" font-size="13" class="'+(on?"orbit-ink":"")+'">'+x[2]+'</text>',button("media:"+x[0],x[1],!x[3]))});
  const duration=Number(media.durationMs),position=Number(media.positionMs);
@@ -631,8 +640,10 @@ function music(a){
  h+=path(arc(188,start,end),"orbit-line",'stroke-width="3" stroke-linecap="round"');
  if(progress>0)h+=path(arc(188,start,start+48*progress),"orbit-line",'style="stroke:var(--theme-accent)" stroke-width="3" stroke-linecap="round"');
  if(media.canSeek)h+='<path d="'+arc(188,start,end)+'" fill="none" stroke="transparent" stroke-width="19" data-orbit-action="seek" data-orbit-angle="'+a+'" role="slider" aria-label="Playback position" aria-valuemin="0" aria-valuemax="'+duration+'" aria-valuenow="'+Math.round(position)+'" tabindex="0"/>';
- }else if(!media.enabled)h+=g(191,a,'<rect x="-35" y="-9" width="70" height="18" rx="5" fill="transparent"/>'+txt("CONNECT",3,9),button("connect","Enable media controls"));
- else h+=g(191,a,txt(media.available?"Playback time unavailable":"No active player",3,9,"orbit-muted"));
+ }else if(!media.enabled){
+  h+=g(191,a,'<rect x="-35" y="-9" width="70" height="18" rx="5" fill="transparent"/>',button("connect","Enable media controls"));
+  h+=curveText("CONNECT",191,a,32,9,"","music-connect-"+slot);
+ }else h+=curveText(media.available?"Playback time unavailable":"No active player",191,a,47,9,"orbit-muted","music-status-"+slot);
  return h;
 }
 function drawWidgets(offset=offsets.widgets){
@@ -641,12 +652,13 @@ function drawWidgets(offset=offsets.widgets){
  const a=45+i*60+offset;if(a+30<0||a-30>90)continue;
  const name=widgets[wrap(indices.widgets+i,widgets.length)];
  h+=path(sector(a-30,a+30),i===0?"orbit-raised":"orbit-ring",'data-orbit-widget="'+name+'"');
- if(name==="music")h+=music(a);
+ if(name==="music")h+=music(a,i);
  else {
  const isCal=name==="calendar",now=new Date();
- h+=g(235,a,txt(isCal?"Calendar":"Audio Desk",3,13));
- h+=g(219,a,txt(isCal?now.toLocaleDateString([],{weekday:"short",day:"numeric",month:"short"}):"Audio news & discoveries",3,10,"orbit-muted"));
- h+=g(199,a,'<rect x="-32" y="-10" width="64" height="20" rx="6" class="orbit-accent"/><text text-anchor="middle" y="3" font-size="10" class="orbit-ink">OPEN</text>',button(name,isCal?"Open calendar":"Open Audio Desk news"));
+ h+=curveText(isCal?"Calendar":"Audio Desk",235,a,49,13,"","widget-title-"+i);
+ h+=curveText(isCal?now.toLocaleDateString([],{weekday:"short",day:"numeric",month:"short"}):"Audio news & discoveries",219,a,52,10,"orbit-muted","widget-detail-"+i);
+ h+=g(199,a,'<rect x="-32" y="-10" width="64" height="20" rx="6" class="orbit-accent"/>',button(name,isCal?"Open calendar":"Open Audio Desk news"));
+ h+=curveText("OPEN",199,a,28,10,"orbit-ink","widget-open-"+i);
  }
  }
  // Readable hints for the clipped neighbouring cards.
