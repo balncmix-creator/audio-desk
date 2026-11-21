@@ -57,9 +57,12 @@ function setWallpaperColors(accent,panel,dark){
  root.setProperty("--theme-ink",panelLuma>.56?"#25252b":"#f9f7f6");
  root.setProperty("--theme-dark",dark);
  root.setProperty("--theme-text",darkLuma>.58?"#17171a":mixColor(a,[250,250,250],.82));
- root.setProperty("--theme-surface",mixColor(d,a,.16));
- root.setProperty("--theme-surface2",mixColor(d,a,.28));
- root.setProperty("--theme-line",mixColor(d,a,.49));
+ // Orbit's large rings should visibly take on the wallpaper hue rather
+ // than retain an almost-black graphite surface with just a colored border.
+ const orbit=launcherTheme==="orbit";
+ root.setProperty("--theme-surface",mixColor(d,a,orbit?.26:.16));
+ root.setProperty("--theme-surface2",mixColor(d,a,orbit?.40:.28));
+ root.setProperty("--theme-line",mixColor(d,a,orbit?.62:.49));
  root.setProperty("--theme-muted",mixColor(a,[240,239,240],.64));
  root.setProperty("--theme-glass",mixColor(p,[244,240,238],.18));
 }
