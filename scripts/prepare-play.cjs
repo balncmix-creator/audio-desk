@@ -39,7 +39,7 @@ const out = process.argv[2] ? path.resolve(process.argv[2]) : path.join(root, 'a
 fs.mkdirSync(out, { recursive: true });
 fs.writeFileSync(path.join(out, 'index.html'), html);
 fs.copyFileSync(path.join(root, 'app/src/main/assets/desk-premium.webp'), path.join(out, 'desk-premium.webp'));
-for (const name of ['wallpapers', 'fonts', 'pixel-icons', 'personalization.css', 'personalization.js', 'theme-system.css', 'theme-system.js', 'widget-layout.js', 'launcher-extras.js', 'launcher-extras.css', 'audio-wallpapers.js', 'audio-wallpapers.css', 'native-icons.js', 'native-icons.css', 'windows-live-tiles.js', 'windows-live-tiles.css', 'music-spectrum.js', 'music-spectrum.css', 'music-spectrum-settings.js', 'music-spectrum-settings.css', 'agenda.js', 'agenda.css', 'acoustics.js', 'acoustics.css', 'native-widgets.js', 'native-widgets.css', 'youtube-widget.js', 'youtube-widget.css']) {
+for (const name of ['wallpapers', 'fonts', 'pixel-icons', 'personalization.css', 'personalization.js', 'theme-system.css', 'theme-system.js', 'widget-layout.js', 'launcher-extras.js', 'launcher-extras.css', 'audio-wallpapers.js', 'audio-wallpapers.css', 'native-icons.js', 'native-icons.css', 'windows-live-tiles.js', 'windows-live-tiles.css', 'music-spectrum.js', 'music-spectrum.css', 'music-spectrum-settings.js', 'music-spectrum-settings.css', 'agenda.js', 'agenda.css', 'acoustics.js', 'acoustics.css', 'native-widgets.js', 'native-widgets.css', 'youtube-widget.js', 'orbit-theme.js', 'youtube-widget.css']) {
   // Remove stale generated files when the user removes a wallpaper from the pack.
   const target = path.resolve(out, name);
   if (path.dirname(target) !== out) throw new Error('Asset output escaped its directory');

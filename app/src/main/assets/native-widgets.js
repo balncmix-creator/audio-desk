@@ -21,7 +21,7 @@ function hiddenByOverlay(){
 }
 function sync(now=performance.now()){
  raf=0;
- const active=launcherTheme!=="extreme"&&launcherPage==="home"&&!home.hidden&&!document.hidden&&window.audioDeskForeground!==false;
+ const active=launcherTheme!=="extreme"&&launcherTheme!=="orbit"&&launcherPage==="home"&&!home.hidden&&!document.hidden&&window.audioDeskForeground!==false;
  const allowed=active&&!hiddenByOverlay();
  const style=getComputedStyle(document.documentElement);
  const top=Math.max(0,parseFloat(style.getPropertyValue("--status-top"))||0);

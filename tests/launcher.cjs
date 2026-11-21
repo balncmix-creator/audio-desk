@@ -332,6 +332,69 @@ const demoApps=[
   await page.evaluate(()=>{setLauncherPage('home',false);setLauncherTheme('windows')});
   assert.equal(await page.locator('#extremeSearch').isVisible(),false);
   assert.equal(await page.evaluate(()=>launcherTheme),'windows');
+  // Orbit: real search, live clock, three independently rotating dials,
+  // true media state and wallpaper palette; preserve all previous editions.
+  await page.evaluate(()=>setLauncherTheme('orbit'));
+  await page.locator('#orbitHome').waitFor({state:'visible'});
+  assert.equal(await page.locator('#launcherClockWidget').isVisible(),false);
+  assert.equal(await page.locator('#launcherMusicWidget').isVisible(),false);
+  assert.ok((await page.locator('#orbitClock').textContent()).match(/\d/));
+  assert.equal(await page.locator('#orbitWidgets [data-orbit-widget]').count(),3);
+  assert.equal(await page.locator('#orbitWidgets [data-orbit-action="media:toggle"]').count(),1);
+  await page.evaluate(()=>{window.receiveAudioDeskMedia({enabled:true,available:true,playing:true,title:'Orbit test track',artist:'Audio Desk',durationMs:120000,positionMs:45000,canSeek:true,canToggle:true,canPrevious:true,canNext:true})});
+  assert.ok((await page.locator('#orbitWidgets').textContent()).includes('Orbit test track'));
+  assert.equal(await page.locator('#orbitWidgets [role="slider"]').count(),1);
+  await page.evaluate(()=>{window.orbitCommands=[];window.AudioDesk.mediaCommand=x=>window.orbitCommands.push(x);window.AudioDesk.seekMedia=x=>window.orbitCommands.push(x)});
+  await page.locator('#orbitWidgets [data-orbit-action="media:toggle"]').dispatchEvent('click');
+  assert.deepEqual(await page.evaluate(()=>window.orbitCommands),['toggle']);
+  // Orbit uses private on-device adaptive icons rather than expecting a data: icon
+  // in the package manager's app listing.
+  await page.evaluate(()=>{
+   launcherRecents=window.launcherDemoApps.slice(0,5).map((app,i)=>({...app,opened:Date.now()-i*60000}));
+   renderLauncherHome();
+  });
+  assert.ok((await page.locator('#orbitRecents image[href="/app-icons/orbit/com.example.reaper.png"]').count())>=1,
+   'radial recent-app segment requests native device icon by package');
+  assert.ok((await page.locator('#orbitRecents').textContent()).includes('REAPER'),
+   'radial app labels remain visible as icon fallback');
+
+  // Synthetic drag, with deterministic pointer coordinates, verifies continuous
+  // visual movement and that the other dials stay at their own positions.
+  const momentum=await page.evaluate(async()=>{
+   const dial=document.getElementById('orbitDial');
+   const rect=dial.getBoundingClientRect();
+   dial.setPointerCapture=()=>{};
+   const at=a=>({
+    clientX:rect.right-86*Math.cos(a*Math.PI/180)*rect.width/334,
+    clientY:rect.bottom-86*Math.sin(a*Math.PI/180)*rect.height/334
+   });
+   const dispatch=(name,a)=>dial.dispatchEvent(new PointerEvent(name,{
+    bubbles:true,pointerId:7,button:0,...at(a)
+   }));
+   const recentsBefore=document.getElementById('orbitRecents').innerHTML;
+   dispatch('pointerdown',12);
+   await new Promise(r=>setTimeout(r,36));
+   dispatch('pointermove',26);
+   await new Promise(r=>setTimeout(r,36));
+   dispatch('pointermove',39);
+   const dragHtml=document.getElementById('orbitLetters').innerHTML;
+   dispatch('pointerup',39);
+   await new Promise(requestAnimationFrame);
+   const inertiaHtml=document.getElementById('orbitLetters').innerHTML;
+   return {moved:dragHtml!==inertiaHtml,otherUnchanged:recentsBefore===document.getElementById('orbitRecents').innerHTML};
+  });
+  assert.equal(momentum.moved,true,'ring continues moving after touch release');
+  assert.equal(momentum.otherUnchanged,true,'independent radial app ring stays stationary');
+  await page.waitForTimeout(1000);
+  const previousLetters=await page.locator('#orbitLetters').textContent();
+  await page.locator('#orbitWidgets [data-orbit-action="widget:1"]').dispatchEvent('click');
+  assert.equal(await page.locator('#orbitLetters').textContent(),previousLetters);
+  assert.ok((await page.locator('#orbitWidgets').textContent()).includes('Calendar'));
+  await page.locator('#orbitSearch [data-orbit-action="search"]').dispatchEvent('click');
+  assert.equal(await page.evaluate(()=>launcherPage),'apps');
+  assert.equal(await page.locator('#orbitHome').isVisible(),false);
+  await page.evaluate(()=>{setLauncherPage('home',false);setLauncherTheme('windows')});
+  assert.equal(await page.locator('#orbitHome').isVisible(),false);
   assert.deepEqual(errors,[],'no launcher errors');
   console.log('PASS: minimal Home without list, Niagara-style A-Z rail and panel, Windows tiles, pins, search, launches, recents and swipe navigation');
  }finally{await browser.close()}

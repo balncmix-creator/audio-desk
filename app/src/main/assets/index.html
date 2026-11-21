@@ -724,6 +724,7 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
   <div class="customize-panel">
    <div class="customize-head"><strong>HOME SCREEN THEME</strong><button type="button" id="themeClose" aria-label="Close themes">×</button></div>
    <div id="launcherThemeGrid" class="theme-grid" role="group" aria-label="Launcher themes">
+    <button type="button" class="theme-choice" data-launcher-theme-choice="orbit" aria-pressed="false"><span class="theme-visual orbit-preview"><i>12:48</i></span><strong>Orbit</strong><small>Concentric app, widget and clock dials.</small></button>
     <button type="button" class="theme-choice" data-launcher-theme-choice="extreme" aria-pressed="false"><span class="theme-visual extreme-preview"><i>12:48</i><em>Music<br>Camera<br>Messages</em></span><strong>Extreme Minimal</strong><small>Solid black, app names, no live widgets. Designed for low-end phones.</small></button>
     <button type="button" class="theme-choice" data-launcher-theme-choice="minimal" aria-pressed="true"><span class="theme-visual minimal-preview"><i>12:48</i><em>A<br>B<br>C<br>D</em></span><strong>Minimal A–Z</strong><small>Wallpaper, clock and right-hand letters</small></button>
     <button type="button" class="theme-choice" data-launcher-theme-choice="pixel" aria-pressed="false"><span class="theme-visual pixel-preview"><i>12:48</i><em>A<br>B<br>C<br>D</em></span><strong>8-Bit</strong><small>Pixel styling and quick app letters</small></button>
@@ -2019,7 +2020,7 @@ swipeMain.addEventListener("touchcancel",endPinch,{capture:true,passive:true});
 /* MeeGo-style Home planes: EVENTS preserves the original Audio Desk news UI,
    APPLICATIONS uses real installed Android apps, OPEN APPS lists local launches. */
 const launcherPages=["events","home","apps"];
-const LAUNCHER_THEMES=["minimal","pixel","windows","warm","extreme"];
+const LAUNCHER_THEMES=["minimal","pixel","windows","warm","extreme","orbit"];
 const NATIVE_LOW_RAM=(()=>{try{return window.AudioDesk?.isLowRamDevice?.()===true}catch{return false}})();
 const LOW_POWER_DEVICE=NATIVE_LOW_RAM||!!((navigator.deviceMemory&&navigator.deviceMemory<=2)||(navigator.hardwareConcurrency&&navigator.hardwareConcurrency<=4)||window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 let launcherTheme=deskStorage.getItem("ad_launcher_theme_v1")||(NATIVE_LOW_RAM?"extreme":"minimal");
@@ -2310,7 +2311,7 @@ $("launcherLetterApps").addEventListener("click",e=>{
 });
 document.addEventListener("click",e=>{
  if(!$("launcherLetterPanel").hidden&&
-   !e.target.closest("#launcherLetterPanel,#launcherAlphaIndex"))closeLauncherLetterPanel();
+   !e.target.closest("#launcherLetterPanel,#launcherAlphaIndex,#orbitHome"))closeLauncherLetterPanel();
 });
 function normalizeAppSearch(value){
  return String(value||"").normalize("NFKD").replace(/\p{M}/gu,"").toLocaleLowerCase().trim().replace(/\s+/g," ");
@@ -2951,6 +2952,7 @@ document.addEventListener("click",e=>{
 <script src="acoustics.js"></script>
 <script src="native-widgets.js"></script>
 <script src="youtube-widget.js"></script>
+<script src="orbit-theme.js"></script>
 <script>
 function hasLauncherOverlay(){return ['launcherLetterPanel','launcherHomeOptions','launcherShortcutMenu','launcherThemeDialog','launcherWallpaperDialog','launcherClockDialog','gridDetail','agendaOverlay'].some(id=>!document.getElementById(id).hidden)}
 function syncRefreshAvailability(){window.AudioDesk?.setRefreshEnabled?.(launcherPage==='events'&&!hasLauncherOverlay())}

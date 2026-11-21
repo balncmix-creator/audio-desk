@@ -9,7 +9,7 @@ const ids=["launcherClockWidget","warmDateWidget","warmAudioWidget","warmSearchW
 const byId=id=>document.getElementById(id);
 // Edition-specific widgets must not be packed, edited, or measured in an
 // unrelated theme, even if a stylesheet temporarily exposes their wrapper.
-const themeAllowsWidget=id=>launcherTheme==="extreme"?["launcherClockWidget","launcherRecentStrip","launcherFavorites"].includes(id):/^warm(Date|Audio|Search)Widget$/.test(id)?launcherTheme==="warm":
+const themeAllowsWidget=id=>launcherTheme==="orbit"?false:launcherTheme==="extreme"?["launcherClockWidget","launcherRecentStrip","launcherFavorites"].includes(id):/^warm(Date|Audio|Search)Widget$/.test(id)?launcherTheme==="warm":
  /^(live(Clock|Calendar|News)Widget|launcherTilesSearch)$/.test(id)?launcherTheme==="windows":true;
 const movable=()=>ids.filter(themeAllowsWidget).map(byId).filter(el=>el&&!el.hidden&&el.getClientRects().length&&
   getComputedStyle(el).display!=="none"&&el.getBoundingClientRect().width>16);
@@ -526,7 +526,7 @@ window.audioDeskRegisterNativeWidget=(id,label)=>{
 window.audioDeskUnregisterNativeWidget=id=>{
  if(!/^nativeWidget_\d+$/.test(id))return;
  const i=ids.indexOf(id);if(i>=0)ids.splice(i,1);delete labels[id];
- for(const theme of ["minimal","pixel","windows","warm","extreme"]){
+ for(const theme of ["minimal","pixel","windows","warm","extreme","orbit"]){
   const k="ad_widget_layout_v2_"+theme,r="ad_widget_removed_v1_"+theme;
   try{const g=JSON.parse(deskStorage.getItem(k)||"{}");delete g[id];deskStorage.setItem(k,JSON.stringify(g));}catch{}
   try{const h=JSON.parse(deskStorage.getItem(r)||"[]");deskStorage.setItem(r,JSON.stringify(h.filter(v=>v!==id)));}catch{}

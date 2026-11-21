@@ -10,6 +10,7 @@ import android.media.session.MediaController
 import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.os.Build
+import android.os.SystemClock
 import android.provider.Settings
 import org.json.JSONObject
 
@@ -80,11 +81,30 @@ class MediaWidgetSupport(private val activity: Activity) {
             obj.put("title", info?.getString(MediaMetadata.METADATA_KEY_TITLE).orEmpty().take(120))
             obj.put("artist", info?.getString(MediaMetadata.METADATA_KEY_ARTIST).orEmpty().take(100))
             obj.put("app", media.packageName.take(110))
+            val duration = info?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 0L
+            val rawPosition = playback?.position ?: -1L
+            val elapsed = if (playback?.state == PlaybackState.STATE_PLAYING && playback.lastPositionUpdateTime > 0)
+                (SystemClock.elapsedRealtime() - playback.lastPositionUpdateTime).coerceAtLeast(0L) * playback.playbackSpeed else 0f
+            val position = if (rawPosition >= 0 && duration > 0) (rawPosition + elapsed.toLong()).coerceIn(0L, duration) else -1L
+            obj.put("durationMs", duration.coerceAtLeast(0L))
+            obj.put("positionMs", position)
+            obj.put("canSeek", duration > 0 && position >= 0 && (actions and PlaybackState.ACTION_SEEK_TO) != 0L)
             obj.put("canNext", (actions and PlaybackState.ACTION_SKIP_TO_NEXT) != 0L)
             obj.put("canPrevious", (actions and PlaybackState.ACTION_SKIP_TO_PREVIOUS) != 0L)
             obj.put("canToggle", (actions and (PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or PlaybackState.ACTION_PLAY_PAUSE)) != 0L)
         }
         return obj
+    }
+
+    fun seek(positionMs: Long): JSONObject {
+        val media = current()
+        val duration = media?.metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 0L
+        val actions = media?.playbackState?.actions ?: 0L
+        if (media != null && duration > 0L && (actions and PlaybackState.ACTION_SEEK_TO) != 0L) {
+            try { media.transportControls.seekTo(positionMs.coerceIn(0L, duration)) }
+            catch (_: RuntimeException) { /* Session may have closed. */ }
+        }
+        return state()
     }
 
     fun command(action: String): JSONObject {
