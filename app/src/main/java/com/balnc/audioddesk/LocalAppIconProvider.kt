@@ -24,7 +24,7 @@ internal class LocalAppIconProvider(
     private val context: Context,
     private val isLaunchable: (String) -> Boolean
 ) : WebViewAssetLoader.PathHandler {
-    private val route = Regex("^(original|minimal|pixel|windows|warm)/([A-Za-z0-9_.]{4,180})\\.png$")
+    private val route = Regex("^(original|minimal|pixel|windows|warm|orbit)/([A-Za-z0-9_.]{4,180})\\.png$")
     private val cache = object : LruCache<String, ByteArray>(8 * 1024) {
         override fun sizeOf(key: String, value: ByteArray): Int =
             (value.size + 1023) / 1024
@@ -150,6 +150,12 @@ internal class LocalAppIconProvider(
                             37 + luminance * 181 / 255
                         )
                         "windows" -> Color.rgb(255, 255, 255)
+                        // Orbit uses a muted sage-coloured foreground matching the radial dial.
+                        "orbit" -> {
+                            val grey = 72 + luminance * 177 / 255
+                            Color.rgb((grey - 8).coerceAtLeast(0), grey,
+                                (grey - 3).coerceAtLeast(0))
+                        }
                         "pixel" -> {
                             val swatch = intArrayOf(
                                 Color.rgb(28, 19, 42),
