@@ -109,16 +109,15 @@ function redrawExternal(){
  window.audioDeskSyncNativeWidgets?.();
 }
 window.audioDeskOrbitWidgetSlot=()=>{
- if(!active()||popupVisible||settingsVisible||quickVisible||!orbitPreferences.showAppWidgets||host.hidden)return null;
+ // Never draw native rectangular RemoteViews on top of the curved dials.
+ if(!active()||!widgetPreviewVisible||popupVisible||settingsVisible||quickVisible||host.hidden)return null;
  const selected=selectedExternal();
  if(!selected?.id)return null;
- const rect=host.getBoundingClientRect();
- if(!rect.width)return null;
- const scale=rect.width/334;
- const [dx,dy]=point(276,45);
- const centerX=rect.right+dx*scale,centerY=rect.bottom+dy*scale;
- const w=Math.min(170,Math.max(108,rect.width*.42)),h=Math.min(61,Math.max(44,rect.width*.145));
- return {id:selected.id,x:centerX-w/2,y:centerY-h/2,w,h};
+ const bounds=q("orbitWidgetPreviewSlot").getBoundingClientRect();
+ if(bounds.width<60||bounds.height<60)return null;
+ const inset=5;
+ return {id:selected.id,x:bounds.left+inset,y:bounds.top+inset,
+  w:bounds.width-2*inset,h:bounds.height-2*inset};
 };
 function rotateExternal(delta){
  const count=externalWidgetsList().length;
@@ -216,6 +215,7 @@ function stopFan(){
 }
 function showPopup(){
  if(!active())return;
+ hideWidgetPreview();
  if(popupVisible){refreshPopup();return}
  popupVisible=true;popupLetter="";popupPage=0;popupSignature="";
  document.body.classList.add("orbit-letter-active");
@@ -348,6 +348,28 @@ function turnAppPage(delta){
 }
 
 let settingsVisible=false,quickVisible=false,settingsTab="themes";
+let widgetPreviewVisible=false;
+function hideWidgetPreview(){
+ if(!widgetPreviewVisible)return;
+ widgetPreviewVisible=false;
+ widgetPreview.hidden=true;widgetPreviewShade.hidden=true;
+ window.audioDeskSyncNativeWidgets?.();
+}
+function showWidgetPreview(){
+ if(!active())return;
+ const chosen=selectedExternal();
+ if(!chosen?.id)return openNativeWidgetPicker();
+ hidePopup();closeQuick();closeSettings();
+ widgetPreviewVisible=true;
+ q("orbitWidgetPreviewTitle").textContent=chosen.label;
+ widgetPreview.hidden=false;widgetPreviewShade.hidden=false;
+ window.audioDeskSyncNativeWidgets?.();
+}
+widgetPreviewShade.addEventListener("click",hideWidgetPreview);
+q("orbitWidgetPreviewClose").addEventListener("click",hideWidgetPreview);
+q("orbitWidgetPreviewRemove").addEventListener("click",()=>{
+ hideWidgetPreview();removeSelectedExternal();
+});
 let orbitToastTimer=0,homeHold=null,holdConsumedUntil=0;
 const orbitPrefsKey="ad_orbit_settings_v2";
 const defaultOrbitPreferences={momentum:true,blur:true,haptics:false,showAppWidgets:true};
@@ -443,6 +465,7 @@ function closeQuick(){
 }
 function openSettings(tab="themes"){
  if(!active())return;
+ hideWidgetPreview();
  hidePopup();stopAllSpins();closeQuick();
  settingsTab=settingsCategories.includes(tab)?tab:"themes";
  settingsVisible=true;settingsPanel.hidden=false;settingsShade.hidden=false;
@@ -452,6 +475,7 @@ function openSettings(tab="themes"){
 }
 function openQuick(){
  if(!active())return;
+ hideWidgetPreview();
  hidePopup();stopAllSpins();closeSettings();
  quickVisible=true;quickPanel.hidden=false;settingsShade.hidden=false;
  window.audioDeskSyncNativeWidgets?.();
@@ -498,6 +522,7 @@ quickPanel.addEventListener("click",e=>{
 });
 document.addEventListener("keydown",e=>{
  if(e.key!=="Escape")return;
+ if(widgetPreviewVisible)hideWidgetPreview();
  if(settingsVisible)closeSettings();
  if(quickVisible)closeQuick();
 });
@@ -505,7 +530,7 @@ function cancelHomeHold(){
  if(homeHold){clearTimeout(homeHold.timer);homeHold=null}
 }
 function blankHomeTarget(target,event){
- if(!active()||settingsVisible||quickVisible)return false;
+ if(!active()||settingsVisible||quickVisible||widgetPreviewVisible)return false;
  if(target.closest("#orbitSettingsGear,#orbitSettingsPanel,#orbitQuickCustomize,#launcherHomeOptions,#launcherSettingsToggle"))return false;
  const b=host.getBoundingClientRect();
  const dx=(event.clientX-b.right)*334/b.width,dy=(event.clientY-b.bottom)*334/b.height;
@@ -596,7 +621,7 @@ function drawExternalWidgets(offset=offsets.external){
 }
 let lastExternalNativeId=-1;
 function openNativeWidgetPicker(){
- hidePopup();closeSettings();closeQuick();
+ hideWidgetPreview();hidePopup();closeSettings();closeQuick();
  if(typeof window.AudioDesk?.openNativeWidgets==="function"){
   window.AudioDesk.openNativeWidgets();
  }else{
@@ -688,7 +713,7 @@ function drawWidgets(offset=offsets.widgets){
 function drawSearch(){q("orbitSearch").innerHTML='<g '+button("search","Search installed apps")+'><path d="'+arc(60,0,90)+' L0,0 Z" class="orbit-raised"/><circle cx="-28" cy="-30" r="9" fill="none" stroke="var(--theme-text,#e5f0e7)" stroke-width="2.5"/><path d="M-21.5,-23.5 L-14,-16" fill="none" stroke="var(--theme-text,#e5f0e7)" stroke-width="2.5" stroke-linecap="round"/></g>'}
 function draw(){if(!active())return;host.hidden=false;recentList=currentRecents();drawClock();drawExternalWidgets();drawWidgets();drawRecents();drawLetters();drawSearch();if(popupVisible)refreshPopup()}
 function sync(){
- stopAllSpins();hidePopup();closeSettings();closeQuick();
+ stopAllSpins();hidePopup();hideWidgetPreview();closeSettings();closeQuick();
  host.hidden=!active();drag=null;orbitToast.hidden=true;cancelHomeHold();
  if(active()){redrawExternal();draw()}
  window.audioDeskSyncNativeWidgets?.();
@@ -709,7 +734,11 @@ function action(code,target){
  if(code.startsWith("fan-page:")){turnAppPage(Number(code.slice(9))||0);return}
  if(code==="search")openLauncherSearch();
  else if(code==="external:add")openNativeWidgetPicker();
- else if(code.startsWith("external:focus:")){externalIndex=wrap(Number(code.slice("external:focus:".length))||0,externalWidgetsList().length);indices.external=externalIndex;offsets.external=0;drawExternalWidgets()}
+ else if(code.startsWith("external:focus:")){
+   const next=wrap(Number(code.slice("external:focus:".length))||0,externalWidgetsList().length);
+   if(next===externalIndex)showWidgetPreview();
+   else{externalIndex=next;indices.external=externalIndex;offsets.external=0;drawExternalWidgets()}
+  }
  else if(code.startsWith("letter:"))selectLetter(code.slice(7));
  else if(code.startsWith("recent:")){const app=recentList[Number(code.slice(7))];if(app)window.AudioDesk?.launchExternalApp?.(app.pkg,app.activity)}
  else if(code.startsWith("media:")){window.AudioDesk?.mediaCommand?.(code.slice(6))}
