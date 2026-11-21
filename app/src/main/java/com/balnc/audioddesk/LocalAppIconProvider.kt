@@ -163,8 +163,13 @@ internal class LocalAppIconProvider(
                 result = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
                 val pixels = IntArray(size * size)
                 scaled.getPixels(pixels, 0, size, 0, 0, size, size)
-                if ((theme == "windows" || pack != null) &&
-                    drawable !is AdaptiveIconDrawable && size == 128)
+                // Legacy matte removal was designed for white Windows tiles.
+                // Running it over arbitrary pack colors can ERASE app glyphs
+                // (especially white logos and near-solid branded icons), leaving
+                // only fragmentary marks on the dial. Keep source silhouettes
+                // intact for generated pack styles.
+                if (theme == "windows" && drawable !is AdaptiveIconDrawable &&
+                    size == 128)
                     clearUniformLegacyBackground(pixels, size)
                 for (i in pixels.indices) {
                     val p = pixels[i]
