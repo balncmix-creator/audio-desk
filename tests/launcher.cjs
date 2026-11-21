@@ -63,6 +63,11 @@ const demoApps=[
       description:'REAPER post-production tools',pubDate:'2026-11-14T12:00:00Z'}
     ]}});
    if(url.includes('api.github.com'))return route.fulfill({json:{items:[]}});
+   // QA: the browser has no internet. Keep image identity/credits real but mock bytes.
+   if(url.startsWith('https://images.unsplash.com/'))
+    return route.fulfill({status:200,contentType:'image/png',
+     headers:{'Access-Control-Allow-Origin':'*'},
+     body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAADCAIAAAA2iEnWAAAAFElEQVR4nGP0LethYGBgYmBgQFAAGPIBVaOwJEQAAAAASUVORK5CYII=','base64')});
    return route.abort();
   });
   await page.goto('https://appassets.androidplatform.net/assets/index.html');
@@ -347,9 +352,14 @@ const demoApps=[
   assert.equal(await page.locator('#launcherMusicWidget').isVisible(),false);
   assert.ok((await page.locator('#orbitClock').textContent()).match(/\d/));
   assert.equal(await page.locator('#orbitWidgets [data-orbit-widget]').count(),3);
-  assert.equal(await page.locator('#orbitWidgets [data-orbit-action="media:toggle"]').count(),1);
+  assert.equal(await page.locator('#orbitWidgets [data-orbit-action="connect"]').count(),1,
+   'unconnected player has one clear connect action, not redundant transport buttons');
+  assert.equal(await page.locator('#orbitWidgets [data-orbit-action="media:toggle"]').count(),0);
+  assert.ok((await page.locator('#orbitWidgets').textContent()).includes('CONNECT PLAYER'));
   await page.evaluate(()=>{window.receiveAudioDeskMedia({enabled:true,available:true,playing:true,title:'Orbit test track',artist:'Audio Desk',durationMs:120000,positionMs:45000,canSeek:true,canToggle:true,canPrevious:true,canNext:true})});
   assert.ok((await page.locator('#orbitWidgets').textContent()).includes('Orbit test track'));
+  assert.equal(await page.locator('#orbitWidgets [data-orbit-action="media:toggle"]').count(),1,
+   'transport controls appear only when a real player is active');
   assert.equal(await page.locator('#orbitWidgets [role="slider"]').count(),1);
   await page.evaluate(()=>{window.orbitCommands=[];window.AudioDesk.mediaCommand=x=>window.orbitCommands.push(x);window.AudioDesk.seekMedia=x=>window.orbitCommands.push(x)});
   await page.locator('#orbitWidgets [data-orbit-action="media:toggle"]').dispatchEvent('click');
@@ -434,6 +444,8 @@ const demoApps=[
    'app widget dial is separate from the built-in Audio Desk dial');
   assert.equal(await page.locator('#orbitClock textPath').count(),2,
    'time and date follow actual clock arc paths');
+  assert.deepEqual(await page.locator('#orbitClock text').evaluateAll(els=>els.map(t=>Number(t.getAttribute('font-size')))),[16,8],
+   'clock type fits the narrow 29-unit annulus');
   assert.ok((await page.locator('#orbitWidgets textPath').count())>=2,
    'Audio Desk widget titles and subtitles curve along their dial');
   assert.ok((await page.locator('#orbitExternalWidgets textPath').count())>=1,
@@ -495,6 +507,19 @@ const demoApps=[
   assert.equal(await page.locator('#orbitSettingsPanel').isVisible(),true);
   assert.equal(await page.locator('#orbitSettingsPanel [data-orbit-tab]').count(),6,
    'settings panel has six sections');
+  assert.equal(await page.locator('#launcherOptionsSheet').evaluate(el=>getComputedStyle(el).display),'grid',
+   'Orbit advanced Home Options uses a compact grid rather than one endless vertical list');
+  assert.equal(await page.locator('#nativeWidgetsOpen').isVisible(),false,
+   'compacting advanced controls never unhides Orbit-incompatible widget entry points');
+
+  const settingsMetrics=await page.evaluate(()=>{
+   const r=document.getElementById('orbitSettingsPanel').getBoundingClientRect();
+   return {width:r.width,right:r.right,vw:innerWidth,
+    minHit:Math.min(...[...document.querySelectorAll('#orbitSettingsTabs button')]
+     .map(el=>el.getBoundingClientRect().height))};
+  });
+  assert.ok(settingsMetrics.width>=Math.min(350,settingsMetrics.vw-24)&&settingsMetrics.right<=settingsMetrics.vw, "Settings geometry: "+JSON.stringify(settingsMetrics));
+  assert.ok(settingsMetrics.minHit>=40,'settings controls must be finger accessible');
   await page.locator('#orbitSettingsTabs [data-orbit-tab="widgets"]').click();
   assert.ok((await page.locator('#orbitSettingsContent').textContent()).includes('Audio Desk widgets'));
   await page.locator('#orbitSettingsContent [data-orbit-settings-action="add-widget"]').click();
@@ -532,53 +557,52 @@ const demoApps=[
   await page.locator('#orbitSettingsClose').click();
 
 
-  // Curated, finite wallpaper browsing: no giant scrolling catalogue.
-  assert.equal(await page.evaluate(()=>window.audioDeskMinimalGalleryCount()),42,
-   '42 art-directed modern wallpapers are bundled as SVGs');
+
+  // QA #15: real photo provenance, bounded picker, and Android wallpaper export.
+  assert.equal(await page.evaluate(()=>window.audioDeskMinimalGalleryCount()),9);
   const galleryInfo=await page.evaluate(()=>window.audioDeskStudioGallery());
-  assert.equal(galleryInfo.pageSize,4,'only four large wallpaper previews appear per page');
-  assert.ok(galleryInfo.collections.includes('AMOLED')&&galleryInfo.collections.includes('Sculpture'));
+  assert.equal(galleryInfo.pageSize,4);
+  assert.equal(galleryInfo.credited,true);
+  assert.deepEqual(galleryInfo.collections,['Featured','Architecture','Nature','Monochrome']);
   await page.locator('#orbitSettingsGear').click();
   await page.locator('#orbitSettingsTabs [data-orbit-tab="wallpaper"]').click();
   await page.locator('#orbitSettingsContent [data-orbit-settings-action="wallpaper"]').click();
   assert.equal(await page.locator('#launcherWallpaperDialog').isVisible(),true);
-  assert.equal(await page.locator('#minimalGalleryGrid .minimal-gallery-entry').count(),4,
-   'picker shows four modern previews, not an endless list');
-  assert.equal(await page.locator('#wallpaperMoreOptions').getAttribute('open'),null,
-   'older photo/audio/palette choices are collapsed');
-  assert.equal(await page.locator('#minimalGalleryCount').textContent(),'1 / 3 · 12 designs',
-   'featured collection opens on the first compact page');
-  await page.locator('#minimalGalleryNext').click();
-  assert.equal(await page.locator('#minimalGalleryCount').textContent(),'2 / 3 · 12 designs',
-   'next arrow pages the gallery without elongating the layout');
   assert.equal(await page.locator('#minimalGalleryGrid .minimal-gallery-entry').count(),4);
-  await page.locator('#minimalGalleryPrev').click();
-  await page.locator('#minimalGalleryFilters [data-minimal-category="AMOLED"]').click();
-  assert.equal(await page.locator('#minimalGalleryCount').textContent(),'1 / 2 · 6 designs');
-  assert.equal(await page.locator('#minimalGalleryGrid .minimal-gallery-entry').count(),4);
+  assert.equal(await page.locator('#wallpaperMoreOptions').getAttribute('open'),null);
+  assert.equal(await page.locator('#minimalGalleryCount').textContent(),'1 / 1 · 4 photos');
+  assert.equal(await page.locator('#minimalGalleryNext').isEnabled(),false);
+  assert.ok((await page.locator('#minimalGalleryGrid').textContent()).includes('Photo:'));
+  await page.locator('#minimalGalleryGrid img').first().dispatchEvent('error');
+  assert.equal(await page.locator('#minimalGalleryGrid .minimal-gallery-unavailable').first().isVisible(),true,
+   'failed thumbnail displays a human-readable offline state, not a blank card');
+  await page.locator('#minimalGalleryFilters [data-minimal-category="Nature"]').click();
+  assert.equal(await page.locator('#minimalGalleryCount').textContent(),'1 / 1 · 4 photos');
+  await page.locator('#minimalGalleryFilters [data-minimal-category="Architecture"]').click();
+  assert.equal(await page.locator('#minimalGalleryCount').textContent(),'1 / 1 · 3 photos');
   await page.locator('#minimalGalleryGrid .minimal-gallery-entry').first().click();
-  assert.ok(await page.evaluate(()=>document.body.dataset.minimalWallpaper.startsWith('mg-studio-')),
-   'choosing wallpaper immediately updates Home');
+  await page.waitForFunction(()=>document.body.dataset.minimalWallpaper?.startsWith('photo-'));
   assert.equal(await page.locator('#minimalGalleryWallpaperImage').isVisible(),true);
-  const artSource=await page.locator('#minimalGalleryWallpaperImage').getAttribute('src');
-  assert.ok(artSource.startsWith('data:image/svg+xml;'),'wallpapers are scalable vectors');
-  assert.ok(decodeURIComponent(artSource).includes('1440')&&decodeURIComponent(artSource).includes('2560'),
-   'SVGs specify high-resolution output dimensions');
-  await page.waitForTimeout(260);
+  const loadedPhotoSrc=await page.locator('#minimalGalleryWallpaperImage').getAttribute('src');
+  assert.ok(loadedPhotoSrc.startsWith('https://images.unsplash.com/photo-'));
+  assert.ok(loadedPhotoSrc.includes('w=1440')&&loadedPhotoSrc.includes('h=2560'),
+   'real photos use a high-resolution portrait crop without stretching a low-resolution landscape');
+  assert.ok((await page.locator('#minimalGalleryStatus').textContent()).includes('Unsplash'));
+  await page.waitForTimeout(180);
   assert.ok((await page.evaluate(()=>window.systemWallpaperCalls)).length>0,
-   'Android wallpaper export invokes the native integration');
+   'native wallpaper API receives decoded raster photograph');
   await page.locator('#wallpaperClose').click();
   await page.evaluate(()=>setLauncherTheme('warm'));
   await page.evaluate(()=>setLauncherTheme('orbit'));
-  assert.equal(await page.locator('#minimalGalleryWallpaperImage').isVisible(),true,
-   'selected gallery wallpaper persists separately per launcher theme');
+  await page.waitForFunction(()=>document.body.dataset.minimalWallpaper?.startsWith('photo-'));
+  assert.equal(await page.locator('#minimalGalleryWallpaperImage').isVisible(),true);
   await page.locator('#orbitSettingsGear').click();
   await page.locator('#orbitSettingsTabs [data-orbit-tab="wallpaper"]').click();
   await page.locator('#orbitSettingsContent [data-orbit-settings-action="wallpaper"]').click();
-  await page.locator('#minimalGalleryFilters [data-minimal-category="Sculpture"]').click();
-  assert.equal(await page.locator('#minimalGalleryCount').textContent(),'1 / 2 · 6 designs');
+  await page.locator('#minimalGalleryFilters [data-minimal-category="Monochrome"]').click();
+  assert.equal(await page.locator('#minimalGalleryCount').textContent(),'1 / 1 · 2 photos');
   await page.locator('#minimalGalleryGrid .minimal-gallery-entry').first().click();
-  assert.ok(await page.locator('#minimalGalleryWallpaperImage').isVisible());
+  await page.waitForFunction(()=>document.body.dataset.minimalWallpaper?.startsWith('photo-'));
   await page.locator('#wallpaperClose').click();
 
   // Regression: actual Android users cold-start directly into their saved Orbit theme.
