@@ -376,7 +376,13 @@ const demoApps=[
   await page.locator('#orbitPickerClose').click();
   assert.equal(await page.locator('#orbitLetterMenu').isVisible(),false);
 
-  // Synthetic drag, with deterministic pointer coordinates, verifies continuous
+  // The circular app popup opens the chosen app by native package/activity.
+  await page.locator('#orbitLetters [data-orbit-action="letter:A"]').dispatchEvent('click');
+  await page.locator('#orbitPickerFan [data-picker-pkg="com.example.audio"]').dispatchEvent('click');
+  assert.equal(await page.locator('#orbitLetterMenu').isVisible(),false);
+  assert.ok(await page.evaluate(()=>window.appLaunchCalls.some(x=>x[0]==='com.example.audio')),
+   'tapping an app icon in the radial popup launches the installed app');
+    // Synthetic drag, with deterministic pointer coordinates, verifies continuous
   // visual movement and that the other dials stay at their own positions.
   const momentum=await page.evaluate(async()=>{
    const dial=document.getElementById('orbitDial');
@@ -414,13 +420,7 @@ const demoApps=[
   await page.locator('#orbitWidgets [data-orbit-action="widget:1"]').dispatchEvent('click');
   assert.equal(await page.locator('#orbitLetters').textContent(),previousLetters);
   assert.ok((await page.locator('#orbitWidgets').textContent()).includes('Calendar'));
-  // The circular app popup opens the chosen app by native package/activity.
-  await page.locator('#orbitLetters [data-orbit-action="letter:A"]').dispatchEvent('click');
-  await page.locator('#orbitPickerFan [data-picker-pkg="com.example.audio"]').dispatchEvent('click');
-  assert.equal(await page.locator('#orbitLetterMenu').isVisible(),false);
-  assert.ok(await page.evaluate(()=>window.appLaunchCalls.some(x=>x[0]==='com.example.audio')),
-   'tapping an app icon in the radial popup launches the installed app');
-  await page.locator('#orbitSearch [data-orbit-action="search"]').dispatchEvent('click');
+await page.locator('#orbitSearch [data-orbit-action="search"]').dispatchEvent('click');
   assert.equal(await page.evaluate(()=>launcherPage),'apps');
   assert.equal(await page.locator('#orbitHome').isVisible(),false);
   await page.evaluate(()=>{setLauncherPage('home',false);setLauncherTheme('windows')});
