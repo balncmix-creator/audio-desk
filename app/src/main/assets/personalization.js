@@ -21,7 +21,7 @@ function syncWallpaperMotion(){
  document.body.dataset.motionPaused=String(paused);
  document.body.dataset.wallpaperMotion=effect==="none"?"":effect;
  const home=launcherPage==="home";
- const light=home&&launcherTheme!=="windows"&&document.body.dataset.wallpaperStatusLight==="true";
+ const light=home&&launcherTheme!=="windows"&&!document.body.classList.contains("orbit-files-open")&&document.body.dataset.wallpaperStatusLight==="true";
  if(window.AudioDesk&&typeof window.AudioDesk.setStatusBarTheme==="function")
   window.AudioDesk.setStatusBarTheme(home?launcherTheme:"apps",light);
  else if(window.AudioDesk&&typeof window.AudioDesk.setWallpaperTone==="function")
