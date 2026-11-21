@@ -208,8 +208,12 @@ function drawLetters(offset=offsets.letters){
  h+=g(86,a,'<rect x="-9" y="-20" width="18" height="40" rx="5" fill="transparent"/>'+(atPointer?'<circle r="11" class="orbit-accent"/>':"")+txt(l,4,12,atPointer?"orbit-ink":""),button("letter:"+l,"Browse apps beginning with "+l),false);
  }
  // A fixed triangle marks the selected letter while the alphabet rotates.
- h+='<path d="M'+p(102,pointerAngle)+' L'+p(115,pointerAngle-2.6)+' L'+p(115,pointerAngle+2.6)+' Z" class="orbit-accent" id="orbitAlphabetPointer"/>';
+ h+='<g id="orbitAlphabetPointer" aria-label="Fixed alphabet selection arrow" pointer-events="none">'+
+  '<path d="M'+p(102,pointerAngle)+' L'+p(135,pointerAngle-5.8)+' Q'+p(144,pointerAngle)+' '+p(135,pointerAngle+5.8)+' Z" fill="#f2fff3" stroke="#112b1c" stroke-width="3" stroke-linejoin="round" style="filter:drop-shadow(0px 1px 3px #000b)"/>'+
+  '<circle cx="'+point(127,pointerAngle)[0]+'" cy="'+point(127,pointerAngle)[1]+'" r="3" fill="#315b3e"/>'+
+  '</g>';
  q("orbitLetters").innerHTML=h;
+ // The wheel alone moves; the arrow is redrawn at its fixed angle.
  if(popupVisible)refreshPopup();
 }
 function drawRecents(offset=offsets.recents){
