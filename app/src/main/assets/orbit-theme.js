@@ -3,7 +3,7 @@
 "use strict";
 const home=document.getElementById("launcherHomePage");
 const host=document.createElement("div");host.id="orbitHome";host.hidden=true;
-host.innerHTML='<svg id="orbitDial" viewBox="-334 -334 334 334" role="group" aria-label="Orbit radial launcher"><defs><clipPath id="orbitQuarter"><rect x="-334" y="-334" width="334" height="334"/></clipPath></defs><g clip-path="url(#orbitQuarter)"><g id="orbitClock"></g><g id="orbitWidgets"></g><g id="orbitRecents"></g><g id="orbitLetters"></g><g id="orbitSearch"></g></g></svg>';
+host.innerHTML='<svg id="orbitDial" viewBox="-334 -334 334 334" role="group" aria-label="Orbit radial launcher"><defs><clipPath id="orbitQuarter"><rect x="-334" y="-334" width="334" height="334"/></clipPath></defs><g clip-path="url(#orbitQuarter)"><g id="orbitClock"></g><g id="orbitExternalWidgets"></g><g id="orbitWidgets"></g><g id="orbitRecents"></g><g id="orbitLetters"></g><g id="orbitSearch"></g></g></svg>';
 home.prepend(host);
 
 // Blurred backdrop stays below the dial. Icons fan out IN the recent-apps ring.
@@ -17,14 +17,46 @@ style.textContent='#orbitHome[hidden]{display:none!important}#orbitHome{position
 style.textContent+="\n#orbitRadialBackdrop{position:fixed;inset:0;z-index:2;opacity:0;visibility:hidden;pointer-events:none;background:rgba(8,17,11,.34);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:opacity .28s ease,visibility .28s ease}\nbody.orbit-letter-active[data-launcher-theme=\"orbit\"] #orbitRadialBackdrop{opacity:1;visibility:visible;pointer-events:auto}\nbody.orbit-letter-active[data-launcher-theme=\"orbit\"] #orbitDial #orbitClock,\nbody.orbit-letter-active[data-launcher-theme=\"orbit\"] #orbitDial #orbitWidgets,\nbody.orbit-letter-active[data-launcher-theme=\"orbit\"] #orbitDial #orbitSearch{filter:blur(2.5px);opacity:.55}\n#orbitDial #orbitClock,#orbitDial #orbitWidgets,#orbitDial #orbitSearch{transition:filter .26s ease,opacity .26s ease}\n#orbitRecents .orbit-app-ring{stroke:var(--theme-line,#6c8873);stroke-width:1;fill:var(--theme-surface2,#35483c)}\n#orbitRecents .orbit-fan-item{cursor:pointer}\n#orbitRecents .orbit-fan-item circle{fill:var(--theme-surface,#263d30);stroke:var(--theme-line,#91ab97);stroke-width:1}\n#orbitRecents .orbit-fan-item:focus-visible circle{stroke:var(--theme-accent,#c6e9c8);stroke-width:3}\n#orbitRecents .orbit-fan-item image{pointer-events:none}\n#orbitRecents #orbitFanCount{font-size:10px;opacity:.83}\n#orbitRecents .orbit-page-button{cursor:pointer}\n#orbitRecents .orbit-page-button text{font-size:14px;fill:var(--theme-text,#e5f0e7)}\nbody[data-launcher-theme=orbit] #launcherHomePage>:not(#orbitHome):not(#orbitRadialBackdrop):not(#launcherLetterPanel):not(#launcherHomeOptions):not(#launcherSettingsToggle):not(#launcherShortcutMenu){display:none!important}\n@media(prefers-reduced-motion:reduce){#orbitRadialBackdrop,#orbitDial #orbitClock,#orbitDial #orbitWidgets,#orbitDial #orbitSearch{transition:none!important}#orbitRadialBackdrop{backdrop-filter:none;-webkit-backdrop-filter:none}}\n";
 // A transparent backdrop must remain layout-visible; opacity and hit-testing own its state.
 style.textContent+='#orbitRadialBackdrop{display:block!important;visibility:visible!important}';
+style.textContent+="\n#orbitExternalWidgets .orbit-external-segment{fill:var(--theme-surface,#304b37);stroke:var(--theme-line,#58715f);stroke-width:1}\n#orbitExternalWidgets .orbit-external-focused{fill:var(--theme-surface2,#416348);stroke:var(--theme-accent,#b4d9ba);stroke-width:1.7}\n#orbitExternalWidgets [data-orbit-action]{cursor:pointer;outline:none}\n";
+style.textContent+="\n#orbitSettingsGear{display:none;position:fixed;top:max(34px,calc(var(--status-top,24px) + 10px));left:12px;z-index:8;width:38px;height:38px;place-items:center;border-radius:12px;border:1px solid var(--theme-line,#607b66);background:var(--theme-surface2,#2d4837);color:var(--theme-accent,#cce8d0);box-shadow:0 3px 15px #0003;cursor:pointer}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"home\"] #orbitSettingsGear{display:grid}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"home\"] #launcherSettingsToggle{display:none!important}\n#orbitSettingsShade[hidden],#orbitSettingsPanel[hidden],#orbitQuickCustomize[hidden],#orbitToast[hidden]{display:none!important}\n#orbitSettingsShade{position:fixed;inset:0;z-index:26;background:#061008a6;backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}\n#orbitSettingsPanel,#orbitQuickCustomize{font-family:system-ui,sans-serif;position:fixed;z-index:27;box-sizing:border-box;color:var(--theme-text,#e2f0e5);border:1px solid var(--theme-line,#718d78);background:var(--theme-surface,#223729);box-shadow:0 15px 45px #0008}\n#orbitSettingsPanel{left:12px;top:max(69px,calc(var(--status-top,24px) + 46px));width:min(310px,calc(100vw - 24px));max-height:min(74dvh,600px);border-radius:17px;display:flex;flex-direction:column;overflow:hidden}\n#orbitSettingsPanel .orbit-settings-header{display:flex;align-items:center;justify-content:space-between;padding:14px 15px 12px;gap:15px}\n#orbitSettingsPanel .orbit-settings-header>div{display:flex;flex-direction:column;gap:4px}\n#orbitSettingsPanel .orbit-settings-header small{font-size:10px;letter-spacing:.12em;opacity:.72}\n#orbitSettingsPanel .orbit-settings-header strong{font-size:21px}\n#orbitSettingsPanel button,#orbitQuickCustomize button{font:inherit;cursor:pointer;color:inherit}\n#orbitSettingsClose{width:32px;height:30px;border:0;background:var(--theme-surface2,#365540);border-radius:9px;font-size:23px}\n#orbitSettingsTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:0 12px 12px;border-bottom:1px solid var(--theme-line,#58745f)}\n#orbitSettingsTabs button{min-width:0;padding:8px 2px;background:var(--theme-surface2,#365540);border:0;border-radius:8px;font-size:11px}\n#orbitSettingsTabs button[aria-selected=\"true\"]{background:var(--theme-accent,#c9e3ce);color:var(--theme-accent-ink,#183120);font-weight:700}\n#orbitSettingsContent{min-height:120px;overflow:auto;overscroll-behavior:contain;padding:13px 14px 16px;font-size:12px}\n#orbitSettingsContent h3{font-size:14px;font-weight:650;margin:0 0 11px}\n#orbitSettingsContent p{opacity:.77;font-size:11px;line-height:1.5;margin:7px 0 12px}\n#orbitSettingsContent .orbit-settings-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--theme-line,#4d6655)}\n#orbitSettingsContent .orbit-settings-row small{display:block;font-size:10px;opacity:.72;padding-top:4px}\n#orbitSettingsContent button{background:var(--theme-surface2,#3f5c49);border:1px solid var(--theme-line,#627c68);border-radius:9px;padding:8px 10px;font-size:11px}\n#orbitSettingsContent .orbit-settings-buttons{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}\n#orbitSettingsContent .orbit-settings-buttons button[aria-pressed=\"true\"]{border-color:var(--theme-accent,#d7ebd9);font-weight:700}\n#orbitSettingsContent input[type=checkbox]{accent-color:var(--theme-accent,#c5dec8);width:17px;height:17px;flex-shrink:0}\n#orbitQuickCustomize{top:max(108px,calc(var(--status-top,24px) + 88px));left:13px;width:min(230px,calc(100vw - 30px));padding:9px;border-radius:14px}\n#orbitQuickCustomize strong{display:block;padding:7px 8px 9px;color:var(--theme-accent,#bad8c2);font-size:12px}\n#orbitQuickCustomize button{display:block;text-align:left;width:100%;border:0;border-radius:9px;padding:10px 8px;background:transparent;font-size:12px}\n#orbitQuickCustomize button:active{background:var(--theme-surface2,#3f5c49)}\n#orbitToast{position:fixed;z-index:35;bottom:max(48px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--theme-accent,#d8eedb);color:var(--theme-accent-ink,#193522);padding:10px 14px;border-radius:10px;font:12px system-ui,sans-serif;box-shadow:0 7px 25px #0007;max-width:90vw}\n@media(prefers-reduced-motion:reduce){#orbitSettingsShade{backdrop-filter:none;-webkit-backdrop-filter:none}}\n";
+style.textContent+="\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitRadialBackdrop{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitDial #orbitClock,\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitDial #orbitWidgets,\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitDial #orbitExternalWidgets,\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitDial #orbitSearch{filter:none!important}\nbody.orbit-letter-active[data-launcher-theme=orbit] #orbitDial #orbitExternalWidgets{filter:blur(2.5px);opacity:.55;transition:filter .26s ease,opacity .26s ease}\nbody.orbit-hide-app-widgets[data-launcher-theme=orbit] #orbitExternalWidgets{display:none}\n";
 document.head.append(style);
+
+const orbitSettingsGear=document.createElement("button");
+orbitSettingsGear.id="orbitSettingsGear";orbitSettingsGear.type="button";
+orbitSettingsGear.setAttribute("aria-label","Audio Desk settings");
+orbitSettingsGear.setAttribute("aria-controls","orbitSettingsPanel");
+orbitSettingsGear.setAttribute("aria-expanded","false");
+orbitSettingsGear.innerHTML='<svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M10 2.5h4l.6 2.3 1.8.8 2.1-1.1 2.9 2.9-1.1 2.1.8 1.8 2.3.6v4l-2.3.6-.8 1.8 1.1 2.1-2.9 2.9-2.1-1.1-1.8.8-.6 2.3h-4l-.6-2.3-1.8-.8-2.1 1.1-2.9-2.9 1.1-2.1-.8-1.8-2.3-.6v-4l2.3-.6.8-1.8-1.1-2.1 2.9-2.9 2.1 1.1 1.8-.8z" transform="translate(12 12) scale(.78) translate(-12 -12)"/></svg>';
+const settingsShade=document.createElement("div");
+settingsShade.id="orbitSettingsShade";settingsShade.hidden=true;
+const settingsPanel=document.createElement("section");
+settingsPanel.id="orbitSettingsPanel";settingsPanel.hidden=true;
+settingsPanel.setAttribute("role","dialog");settingsPanel.setAttribute("aria-modal","true");
+settingsPanel.setAttribute("aria-label","Audio Desk settings");
+settingsPanel.innerHTML='<div class="orbit-settings-header"><div><small>AUDIO DESK</small><strong>Settings</strong></div><button id="orbitSettingsClose" type="button" aria-label="Close settings">×</button></div>'+
+'<nav id="orbitSettingsTabs" aria-label="Settings categories">'+
+['Themes','Wallpaper','Dials','Widgets','Gestures','General'].map(label=>'<button type="button" data-orbit-tab="'+label.toLowerCase()+'">'+label+'</button>').join("")+
+'</nav><div id="orbitSettingsContent"></div>';
+const quickPanel=document.createElement("div");
+quickPanel.id="orbitQuickCustomize";quickPanel.hidden=true;
+quickPanel.setAttribute("role","dialog");quickPanel.setAttribute("aria-label","Customize Home");
+quickPanel.innerHTML='<strong>Customize Home</strong>'+
+'<button type="button" data-orbit-quick="wallpaper">◈ &nbsp; Change wallpaper</button>'+
+'<button type="button" data-orbit-quick="widgets">▦ &nbsp; Manage widgets</button>'+
+'<button type="button" data-orbit-quick="dials">◎ &nbsp; Customize dials</button>'+
+'<button type="button" data-orbit-quick="themes">⚙ &nbsp; Audio Desk settings</button>';
+const orbitToast=document.createElement("div");orbitToast.id="orbitToast";
+orbitToast.setAttribute("role","status");orbitToast.hidden=true;
+document.body.append(orbitSettingsGear,settingsShade,settingsPanel,quickPanel,orbitToast);
+
 const svg=host.querySelector("svg"),q=id=>document.getElementById(id);
 const pi=Math.PI,rad=a=>a*pi/180;
 const point=(r,a)=>[-r*Math.cos(rad(a)),-r*Math.sin(rad(a))];
 const p=(r,a)=>point(r,a).map(v=>v.toFixed(3)).join(",");
 const arc=(r,a,b)=>"M"+p(r,a)+" A"+r+","+r+" 0 0 1 "+p(r,b);
 const ring=(R,r)=>arc(R,0,90)+" L"+p(r,90)+" A"+r+","+r+" 0 0 0 "+p(r,0)+" Z";
-const sector=(a,b,R=266,r=182)=>{
+const sector=(a,b,R=249,r=182)=>{
  // Parallel 2-unit insets on both radial edges give a constant 4-unit gap.
  const gap=2,c=6,outer=Math.asin(gap/R)*180/pi,inner=Math.asin(gap/r)*180/pi;
  const A=a+outer,B=b-outer,C=a+inner,D=b-inner;
@@ -33,6 +65,14 @@ const sector=(a,b,R=266,r=182)=>{
 };
 const wrap=(n,l)=>((n%l)+l)%l;
 const txt=(s,y=4,size=13,cls="")=>'<text text-anchor="middle" y="'+y+'" font-size="'+size+'" class="'+cls+'">'+esc(String(s))+'</text>';
+// Render label text as a real textPath tangent to its parent ring.
+// Stable per-ring IDs avoid SVG link collisions across incremental redraws.
+const curveText=(label,radius,angle,width,size,cls,key)=>{
+ const id="orbitCurve-"+String(key).replace(/[^a-z0-9_-]/gi,"-");
+ return '<defs><path id="'+id+'" d="'+arc(radius,angle-width/2,angle+width/2)+'"/></defs>'+
+  '<text text-anchor="middle" font-size="'+size+'" class="'+(cls||"")+'">'+
+  '<textPath href="#'+id+'" startOffset="50%">'+esc(String(label))+'</textPath></text>';
+};
 const g=(r,a,body,attrs="",rotate=true)=>'<g transform="translate('+p(r,a)+')'+(rotate?' rotate('+(a-90)+')':'')+'" '+attrs+'>'+body+'</g>';
 const button=(action,label,disabled=false)=>'role="button" tabindex="'+(disabled?-1:0)+'" aria-label="'+esc(label)+'" data-orbit-action="'+esc(action)+'"'+(disabled?' aria-disabled="true"':'');
 const path=(d,cls,more="")=>'<path d="'+d+'" class="'+cls+'" '+more+'/>';
@@ -40,21 +80,58 @@ const trunc=(s,n)=>Array.from(String(s||"")).slice(0,n).join("")+(Array.from(Str
 const letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ#".split("");
 const pointerAngle=45; // fixed poker-dial indicator, independent of each ring
 const widgets=["music","calendar","news"];
-let indices={letters:0,recents:0,widgets:0},drag=null,suppressNativeClickUntil=0;
+let externalWidgets=[],externalIndex=0;
+const externalRingStep=38;
+const externalWidgetsList=()=>[...externalWidgets,{id:0,label:"Add widget",pkg:"",accent:""}];
+function selectedExternal(){const list=externalWidgetsList();return list[wrap(externalIndex,list.length)]}
+function nativeWidgetList(){
+ try{return window.audioDeskOrbitWidgets?.()||[]}catch{return[]}
+}
+function redrawExternal(){
+ if(!active())return;
+ externalWidgets=nativeWidgetList();
+ externalIndex=wrap(externalIndex,externalWidgetsList().length);
+ indices.external=externalIndex;
+ drawExternalWidgets();
+ window.audioDeskSyncNativeWidgets?.();
+}
+window.audioDeskOrbitWidgetSlot=()=>{
+ if(!active()||popupVisible||settingsVisible||quickVisible||!orbitPreferences.showAppWidgets||host.hidden)return null;
+ const selected=selectedExternal();
+ if(!selected?.id)return null;
+ const rect=host.getBoundingClientRect();
+ if(!rect.width)return null;
+ const scale=rect.width/334;
+ const [dx,dy]=point(276,45);
+ const centerX=rect.right+dx*scale,centerY=rect.bottom+dy*scale;
+ const w=Math.min(170,Math.max(108,rect.width*.42)),h=Math.min(61,Math.max(44,rect.width*.145));
+ return {id:selected.id,x:centerX-w/2,y:centerY-h/2,w,h};
+};
+function rotateExternal(delta){
+ const count=externalWidgetsList().length;
+ if(!count)return;
+ externalIndex=wrap(externalIndex+delta,count);
+ indices.external=externalIndex;offsets.external=0;
+ drawExternalWidgets();window.audioDeskSyncNativeWidgets?.();
+}
+
+let indices={letters:0,recents:0,widgets:0,external:0},drag=null,suppressNativeClickUntil=0;
 // Each dial has a continuously changing angle; the other dials stay still.
-const offsets={letters:0,recents:0,widgets:0};
-const spinning={letters:0,recents:0,widgets:0};
+const offsets={letters:0,recents:0,widgets:0,external:0};
+const spinning={letters:0,recents:0,widgets:0,external:0};
 const prefersReducedMotion=window.matchMedia("(prefers-reduced-motion: reduce)");
 function ringStep(which){
  if(which==="widgets")return 60;
+ if(which==="external")return externalRingStep;
  if(which==="letters")return 11.25;
  return 90/Math.min(5,Math.max(1,recentList.length));
 }
 function ringLength(which){
- return which==="widgets"?widgets.length:which==="letters"?letters.length:recentList.length;
+ return which==="widgets"?widgets.length:which==="external"?externalWidgetsList().length:which==="letters"?letters.length:recentList.length;
 }
 function paintRing(which){
  if(which==="widgets")drawWidgets();
+ else if(which==="external"){externalIndex=indices.external;drawExternalWidgets();}
  else if(which==="letters")drawLetters();
  else drawRecents();
 }
@@ -64,7 +141,9 @@ function advanceRing(which,delta){
  // Cross a notch without changing the visual angle: no snapping jump.
  const crossings=Math.round(offsets[which]/step);
  if(crossings){
+  if(which==="letters"&&orbitPreferences.haptics)try{navigator.vibrate?.(6)}catch{}
   indices[which]=wrap(indices[which]-crossings,len);
+  if(which==="external")externalIndex=indices.external;
   offsets[which]-=crossings*step;
  }
  paintRing(which);
@@ -80,7 +159,7 @@ function settleRing(which,velocity=0){
  if(prefersReducedMotion.matches){
   advanceRing(which,-offsets[which]);return;
  }
- let v=Math.max(-0.75,Math.min(0.75,velocity)); // deg/ms
+ let v=orbitPreferences.momentum?Math.max(-0.75,Math.min(0.75,velocity)):0; // deg/ms
  let last=performance.now();
  function frame(now){
   if(!active()||document.hidden||window.audioDeskForeground===false){
@@ -127,6 +206,7 @@ function showPopup(){
  if(popupVisible){refreshPopup();return}
  popupVisible=true;popupLetter="";popupPage=0;popupSignature="";
  document.body.classList.add("orbit-letter-active");
+ window.audioDeskSyncNativeWidgets?.();
  drawRecents();
  refreshPopup();
 }
@@ -136,6 +216,7 @@ function hidePopup(){
  document.body.classList.remove("orbit-letter-active");
  stopFan();fanCurrent=null;
  if(wasVisible&&active())drawRecents();
+ window.audioDeskSyncNativeWidgets?.();
 }
 softBackdrop.addEventListener("click",hidePopup);
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&popupVisible)hidePopup()});
@@ -240,7 +321,7 @@ function refreshPopup(){
  popupSignature=signature;
  // Use the EXISTING recent-apps ring; never create a floating top-left dialog.
  transitionAppIcons(subset);
- q("orbitFanCount").innerHTML=g(169,45,txt(letter+" · "+apps.length,4,10));
+ q("orbitFanCount").innerHTML=curveText(letter+" · "+apps.length,169,45,46,10,"orbit-muted","fan-count");
  q("orbitFanPaging").innerHTML=totalPages>1?
   g(123,8,'<circle r="11" fill="transparent"/>'+txt("‹",5,16),button("fan-page:-1","Previous "+letter+" apps"),false)+
   g(123,82,'<circle r="11" fill="transparent"/>'+txt("›",5,16),button("fan-page:1","Next "+letter+" apps"),false):"";
@@ -252,26 +333,274 @@ function turnAppPage(delta){
  popupPage=wrap(popupPage+delta,len);popupSignature="";
  refreshPopup();
 }
+
+let settingsVisible=false,quickVisible=false,settingsTab="themes";
+let orbitToastTimer=0,homeHold=null,holdConsumedUntil=0;
+const orbitPrefsKey="ad_orbit_settings_v2";
+const defaultOrbitPreferences={momentum:true,blur:true,haptics:false,showAppWidgets:true};
+let orbitPreferences={...defaultOrbitPreferences};
+try{
+ const stored=JSON.parse(deskStorage.getItem(orbitPrefsKey)||"null");
+ if(stored&&typeof stored==="object")
+  for(const key of Object.keys(defaultOrbitPreferences))
+   if(typeof stored[key]==="boolean")orbitPreferences[key]=stored[key];
+}catch{}
+function saveOrbitPreferences(){
+ deskStorage.setItem(orbitPrefsKey,JSON.stringify(orbitPreferences));
+ document.body.classList.toggle("orbit-no-blur",!orbitPreferences.blur);
+ document.body.classList.toggle("orbit-hide-app-widgets",!orbitPreferences.showAppWidgets);
+ if(active()){drawExternalWidgets();window.audioDeskSyncNativeWidgets?.()}
+}
+function showOrbitToast(text){
+ orbitToast.textContent=String(text).slice(0,170);
+ orbitToast.hidden=false;
+ clearTimeout(orbitToastTimer);
+ orbitToastTimer=setTimeout(()=>{orbitToast.hidden=true},1900);
+}
+const settingsCategories=["themes","wallpaper","dials","widgets","gestures","general"];
+function settingCheck(key,title,detail){
+ return '<label class="orbit-settings-row"><span>'+esc(title)+
+  '<small>'+esc(detail)+'</small></span><input type="checkbox" data-orbit-preference="'+key+'" '+(orbitPreferences[key]?"checked":"")+'></label>';
+}
+function settingsButton(label,code){
+ return '<button type="button" data-orbit-settings-action="'+esc(code)+'">'+esc(label)+'</button>';
+}
+function renderSettings(){
+ if(!settingsVisible)return;
+ for(const button of settingsPanel.querySelectorAll("[data-orbit-tab]"))
+  button.setAttribute("aria-selected",String(button.dataset.orbitTab===settingsTab));
+ const selected=selectedExternal();
+ let html="";
+ switch(settingsTab){
+  case "themes":{
+   const themeNames=[["orbit","Orbit"],["minimal","Minimal A–Z"],["pixel","8-Bit"],["windows","Windows"],["warm","Warm Minimal"],["extreme","Extreme"]];
+   html='<h3>Choose your edition</h3><div class="orbit-settings-buttons">'+
+    themeNames.map(([id,name])=>'<button type="button" data-orbit-settings-action="theme:'+id+'" aria-pressed="'+(launcherTheme===id)+'">'+esc(name)+'</button>').join("")+
+    '</div><p>All launcher themes and their settings remain available.</p>'+
+    settingsButton("All theme options","theme-dialog");
+   break;
+  }
+  case "wallpaper":
+   html='<h3>Wallpaper appearance</h3>'+
+    settingCheck("blur","Blur behind the A–Z app menu","Background blurs smoothly as app icons fan outward.")+
+    '<div class="orbit-settings-row"><span>Wallpapers & animation<small>Choose a wallpaper or accent palette</small></span>'+
+    settingsButton("Choose","wallpaper")+'</div>';
+   break;
+  case "dials":
+   html='<h3>Radial dial behaviour</h3>'+
+    settingCheck("momentum","Smooth momentum","Inertia followed by gentle snapping.")+
+    settingCheck("haptics","Letter haptics","Vibrate briefly when a letter reaches the arrow.")+
+    '<div class="orbit-settings-row"><span>A–Z pointer<small>Small, fixed arrow</small></span><strong>Compact</strong></div>';
+   break;
+  case "widgets":
+   html='<h3>Two independent widget rings</h3>'+
+    settingCheck("showAppWidgets","Show app-widget ring","Android app widgets directly under the clock.")+
+    '<div class="orbit-settings-row"><span>App widgets<small>'+esc(selected.id?selected.label:"Add widget")+'</small></span>'+
+    settingsButton("Next","next-external")+'</div>'+
+    '<div class="orbit-settings-buttons">'+settingsButton("+ Add app widget","add-widget")+
+    (selected.id?settingsButton("Remove selected","remove-widget"):"")+'</div>'+
+    '<div class="orbit-settings-row"><span>Audio Desk widgets<small>'+esc(widgets[indices.widgets])+'</small></span>'+
+    settingsButton("Next","next-built-in")+'</div>'+
+    '<p>Music, calendar and audio news remain in their own dial. Third-party widgets use the Android system picker.</p>';
+   break;
+  case "gestures":
+   html='<h3>Home gestures</h3>'+
+    '<div class="orbit-settings-row"><span>Long-press empty Home<small>Open quick customization</small></span><strong>On</strong></div>'+
+    '<div class="orbit-settings-row"><span>Tap outside the app ring<small>Return to recent apps</small></span><strong>On</strong></div>'+
+    '<div class="orbit-settings-row"><span>Rotate A–Z<small>Show apps under the fixed arrow</small></span><strong>On</strong></div>';
+   break;
+  default:
+   html='<h3>General</h3>'+
+    '<div class="orbit-settings-row"><span>Launcher edition</span><strong>Orbit</strong></div>'+
+    '<div class="orbit-settings-buttons">'+settingsButton("Set default Home","make-default")+
+    settingsButton("All launcher options","advanced")+'</div>';
+ }
+ q("orbitSettingsContent").innerHTML=html;
+}
+function closeSettings(){
+ settingsVisible=false;settingsPanel.hidden=true;
+ settingsShade.hidden=quickVisible?false:true;
+ orbitSettingsGear.setAttribute("aria-expanded","false");
+ window.audioDeskSyncNativeWidgets?.();
+}
+function closeQuick(){
+ quickVisible=false;quickPanel.hidden=true;
+ if(!settingsVisible)settingsShade.hidden=true;
+ window.audioDeskSyncNativeWidgets?.();
+}
+function openSettings(tab="themes"){
+ if(!active())return;
+ hidePopup();stopAllSpins();closeQuick();
+ settingsTab=settingsCategories.includes(tab)?tab:"themes";
+ settingsVisible=true;settingsPanel.hidden=false;settingsShade.hidden=false;
+ orbitSettingsGear.setAttribute("aria-expanded","true");
+ renderSettings();q("orbitSettingsClose").focus();
+ window.audioDeskSyncNativeWidgets?.();
+}
+function openQuick(){
+ if(!active())return;
+ hidePopup();stopAllSpins();closeSettings();
+ quickVisible=true;quickPanel.hidden=false;settingsShade.hidden=false;
+ window.audioDeskSyncNativeWidgets?.();
+}
+orbitSettingsGear.addEventListener("click",()=>settingsVisible?closeSettings():openSettings());
+q("orbitSettingsClose").addEventListener("click",closeSettings);
+settingsShade.addEventListener("click",()=>{closeSettings();closeQuick()});
+q("orbitSettingsTabs").addEventListener("click",e=>{
+ const button=e.target.closest("[data-orbit-tab]");if(!button)return;
+ settingsTab=button.dataset.orbitTab;renderSettings();
+});
+q("orbitSettingsContent").addEventListener("change",e=>{
+ const name=e.target?.dataset.orbitPreference;
+ if(!Object.prototype.hasOwnProperty.call(defaultOrbitPreferences,name))return;
+ orbitPreferences[name]=e.target.checked;
+ saveOrbitPreferences();renderSettings();
+});
+function openExistingDialog(id){
+ closeSettings();
+ q(id)?.click();
+}
+q("orbitSettingsContent").addEventListener("click",e=>{
+ const action=e.target.closest("[data-orbit-settings-action]")?.dataset.orbitSettingsAction;
+ if(!action)return;
+ if(action.startsWith("theme:")){
+  const theme=action.slice(6);
+  if(["orbit","minimal","pixel","windows","warm","extreme"].includes(theme)){
+   closeSettings();setLauncherTheme(theme);
+  }
+ }else if(action==="theme-dialog")openExistingDialog("launcherThemeChoose");
+ else if(action==="wallpaper")openExistingDialog("launcherWallpaperChoose");
+ else if(action==="add-widget")openNativeWidgetPicker();
+ else if(action==="remove-widget"){removeSelectedExternal();renderSettings()}
+ else if(action==="next-external"){rotateExternal(1);renderSettings()}
+ else if(action==="next-built-in"){indices.widgets=wrap(indices.widgets+1,widgets.length);offsets.widgets=0;drawWidgets();renderSettings()}
+ else if(action==="make-default"){closeSettings();q("launcherMakeDefault")?.click()}
+ else if(action==="advanced"){closeSettings();q("launcherSettingsToggle")?.click()}
+});
+quickPanel.addEventListener("click",e=>{
+ const target=e.target.closest("[data-orbit-quick]");if(!target)return;
+ const tab=target.dataset.orbitQuick;
+ if(tab==="wallpaper"){closeQuick();q("launcherWallpaperChoose")?.click()}
+ else openSettings(tab);
+});
+document.addEventListener("keydown",e=>{
+ if(e.key!=="Escape")return;
+ if(settingsVisible)closeSettings();
+ if(quickVisible)closeQuick();
+});
+function cancelHomeHold(){
+ if(homeHold){clearTimeout(homeHold.timer);homeHold=null}
+}
+function blankHomeTarget(target,event){
+ if(!active()||settingsVisible||quickVisible)return false;
+ if(target.closest("#orbitSettingsGear,#orbitSettingsPanel,#orbitQuickCustomize,#launcherHomeOptions,#launcherSettingsToggle"))return false;
+ const b=host.getBoundingClientRect();
+ const dx=(event.clientX-b.right)*334/b.width,dy=(event.clientY-b.bottom)*334/b.height;
+ const r=Math.hypot(dx,dy),a=Math.atan2(-dy,-dx)*180/pi;
+ // Only the clear background or the clock track has a Home long-press.
+ return !b.width||r>330||r<0||a<0||a>90;
+}
+home.addEventListener("pointerdown",e=>{
+ if(e.button!==0||!blankHomeTarget(e.target,e))return;
+ cancelHomeHold();
+ const x=e.clientX,y=e.clientY,id=e.pointerId;
+ homeHold={x,y,id,timer:setTimeout(()=>{
+  homeHold=null;holdConsumedUntil=performance.now()+800;
+  openQuick();
+ },540)};
+});
+home.addEventListener("pointermove",e=>{
+ if(homeHold&&e.pointerId===homeHold.id&&Math.hypot(e.clientX-homeHold.x,e.clientY-homeHold.y)>11)cancelHomeHold();
+});
+for(const name of ["pointerup","pointercancel"])home.addEventListener(name,cancelHomeHold);
+home.addEventListener("contextmenu",e=>{
+ if(!blankHomeTarget(e.target,e))return;
+ e.preventDefault();cancelHomeHold();openQuick();
+});
+home.addEventListener("click",e=>{
+ if(!active()||!popupVisible||e.target.closest("#orbitHome"))return;
+ hidePopup();
+},true);
+window.addEventListener("audio-desk-native-widgets-changed",()=>{
+ const old=new Set(externalWidgets.map(x=>x.id));
+ const oldId=selectedExternal()?.id;
+ externalWidgets=nativeWidgetList();
+ const added=externalWidgets.find(item=>!old.has(item.id));
+ if(added)externalIndex=externalWidgets.findIndex(item=>item.id===added.id);
+ else if(oldId)externalIndex=Math.max(0,externalWidgets.findIndex(x=>x.id===oldId));
+ else externalIndex=Math.min(externalIndex,externalWidgets.length);
+ indices.external=externalIndex;offsets.external=0;
+ if(active()){drawExternalWidgets();renderSettings()}
+ window.audioDeskSyncNativeWidgets?.();
+});
+saveOrbitPreferences();
+
 function drawClock(){
  if(!active())return;
  const now=new Date(),time=now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:false}),date=now.toLocaleDateString([],{weekday:"short",day:"numeric",month:"short"}).toUpperCase();
  if(lastClock===time+date&&q("orbitClock").childNodes.length)return;lastClock=time+date;
- let h=path(ring(330,270),"orbit-ring");
- for(let i=0;i<=22;i++){const a=1+i*4;h+='<line x1="'+point(324,a)[0]+'" y1="'+point(324,a)[1]+'" x2="'+point(i%3===0?317:321,a)[0]+'" y2="'+point(i%3===0?317:321,a)[1]+'" class="orbit-line" stroke-width="1"/>'}
- const digits=Array.from(time);
- digits.forEach((v,i)=>{h+=g(304,45+(i-(digits.length-1)/2)*4.1,txt(v,8,30))});
- h+=g(281,45,txt(date,3,10,"orbit-muted"));q("orbitClock").innerHTML=h;
+ let h=path(ring(330,301),"orbit-ring");
+ for(let i=0;i<=22;i++){const a=1+i*4;h+='<line x1="'+point(326,a)[0]+'" y1="'+point(324,a)[1]+'" x2="'+point(i%3===0?322:324,a)[0]+'" y2="'+point(i%3===0?317:321,a)[1]+'" class="orbit-line" stroke-width="1"/>'}
+ h+=curveText(time,317,45,37,24,"","clock-time");
+ h+=curveText(date,303,45,58,9,"orbit-muted","clock-date");
+ q("orbitClock").innerHTML=h;
 }
 function currentRecents(){
  // Actual launches only, no invented app labels. Deduplicate activities.
  const seen=new Set();return launcherRecents.filter(a=>{const k=launcherAppKey(a);if(seen.has(k))return false;seen.add(k);return true});
+}
+
+function drawExternalWidgets(offset=offsets.external){
+ q("orbitExternalWidgets").style.display=orbitPreferences.showAppWidgets?"":"none";
+ // The outer App Widget dial is independent from Audio Desk's native widget
+ // dial. Only one real RemoteViews surface is hosted at a time (at 45°).
+ const list=externalWidgetsList();
+ const selected=list[wrap(externalIndex,list.length)];
+ let h="";
+ for(let i=-2;i<=2;i++){
+  const a=45+i*externalRingStep+offset;
+  if(a+19<0||a-19>90)continue;
+  const item=list[wrap(externalIndex+i,list.length)];
+  const isAdd=item.id===0,chosen=i===0;
+  h+=path(sector(a-18.5,a+18.5,299,252),chosen?"orbit-external-focused":"orbit-external-segment",
+   'data-orbit-external="'+esc(String(item.id))+'"');
+  const symbol=isAdd?"+":(String(item.label||"Widget").trim().charAt(0).toUpperCase()||"▦");
+  const iconUrl=!isAdd&&item.pkg?iconSource({pkg:item.pkg}):"";
+  let content='<rect x="-39" y="-23" width="78" height="46" rx="9" fill="transparent"/>'+
+   (iconUrl?'<image href="'+iconUrl+'" x="-11" y="-19" width="22" height="22" class="orbit-app-icon"/>':txt(symbol,-2,18));
+  h+=g(275,a,content,button(isAdd?"external:add":"external:focus:"+wrap(externalIndex+i,list.length),
+   isAdd?"Add an Android app widget":"Select "+item.label+" app widget"),true);
+  h+=curveText(trunc(isAdd?"ADD WIDGET":item.label,15).toUpperCase(),258,a,34,9,"orbit-external-label","external-"+i);
+ }
+ q("orbitExternalWidgets").innerHTML=h;
+ // Don't move native RemoteViews until the selected index actually changes.
+ if(selected?.id!==lastExternalNativeId){
+  lastExternalNativeId=selected?.id||0;
+  window.audioDeskSyncNativeWidgets?.();
+ }
+}
+let lastExternalNativeId=-1;
+function openNativeWidgetPicker(){
+ hidePopup();closeSettings();closeQuick();
+ if(typeof window.AudioDesk?.openNativeWidgets==="function"){
+  window.AudioDesk.openNativeWidgets();
+ }else{
+  showOrbitToast("Android's widget picker is available in the installed APK.");
+ }
+}
+function removeSelectedExternal(){
+ const chosen=selectedExternal();
+ if(!chosen?.id)return;
+ if(!confirm("Remove "+chosen.label+"? This also removes it from other Audio Desk themes."))return;
+ window.AudioDesk?.deleteNativeWidget?.(chosen.id);
 }
 function drawLetters(offset=offsets.letters){
  let h=path(ring(108,64),"orbit-raised");
  for(let i=-5;i<=5;i++){const l=letters[wrap(indices.letters+i,letters.length)],a=pointerAngle+i*11.25+offset;
  if(a< -10||a>100)continue;
  const atPointer=Math.abs(a-pointerAngle)<5.625;
- h+=g(86,a,'<rect x="-9" y="-20" width="18" height="40" rx="5" fill="transparent"/>'+(atPointer?'<circle r="11" class="orbit-accent"/>':"")+txt(l,4,12,atPointer?"orbit-ink":""),button("letter:"+l,"Browse apps beginning with "+l),false);
+ h+=g(86,a,'<rect x="-9" y="-20" width="18" height="40" rx="5" fill="transparent"/>'+(atPointer?'<circle r="11" class="orbit-accent"/>':""),button("letter:"+l,"Browse apps beginning with "+l),false);
+ h+=curveText(l,86,a,10.5,12,atPointer?"orbit-ink":"","alpha-"+i);
  }
  // A fixed triangle marks the selected letter while the alphabet rotates.
  // Compact fixed arrow: small enough not to overwhelm the alphabet glyphs.
@@ -300,19 +629,21 @@ function drawRecents(offset=offsets.recents){
  h+=g(147,a,'<circle r="19" class="orbit-raised"/>'+icon,button("recent:"+k,"Open "+app.label),false)}
  q("orbitRecents").innerHTML=h;
 }
-function music(a){
- let h=g(248,a,txt(trunc(media.available?media.title:"Music player",27),3,13));
- h+=g(235,a,txt(trunc(media.available?media.artist:(media.enabled?"Start a player":"Tap to connect"),28),3,9,"orbit-muted"));
+function music(a,slot){
+ let h=curveText(trunc(media.available?media.title:"Music player",22),238,a,48,12,"","music-title-"+slot);
+ h+=curveText(trunc(media.available?media.artist:(media.enabled?"Start a player":"Tap to connect"),25),225,a,51,9,"orbit-muted","music-artist-"+slot);
  const items=[["previous","Previous track","|◀",media.available&&media.canPrevious],["toggle",media.playing?"Pause":"Play",media.playing?"Ⅱ":"▶",media.available&&media.canToggle],["next","Next track","▶|",media.available&&media.canNext]];
- items.forEach((x,i)=>{const on=i===1;h+=g(216,a+(i-1)*18,'<rect x="-22" y="-12" width="44" height="24" rx="7" class="'+(on?"orbit-accent":"orbit-raised")+'"/><text y="4" text-anchor="middle" font-size="13" class="'+(on?"orbit-ink":"")+'">'+x[2]+'</text>',button("media:"+x[0],x[1],!x[3]))});
+ items.forEach((x,i)=>{const on=i===1;h+=g(206,a+(i-1)*17,'<rect x="-22" y="-12" width="44" height="24" rx="7" class="'+(on?"orbit-accent":"orbit-raised")+'"/><text y="4" text-anchor="middle" font-size="13" class="'+(on?"orbit-ink":"")+'">'+x[2]+'</text>',button("media:"+x[0],x[1],!x[3]))});
  const duration=Number(media.durationMs),position=Number(media.positionMs);
  if(media.available&&duration>0&&position>=0){
  const start=a-24,end=a+24,progress=Math.max(0,Math.min(1,position/duration));
- h+=path(arc(194,start,end),"orbit-line",'stroke-width="3" stroke-linecap="round"');
- if(progress>0)h+=path(arc(194,start,start+48*progress),"orbit-line",'style="stroke:var(--theme-accent)" stroke-width="3" stroke-linecap="round"');
- if(media.canSeek)h+='<path d="'+arc(194,start,end)+'" fill="none" stroke="transparent" stroke-width="19" data-orbit-action="seek" data-orbit-angle="'+a+'" role="slider" aria-label="Playback position" aria-valuemin="0" aria-valuemax="'+duration+'" aria-valuenow="'+Math.round(position)+'" tabindex="0"/>';
- }else if(!media.enabled)h+=g(193,a,'<rect x="-35" y="-9" width="70" height="18" rx="5" fill="transparent"/>'+txt("CONNECT",3,9),button("connect","Enable media controls"));
- else h+=g(193,a,txt(media.available?"Playback time unavailable":"No active player",3,9,"orbit-muted"));
+ h+=path(arc(188,start,end),"orbit-line",'stroke-width="3" stroke-linecap="round"');
+ if(progress>0)h+=path(arc(188,start,start+48*progress),"orbit-line",'style="stroke:var(--theme-accent)" stroke-width="3" stroke-linecap="round"');
+ if(media.canSeek)h+='<path d="'+arc(188,start,end)+'" fill="none" stroke="transparent" stroke-width="19" data-orbit-action="seek" data-orbit-angle="'+a+'" role="slider" aria-label="Playback position" aria-valuemin="0" aria-valuemax="'+duration+'" aria-valuenow="'+Math.round(position)+'" tabindex="0"/>';
+ }else if(!media.enabled){
+  h+=g(191,a,'<rect x="-35" y="-9" width="70" height="18" rx="5" fill="transparent"/>',button("connect","Enable media controls"));
+  h+=curveText("CONNECT",191,a,32,9,"","music-connect-"+slot);
+ }else h+=curveText(media.available?"Playback time unavailable":"No active player",191,a,47,9,"orbit-muted","music-status-"+slot);
  return h;
 }
 function drawWidgets(offset=offsets.widgets){
@@ -321,26 +652,32 @@ function drawWidgets(offset=offsets.widgets){
  const a=45+i*60+offset;if(a+30<0||a-30>90)continue;
  const name=widgets[wrap(indices.widgets+i,widgets.length)];
  h+=path(sector(a-30,a+30),i===0?"orbit-raised":"orbit-ring",'data-orbit-widget="'+name+'"');
- if(name==="music")h+=music(a);
+ if(name==="music")h+=music(a,i);
  else {
  const isCal=name==="calendar",now=new Date();
- h+=g(246,a,txt(isCal?"Calendar":"Audio Desk",3,14));
- h+=g(225,a,txt(isCal?now.toLocaleDateString([],{weekday:"long",day:"numeric",month:"short"}):"Audio news & discoveries",3,11,"orbit-muted"));
- h+=g(201,a,'<rect x="-32" y="-10" width="64" height="20" rx="6" class="orbit-accent"/><text text-anchor="middle" y="3" font-size="10" class="orbit-ink">OPEN</text>',button(name,isCal?"Open calendar":"Open Audio Desk news"));
+ h+=curveText(isCal?"Calendar":"Audio Desk",235,a,49,13,"","widget-title-"+i);
+ h+=curveText(isCal?now.toLocaleDateString([],{weekday:"short",day:"numeric",month:"short"}):"Audio news & discoveries",219,a,52,10,"orbit-muted","widget-detail-"+i);
+ h+=g(199,a,'<rect x="-32" y="-10" width="64" height="20" rx="6" class="orbit-accent"/>',button(name,isCal?"Open calendar":"Open Audio Desk news"));
+ h+=curveText("OPEN",199,a,28,10,"orbit-ink","widget-open-"+i);
  }
  }
  // Readable hints for the clipped neighbouring cards.
  if(Math.abs(offset)<.01){
  const prev=widgets[wrap(indices.widgets-1,widgets.length)],next=widgets[wrap(indices.widgets+1,widgets.length)];
  const symbol=x=>x==="music"?"♫":x==="calendar"?"▦":"≋";
- h+=g(224,7.5,'<rect x="-13" y="-22" width="26" height="44" rx="5" fill="transparent"/>'+txt(symbol(prev),5,19),button("widget:-1","Previous widget: "+prev));
- h+=g(224,82.5,'<rect x="-13" y="-22" width="26" height="44" rx="5" fill="transparent"/>'+txt(symbol(next),5,19),button("widget:1","Next widget: "+next));
+ h+=g(218,7.5,'<rect x="-13" y="-22" width="26" height="44" rx="5" fill="transparent"/>'+txt(symbol(prev),5,19),button("widget:-1","Previous widget: "+prev));
+ h+=g(218,82.5,'<rect x="-13" y="-22" width="26" height="44" rx="5" fill="transparent"/>'+txt(symbol(next),5,19),button("widget:1","Next widget: "+next));
  }
  q("orbitWidgets").innerHTML=h;
 }
 function drawSearch(){q("orbitSearch").innerHTML='<g '+button("search","Search installed apps")+'><path d="'+arc(60,0,90)+' L0,0 Z" class="orbit-raised"/><circle cx="-28" cy="-30" r="9" fill="none" stroke="var(--theme-text,#e5f0e7)" stroke-width="2.5"/><path d="M-21.5,-23.5 L-14,-16" fill="none" stroke="var(--theme-text,#e5f0e7)" stroke-width="2.5" stroke-linecap="round"/></g>'}
-function draw(){if(!active())return;host.hidden=false;recentList=currentRecents();drawClock();drawWidgets();drawRecents();drawLetters();drawSearch();if(popupVisible)refreshPopup()}
-function sync(){stopAllSpins();hidePopup();host.hidden=!active();drag=null;if(active())draw()}
+function draw(){if(!active())return;host.hidden=false;recentList=currentRecents();drawClock();drawExternalWidgets();drawWidgets();drawRecents();drawLetters();drawSearch();if(popupVisible)refreshPopup()}
+function sync(){
+ stopAllSpins();hidePopup();closeSettings();closeQuick();
+ host.hidden=!active();drag=null;orbitToast.hidden=true;cancelHomeHold();
+ if(active()){redrawExternal();draw()}
+ window.audioDeskSyncNativeWidgets?.();
+}
 const oldHome=renderLauncherHome;
 renderLauncherHome=function(){oldHome();if(active()&&!drag)draw()};
 const oldClock=formatLauncherClock;formatLauncherClock=function(){oldClock();drawClock()};
@@ -356,6 +693,8 @@ function action(code,target){
  }
  if(code.startsWith("fan-page:")){turnAppPage(Number(code.slice(9))||0);return}
  if(code==="search")openLauncherSearch();
+ else if(code==="external:add")openNativeWidgetPicker();
+ else if(code.startsWith("external:focus:")){externalIndex=wrap(Number(code.slice("external:focus:".length))||0,externalWidgetsList().length);indices.external=externalIndex;offsets.external=0;drawExternalWidgets()}
  else if(code.startsWith("letter:"))selectLetter(code.slice(7));
  else if(code.startsWith("recent:")){const app=recentList[Number(code.slice(7))];if(app)window.AudioDesk?.launchExternalApp?.(app.pkg,app.activity)}
  else if(code.startsWith("media:")){window.AudioDesk?.mediaCommand?.(code.slice(6))}
@@ -375,7 +714,9 @@ function angularDifference(from,to){
 svg.addEventListener("pointerdown",e=>{
  if(!active()||drag||e.button!==0)return;
  const loc=coordinates(e),target=e.target.closest("[data-orbit-action]"),code=target?.dataset.orbitAction;
- const which=loc.r>=182&&loc.r<=266?"widgets":loc.r>=112&&loc.r<=178?"recents":loc.r>=64&&loc.r<=108?"letters":null;
+ const which=loc.r>=252&&loc.r<=299&&orbitPreferences.showAppWidgets?"external":loc.r>=182&&loc.r<=249?"widgets":loc.r>=112&&loc.r<=178?"recents":loc.r>=64&&loc.r<=108?"letters":null;
+ // A tap anywhere outside A–Z or the app icons closes the inline picker.
+ if(popupVisible&&which!=="letters"&&which!=="recents"){hidePopup();return}
  if(!which&&!code)return;
  if(which)stopSpin(which);
  if(which==="letters")showPopup();
@@ -384,7 +725,8 @@ svg.addEventListener("pointerdown",e=>{
   disabled:target?.getAttribute("aria-disabled")==="true",
   center:Number(target?.dataset.orbitAngle),total:0,moved:false,
   samples:[{t,angle:0}]};
- svg.setPointerCapture(e.pointerId);e.preventDefault();
+ try{svg.setPointerCapture(e.pointerId)}catch{}
+ e.preventDefault();
 });
 svg.addEventListener("pointermove",e=>{
  if(!drag||drag.id!==e.pointerId)return;

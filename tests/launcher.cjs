@@ -21,8 +21,15 @@ const demoApps=[
   const errors=[];page.on('pageerror',err=>errors.push(err.message));
   await page.addInitScript(apps=>{
    window.appLaunchCalls=[];window.makeDefaultRequests=0;
+   window.nativeLayoutRequests=[];window.nativePickerOpen=0;window.nativeDeleteCalls=[];
+   window.systemWallpaperCalls=[];
    window.launcherDemoApps=apps;window.launcherDemoHistory=[];
    window.AudioDesk={
+    layoutNativeWidgets(payload){window.nativeLayoutRequests.push(JSON.parse(payload))},
+    requestNativeWidgets(){},
+    openNativeWidgets(){window.nativePickerOpen++},
+    setSystemWallpaperCustom(data,position,lock,request){window.systemWallpaperCalls.push({data,position,lock,request})},
+    deleteNativeWidget(id){window.nativeDeleteCalls.push(id)},
     requestLauncherApps(){setTimeout(()=>window.receiveLauncherApps(
      window.launcherDemoApps,window.launcherDemoHistory,window.makeDefaultRequests>0),0)},
     launchExternalApp(pkg,activity){
@@ -413,6 +420,135 @@ const demoApps=[
   await page.locator('#orbitWidgets [data-orbit-action="widget:1"]').dispatchEvent('click');
   assert.equal(await page.locator('#orbitLetters').textContent(),previousLetters);
   assert.ok((await page.locator('#orbitWidgets').textContent()).includes('Calendar'));
+
+  // Approved Orbit settings gear and two independent widget rings.
+  assert.equal(await page.locator('#orbitSettingsGear').isVisible(),true,
+   'Audio Desk settings gear is discoverable in the top-left');
+  assert.equal(await page.locator('#launcherSettingsToggle').isVisible(),false,
+   'Orbit does not show two overlapping settings buttons');
+  assert.equal(await page.locator('#orbitExternalWidgets').count(),1,
+   'app widget dial is separate from the built-in Audio Desk dial');
+  assert.equal(await page.locator('#orbitClock textPath').count(),2,
+   'time and date follow actual clock arc paths');
+  assert.ok((await page.locator('#orbitWidgets textPath').count())>=2,
+   'Audio Desk widget titles and subtitles curve along their dial');
+  assert.ok((await page.locator('#orbitExternalWidgets textPath').count())>=1,
+   'custom app-widget names follow the outer widget dial');
+  assert.ok((await page.locator('#orbitLetters textPath').count())>=4,
+   'alphabet letters are oriented on their radial trajectory');
+  assert.equal(await page.evaluate(()=>{
+   const paths=[...document.querySelectorAll('#orbitDial textPath')];
+   return paths.every(p=>{
+    const href=p.getAttribute('href');
+    const track=href&&document.querySelector(href);
+    return track?.getAttribute('d')?.includes(' A');
+   });
+  }),true,'all curved Orbit text attaches to real elliptical-arc SVG geometry');
+  assert.equal(await page.locator('#orbitWidgets [data-orbit-widget]').count(),3,
+   'music, calendar and news are retained in their own original ring');
+  await page.evaluate(()=>window.receiveAudioDeskNativeWidgets([
+   {id:17,label:'Weather',pkg:'com.example.camera',accent:'#85bb93',width:180,height:90,minWidth:100,minHeight:56},
+   {id:19,label:'YouTube',pkg:'com.example.player',accent:'#ff3248',width:180,height:90,minWidth:100,minHeight:56}
+  ]));
+  assert.equal(await page.locator('#orbitExternalWidgets [data-orbit-external="17"]').count(),1);
+  assert.equal(await page.locator('#orbitExternalWidgets image[href="/app-icons/orbit/com.example.camera.png"]').count(),1,
+   'external app widget dial gets the native provider icon');
+  await page.waitForTimeout(110);
+  const nativeBefore=await page.evaluate(()=>window.nativeLayoutRequests.at(-1));
+  assert.equal(nativeBefore.slots.length,1,
+   'only the selected real Android widget is hosted inside the custom ring');
+  assert.equal(nativeBefore.slots[0].id,17);
+  assert.ok(nativeBefore.slots[0].w>95&&nativeBefore.slots[0].h>40);
+  const ownWidgetsBefore=await page.locator('#orbitWidgets').innerHTML();
+  await page.locator('#orbitExternalWidgets [data-orbit-action="external:focus:1"]').dispatchEvent('click');
+  await page.waitForTimeout(120);
+  assert.equal(await page.evaluate(()=>window.nativeLayoutRequests.at(-1).slots[0]?.id),19,
+   'external ring rotates to a second real installed widget');
+  assert.equal(await page.locator('#orbitWidgets').innerHTML(),ownWidgetsBefore,
+   'rotating app widgets does not move Audio Desk built-in widget ring');
+  await page.locator('#orbitSettingsGear').click();
+  assert.equal(await page.locator('#orbitSettingsPanel').isVisible(),true);
+  assert.equal(await page.locator('#orbitSettingsPanel [data-orbit-tab]').count(),6,
+   'settings panel has six sections');
+  await page.locator('#orbitSettingsTabs [data-orbit-tab="widgets"]').click();
+  assert.ok((await page.locator('#orbitSettingsContent').textContent()).includes('Audio Desk widgets'));
+  await page.locator('#orbitSettingsContent [data-orbit-settings-action="add-widget"]').click();
+  assert.equal(await page.evaluate(()=>window.nativePickerOpen),1,
+   'add-widget invokes Android native picker rather than a fabricated sample list');
+  await page.locator('#orbitSettingsGear').click();
+  await page.locator('#orbitSettingsTabs [data-orbit-tab="dials"]').click();
+  await page.locator('#orbitSettingsContent [data-orbit-preference="momentum"]').uncheck();
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('ad_orbit_settings_v2')).momentum),false,
+   'dial momentum preference is persistent');
+  await page.locator('#orbitSettingsClose').click();
+  assert.equal(await page.locator('#orbitSettingsPanel').isVisible(),false);
+  await page.evaluate(()=>document.getElementById('launcherHomePage').dispatchEvent(
+   new PointerEvent('pointerdown',{bubbles:true,button:0,pointerId:100,clientX:35,clientY:200})));
+  await page.waitForTimeout(620);
+  assert.equal(await page.locator('#orbitQuickCustomize').isVisible(),true,
+   'long-press on empty Home opens quick customization');
+  await page.locator('#orbitSettingsShade').dispatchEvent('click'); // outside-tap handler
+  assert.equal(await page.locator('#orbitQuickCustomize').isVisible(),false);
+  await page.locator('#orbitLetters [data-orbit-action^="letter:"]').first().dispatchEvent('click');
+  assert.equal(await page.locator('#orbitAppIconLayers').count(),1);
+  assert.equal(await page.locator('#orbitFanCount textPath').count(),1,
+   'alphabet app count also follows the recents ring curve');
+  await page.evaluate(()=>document.getElementById('orbitRadialBackdrop').dispatchEvent(
+   new MouseEvent('click',{bubbles:true})));
+  assert.equal(await page.locator('#orbitAppIconLayers').count(),0,
+   'tapping empty Home dismisses A–Z and restores recent apps');
+  await page.locator('#orbitSettingsGear').click();
+  await page.locator('#orbitSettingsTabs [data-orbit-tab="widgets"]').click();
+  await page.locator('#orbitSettingsContent [data-orbit-preference="showAppWidgets"]').uncheck();
+  assert.equal(await page.locator('#orbitExternalWidgets').isVisible(),false,
+   'user can hide the external widget ring without hiding built-in widgets');
+  assert.equal(await page.locator('#orbitWidgets [data-orbit-widget]').count(),3);
+  await page.locator('#orbitSettingsContent [data-orbit-preference="showAppWidgets"]').check();
+  await page.locator('#orbitSettingsClose').click();
+
+
+  // Integrated large minimalist wallpaper library: no downloads or third-party services.
+  if(await page.evaluate(()=>typeof window.audioDeskMinimalGalleryCount)!=='function')
+   throw new Error('Gallery module failed: '+JSON.stringify({errors,loaded:await page.evaluate(()=>({
+    hasStage:!!document.getElementById('wallpaperStage'),
+    hasDialog:!!document.getElementById('launcherWallpaperDialog'),
+    hasModule:[...document.scripts].some(x=>x.src.includes('minimal-gallery.js')),
+    hasGallery:!!document.getElementById('minimalGalleryGrid')
+   }))}));
+  assert.equal(await page.evaluate(()=>window.audioDeskMinimalGalleryCount()),180,
+   '180 original minimalist wallpapers are bundled as scalable on-demand SVG');
+  await page.locator('#orbitSettingsGear').click();
+  await page.locator('#orbitSettingsTabs [data-orbit-tab="wallpaper"]').click();
+  await page.locator('#orbitSettingsContent [data-orbit-settings-action="wallpaper"]').click();
+  assert.equal(await page.locator('#launcherWallpaperDialog').isVisible(),true,
+   'wallpaper picker opens directly from Orbit settings');
+  assert.equal(await page.locator('#minimalGalleryGrid .minimal-gallery-entry').count(),12,
+   'only a lightweight first page of thumbnails is loaded');
+  await page.locator('#minimalGalleryFilters [data-minimal-category="Pixel"]').click();
+  assert.equal(await page.locator('#minimalGalleryCount').textContent(),'24 wallpapers · 12 shown',
+   'collections are grouped by visual theme');
+  await page.locator('#minimalGalleryGrid .minimal-gallery-entry').first().click();
+  assert.ok(await page.evaluate(()=>document.body.dataset.minimalWallpaper.startsWith('mg-')),
+   'choosing a wallpaper immediately updates Audio Desk background');
+  assert.equal(await page.locator('#minimalGalleryWallpaperImage').isVisible(),true);
+  const artSource=await page.locator('#minimalGalleryWallpaperImage').getAttribute('src');
+  assert.ok(artSource.startsWith('data:image/svg+xml;'),'wallpapers are resolution-independent vectors');
+  await page.waitForTimeout(180);
+  assert.ok((await page.evaluate(()=>window.systemWallpaperCalls)).length>0,
+   'selection also applies a full-resolution wallpaper through Android native integration');
+  await page.locator('#wallpaperClose').click();
+  await page.evaluate(()=>setLauncherTheme('warm'));
+  await page.evaluate(()=>setLauncherTheme('orbit'));
+  assert.equal(await page.locator('#minimalGalleryWallpaperImage').isVisible(),true,
+   'selected minimalist wallpaper persists per launcher theme');
+  await page.locator('#orbitSettingsGear').click();
+  await page.locator('#orbitSettingsTabs [data-orbit-tab="wallpaper"]').click();
+  await page.locator('#orbitSettingsContent [data-orbit-settings-action="wallpaper"]').click();
+  await page.locator('#minimalGalleryFilters [data-minimal-category="Dark"]').click();
+  await page.locator('#minimalGalleryGrid .minimal-gallery-entry').first().click();
+  assert.ok(await page.locator('#minimalGalleryWallpaperImage').isVisible());
+  await page.locator('#wallpaperClose').click();
+
 await page.locator('#orbitSearch [data-orbit-action="search"]').dispatchEvent('click');
   assert.equal(await page.evaluate(()=>launcherPage),'apps');
   assert.equal(await page.locator('#orbitHome').isVisible(),false);

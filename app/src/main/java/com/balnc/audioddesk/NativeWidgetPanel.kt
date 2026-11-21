@@ -100,7 +100,7 @@ internal class NativeWidgetPanel(private val activity: Activity, private val web
             val minW = if ((info.resizeMode and AppWidgetProviderInfo.RESIZE_HORIZONTAL) != 0 && info.minResizeWidth > 0) info.minResizeWidth else info.minWidth
             val minH = if ((info.resizeMode and AppWidgetProviderInfo.RESIZE_VERTICAL) != 0 && info.minResizeHeight > 0) info.minResizeHeight else info.minHeight
             result.put(JSONObject().put("id",id).put("label",info.loadLabel(activity.packageManager))
-                .put("accent",accentFor(info))
+                .put("accent",accentFor(info)).put("pkg",info.provider.packageName)
                 .put("width",dp(info.minWidth).coerceAtLeast(100)).put("height",dp(info.minHeight).coerceAtLeast(70))
                 .put("minWidth",dp(minW).coerceAtLeast(72)).put("minHeight",dp(minH).coerceAtLeast(56))
                 .put("horizontal",(info.resizeMode and AppWidgetProviderInfo.RESIZE_HORIZONTAL) != 0)

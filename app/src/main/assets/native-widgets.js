@@ -21,13 +21,24 @@ function hiddenByOverlay(){
 }
 function sync(now=performance.now()){
  raf=0;
- const active=launcherTheme!=="extreme"&&launcherTheme!=="orbit"&&launcherPage==="home"&&!home.hidden&&!document.hidden&&window.audioDeskForeground!==false;
+ const orbit=launcherTheme==="orbit";
+ const active=launcherTheme!=="extreme"&&launcherPage==="home"&&!home.hidden&&!document.hidden&&window.audioDeskForeground!==false;
  const allowed=active&&!hiddenByOverlay();
  const style=getComputedStyle(document.documentElement);
  const top=Math.max(0,parseFloat(style.getPropertyValue("--status-top"))||0);
  const bottom=innerHeight-Math.max(0,parseFloat(style.getPropertyValue("--system-bottom"))||0);
  const out=[];
- if(allowed)for(const [id,entry] of slots){
+ if(allowed&&orbit){
+  // The current Android widget renders inside Orbit's custom ring.
+  // Other widgets remain hosted but hidden to preserve their state.
+  const target=window.audioDeskOrbitWidgetSlot?.();
+  if(target&&slots.has(target.id)){
+   const {x,y,w,h}=target;
+   if([x,y,w,h].every(Number.isFinite)&&w>0&&h>0)
+    out.push({id:target.id,x,y,w,h,left:0,top,right:innerWidth,bottom,radius:11});
+  }
+ }
+ if(allowed&&!orbit)for(const [id,entry] of slots){
   if(entry.node.hidden||entry.node.hasAttribute("data-widget-removed")||!entry.node.getClientRects().length)continue;
   const b=entry.body.getBoundingClientRect();
   if(b.width<1||b.height<1||b.bottom<=top||b.top>=bottom)continue;
@@ -47,6 +58,11 @@ function sync(now=performance.now()){
  if(now<motionUntil&&active)schedule();
 }
 window.audioDeskSyncNativeWidgets=()=>{lastPayload="";schedule(true)};
+window.audioDeskOrbitWidgets=()=>[...slots].map(([id,e])=>({
+ id,label:e.label.textContent||"App widget",
+ pkg:e.node.dataset.nativeWidgetPackage||"",
+ accent:e.node.style.getPropertyValue("--native-provider-accent")||""
+}));
 const resize=typeof ResizeObserver==="function"?new ResizeObserver(()=>schedule(true)):null;
 resize?.observe(home);
 function create(entry){
@@ -92,6 +108,7 @@ window.receiveAudioDeskNativeWidgets=data=>{
   if(!entry){entry=create({id:raw.id,label:name});changed=true}
   const {node,body,label}=entry;
   label.textContent=name;
+  node.dataset.nativeWidgetPackage=typeof raw.pkg==="string"?raw.pkg:"";
   const accent=String(raw.accent||"");
   if(/^#[0-9a-f]{6}$/i.test(accent))node.style.setProperty("--native-provider-accent",accent);
   else node.style.removeProperty("--native-provider-accent");
@@ -109,6 +126,7 @@ window.receiveAudioDeskNativeWidgets=data=>{
  }
  if(changed)window.audioDeskRestoreWidgetLayouts?.();
  renderManage();lastPayload="";schedule(true);
+ window.dispatchEvent(new Event("audio-desk-native-widgets-changed"));
 };
 for(const event of ["audio-desk-layout-changed","audio-desk-widget-visibility","launcher-page-changed","audio-desk-foreground","audio-desk-theme-changed"])window.addEventListener(event,()=>schedule(true));
 window.addEventListener("scroll",()=>schedule(),{passive:true,capture:true});

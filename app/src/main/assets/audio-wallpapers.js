@@ -158,6 +158,7 @@ function saveSelected(id){
  deskStorage.setItem(themeStorage(launcherTheme),id||"");
  renderActive(id);
 }
+window.audioDeskClearAudioWallpaper=()=>saveSelected("");
 function switchArt(theme){
  const id=deskStorage.getItem(themeStorage(theme))||"";
  renderActive(id);
