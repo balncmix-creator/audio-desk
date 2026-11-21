@@ -359,6 +359,13 @@ const demoApps=[
    'recent apps are represented by icons, not written app names');
   assert.equal(await page.locator('#orbitAlphabetPointer').count(),1,
    'alphabet has a fixed pointer to show the currently selected letter');
+  const pointer=await page.evaluate(()=>{
+   const arrow=document.querySelector('#orbitAlphabetPointer path');
+   const box=arrow.getBBox();
+   return {width:box.width,height:box.height,fill:arrow.getAttribute('fill')};
+  });
+  assert.ok(pointer.width>23&&pointer.height>23&&pointer.fill==='#f2fff3',
+   'fixed alphabet arrow is large and high-contrast, not a tiny invisible gap marker');
   await page.locator('#orbitLetters [data-orbit-action="letter:A"]').dispatchEvent('click');
   assert.equal(await page.locator('#orbitLetterMenu').isVisible(),true,
    'tapping a dial letter opens the small radial app popup');
