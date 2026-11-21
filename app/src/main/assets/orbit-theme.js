@@ -3,7 +3,7 @@
 "use strict";
 const home=document.getElementById("launcherHomePage");
 const host=document.createElement("div");host.id="orbitHome";host.hidden=true;
-host.innerHTML='<svg id="orbitDial" viewBox="-334 -334 334 334" role="group" aria-label="Orbit radial launcher"><defs><clipPath id="orbitQuarter"><rect x="-334" y="-334" width="334" height="334"/></clipPath></defs><g clip-path="url(#orbitQuarter)"><g id="orbitClock"></g><g id="orbitWidgets"></g><g id="orbitRecents"></g><g id="orbitLetters"></g><g id="orbitSearch"></g></g></svg>';
+host.innerHTML='<svg id="orbitDial" viewBox="-334 -334 334 334" role="group" aria-label="Orbit radial launcher"><defs><clipPath id="orbitQuarter"><rect x="-334" y="-334" width="334" height="334"/></clipPath></defs><g clip-path="url(#orbitQuarter)"><g id="orbitClock"></g><g id="orbitExternalWidgets"></g><g id="orbitWidgets"></g><g id="orbitRecents"></g><g id="orbitLetters"></g><g id="orbitSearch"></g></g></svg>';
 home.prepend(host);
 
 // Blurred backdrop stays below the dial. Icons fan out IN the recent-apps ring.
@@ -24,7 +24,7 @@ const point=(r,a)=>[-r*Math.cos(rad(a)),-r*Math.sin(rad(a))];
 const p=(r,a)=>point(r,a).map(v=>v.toFixed(3)).join(",");
 const arc=(r,a,b)=>"M"+p(r,a)+" A"+r+","+r+" 0 0 1 "+p(r,b);
 const ring=(R,r)=>arc(R,0,90)+" L"+p(r,90)+" A"+r+","+r+" 0 0 0 "+p(r,0)+" Z";
-const sector=(a,b,R=266,r=182)=>{
+const sector=(a,b,R=249,r=182)=>{
  // Parallel 2-unit insets on both radial edges give a constant 4-unit gap.
  const gap=2,c=6,outer=Math.asin(gap/R)*180/pi,inner=Math.asin(gap/r)*180/pi;
  const A=a+outer,B=b-outer,C=a+inner,D=b-inner;
@@ -40,21 +40,56 @@ const trunc=(s,n)=>Array.from(String(s||"")).slice(0,n).join("")+(Array.from(Str
 const letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ#".split("");
 const pointerAngle=45; // fixed poker-dial indicator, independent of each ring
 const widgets=["music","calendar","news"];
-let indices={letters:0,recents:0,widgets:0},drag=null,suppressNativeClickUntil=0;
+let externalWidgets=[],externalIndex=0;
+const externalRingStep=38;
+const externalWidgetsList=()=>[...externalWidgets,{id:0,label:"Add widget",pkg:"",accent:""}];
+function selectedExternal(){const list=externalWidgetsList();return list[wrap(externalIndex,list.length)]}
+function nativeWidgetList(){
+ try{return window.audioDeskOrbitWidgets?.()||[]}catch{return[]}
+}
+function redrawExternal(){
+ if(!active())return;
+ externalWidgets=nativeWidgetList();
+ externalIndex=wrap(externalIndex,externalWidgetsList().length);
+ drawExternalWidgets();
+ window.audioDeskSyncNativeWidgets?.();
+}
+window.audioDeskOrbitWidgetSlot=()=>{
+ if(!active()||popupVisible||settingsVisible||quickVisible||host.hidden)return null;
+ const selected=selectedExternal();
+ if(!selected?.id)return null;
+ const rect=host.getBoundingClientRect();
+ if(!rect.width)return null;
+ const scale=rect.width/334;
+ const [dx,dy]=point(276,45);
+ const centerX=rect.right+dx*scale,centerY=rect.bottom+dy*scale;
+ const w=Math.min(170,Math.max(108,rect.width*.42)),h=Math.min(61,Math.max(44,rect.width*.145));
+ return {id:selected.id,x:centerX-w/2,y:centerY-h/2,w,h};
+};
+function rotateExternal(delta){
+ const count=externalWidgetsList().length;
+ if(!count)return;
+ externalIndex=wrap(externalIndex+delta,count);
+ drawExternalWidgets();window.audioDeskSyncNativeWidgets?.();
+}
+
+let indices={letters:0,recents:0,widgets:0,external:0},drag=null,suppressNativeClickUntil=0;
 // Each dial has a continuously changing angle; the other dials stay still.
-const offsets={letters:0,recents:0,widgets:0};
-const spinning={letters:0,recents:0,widgets:0};
+const offsets={letters:0,recents:0,widgets:0,external:0};
+const spinning={letters:0,recents:0,widgets:0,external:0};
 const prefersReducedMotion=window.matchMedia("(prefers-reduced-motion: reduce)");
 function ringStep(which){
  if(which==="widgets")return 60;
+ if(which==="external")return externalRingStep;
  if(which==="letters")return 11.25;
  return 90/Math.min(5,Math.max(1,recentList.length));
 }
 function ringLength(which){
- return which==="widgets"?widgets.length:which==="letters"?letters.length:recentList.length;
+ return which==="widgets"?widgets.length:which==="external"?externalWidgetsList().length:which==="letters"?letters.length:recentList.length;
 }
 function paintRing(which){
  if(which==="widgets")drawWidgets();
+ else if(which==="external"){externalIndex=indices.external;drawExternalWidgets();window.audioDeskSyncNativeWidgets?.();}
  else if(which==="letters")drawLetters();
  else drawRecents();
 }
@@ -65,6 +100,7 @@ function advanceRing(which,delta){
  const crossings=Math.round(offsets[which]/step);
  if(crossings){
   indices[which]=wrap(indices[which]-crossings,len);
+  if(which==="external")externalIndex=indices.external;
   offsets[which]-=crossings*step;
  }
  paintRing(which);
@@ -256,11 +292,11 @@ function drawClock(){
  if(!active())return;
  const now=new Date(),time=now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:false}),date=now.toLocaleDateString([],{weekday:"short",day:"numeric",month:"short"}).toUpperCase();
  if(lastClock===time+date&&q("orbitClock").childNodes.length)return;lastClock=time+date;
- let h=path(ring(330,270),"orbit-ring");
- for(let i=0;i<=22;i++){const a=1+i*4;h+='<line x1="'+point(324,a)[0]+'" y1="'+point(324,a)[1]+'" x2="'+point(i%3===0?317:321,a)[0]+'" y2="'+point(i%3===0?317:321,a)[1]+'" class="orbit-line" stroke-width="1"/>'}
+ let h=path(ring(330,301),"orbit-ring");
+ for(let i=0;i<=22;i++){const a=1+i*4;h+='<line x1="'+point(326,a)[0]+'" y1="'+point(324,a)[1]+'" x2="'+point(i%3===0?322:324,a)[0]+'" y2="'+point(i%3===0?317:321,a)[1]+'" class="orbit-line" stroke-width="1"/>'}
  const digits=Array.from(time);
- digits.forEach((v,i)=>{h+=g(304,45+(i-(digits.length-1)/2)*4.1,txt(v,8,30))});
- h+=g(281,45,txt(date,3,10,"orbit-muted"));q("orbitClock").innerHTML=h;
+ digits.forEach((v,i)=>{h+=g(317,45+(i-(digits.length-1)/2)*4.1,txt(v,8,24))});
+ h+=g(302,45,txt(date,3,8,"orbit-muted"));q("orbitClock").innerHTML=h;
 }
 function currentRecents(){
  // Actual launches only, no invented app labels. Deduplicate activities.
@@ -301,18 +337,18 @@ function drawRecents(offset=offsets.recents){
  q("orbitRecents").innerHTML=h;
 }
 function music(a){
- let h=g(248,a,txt(trunc(media.available?media.title:"Music player",27),3,13));
- h+=g(235,a,txt(trunc(media.available?media.artist:(media.enabled?"Start a player":"Tap to connect"),28),3,9,"orbit-muted"));
+ let h=g(238,a,txt(trunc(media.available?media.title:"Music player",22),3,12));
+ h+=g(225,a,txt(trunc(media.available?media.artist:(media.enabled?"Start a player":"Tap to connect"),25),3,9,"orbit-muted"));
  const items=[["previous","Previous track","|◀",media.available&&media.canPrevious],["toggle",media.playing?"Pause":"Play",media.playing?"Ⅱ":"▶",media.available&&media.canToggle],["next","Next track","▶|",media.available&&media.canNext]];
- items.forEach((x,i)=>{const on=i===1;h+=g(216,a+(i-1)*18,'<rect x="-22" y="-12" width="44" height="24" rx="7" class="'+(on?"orbit-accent":"orbit-raised")+'"/><text y="4" text-anchor="middle" font-size="13" class="'+(on?"orbit-ink":"")+'">'+x[2]+'</text>',button("media:"+x[0],x[1],!x[3]))});
+ items.forEach((x,i)=>{const on=i===1;h+=g(206,a+(i-1)*17,'<rect x="-22" y="-12" width="44" height="24" rx="7" class="'+(on?"orbit-accent":"orbit-raised")+'"/><text y="4" text-anchor="middle" font-size="13" class="'+(on?"orbit-ink":"")+'">'+x[2]+'</text>',button("media:"+x[0],x[1],!x[3]))});
  const duration=Number(media.durationMs),position=Number(media.positionMs);
  if(media.available&&duration>0&&position>=0){
  const start=a-24,end=a+24,progress=Math.max(0,Math.min(1,position/duration));
- h+=path(arc(194,start,end),"orbit-line",'stroke-width="3" stroke-linecap="round"');
- if(progress>0)h+=path(arc(194,start,start+48*progress),"orbit-line",'style="stroke:var(--theme-accent)" stroke-width="3" stroke-linecap="round"');
- if(media.canSeek)h+='<path d="'+arc(194,start,end)+'" fill="none" stroke="transparent" stroke-width="19" data-orbit-action="seek" data-orbit-angle="'+a+'" role="slider" aria-label="Playback position" aria-valuemin="0" aria-valuemax="'+duration+'" aria-valuenow="'+Math.round(position)+'" tabindex="0"/>';
- }else if(!media.enabled)h+=g(193,a,'<rect x="-35" y="-9" width="70" height="18" rx="5" fill="transparent"/>'+txt("CONNECT",3,9),button("connect","Enable media controls"));
- else h+=g(193,a,txt(media.available?"Playback time unavailable":"No active player",3,9,"orbit-muted"));
+ h+=path(arc(188,start,end),"orbit-line",'stroke-width="3" stroke-linecap="round"');
+ if(progress>0)h+=path(arc(188,start,start+48*progress),"orbit-line",'style="stroke:var(--theme-accent)" stroke-width="3" stroke-linecap="round"');
+ if(media.canSeek)h+='<path d="'+arc(188,start,end)+'" fill="none" stroke="transparent" stroke-width="19" data-orbit-action="seek" data-orbit-angle="'+a+'" role="slider" aria-label="Playback position" aria-valuemin="0" aria-valuemax="'+duration+'" aria-valuenow="'+Math.round(position)+'" tabindex="0"/>';
+ }else if(!media.enabled)h+=g(191,a,'<rect x="-35" y="-9" width="70" height="18" rx="5" fill="transparent"/>'+txt("CONNECT",3,9),button("connect","Enable media controls"));
+ else h+=g(191,a,txt(media.available?"Playback time unavailable":"No active player",3,9,"orbit-muted"));
  return h;
 }
 function drawWidgets(offset=offsets.widgets){
@@ -324,23 +360,23 @@ function drawWidgets(offset=offsets.widgets){
  if(name==="music")h+=music(a);
  else {
  const isCal=name==="calendar",now=new Date();
- h+=g(246,a,txt(isCal?"Calendar":"Audio Desk",3,14));
- h+=g(225,a,txt(isCal?now.toLocaleDateString([],{weekday:"long",day:"numeric",month:"short"}):"Audio news & discoveries",3,11,"orbit-muted"));
- h+=g(201,a,'<rect x="-32" y="-10" width="64" height="20" rx="6" class="orbit-accent"/><text text-anchor="middle" y="3" font-size="10" class="orbit-ink">OPEN</text>',button(name,isCal?"Open calendar":"Open Audio Desk news"));
+ h+=g(235,a,txt(isCal?"Calendar":"Audio Desk",3,13));
+ h+=g(219,a,txt(isCal?now.toLocaleDateString([],{weekday:"short",day:"numeric",month:"short"}):"Audio news & discoveries",3,10,"orbit-muted"));
+ h+=g(199,a,'<rect x="-32" y="-10" width="64" height="20" rx="6" class="orbit-accent"/><text text-anchor="middle" y="3" font-size="10" class="orbit-ink">OPEN</text>',button(name,isCal?"Open calendar":"Open Audio Desk news"));
  }
  }
  // Readable hints for the clipped neighbouring cards.
  if(Math.abs(offset)<.01){
  const prev=widgets[wrap(indices.widgets-1,widgets.length)],next=widgets[wrap(indices.widgets+1,widgets.length)];
  const symbol=x=>x==="music"?"♫":x==="calendar"?"▦":"≋";
- h+=g(224,7.5,'<rect x="-13" y="-22" width="26" height="44" rx="5" fill="transparent"/>'+txt(symbol(prev),5,19),button("widget:-1","Previous widget: "+prev));
- h+=g(224,82.5,'<rect x="-13" y="-22" width="26" height="44" rx="5" fill="transparent"/>'+txt(symbol(next),5,19),button("widget:1","Next widget: "+next));
+ h+=g(218,7.5,'<rect x="-13" y="-22" width="26" height="44" rx="5" fill="transparent"/>'+txt(symbol(prev),5,19),button("widget:-1","Previous widget: "+prev));
+ h+=g(218,82.5,'<rect x="-13" y="-22" width="26" height="44" rx="5" fill="transparent"/>'+txt(symbol(next),5,19),button("widget:1","Next widget: "+next));
  }
  q("orbitWidgets").innerHTML=h;
 }
 function drawSearch(){q("orbitSearch").innerHTML='<g '+button("search","Search installed apps")+'><path d="'+arc(60,0,90)+' L0,0 Z" class="orbit-raised"/><circle cx="-28" cy="-30" r="9" fill="none" stroke="var(--theme-text,#e5f0e7)" stroke-width="2.5"/><path d="M-21.5,-23.5 L-14,-16" fill="none" stroke="var(--theme-text,#e5f0e7)" stroke-width="2.5" stroke-linecap="round"/></g>'}
-function draw(){if(!active())return;host.hidden=false;recentList=currentRecents();drawClock();drawWidgets();drawRecents();drawLetters();drawSearch();if(popupVisible)refreshPopup()}
-function sync(){stopAllSpins();hidePopup();host.hidden=!active();drag=null;if(active())draw()}
+function draw(){if(!active())return;host.hidden=false;recentList=currentRecents();drawClock();drawExternalWidgets();drawWidgets();drawRecents();drawLetters();drawSearch();if(popupVisible)refreshPopup()}
+function sync(){stopAllSpins();hidePopup();host.hidden=!active();drag=null;if(active()){redrawExternal();draw()}}
 const oldHome=renderLauncherHome;
 renderLauncherHome=function(){oldHome();if(active()&&!drag)draw()};
 const oldClock=formatLauncherClock;formatLauncherClock=function(){oldClock();drawClock()};
