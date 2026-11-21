@@ -105,7 +105,7 @@ function sync(){host.hidden=!active();drag=null;if(active())draw()}
 const oldHome=renderLauncherHome;renderLauncherHome=function(){oldHome();if(active()&&!drag)draw()};
 const oldClock=formatLauncherClock;formatLauncherClock=function(){oldClock();drawClock()};
 const oldMedia=window.receiveAudioDeskMedia;window.receiveAudioDeskMedia=function(data){oldMedia(data);media=data||{};if(active()&&!drag)drawWidgets()};
-media=mediaState||{};
+// Media data arrives asynchronously via receiveAudioDeskMedia; no cross-module globals.
 function action(code){
  if(!code)return;
  if(code==="search")openLauncherSearch();
