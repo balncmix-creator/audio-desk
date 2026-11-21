@@ -20,6 +20,7 @@ style.textContent+='#orbitRadialBackdrop{display:block!important;visibility:visi
 style.textContent+="\n#orbitExternalWidgets .orbit-external-segment{fill:var(--theme-surface,#304b37);stroke:var(--theme-line,#58715f);stroke-width:1}\n#orbitExternalWidgets .orbit-external-focused{fill:var(--theme-surface2,#416348);stroke:var(--theme-accent,#b4d9ba);stroke-width:1.7}\n#orbitExternalWidgets [data-orbit-action]{cursor:pointer;outline:none}\n";
 style.textContent+="\n#orbitSettingsGear{display:none;position:fixed;top:max(34px,calc(var(--status-top,24px) + 10px));left:12px;z-index:8;width:38px;height:38px;place-items:center;border-radius:12px;border:1px solid var(--theme-line,#607b66);background:var(--theme-surface2,#2d4837);color:var(--theme-accent,#cce8d0);box-shadow:0 3px 15px #0003;cursor:pointer}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"home\"] #orbitSettingsGear{display:grid}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"home\"] #launcherSettingsToggle{display:none!important}\n#orbitSettingsShade[hidden],#orbitSettingsPanel[hidden],#orbitQuickCustomize[hidden],#orbitToast[hidden]{display:none!important}\n#orbitSettingsShade{position:fixed;inset:0;z-index:26;background:#061008a6;backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}\n#orbitSettingsPanel,#orbitQuickCustomize{font-family:system-ui,sans-serif;position:fixed;z-index:27;box-sizing:border-box;color:var(--theme-text,#e2f0e5);border:1px solid var(--theme-line,#718d78);background:var(--theme-surface,#223729);box-shadow:0 15px 45px #0008}\n#orbitSettingsPanel{left:12px;top:max(69px,calc(var(--status-top,24px) + 46px));width:min(310px,calc(100vw - 24px));max-height:min(74dvh,600px);border-radius:17px;display:flex;flex-direction:column;overflow:hidden}\n#orbitSettingsPanel .orbit-settings-header{display:flex;align-items:center;justify-content:space-between;padding:14px 15px 12px;gap:15px}\n#orbitSettingsPanel .orbit-settings-header>div{display:flex;flex-direction:column;gap:4px}\n#orbitSettingsPanel .orbit-settings-header small{font-size:10px;letter-spacing:.12em;opacity:.72}\n#orbitSettingsPanel .orbit-settings-header strong{font-size:21px}\n#orbitSettingsPanel button,#orbitQuickCustomize button{font:inherit;cursor:pointer;color:inherit}\n#orbitSettingsClose{width:32px;height:30px;border:0;background:var(--theme-surface2,#365540);border-radius:9px;font-size:23px}\n#orbitSettingsTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:0 12px 12px;border-bottom:1px solid var(--theme-line,#58745f)}\n#orbitSettingsTabs button{min-width:0;padding:8px 2px;background:var(--theme-surface2,#365540);border:0;border-radius:8px;font-size:11px}\n#orbitSettingsTabs button[aria-selected=\"true\"]{background:var(--theme-accent,#c9e3ce);color:var(--theme-accent-ink,#183120);font-weight:700}\n#orbitSettingsContent{min-height:120px;overflow:auto;overscroll-behavior:contain;padding:13px 14px 16px;font-size:12px}\n#orbitSettingsContent h3{font-size:14px;font-weight:650;margin:0 0 11px}\n#orbitSettingsContent p{opacity:.77;font-size:11px;line-height:1.5;margin:7px 0 12px}\n#orbitSettingsContent .orbit-settings-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--theme-line,#4d6655)}\n#orbitSettingsContent .orbit-settings-row small{display:block;font-size:10px;opacity:.72;padding-top:4px}\n#orbitSettingsContent button{background:var(--theme-surface2,#3f5c49);border:1px solid var(--theme-line,#627c68);border-radius:9px;padding:8px 10px;font-size:11px}\n#orbitSettingsContent .orbit-settings-buttons{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}\n#orbitSettingsContent .orbit-settings-buttons button[aria-pressed=\"true\"]{border-color:var(--theme-accent,#d7ebd9);font-weight:700}\n#orbitSettingsContent input[type=checkbox]{accent-color:var(--theme-accent,#c5dec8);width:17px;height:17px;flex-shrink:0}\n#orbitQuickCustomize{top:max(108px,calc(var(--status-top,24px) + 88px));left:13px;width:min(230px,calc(100vw - 30px));padding:9px;border-radius:14px}\n#orbitQuickCustomize strong{display:block;padding:7px 8px 9px;color:var(--theme-accent,#bad8c2);font-size:12px}\n#orbitQuickCustomize button{display:block;text-align:left;width:100%;border:0;border-radius:9px;padding:10px 8px;background:transparent;font-size:12px}\n#orbitQuickCustomize button:active{background:var(--theme-surface2,#3f5c49)}\n#orbitToast{position:fixed;z-index:35;bottom:max(48px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--theme-accent,#d8eedb);color:var(--theme-accent-ink,#193522);padding:10px 14px;border-radius:10px;font:12px system-ui,sans-serif;box-shadow:0 7px 25px #0007;max-width:90vw}\n@media(prefers-reduced-motion:reduce){#orbitSettingsShade{backdrop-filter:none;-webkit-backdrop-filter:none}}\n";
 style.textContent+="\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitRadialBackdrop{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitDial #orbitClock,\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitDial #orbitWidgets,\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitDial #orbitExternalWidgets,\nbody.orbit-no-blur[data-launcher-theme=orbit] #orbitDial #orbitSearch{filter:none!important}\nbody.orbit-letter-active[data-launcher-theme=orbit] #orbitDial #orbitExternalWidgets{filter:blur(2.5px);opacity:.55;transition:filter .26s ease,opacity .26s ease}\nbody.orbit-hide-app-widgets[data-launcher-theme=orbit] #orbitExternalWidgets{display:none}\n";
+style.textContent+="\n#orbitWidgetPreviewShade[hidden],#orbitWidgetPreview[hidden]{display:none!important}\n#orbitWidgetPreviewShade{position:fixed;inset:0;z-index:20;background:#060e0abc;backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}\n#orbitWidgetPreview{position:fixed;z-index:21;top:50%;left:50%;transform:translate(-50%,-50%);width:min(328px,calc(100vw - 32px));max-width:calc(100vw - 32px);box-sizing:border-box;border:1px solid var(--theme-line,#688471);border-radius:18px;background:var(--theme-surface,#22352b);box-shadow:0 18px 55px #000a;color:var(--theme-text,#ecf3eb);font-family:system-ui,sans-serif;padding:13px}\n#orbitWidgetPreview .orbit-widget-preview-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}\n#orbitWidgetPreview .orbit-widget-preview-head>div{display:flex;flex-direction:column;gap:4px;min-width:0}\n#orbitWidgetPreview .orbit-widget-preview-head small{font-size:9px;letter-spacing:.15em;color:var(--theme-accent,#accdb6)}\n#orbitWidgetPreviewTitle{font-size:16px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n#orbitWidgetPreviewClose{background:var(--theme-surface2,#334b3b);border:1px solid var(--theme-line,#607865);border-radius:9px;color:inherit;width:33px;height:33px;font:23px system-ui,sans-serif}\n#orbitWidgetPreviewSlot{height:min(195px,26dvh);min-height:128px;border-radius:12px;background:var(--theme-surface2,#2c4234);border:1px solid var(--theme-line,#607865);overflow:hidden;position:relative}\n#orbitWidgetPreview .orbit-widget-preview-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;font:10px system-ui,sans-serif;color:var(--theme-text,#d8e7db);opacity:.9;margin-top:11px}\n#orbitWidgetPreviewRemove{font:11px system-ui,sans-serif;border:1px solid var(--theme-line,#6b866e);border-radius:8px;color:inherit;background:var(--theme-surface2,#334b3b);padding:7px 10px}\n#orbitExternalWidgets .orbit-external-segment{fill:var(--theme-surface,#28352e);stroke:var(--theme-line,#58715f);stroke-opacity:.27;stroke-width:.7}\n#orbitExternalWidgets .orbit-external-focused{fill:var(--theme-surface2,#405845);stroke:var(--theme-accent,#b4d9ba);stroke-opacity:.45;stroke-width:.85}\n#orbitExternalWidgets .orbit-external-label{letter-spacing:.05em}\n#orbitWidgets .orbit-ring{opacity:.87}\n";
 document.head.append(style);
 
 const orbitSettingsGear=document.createElement("button");
@@ -49,6 +50,18 @@ quickPanel.innerHTML='<strong>Customize Home</strong>'+
 const orbitToast=document.createElement("div");orbitToast.id="orbitToast";
 orbitToast.setAttribute("role","status");orbitToast.hidden=true;
 document.body.append(orbitSettingsGear,settingsShade,settingsPanel,quickPanel,orbitToast);
+// Real Android widgets cannot be bent into a narrow pie-slice safely.
+// Keep their icon inside the outer dial; show full interactive RemoteViews
+// in a dedicated, dismissible preview, away from music and the clock.
+const widgetPreviewShade=document.createElement("div");
+widgetPreviewShade.id="orbitWidgetPreviewShade";widgetPreviewShade.hidden=true;
+const widgetPreview=document.createElement("section");
+widgetPreview.id="orbitWidgetPreview";widgetPreview.hidden=true;
+widgetPreview.setAttribute("role","dialog");
+widgetPreview.setAttribute("aria-modal","true");
+widgetPreview.setAttribute("aria-label","Android app widget preview");
+widgetPreview.innerHTML='<div class="orbit-widget-preview-head"><div><small>APP WIDGET</small><strong id="orbitWidgetPreviewTitle"></strong></div><button type="button" id="orbitWidgetPreviewClose" aria-label="Close widget preview">×</button></div><div id="orbitWidgetPreviewSlot" aria-label="Interactive Android app widget"></div><div class="orbit-widget-preview-footer"><span>Live widget · swipe the dial to change widgets</span><button type="button" id="orbitWidgetPreviewRemove">Remove</button></div>';
+document.body.append(widgetPreviewShade,widgetPreview);
 
 const svg=host.querySelector("svg"),q=id=>document.getElementById(id);
 const pi=Math.PI,rad=a=>a*pi/180;
@@ -96,16 +109,15 @@ function redrawExternal(){
  window.audioDeskSyncNativeWidgets?.();
 }
 window.audioDeskOrbitWidgetSlot=()=>{
- if(!active()||popupVisible||settingsVisible||quickVisible||!orbitPreferences.showAppWidgets||host.hidden)return null;
+ // Never draw native rectangular RemoteViews on top of the curved dials.
+ if(!active()||!widgetPreviewVisible||popupVisible||settingsVisible||quickVisible||host.hidden)return null;
  const selected=selectedExternal();
  if(!selected?.id)return null;
- const rect=host.getBoundingClientRect();
- if(!rect.width)return null;
- const scale=rect.width/334;
- const [dx,dy]=point(276,45);
- const centerX=rect.right+dx*scale,centerY=rect.bottom+dy*scale;
- const w=Math.min(170,Math.max(108,rect.width*.42)),h=Math.min(61,Math.max(44,rect.width*.145));
- return {id:selected.id,x:centerX-w/2,y:centerY-h/2,w,h};
+ const bounds=q("orbitWidgetPreviewSlot").getBoundingClientRect();
+ if(bounds.width<60||bounds.height<60)return null;
+ const inset=5;
+ return {id:selected.id,x:bounds.left+inset,y:bounds.top+inset,
+  w:bounds.width-2*inset,h:bounds.height-2*inset};
 };
 function rotateExternal(delta){
  const count=externalWidgetsList().length;
@@ -203,6 +215,7 @@ function stopFan(){
 }
 function showPopup(){
  if(!active())return;
+ hideWidgetPreview();
  if(popupVisible){refreshPopup();return}
  popupVisible=true;popupLetter="";popupPage=0;popupSignature="";
  document.body.classList.add("orbit-letter-active");
@@ -335,6 +348,28 @@ function turnAppPage(delta){
 }
 
 let settingsVisible=false,quickVisible=false,settingsTab="themes";
+let widgetPreviewVisible=false;
+function hideWidgetPreview(){
+ if(!widgetPreviewVisible)return;
+ widgetPreviewVisible=false;
+ widgetPreview.hidden=true;widgetPreviewShade.hidden=true;
+ window.audioDeskSyncNativeWidgets?.();
+}
+function showWidgetPreview(){
+ if(!active())return;
+ const chosen=selectedExternal();
+ if(!chosen?.id)return openNativeWidgetPicker();
+ hidePopup();closeQuick();closeSettings();
+ widgetPreviewVisible=true;
+ q("orbitWidgetPreviewTitle").textContent=chosen.label;
+ widgetPreview.hidden=false;widgetPreviewShade.hidden=false;
+ window.audioDeskSyncNativeWidgets?.();
+}
+widgetPreviewShade.addEventListener("click",hideWidgetPreview);
+q("orbitWidgetPreviewClose").addEventListener("click",hideWidgetPreview);
+q("orbitWidgetPreviewRemove").addEventListener("click",()=>{
+ hideWidgetPreview();removeSelectedExternal();
+});
 let orbitToastTimer=0,homeHold=null,holdConsumedUntil=0;
 const orbitPrefsKey="ad_orbit_settings_v2";
 const defaultOrbitPreferences={momentum:true,blur:true,haptics:false,showAppWidgets:true};
@@ -430,6 +465,7 @@ function closeQuick(){
 }
 function openSettings(tab="themes"){
  if(!active())return;
+ hideWidgetPreview();
  hidePopup();stopAllSpins();closeQuick();
  settingsTab=settingsCategories.includes(tab)?tab:"themes";
  settingsVisible=true;settingsPanel.hidden=false;settingsShade.hidden=false;
@@ -439,6 +475,7 @@ function openSettings(tab="themes"){
 }
 function openQuick(){
  if(!active())return;
+ hideWidgetPreview();
  hidePopup();stopAllSpins();closeSettings();
  quickVisible=true;quickPanel.hidden=false;settingsShade.hidden=false;
  window.audioDeskSyncNativeWidgets?.();
@@ -485,6 +522,7 @@ quickPanel.addEventListener("click",e=>{
 });
 document.addEventListener("keydown",e=>{
  if(e.key!=="Escape")return;
+ if(widgetPreviewVisible)hideWidgetPreview();
  if(settingsVisible)closeSettings();
  if(quickVisible)closeQuick();
 });
@@ -492,7 +530,7 @@ function cancelHomeHold(){
  if(homeHold){clearTimeout(homeHold.timer);homeHold=null}
 }
 function blankHomeTarget(target,event){
- if(!active()||settingsVisible||quickVisible)return false;
+ if(!active()||settingsVisible||quickVisible||widgetPreviewVisible)return false;
  if(target.closest("#orbitSettingsGear,#orbitSettingsPanel,#orbitQuickCustomize,#launcherHomeOptions,#launcherSettingsToggle"))return false;
  const b=host.getBoundingClientRect();
  const dx=(event.clientX-b.right)*334/b.width,dy=(event.clientY-b.bottom)*334/b.height;
@@ -539,12 +577,17 @@ window.addEventListener("audio-desk-native-widgets-changed",()=>{
 
 function drawClock(){
  if(!active())return;
- const now=new Date(),time=now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:false}),date=now.toLocaleDateString([],{weekday:"short",day:"numeric",month:"short"}).toUpperCase();
+ const now=new Date();
+ // Show the whole 12-hour clock rather than clipping the leading "1" from 17:41.
+ const parts=new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit",hour12:true}).formatToParts(now);
+ const time=(parts.find(x=>x.type==="hour")?.value||String((now.getHours()%12)||12))+":"+
+  (parts.find(x=>x.type==="minute")?.value||String(now.getMinutes()).padStart(2,"0"));
+ const date=now.toLocaleDateString([],{weekday:"short",day:"numeric",month:"short"}).toUpperCase();
  if(lastClock===time+date&&q("orbitClock").childNodes.length)return;lastClock=time+date;
  let h=path(ring(330,301),"orbit-ring");
  for(let i=0;i<=22;i++){const a=1+i*4;h+='<line x1="'+point(326,a)[0]+'" y1="'+point(324,a)[1]+'" x2="'+point(i%3===0?322:324,a)[0]+'" y2="'+point(i%3===0?317:321,a)[1]+'" class="orbit-line" stroke-width="1"/>'}
- h+=curveText(time,317,45,37,24,"","clock-time");
- h+=curveText(date,303,45,58,9,"orbit-muted","clock-date");
+ h+=curveText(time,317,45,31,24,"","clock-time");
+ h+=curveText(date,303,45,43,9,"orbit-muted","clock-date");
  q("orbitClock").innerHTML=h;
 }
 function currentRecents(){
@@ -572,7 +615,9 @@ function drawExternalWidgets(offset=offsets.external){
    (iconUrl?'<image href="'+iconUrl+'" x="-11" y="-19" width="22" height="22" class="orbit-app-icon"/>':txt(symbol,-2,18));
   h+=g(275,a,content,button(isAdd?"external:add":"external:focus:"+wrap(externalIndex+i,list.length),
    isAdd?"Add an Android app widget":"Select "+item.label+" app widget"),true);
-  h+=curveText(trunc(isAdd?"ADD WIDGET":item.label,15).toUpperCase(),258,a,34,9,"orbit-external-label","external-"+i);
+  // Only the active app widget gets a name; its neighbours remain icons.
+  if(chosen)h+=curveText(trunc(isAdd?"ADD WIDGET":item.label,11).toUpperCase(),
+   256,a,29,9,"orbit-external-label","external-selected");
  }
  q("orbitExternalWidgets").innerHTML=h;
  // Don't move native RemoteViews until the selected index actually changes.
@@ -583,7 +628,7 @@ function drawExternalWidgets(offset=offsets.external){
 }
 let lastExternalNativeId=-1;
 function openNativeWidgetPicker(){
- hidePopup();closeSettings();closeQuick();
+ hideWidgetPreview();hidePopup();closeSettings();closeQuick();
  if(typeof window.AudioDesk?.openNativeWidgets==="function"){
   window.AudioDesk.openNativeWidgets();
  }else{
@@ -632,8 +677,8 @@ function drawRecents(offset=offsets.recents){
  q("orbitRecents").innerHTML=h;
 }
 function music(a,slot){
- let h=curveText(trunc(media.available?media.title:"Music player",22),238,a,48,12,"","music-title-"+slot);
- h+=curveText(trunc(media.available?media.artist:(media.enabled?"Start a player":"Tap to connect"),25),225,a,51,9,"orbit-muted","music-artist-"+slot);
+ let h=curveText(trunc(media.available?media.title:"Music player",17),238,a,45,11,"","music-title-"+slot);
+ h+=curveText(trunc(media.available?media.artist:(media.enabled?"Start a player":"Tap to connect"),19),225,a,45,9,"orbit-muted","music-artist-"+slot);
  const items=[["previous","Previous track","|◀",media.available&&media.canPrevious],["toggle",media.playing?"Pause":"Play",media.playing?"Ⅱ":"▶",media.available&&media.canToggle],["next","Next track","▶|",media.available&&media.canNext]];
  items.forEach((x,i)=>{const on=i===1;h+=g(206,a+(i-1)*17,'<rect x="-22" y="-12" width="44" height="24" rx="7" class="'+(on?"orbit-accent":"orbit-raised")+'"/><text y="4" text-anchor="middle" font-size="13" class="'+(on?"orbit-ink":"")+'">'+x[2]+'</text>',button("media:"+x[0],x[1],!x[3]))});
  const duration=Number(media.durationMs),position=Number(media.positionMs);
@@ -654,14 +699,15 @@ function drawWidgets(offset=offsets.widgets){
  const a=45+i*60+offset;if(a+30<0||a-30>90)continue;
  const name=widgets[wrap(indices.widgets+i,widgets.length)];
  h+=path(sector(a-30,a+30),i===0?"orbit-raised":"orbit-ring",'data-orbit-widget="'+name+'"');
- if(name==="music")h+=music(a,i);
- else {
- const isCal=name==="calendar",now=new Date();
- h+=curveText(isCal?"Calendar":"Audio Desk",235,a,49,13,"","widget-title-"+i);
- h+=curveText(isCal?now.toLocaleDateString([],{weekday:"short",day:"numeric",month:"short"}):"Audio news & discoveries",219,a,52,10,"orbit-muted","widget-detail-"+i);
- h+=g(199,a,'<rect x="-32" y="-10" width="64" height="20" rx="6" class="orbit-accent"/>',button(name,isCal?"Open calendar":"Open Audio Desk news"));
- h+=curveText("OPEN",199,a,28,10,"orbit-ink","widget-open-"+i);
- }
+ if(name==="music"&&i===0)h+=music(a,i);
+ else if(i===0){
+  const isCal=name==="calendar",now=new Date();
+  h+=curveText(isCal?"Calendar":"Audio Desk",235,a,48,12,"","widget-title-"+i);
+  h+=curveText(isCal?now.toLocaleDateString([],{weekday:"short",day:"numeric",month:"short"}):"Audio news",219,a,46,9,"orbit-muted","widget-detail-"+i);
+  h+=g(199,a,'<rect x="-28" y="-9" width="56" height="18" rx="6" class="orbit-accent"/>',button(name,isCal?"Open calendar":"Open Audio Desk news"));
+  h+=curveText("OPEN",199,a,24,9,"orbit-ink","widget-open-"+i);
+ }else h+=g(224,a,txt(name==="music"?"♫":name==="calendar"?"▦":"≋",5,21,"orbit-muted"));
+
  }
  // Readable hints for the clipped neighbouring cards.
  if(Math.abs(offset)<.01){
@@ -675,7 +721,7 @@ function drawWidgets(offset=offsets.widgets){
 function drawSearch(){q("orbitSearch").innerHTML='<g '+button("search","Search installed apps")+'><path d="'+arc(60,0,90)+' L0,0 Z" class="orbit-raised"/><circle cx="-28" cy="-30" r="9" fill="none" stroke="var(--theme-text,#e5f0e7)" stroke-width="2.5"/><path d="M-21.5,-23.5 L-14,-16" fill="none" stroke="var(--theme-text,#e5f0e7)" stroke-width="2.5" stroke-linecap="round"/></g>'}
 function draw(){if(!active())return;host.hidden=false;recentList=currentRecents();drawClock();drawExternalWidgets();drawWidgets();drawRecents();drawLetters();drawSearch();if(popupVisible)refreshPopup()}
 function sync(){
- stopAllSpins();hidePopup();closeSettings();closeQuick();
+ stopAllSpins();hidePopup();hideWidgetPreview();closeSettings();closeQuick();
  host.hidden=!active();drag=null;orbitToast.hidden=true;cancelHomeHold();
  if(active()){redrawExternal();draw()}
  window.audioDeskSyncNativeWidgets?.();
@@ -696,7 +742,11 @@ function action(code,target){
  if(code.startsWith("fan-page:")){turnAppPage(Number(code.slice(9))||0);return}
  if(code==="search")openLauncherSearch();
  else if(code==="external:add")openNativeWidgetPicker();
- else if(code.startsWith("external:focus:")){externalIndex=wrap(Number(code.slice("external:focus:".length))||0,externalWidgetsList().length);indices.external=externalIndex;offsets.external=0;drawExternalWidgets()}
+ else if(code.startsWith("external:focus:")){
+   const next=wrap(Number(code.slice("external:focus:".length))||0,externalWidgetsList().length);
+   if(next===externalIndex)showWidgetPreview();
+   else{externalIndex=next;indices.external=externalIndex;offsets.external=0;drawExternalWidgets()}
+  }
  else if(code.startsWith("letter:"))selectLetter(code.slice(7));
  else if(code.startsWith("recent:")){const app=recentList[Number(code.slice(7))];if(app)window.AudioDesk?.launchExternalApp?.(app.pkg,app.activity)}
  else if(code.startsWith("media:")){window.AudioDesk?.mediaCommand?.(code.slice(6))}
