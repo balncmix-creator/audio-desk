@@ -87,7 +87,7 @@ assert.match(studio,/ad_icon_studio_pack_v1_/,'packs are persisted per launcher 
   await page.evaluate(()=>audioDeskIconStudio.setPack('glass'));
   await page.waitForFunction(()=>Array.from(document.querySelectorAll('#launcherAppsGrid .ad-icon-image'))
     .every(i=>i.src.includes('pack-glass')));
-  await page.evaluate(()=>setLauncherTheme('orbit'));
+  await page.evaluate(()=>{setLauncherTheme('orbit');setLauncherPage('home',false)});
   assert.equal(await page.evaluate(()=>audioDeskIconStudio.mode()),'themed',
    'each launcher theme has its own independent selection');
   await page.evaluate(()=>audioDeskIconStudio.setPack('ocean'));
