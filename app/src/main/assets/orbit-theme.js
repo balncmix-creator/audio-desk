@@ -391,8 +391,8 @@ svg.addEventListener("pointermove",e=>{
  const now=performance.now();
  drag.samples.push({t:now,angle:drag.total});
  drag.samples=drag.samples.filter(x=>now-x.t<=110);
- if(drag.code==="seek"||!drag.which||drag.which==="recents"&&popupVisible)return;
  if(Math.abs(drag.total)>3)drag.moved=true;
+ if(drag.code==="seek"||!drag.which||(drag.which==="recents"&&popupVisible))return;
  if(drag.moved)advanceRing(drag.which,change);
 });
 function finish(e,cancel=false){
