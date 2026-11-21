@@ -186,7 +186,7 @@
   packs:()=>packs.map(([id,name,description])=>({id,name,description})),
   iconUrlFor:app=>{
    const pkg=String(app?.pkg||"");
-   if(!nativeReady||!validPackage(pkg)||selected()==="outline")return "";
+   if(!validPackage(pkg)||selected()==="outline")return "";
    return "/app-icons/"+effectiveTheme()+"/"+encodeURIComponent(pkg)+".png";
   },
   open:()=>{dialog.hidden=false;updateStudio()},
