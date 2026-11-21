@@ -37,7 +37,11 @@ style.textContent=[
 "#minimalGalleryFilters button[aria-pressed=true]{border-color:var(--ds-accent,#b9ddc0);background:var(--ds-accent,#b9ddc0);color:var(--ds-accent-ink,#16281b)}",
 "#minimalGalleryGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:4px 0 10px}",
 "#minimalGalleryGrid .minimal-gallery-entry{display:flex;flex-direction:column;min-width:0;gap:4px;padding:5px!important;border:1px solid var(--ds-line,#4d6555)!important;border-radius:12px!important;background:var(--ds-panel2,#26362e)!important;color:var(--ds-text,#fff)!important;text-align:left!important;box-shadow:none!important}",
-"#minimalGalleryGrid .minimal-gallery-entry img{width:100%;height:145px;display:block;object-fit:cover;border-radius:8px;background:#242b2a}",
+"#minimalGalleryGrid .minimal-gallery-photo{position:relative;display:block;width:100%;height:145px;border-radius:8px;overflow:hidden;background:#202826}",
+"#minimalGalleryGrid .minimal-gallery-photo img{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover}",
+"#minimalGalleryGrid .minimal-gallery-photo .minimal-gallery-unavailable{position:absolute;inset:0;display:none;place-items:center;padding:12px;text-align:center;color:var(--ds-muted,#c8d2cc);font:11px/1.45 system-ui,sans-serif}",
+"#minimalGalleryGrid .minimal-gallery-photo img[data-failed=true]{display:none}",
+"#minimalGalleryGrid .minimal-gallery-photo img[data-failed=true]+.minimal-gallery-unavailable{display:grid}",
 "#minimalGalleryGrid .minimal-gallery-entry strong{font:600 12px/1.25 system-ui,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:2px 3px 0}",
 "#minimalGalleryGrid .minimal-gallery-entry small{font:11px/1.35 system-ui,sans-serif;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 3px 3px}",
 "#minimalGalleryGrid .minimal-gallery-entry[aria-pressed=true]{border-color:var(--ds-accent,#bddfbf)!important}",
@@ -78,7 +82,7 @@ function render(){
  const available=list(),total=Math.max(1,Math.ceil(available.length/pageSize));
  page=Math.max(0,Math.min(page,total-1));
  grid.innerHTML=available.slice(page*pageSize,(page+1)*pageSize).map(p=>
-  '<button type="button" class="minimal-gallery-entry" data-minimal-id="'+p.id+'" aria-pressed="'+(p.id===current)+'" aria-label="Choose '+esc(p.name)+' by '+esc(p.author)+'"><img alt="" loading="lazy" src="'+esc(url(p,480,72))+'"><strong>'+esc(p.name)+'</strong><small>Photo: '+esc(p.author)+'</small></button>').join("");
+  '<button type="button" class="minimal-gallery-entry" data-minimal-id="'+p.id+'" aria-pressed="'+(p.id===current)+'" aria-label="Choose '+esc(p.name)+' by '+esc(p.author)+'"><span class="minimal-gallery-photo"><img alt="" loading="lazy" src="'+esc(url(p,480,72))+'"><span class="minimal-gallery-unavailable">Preview needs internet</span></span><strong>'+esc(p.name)+'</strong><small>Photo: '+esc(p.author)+'</small></button>').join("");
  $("minimalGalleryCount").textContent=(page+1)+" / "+total+" · "+available.length+" photos";
  $("minimalGalleryPrev").disabled=page===0;$("minimalGalleryNext").disabled=page>=total-1;
 }
@@ -129,6 +133,7 @@ filters.addEventListener("click",e=>{const c=e.target.closest("[data-minimal-cat
  if(!groups.includes(c))return;category=c;page=0;render()});
 $("minimalGalleryPrev").onclick=()=>{page--;render()};
 $("minimalGalleryNext").onclick=()=>{page++;render()};
+grid.addEventListener("error",e=>{if(e.target.matches?.("img"))e.target.dataset.failed="true"},true);
 grid.addEventListener("click",e=>{const id=e.target.closest("[data-minimal-id]")?.dataset.minimalId;
  if(byId(id)){window.audioDeskClearAudioWallpaper?.();select(id)}});
 for(const id of ["themePaletteGrid","wallpaperGrid","audioWallpaperGrid","customWallpaperRestore"]){
