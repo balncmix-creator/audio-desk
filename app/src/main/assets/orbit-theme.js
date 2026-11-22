@@ -802,7 +802,8 @@ function drawWidgets(offset=offsets.widgets){
    const clipId="orbitPreviewWedge-"+key;
    return '<defs><clipPath id="'+clipId+'"><path d="'+d+'"/></clipPath></defs>'+
     path(d,"orbit-widget-preview-hit",button("widget:"+index,
-      (index<0?"Previous":"Next")+" widget: "+name))+
+      (index<0?"Previous":"Next")+" widget: "+name)+
+      ' fill="transparent" stroke="none" pointer-events="all"')+
     '<g clip-path="url(#'+clipId+')" pointer-events="none">'+
       g(210,middle,txt(symbol(name),5,16,"orbit-muted"),"",false)+
     '</g>';
