@@ -786,12 +786,30 @@ function drawWidgets(offset=offsets.widgets){
  }else h+=g(224,a,txt(name==="music"?"♫":name==="calendar"?"▦":name==="files"?"▣":"≋",5,21,"orbit-muted"));
 
  }
- // Readable hints for the clipped neighbouring cards.
+ // The partially visible neighbours are slim *wedge-shaped* controls.
+ // A rotated rectangular hitbox used to leak across the bottom cap on real
+ // phones, leaving a detached square icon below the segment. Keep the entire
+ // hit target inside the actual visible wedge, centre its smaller glyph, and
+ // clip ink to the wedge so no icon protrudes across the horizontal/vertical
+ // screen-edge seams. This also keeps access to previous/next widgets.
  if(Math.abs(offset)<.01){
- const prev=widgets[wrap(indices.widgets-1,widgets.length)],next=widgets[wrap(indices.widgets+1,widgets.length)];
- const symbol=x=>x==="music"?"♫":x==="calendar"?"▦":x==="files"?"▣":"≋";
- h+=g(218,7.5,'<rect x="-13" y="-22" width="26" height="44" rx="5" fill="transparent"/>'+txt(symbol(prev),5,19),button("widget:-1","Previous widget: "+prev));
- h+=g(218,82.5,'<rect x="-13" y="-22" width="26" height="44" rx="5" fill="transparent"/>'+txt(symbol(next),5,19),button("widget:1","Next widget: "+next));
+  const prev=widgets[wrap(indices.widgets-1,widgets.length)];
+  const next=widgets[wrap(indices.widgets+1,widgets.length)];
+  const symbol=x=>x==="music"?"♫":x==="calendar"?"▦":x==="files"?"▣":"≋";
+  const preview=(start,end,index,name,key)=>{
+   const d=sector(start,end);
+   const middle=(start+end)/2;
+   const clipId="orbitPreviewWedge-"+key;
+   return '<defs><clipPath id="'+clipId+'"><path d="'+d+'"/></clipPath></defs>'+
+    path(d,"orbit-widget-preview-hit",button("widget:"+index,
+      (index<0?"Previous":"Next")+" widget: "+name)+
+      ' fill="transparent" stroke="none" pointer-events="all"')+
+    '<g clip-path="url(#'+clipId+')" pointer-events="none">'+
+      g(210,middle,txt(symbol(name),5,16,"orbit-muted"),"",false)+
+    '</g>';
+  };
+  h+=preview(1.35,15,-1,prev,"previous");
+  h+=preview(75,88.65,1,next,"next");
  }
  q("orbitWidgets").innerHTML=h;
 }

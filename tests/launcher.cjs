@@ -353,6 +353,32 @@ const demoApps=[
   assert.equal(await page.locator('#launcherMusicWidget').isVisible(),false);
   assert.ok((await page.locator('#orbitClock').textContent()).match(/\d/));
   assert.equal(await page.locator('#orbitWidgets [data-orbit-widget]').count(),3);
+  // Bottom and side preview buttons may not drift outside their slim wedges.
+  // The old rotated rectangle rendered a dangling glyph across the cap.
+  const previews=await page.locator('#orbitWidgets .orbit-widget-preview-hit').evaluateAll(paths=>
+    paths.map(path=>{
+      const glyphGroup=path.nextElementSibling;
+      const label=glyphGroup?.querySelector('text');
+      const wedge=path.getBoundingClientRect();
+      const glyph=label?.getBoundingClientRect();
+      return {
+        action:path.getAttribute('data-orbit-action'),
+        geometry:path.getAttribute('d')||'',
+        fill:path.getAttribute('fill'),
+        clip:glyphGroup?.getAttribute('clip-path'),
+        glyphInside:!!glyph&&glyph.left>=wedge.left-2&&glyph.top>=wedge.top-2&&
+          glyph.right<=wedge.right+2&&glyph.bottom<=wedge.bottom+2
+      };
+    })
+  );
+  assert.equal(previews.length,2,'both preview controls must be visible within their wedge');
+  previews.forEach(v=>{
+    assert.ok(['widget:-1','widget:1'].includes(v.action),'preview keeps widget navigation');
+    assert.ok(v.geometry.includes(' Q'),'preview uses rounded wedge geometry');
+    assert.equal(v.fill,'transparent','preview does not paint over the selected wallpaper palette');
+    assert.ok(v.clip?.startsWith('url(#orbitPreviewWedge-'),'preview icon is clipped to segment');
+    assert.ok(v.glyphInside,'preview icon must not hang beyond the sector edge');
+  });
   // Every exposed radial band endpoint has four gently rounded corners,
   // including the quarter-ring foundations and independently moving sectors.
   const radialCorners=await page.evaluate(()=>{
