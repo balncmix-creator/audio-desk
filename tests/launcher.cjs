@@ -495,8 +495,8 @@ const demoApps=[
    'new app widget band uses adjacent radii to match the other 1–3 unit dial separators');
   assert.equal(appWidgetRing.touchesBuiltIn,true);
   const orbitGeometrySource=fs.readFileSync(path.join(__dirname,'../app/src/main/assets/orbit-theme.js'),'utf8');
-  assert.ok(orbitGeometrySource.includes('sector(a-19,a+19,299,251)'),
-   'external-widget angular sweep fills its entire 38-degree notch without the previous extra blank degree');
+  assert.ok(orbitGeometrySource.includes('sector(a-18.3,a+18.3,299,251)'),
+   'external widgets retain a deliberate narrow seam instead of touching edge-to-edge');
 
   assert.equal(await page.locator('#orbitClock textPath').count(),2,
    'time and date follow actual clock arc paths');
