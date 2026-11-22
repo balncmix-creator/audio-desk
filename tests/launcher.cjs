@@ -357,15 +357,15 @@ const demoApps=[
   // The old rotated rectangle rendered a dangling glyph across the cap.
   const previews=await page.locator('#orbitWidgets .orbit-widget-preview-hit').evaluateAll(paths=>
     paths.map(path=>{
-      const group=path.parentElement;
-      const label=group.querySelector('g[clip-path] text');
+      const glyphGroup=path.nextElementSibling;
+      const label=glyphGroup?.querySelector('text');
       const wedge=path.getBoundingClientRect();
       const glyph=label?.getBoundingClientRect();
       return {
         action:path.getAttribute('data-orbit-action'),
         geometry:path.getAttribute('d')||'',
         fill:path.getAttribute('fill'),
-        clip:group.querySelector('g[clip-path]')?.getAttribute('clip-path'),
+        clip:glyphGroup?.getAttribute('clip-path'),
         glyphInside:!!glyph&&glyph.left>=wedge.left-2&&glyph.top>=wedge.top-2&&
           glyph.right<=wedge.right+2&&glyph.bottom<=wedge.bottom+2
       };
