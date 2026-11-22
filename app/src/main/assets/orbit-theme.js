@@ -77,18 +77,24 @@ const arc=(r,a,b)=>"M"+p(r,a)+" A"+r+","+r+" 0 0 1 "+p(r,b);
 // outer/inner radii. Only the segment corners move; ring width and hit targets
 // remain unchanged. A 6-unit corner is deliberately subtle on a 330-unit dial.
 const ring=(R,r)=>{
- const c=Math.min(6,(R-r)/3,r*.18);
+ // End caps at 0°/90° were clipped flat by the SVG viewport boundary.
+ // Insetting the angle keeps the subtle rounded ends visibly inside it.
+ const a=1.35,b=88.65,c=Math.min(4.5,(R-r)*.17,r*.15);
  const outer=c/R*180/pi,inner=c/r*180/pi;
- return "M"+p(R,outer)+" A"+R+","+R+" 0 0 1 "+p(R,90-outer)+
-  " Q"+p(R,90)+" "+p(R-c,90)+
-  " L"+p(r+c,90)+" Q"+p(r,90)+" "+p(r,90-inner)+
-  " A"+r+","+r+" 0 0 0 "+p(r,inner)+
-  " Q"+p(r,0)+" "+p(r+c,0)+
-  " L"+p(R-c,0)+" Q"+p(R,0)+" "+p(R,outer)+" Z";
+ return "M"+p(R,a+outer)+" A"+R+","+R+" 0 0 1 "+p(R,b-outer)+
+  " Q"+p(R,b)+" "+p(R-c,b)+
+  " L"+p(r+c,b)+" Q"+p(r,b)+" "+p(r,b-inner)+
+  " A"+r+","+r+" 0 0 0 "+p(r,a+inner)+
+  " Q"+p(r,a)+" "+p(r+c,a)+
+  " L"+p(R-c,a)+" Q"+p(R,a)+" "+p(R,a+outer)+" Z";
 };
 const sector=(a,b,R=249,r=182)=>{
- // Preserve the same 4-unit sector spacing; modestly soften all four ends.
- const gap=2,c=Math.min(7,(R-r)*.18),outer=Math.asin(gap/R)*180/pi,inner=Math.asin(gap/r)*180/pi;
+ // Keep a consistent seam and smaller rounded corners; endpoint insets
+ // prevent terminal widget segments from being cut flat at the viewport.
+ a=Math.max(1.35,a);b=Math.min(88.65,b);
+ if(b-a<2.3)return "";
+ const gap=3,c=Math.min(4.5,(R-r)*.12,(b-a)*r*pi/180*.19);
+ const outer=Math.asin(gap/R)*180/pi,inner=Math.asin(gap/r)*180/pi;
  const A=a+outer,B=b-outer,C=a+inner,D=b-inner;
  const rs=R-c,rt=r+c,e=Math.asin(gap/rs)*180/pi,f=Math.asin(gap/rt)*180/pi;
  return arc(R,A+c/R*180/pi,B-c/R*180/pi)+" Q"+p(R,B)+" "+p(rs,b-e)+" L"+p(rt,b-f)+" Q"+p(r,D)+" "+p(r,D-c/r*180/pi)+" A"+r+","+r+" 0 0 0 "+p(r,C+c/r*180/pi)+" Q"+p(r,C)+" "+p(rt,a+f)+" L"+p(rs,a+e)+" Q"+p(R,A)+" "+p(R,A+c/R*180/pi)+" Z";
@@ -667,10 +673,10 @@ function drawExternalWidgets(offset=offsets.external){
  let h=path(ring(300,250),"orbit-ring orbit-external-base");
  for(let i=-2;i<=2;i++){
   const a=45+i*externalRingStep+offset;
-  if(a+19<0||a-19>90)continue;
+  if(a+18.3<1.35||a-18.3>88.65)continue;
   const item=list[wrap(externalIndex+i,list.length)];
   const isAdd=item.id===0,chosen=i===0;
-  h+=path(sector(a-19,a+19,299,251),chosen?"orbit-external-focused":"orbit-external-segment",
+  h+=path(sector(a-18.3,a+18.3,299,251),chosen?"orbit-external-focused":"orbit-external-segment",
    'data-orbit-external="'+esc(String(item.id))+'"');
   const symbol=isAdd?"+":(String(item.label||"Widget").trim().charAt(0).toUpperCase()||"▦");
   const iconUrl=!isAdd&&item.pkg?iconSource({pkg:item.pkg}):"";
@@ -715,7 +721,7 @@ function drawLetters(offset=offsets.letters){
  // A fixed triangle marks the selected letter while the alphabet rotates.
  // Compact fixed arrow: small enough not to overwhelm the alphabet glyphs.
  h+='<g id="orbitAlphabetPointer" aria-label="Fixed alphabet selection arrow" pointer-events="none">'+
-  '<path d="M'+p(104,pointerAngle)+' L'+p(122,pointerAngle-2.2)+' L'+p(122,pointerAngle+2.2)+' Z" fill="#f2fff3" stroke="#162d1d" stroke-width="1.4" stroke-linejoin="round"/>'+
+  '<path d="M'+p(107,pointerAngle)+' L'+p(117,pointerAngle-1.45)+' L'+p(117,pointerAngle+1.45)+' Z" fill="#f2fff3" stroke="#162d1d" stroke-width="1.1" stroke-linejoin="round"/>'+
   '</g>';
  q("orbitLetters").innerHTML=h;
  // The wheel alone moves; the arrow is redrawn at its fixed angle.

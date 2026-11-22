@@ -56,7 +56,7 @@ function point(r,a){return [+(200+r*Math.sin(a*rad)).toFixed(2),+(200-r*Math.cos
 function wedge(a,b,inner,outer){
  // Give every file and menu wedge the same subtle four rounded corners as
  // Orbit's home dial. Keep the .65-degree seams and full SVG hit areas.
- const gap=.65,corner=Math.min(6,(outer-inner)*.16,inner*.12);
+ const gap=.85,corner=Math.min(4.5,(outer-inner)*.12,inner*.10);
  const A=a+gap,B=b-gap;
  const o=corner/outer*180/Math.PI,i=corner/inner*180/Math.PI;
  const at=(r,angle)=>point(r,angle).join(' ');

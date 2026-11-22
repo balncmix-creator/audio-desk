@@ -377,6 +377,21 @@ const demoApps=[
      'radial segment must still be closed and clickable: '+selector);
    });
   });
+  // The outer edge of the quarter-ring must end *inside* the viewport,
+  // otherwise Android clips its rounded cap into the flat edge shown in QA.
+  const capBounds=await page.locator('#orbitClock > path.orbit-ring')
+   .evaluate(node=>{
+    const rect=node.getBBox();
+    return {right:rect.x+rect.width,bottom:rect.y+rect.height};
+   });
+  assert.ok(capBounds.right< -1.5 && capBounds.bottom< -1.5,
+   'clock ring end caps must not be clipped by the zero-coordinate viewport: '+JSON.stringify(capBounds));
+  // Adjacent widget segments need visible seams, not overlapping strokes.
+  const externalSegments=await page.locator('#orbitExternalWidgets path[data-orbit-external]')
+   .evaluateAll(nodes=>nodes.map(n=>n.getAttribute('d')||''));
+  assert.ok(externalSegments.length>=2,'visible adjacent widget sectors');
+  assert.ok(externalSegments.every(d=>(d.match(/ Q/g)||[]).length===4),
+   'adjacent widget segments maintain their own rounded endpoints');
   assert.equal(await page.locator('#orbitWidgets [data-orbit-action="connect"]').count(),1,
    'unconnected player has one clear connect action, not redundant transport buttons');
   assert.equal(await page.locator('#orbitWidgets [data-orbit-action="media:toggle"]').count(),0);
@@ -401,7 +416,8 @@ const demoApps=[
    'recent apps are represented by icons, not written app names');
   assert.equal(await page.locator('#orbitAlphabetPointer').count(),1);
   const arrow=await page.locator('#orbitAlphabetPointer path').evaluate(node=>({width:node.getBBox().width,fill:node.getAttribute('fill')}));
-  assert.ok(arrow.width>11&&arrow.width<25&&arrow.fill==='#f2fff3','small, visible fixed arrow');
+  assert.ok(arrow.width>6&&arrow.width<13&&arrow.fill==='#f2fff3',
+   'fixed A–Z pointer should be smaller and less dominant than the letters');
   assert.equal(await page.locator('#orbitLetterMenu').count(),0,'no separate floating app popup');
   await page.locator('#orbitLetters [data-orbit-action="letter:A"]').dispatchEvent('click');
   assert.equal(await page.locator('#orbitRadialBackdrop').isVisible(),true,'blur backdrop behind active ring');
@@ -479,8 +495,8 @@ const demoApps=[
    'new app widget band uses adjacent radii to match the other 1–3 unit dial separators');
   assert.equal(appWidgetRing.touchesBuiltIn,true);
   const orbitGeometrySource=fs.readFileSync(path.join(__dirname,'../app/src/main/assets/orbit-theme.js'),'utf8');
-  assert.ok(orbitGeometrySource.includes('sector(a-19,a+19,299,251)'),
-   'external-widget angular sweep fills its entire 38-degree notch without the previous extra blank degree');
+  assert.ok(orbitGeometrySource.includes('sector(a-18.3,a+18.3,299,251)'),
+   'external widgets retain a deliberate narrow seam instead of touching edge-to-edge');
 
   assert.equal(await page.locator('#orbitClock textPath').count(),2,
    'time and date follow actual clock arc paths');
