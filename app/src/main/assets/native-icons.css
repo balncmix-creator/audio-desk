@@ -285,3 +285,17 @@ body[data-launcher-theme="warm"] .ad-icon-shell:not([data-icon-pack]) .ad-icon-f
  #launcherIconStudioDialog .icon-studio-options{grid-template-columns:1fr!important}
  #launcherIconStudioDialog .icon-studio-options button{min-height:65px!important}
 }
+
+/* App-list rules used #launcherAppsGrid ID specificity and overrode the
+   earlier fallback color fix; force the actual inner SVG to charcoal.
+   Avoid a second outline around an already bordered icon tile. */
+body[data-launcher-theme="warm"] #launcherAppsGrid .ad-icon-shell:not([data-icon-pack]) .ad-icon-fallback .warm-line-icon,
+body[data-launcher-theme="warm"] #launcherLetterApps .ad-icon-shell:not([data-icon-pack]) .ad-icon-fallback .warm-line-icon{
+ color:#332b28!important;
+ border:0!important;
+ background:transparent!important;
+}
+body[data-launcher-theme="warm"] #launcherAppsGrid .ad-icon-shell:not([data-icon-pack]) .ad-icon-fallback .warm-line-icon svg,
+body[data-launcher-theme="warm"] #launcherLetterApps .ad-icon-shell:not([data-icon-pack]) .ad-icon-fallback .warm-line-icon svg{
+ stroke:#332b28!important;
+}
