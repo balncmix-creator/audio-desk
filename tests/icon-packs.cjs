@@ -11,6 +11,27 @@ const packNames=[...studio.matchAll(/^  \["([a-z]+)","[^"]+","[^"]+"/gm)].map(x=
 assert.equal(providerPacks.length,20,'Android must provide 20 distinct icon palettes');
 assert.equal(packNames.length,20,'Icon Studio must expose all 20 palettes');
 assert.deepEqual(providerPacks,packNames,'all displayed packs must be backed by native generation');
+
+const packPalette=[...studio.matchAll(/^\s+\["([a-z]+)","([^"]+)","[^"]+","(#[0-9a-fA-F]{6})","(#[0-9a-fA-F]{6})"/gm)];
+const toLinear=v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4};
+const luminance=hex=>{
+ const rgb=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)).map(toLinear);
+ return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;
+};
+for(const [,id,title,tile,ink] of packPalette){
+ const a=luminance(tile),b=luminance(ink);
+ const ratio=(Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+ assert.ok(ratio>=3.0,title+' icon tile and glyph palette must be distinguishable: '+ratio.toFixed(2));
+}
+assert.equal(packPalette.length,20,'all twenty icon styles must have an audited foreground/background contrast pair');
+for(const [id,maximum] of [['pearl',120],['sand',130]]){
+ const value=native.match(new RegExp('"'+id+'" to intArrayOf\\(([^)]*)\\)'));
+ assert.ok(value,'native generator missing '+id+' palette');
+ const six=value[1].split(',').map(x=>Number(x.trim()));
+ assert.equal(six.length,6);
+ assert.ok(Math.max(...six)<=maximum,id+' native colors must stay dark enough on a light icon tile');
+}
+
 assert.match(native,/pack-\[a-z0-9-\]/,'native provider must recognize pack routes');
 assert.match(native,/!isLaunchable\(pkg\)/,'must not grant arbitrary installed-app icon access');
 assert.match(native,/LruCache<String, ByteArray>/,'generated icon memory cache remains bounded');
