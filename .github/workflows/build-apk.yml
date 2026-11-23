@@ -39,6 +39,17 @@ jobs:
         run: test -s app/audio-desk-debug.keystore
       - name: Build APK
         run: gradle :app:testDebugUnitTest :app:assembleDebug :app:bundleRelease --stacktrace
+      # Preserve the actual Robolectric failures when an external Maven
+      # download or real native regression causes the unit-test gate to fail.
+      - name: Save native test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Audio-Desk-Native-Test-Failures
+          path: |
+            app/build/reports/tests/testDebugUnitTest/
+            app/build/test-results/testDebugUnitTest/
+          if-no-files-found: warn
       - name: Verify packaged editions
         run: python scripts/verify-artifacts.py --apk app/build/outputs/apk/debug/app-debug.apk --bundle app/build/outputs/bundle/release/app-release.aab
       - name: Verify wallpaper resolution, provenance and quality before publishing
