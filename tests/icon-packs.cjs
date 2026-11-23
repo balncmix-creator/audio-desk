@@ -55,6 +55,21 @@ assert.match(studio,/ad_icon_studio_pack_v1_/,'packs are persisted per launcher 
   await page.waitForFunction(()=>window.audioDeskIconStudio?.nativeReady&&launcherApps.length===8);
   await page.evaluate(()=>setLauncherTheme('minimal'));
   await page.evaluate(()=>audioDeskIconStudio.open());
+  const modeCards=await page.locator('#launcherIconStudioDialog [data-icon-mode]')
+   .evaluateAll(buttons=>buttons.map(b=>{
+    const r=b.getBoundingClientRect(),s=getComputedStyle(b);
+    return {width:r.width,height:r.height,font:s.fontFamily};
+   }));
+  assert.equal(modeCards.length,4);
+  assert.ok(modeCards.every(x=>x.width>=135&&x.height>=70),
+   'mode cards must be wide enough to read, not fragmented into tiny text columns');
+  assert.ok(modeCards.every(x=>/system-ui|Segoe UI/.test(x.font)),
+   'functional Icon Studio controls should use readable non-pixel typography');
+  await page.setViewportSize({width:320,height:680});
+  const compactModes=await page.locator('#launcherIconStudioDialog [data-icon-mode]')
+   .evaluateAll(buttons=>buttons.map(b=>b.getBoundingClientRect().width));
+  assert.ok(compactModes.every(w=>w>=225),'320px devices get full-width, readable Icon Studio choices');
+  await page.setViewportSize({width:393,height:852});
   assert.equal(await page.locator('[data-icon-pack-choice]').count(),20);
   assert.equal(await page.locator('[data-icon-mode]').count(),4);
   const named=await page.locator('[data-icon-pack-choice] strong').allInnerTexts();
@@ -104,6 +119,21 @@ assert.match(studio,/ad_icon_studio_pack_v1_/,'packs are persisted per launcher 
   await page.evaluate(()=>audioDeskIconStudio.setMode('outline'));
   assert.equal(await page.locator('#launcherAppsGrid .ad-icon-shell').count(),0,
    'simple outline mode remains an intact fallback');
+  // Warm app-list fallback formerly drew white stroke on a pale cream tile,
+  // appearing as a blank square in the visual QA screenshots.
+  await page.evaluate(()=>{setLauncherTheme('warm');setLauncherPage('apps',false);audioDeskIconStudio.setMode('themed')});
+  const warmContrast=await page.locator('#launcherAppsGrid .ad-icon-shell').first().evaluate(shell=>{
+   const icon=shell.querySelector('.ad-icon-fallback svg');
+   const rgb=s=>Array.from(s.matchAll(/\d+(?:\.\d+)?/g),x=>Number(x[0])).slice(0,3);
+   const lum=values=>{
+    const linear=values.map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4});
+    return linear[0]*.2126+linear[1]*.7152+linear[2]*.0722;
+   };
+   const foreground=lum(rgb(getComputedStyle(icon).stroke));
+   const background=lum(rgb(getComputedStyle(shell).backgroundColor));
+   return (Math.max(foreground,background)+.05)/(Math.min(foreground,background)+.05);
+  });
+  assert.ok(warmContrast>=3,'Warm icon SVGs need visible contrast against their own tile: '+warmContrast);
   assert.ok(seen.some(s=>s.includes('/app-icons/pack-copper/')));
   assert.deepEqual(errors,[],'pack switching must not crash any launcher layout');
   console.log('PASS: 20 free pack presets, local app icons, Orbit ring, per-theme persistence and classic-mode fallback');
