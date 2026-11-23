@@ -2,6 +2,13 @@
 (()=>{
 "use strict";
 const home=document.getElementById("launcherHomePage");
+// The native bridge exposes a generic rendering token only. Screen zoom,
+// rotation and Android system-bar insets remain dynamic, not hard-coded.
+const orbitDeviceProfile=(()=>{
+ try{return window.AudioDesk?.getOrbitDeviceProfile?.()||"generic"}catch{return"generic"}
+})();
+const galaxyA73=orbitDeviceProfile==="galaxy-a73";
+document.body.classList.toggle("orbit-galaxy-a73",galaxyA73);
 const host=document.createElement("div");host.id="orbitHome";host.hidden=true;
 host.innerHTML='<svg id="orbitDial" viewBox="-334 -334 334 334" role="group" aria-label="Orbit radial launcher"><defs><clipPath id="orbitQuarter"><rect x="-334" y="-334" width="334" height="334"/></clipPath></defs><g clip-path="url(#orbitQuarter)"><g id="orbitClock"></g><g id="orbitExternalWidgets"></g><g id="orbitWidgets"></g><g id="orbitRecents"></g><g id="orbitLetters"></g><g id="orbitSearch"></g></g></svg>';
 home.prepend(host);
@@ -26,6 +33,12 @@ style.textContent+="\n/* QA#15: preserve radial ink bounds and enlarge settings 
 style.textContent+="\n/* QA15: compact the previously endless legacy options sheet without hiding actions or altering other themes. */\nbody[data-launcher-theme=orbit] #launcherOptionsSheet{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;align-content:start;padding:14px 13px 18px;box-sizing:border-box}\nbody[data-launcher-theme=orbit] #launcherOptionsSheet>:is(.launcher-options-heading,.n-home-shortcuts,#launcherHomeSetup,#launcherRecentDrawer){grid-column:1/-1}\nbody[data-launcher-theme=orbit] #launcherOptionsSheet>.launcher-options-action{width:100%;min-width:0;margin:0!important;padding:11px 9px!important;text-align:center;white-space:normal;overflow-wrap:break-word;line-height:1.4;font-size:12px;min-height:52px}\nbody[data-launcher-theme=orbit] #launcherOptionsSheet .n-home-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}\nbody[data-launcher-theme=orbit] #launcherOptionsSheet .n-home-shortcuts button{min-width:0;min-height:43px;white-space:normal}\n@media(max-width:350px){body[data-launcher-theme=orbit] #launcherOptionsSheet{grid-template-columns:1fr}body[data-launcher-theme=orbit] #launcherOptionsSheet>.launcher-options-action{min-height:44px}}\n";
 style.textContent+="\n/* The real wallpaper remains rendered behind the Orbit SVG. A translucent\n   surface reveals those exact underlying pixels: no duplicate images, network\n   requests, generated texture, or memory-heavy canvas snapshots. This is\n   opt-in, restricted to Orbit, and preserves solid text and icon contrast. */\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"] #orbitDial .orbit-ring,\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"] #orbitDial .orbit-raised,\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"] #orbitDial .orbit-app-ring,\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"] #orbitDial .orbit-external-segment{fill-opacity:.74!important}\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"] #orbitDial .orbit-external-focused{fill-opacity:.81!important}\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"] #orbitDial .orbit-external-base{fill-opacity:.17!important}\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"][data-wallpaper-light=\"true\"] #orbitDial :is(.orbit-ring,.orbit-raised,.orbit-app-ring,.orbit-external-segment){fill-opacity:.87!important}\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"][data-wallpaper-light=\"true\"] #orbitDial .orbit-external-focused{fill-opacity:.92!important}\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"] #orbitDial :is(text,image,.orbit-accent,.orbit-ink){opacity:1}\n";
 style.textContent+="\n/* Device QA: preserve one consistent wallpaper/ink treatment across all Orbit\n   pages. Darken photos behind All Apps instead of letting its white glyphs\n   float unbacked over bright/high-frequency photographs. Keep Pixel unchanged. */\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"apps\"]{\n --ds-font:system-ui,-apple-system,\"Segoe UI\",sans-serif;\n --ds-text:#f5f7f8;--ds-muted:#d4dce2;--ds-line:#71828b;\n --ds-panel:#22313b;--ds-bg:#0b141d;\n}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"apps\"] #wallpaperStage::after{\n content:\"\";position:absolute;inset:0;z-index:9!important;\n background:rgba(8,15,23,.85)!important;\n}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"apps\"] #launcherShell,\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"apps\"] #launcherAppsPage,\nbody[data-launcher-theme=\"orbit\"] #launcherNavigation{\n font-family:system-ui,-apple-system,\"Segoe UI\",sans-serif!important;\n}\nbody[data-launcher-theme=\"orbit\"] #launcherNavigation [data-home-nav]{\n font:600 12px/1.2 system-ui,sans-serif!important;\n letter-spacing:.05em!important;text-transform:none!important;\n}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"apps\"] #launcherAppsPage .launcher-titlebar strong{\n font:650 17px/1.35 system-ui,sans-serif!important;\n color:#f5f7f8!important;letter-spacing:0!important;\n}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"apps\"] #launcherAppsPage .launcher-label,\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"apps\"] #launcherAppsPage .launcher-summary{\n color:#d5e0e7!important;font:550 12px/1.35 system-ui,sans-serif!important;\n letter-spacing:.025em!important;\n}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"apps\"] #launcherAppSearch{\n background:rgba(15,26,36,.96)!important;\n color:#fafbfc!important;border:1px solid #91a2ac!important;\n border-radius:11px!important;min-height:46px;\n font:500 15px/1.4 system-ui,sans-serif!important;\n padding:12px 14px!important;text-shadow:none!important;\n}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"apps\"] #launcherAppSearch::placeholder{color:#cad6dd!important;opacity:1}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"apps\"] #launcherAppsGrid .n-letter-heading{\n color:#f1f6f8!important;\n font:650 14px/1.35 system-ui,sans-serif!important;\n letter-spacing:.035em!important;\n border-bottom-color:rgba(215,230,239,.45)!important;\n text-shadow:0 1px 2px #0008;\n}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"apps\"] #launcherAppsGrid .n-app-row{\n border-bottom:1px solid rgba(217,230,240,.27)!important;\n background:rgba(15,25,35,.22)!important;\n min-height:57px;gap:8px;\n}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"apps\"] #launcherAppsGrid .n-app-row .launcher-app .app-name{\n color:#f6f8f9!important;\n font:550 14px/1.35 system-ui,-apple-system,\"Segoe UI\",sans-serif!important;\n letter-spacing:0!important;text-shadow:0 1px 2px #000a!important;\n white-space:nowrap;overflow:hidden;text-overflow:ellipsis;\n}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"apps\"] #launcherAppsGrid .n-star{\n color:#f2f6f8!important;\n background:rgba(31,44,56,.92)!important;\n border:1px solid rgba(173,195,208,.32)!important;\n border-radius:9px!important;min-height:38px;min-width:38px;\n}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"apps\"] #appsLayoutControls button{\n font:600 12px/1.2 system-ui,sans-serif!important;\n border-radius:9px!important;min-height:40px;\n}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"apps\"] #launcherAppsPage .launcher-foot{\n color:#d0dbe2!important;font:500 11px/1.5 system-ui,sans-serif!important;\n}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"apps\"] #launcherAlphaIndex{\n background:rgba(10,18,26,.94)!important;\n border-left:1px solid #6e808c!important;\n}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"apps\"] #launcherAlphaIndex button{\n font:600 10px/1 system-ui,sans-serif!important;color:#d8e2e7!important;\n}\nbody[data-launcher-theme=\"orbit\"][data-home-page=\"apps\"] #launcherAlphaIndex button.active{\n color:#09131c!important;background:#dbe9ef!important;\n}\n/* Texture is an option to reveal actual wallpaper, not an invitation for\n   app-widget and built-in sectors to have wildly different transparency. */\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"] #orbitDial :is(.orbit-ring,.orbit-raised,.orbit-app-ring,.orbit-external-segment,.orbit-external-focused,.orbit-external-base){\n fill-opacity:.87!important;\n}\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"] #orbitDial :is(.orbit-raised,.orbit-external-focused){\n fill-opacity:.91!important;\n}\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"] #orbitDial #orbitWidgets .orbit-ring{\n opacity:1!important;\n}\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"][data-wallpaper-light=\"true\"] #orbitDial :is(.orbit-ring,.orbit-raised,.orbit-app-ring,.orbit-external-segment,.orbit-external-focused,.orbit-external-base){\n fill-opacity:.94!important;\n}\nbody.orbit-wallpaper-texture[data-launcher-theme=\"orbit\"][data-wallpaper-light=\"true\"] #orbitDial :is(.orbit-raised,.orbit-external-focused){\n fill-opacity:.96!important;\n}\n#orbitExternalWidgets .orbit-external-base{\n fill:var(--theme-surface,#263b30);\n}\n#orbitExternalWidgets :is(.orbit-external-focused,.orbit-external-segment){\n stroke-width:.85!important;stroke-opacity:.55!important;\n}\n";
+// Galaxy A73 / One UI: the real native gesture-navigation inset is supplied
+// as --system-bottom by WindowInsets. Keep the radial touch sector ABOVE it,
+// without inserting a fake black strip or changing other device layouts.
+// 120Hz is supported by the display, but expensive SVG filtering should not
+// compete with touch input or drain the phone while the dial is moving.
+style.textContent+="\nbody.orbit-galaxy-a73[data-launcher-theme=orbit][data-home-page=home] #orbitHome{bottom:max(var(--system-bottom,0px),env(safe-area-inset-bottom,0px))!important;width:min(100vw,calc(100dvh - var(--status-top,24px) - var(--system-bottom,0px) - 24px),600px)!important}\nbody.orbit-galaxy-a73[data-launcher-theme=orbit] #orbitSettingsGear{width:48px!important;height:48px!important;min-width:48px!important;min-height:48px!important;top:max(40px,calc(var(--status-top,24px) + 10px))!important}\nbody.orbit-galaxy-a73[data-launcher-theme=orbit] #orbitSettingsPanel{max-height:min(82dvh,calc(100dvh - var(--status-top,24px) - var(--system-bottom,0px) - 70px))!important}\nbody.orbit-galaxy-a73[data-launcher-theme=orbit] #orbitRadialBackdrop{backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}\nbody.orbit-galaxy-a73[data-launcher-theme=orbit] #orbitSettingsShade,body.orbit-galaxy-a73[data-launcher-theme=orbit] #orbitWidgetPreviewShade{backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}\nbody.orbit-galaxy-a73.orbit-gesture-active[data-launcher-theme=orbit] #orbitRadialBackdrop,body.orbit-galaxy-a73.orbit-gesture-active[data-launcher-theme=orbit] #orbitDial #orbitClock,body.orbit-galaxy-a73.orbit-gesture-active[data-launcher-theme=orbit] #orbitDial #orbitWidgets,body.orbit-galaxy-a73.orbit-gesture-active[data-launcher-theme=orbit] #orbitDial #orbitExternalWidgets,body.orbit-galaxy-a73.orbit-gesture-active[data-launcher-theme=orbit] #orbitDial #orbitSearch{filter:none!important;-webkit-backdrop-filter:none!important}\n@media (orientation:landscape){body.orbit-galaxy-a73[data-launcher-theme=orbit] #orbitSettingsPanel{max-height:calc(100dvh - var(--status-top,24px) - var(--system-bottom,0px) - 22px)!important}}\n";
 document.head.append(style);
 
 const orbitSettingsGear=document.createElement("button");
@@ -155,6 +168,24 @@ let indices={letters:0,recents:0,widgets:0,external:0},drag=null,suppressNativeC
 const offsets={letters:0,recents:0,widgets:0,external:0};
 const spinning={letters:0,recents:0,widgets:0,external:0};
 const prefersReducedMotion=window.matchMedia("(prefers-reduced-motion: reduce)");
+// Drag events on a 120Hz touch screen may arrive much faster than the SVG
+// renderer can redraw four nested rings. Coalesce pointer updates into one
+// paint per animation frame and ensure the final position is never lost.
+const queuedRingPaints=new Set();
+let queuedRingFrame=0;
+function flushQueuedRingPaints(){
+ if(queuedRingFrame){cancelAnimationFrame(queuedRingFrame);queuedRingFrame=0}
+ for(const ringName of queuedRingPaints)paintRing(ringName);
+ queuedRingPaints.clear();
+}
+function queueRingPaint(which){
+ queuedRingPaints.add(which);
+ if(!queuedRingFrame)queuedRingFrame=requestAnimationFrame(flushQueuedRingPaints);
+}
+function cancelQueuedRingPaints(){
+ if(queuedRingFrame)cancelAnimationFrame(queuedRingFrame);
+ queuedRingFrame=0;queuedRingPaints.clear();
+}
 function ringStep(which){
  if(which==="widgets")return 60;
  if(which==="external")return externalRingStep;
@@ -181,7 +212,8 @@ function advanceRing(which,delta){
   if(which==="external")externalIndex=indices.external;
   offsets[which]-=crossings*step;
  }
- paintRing(which);
+ if(galaxyA73&&drag)queueRingPaint(which);
+ else paintRing(which);
 }
 function stopSpin(which){
  if(spinning[which])cancelAnimationFrame(spinning[which]);
@@ -196,10 +228,17 @@ function settleRing(which,velocity=0){
  }
  let v=orbitPreferences.momentum?Math.max(-0.75,Math.min(0.75,velocity)):0; // deg/ms
  let last=performance.now();
+ let lastPaint=last-17;
  function frame(now){
   if(!active()||document.hidden||window.audioDeskForeground===false){
    spinning[which]=0;return;
   }
+  // Limit expensive vector rebuilding to ~60fps on the A73's 120Hz
+  // panel. Keep the actual elapsed time for frame-independent friction.
+  if(galaxyA73&&now-lastPaint<15){
+   spinning[which]=requestAnimationFrame(frame);return;
+  }
+  lastPaint=now;
   const dt=Math.min(40,Math.max(1,now-last));last=now;
   if(Math.abs(v)>0.018){
    // Framerate-independent exponential momentum (mobile and low-end phones).
@@ -816,7 +855,9 @@ function drawWidgets(offset=offsets.widgets){
 function drawSearch(){q("orbitSearch").innerHTML='<g '+button("search","Search installed apps")+'><path d="'+arc(60,0,90)+' L0,0 Z" class="orbit-raised"/><circle cx="-28" cy="-30" r="9" fill="none" stroke="var(--theme-text,#e5f0e7)" stroke-width="2.5"/><path d="M-21.5,-23.5 L-14,-16" fill="none" stroke="var(--theme-text,#e5f0e7)" stroke-width="2.5" stroke-linecap="round"/></g>'}
 function draw(){if(!active())return;host.hidden=false;recentList=currentRecents();drawClock();drawExternalWidgets();drawWidgets();drawRecents();drawLetters();drawSearch();if(popupVisible)refreshPopup()}
 function sync(){
- stopAllSpins();hidePopup();hideWidgetPreview();closeSettings();closeQuick();
+ stopAllSpins();cancelQueuedRingPaints();
+ document.body.classList.remove("orbit-gesture-active");
+ hidePopup();hideWidgetPreview();closeSettings();closeQuick();
  host.hidden=!active();drag=null;orbitToast.hidden=true;cancelHomeHold();
  if(active()){redrawExternal();draw()}
  window.audioDeskSyncNativeWidgets?.();
@@ -883,13 +924,18 @@ svg.addEventListener("pointermove",e=>{
  const now=performance.now();
  drag.samples.push({t:now,angle:drag.total});
  drag.samples=drag.samples.filter(x=>now-x.t<=110);
- if(Math.abs(drag.total)>3)drag.moved=true;
+ if(Math.abs(drag.total)>3){
+  drag.moved=true;
+  if(galaxyA73)document.body.classList.add("orbit-gesture-active");
+ }
  if(drag.code==="seek"||!drag.which||(drag.which==="recents"&&popupVisible))return;
  if(drag.moved)advanceRing(drag.which,change);
 });
 function finish(e,cancel=false){
  if(!drag||drag.id!==e.pointerId)return;
  const d=drag;drag=null;
+ document.body.classList.remove("orbit-gesture-active");
+ if(queuedRingFrame||queuedRingPaints.size)flushQueuedRingPaints();
  suppressNativeClickUntil=performance.now()+350;
  if(cancel){if(d.which)settleRing(d.which);return}
  if(d.code==="seek"){seekAt(coordinates(e).a,d.center);return}
@@ -910,6 +956,14 @@ svg.addEventListener("click",e=>{
  if(t&&t.getAttribute("aria-disabled")!=="true")action(t.dataset.orbitAction,t);
 });
 svg.addEventListener("keydown",e=>{const t=e.target.closest("[data-orbit-action]");if(!t)return;if(e.key==="Enter"||e.key===" "){e.preventDefault();if(t.getAttribute("aria-disabled")!=="true")action(t.dataset.orbitAction)}else if(t.dataset.orbitAction==="seek"&&["ArrowLeft","ArrowRight"].includes(e.key)){e.preventDefault();window.AudioDesk?.seekMedia?.(Math.max(0,Math.min(media.durationMs,media.positionMs+(e.key==="ArrowLeft"?-5000:5000))))}});
+// Suspend animations immediately when Android backgrounds the WebView.
+// Returning to Home resumes by the normal launcher-page sync path.
+document.addEventListener("visibilitychange",()=>{
+ if(document.hidden){
+  stopAllSpins();stopFan();cancelQueuedRingPaints();
+  document.body.classList.remove("orbit-gesture-active");
+ }
+});
 for(const type of ["touchstart","touchmove","touchend","touchcancel"])host.addEventListener(type,e=>e.stopPropagation(),{passive:true});
 for(const type of ["audio-desk-theme-changed","launcher-page-changed","audio-desk-foreground"])window.addEventListener(type,sync);
 // Icon Studio reuses the exact same native pack URL for radial app icons.

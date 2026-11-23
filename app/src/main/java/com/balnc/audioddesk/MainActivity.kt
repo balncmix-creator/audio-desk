@@ -421,6 +421,10 @@ class MainActivity : Activity() {
     }
 
     private inner class AppBridge {
+        // Expose only a generic rendering profile, never raw model identifiers.
+        @JavascriptInterface fun getOrbitDeviceProfile(): String =
+            OrbitDeviceProfile.classify(Build.MANUFACTURER, Build.MODEL, Build.DEVICE)
+
         @JavascriptInterface fun isLowRamDevice(): Boolean =
             (getSystemService(android.content.Context.ACTIVITY_SERVICE) as? android.app.ActivityManager)?.isLowRamDevice == true
 

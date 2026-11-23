@@ -274,6 +274,35 @@ const assert=require('node:assert/strict');
   }));
   assert.equal(await page.locator('#rdfFileRing .rdf-file').count(),6);
   await page.screenshot({path:path.join(qaShots,'orbit-files-content-393x852.png')});
+  // Restore Orbit Home through its own radial Close action before capturing
+  // the A73 layout; otherwise the file manager correctly blocks touches.
+  await page.locator('#rdfWheel [data-rdf-action="close"]').dispatchEvent('click');
+  assert.equal(await page.locator('#radialFilesPanel').isVisible(),false,
+   'A73 screenshots must show Orbit Home rather than an open modal');
+  // Simulated Galaxy A73 (393 CSS px / 1080 physical px, One UI gesture inset).
+  // These remain browser QA captures; the native build separately identifies
+  // the phone through its trusted platform bridge at runtime.
+  await page.setViewportSize({width:393,height:873});
+  await page.evaluate(()=>{
+   setLauncherTheme('orbit');setLauncherPage('home',false);
+   document.body.classList.add('orbit-galaxy-a73');
+   document.documentElement.style.setProperty('--status-top','28px');
+   document.documentElement.style.setProperty('--system-bottom','24px');
+  });
+  const galaxySafe=await page.locator('#orbitHome').evaluate(node=>{
+   const r=node.getBoundingClientRect();return {
+    width:r.width,top:r.top,bottom:r.bottom,
+    viewportHeight:innerHeight,statusTop:28,navigationBottom:24
+   };
+  });
+  assert.ok(galaxySafe.top>28&&
+   Math.abs(galaxySafe.bottom-(galaxySafe.viewportHeight-galaxySafe.navigationBottom))<2,
+   'A73 visual QA: radial dial must clear both One UI bars');
+  await page.screenshot({path:path.join(qaShots,'orbit-galaxy-a73-393x873.png'),animations:'disabled'});
+  await page.locator('#orbitSettingsGear').click();
+  await page.screenshot({path:path.join(qaShots,'orbit-galaxy-a73-settings-393x873.png'),animations:'disabled'});
+  await page.locator('#orbitSettingsClose').click();
+  qa.galaxyA73=galaxySafe;
   qa.uncaughtErrors=errors;
   fs.writeFileSync(path.join(qaRoot,'visual-review.json'),JSON.stringify(qa,null,2));
   assert.equal(qa.sizes.length,40,'Visual QA must capture 5 themes × 2 pages × 4 sizes');
