@@ -44,7 +44,18 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    testOptions { unitTests.isIncludeAndroidResources = true }
+    // Robolectric downloads Android framework test jars at runtime. Its
+    // default repo1.maven.org endpoint intermittently returns HTTP errors
+    // on shared CI IPs, making dozens of otherwise unrelated tests fail.
+    // Use Maven Central's canonical repository host, shared with Gradle.
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            all {
+                systemProperty("robolectric.dependency.repo.url", "https://repo.maven.apache.org/maven2")
+            }
+        }
+    }
     // Each edition has exactly one index.html; generated asset priority must
     // never determine whether the restricted discovery feature is packaged.
     sourceSets.getByName("main").assets.setSrcDirs(emptyList<String>())
