@@ -233,3 +233,55 @@ body[data-launcher-theme="windows"] .icon-studio-panel button{
 @media(prefers-reduced-motion:reduce){
  .icon-studio-packs *{transition:none!important}
 }
+
+/* v4.2 visual QA: the app-list fallback icon must contrast with its own tile.
+   In Warm Minimal, a pale default SVG stroke on a pale cream tile looked
+   like a blank square until Android completed native icon generation. */
+body[data-launcher-theme="warm"] .ad-icon-shell:not([data-icon-pack]) .ad-icon-fallback,
+body[data-launcher-theme="warm"] .ad-icon-shell:not([data-icon-pack]) .ad-icon-fallback .warm-line-icon{
+ color:#332b28!important;
+}
+body[data-launcher-theme="warm"] .ad-icon-shell:not([data-icon-pack]) .ad-icon-fallback svg{
+ stroke:currentColor!important;
+}
+/* Icon Studio is a functional settings sheet, so do not use the tiny 8-bit
+   UI font or three 95px-wide cards that split every word into letters. */
+#launcherIconStudioDialog .icon-studio-panel{
+ font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important;
+ border-radius:18px 18px 0 0!important;
+ padding:18px 16px max(24px,env(safe-area-inset-bottom,0px))!important;
+}
+#launcherIconStudioDialog .icon-studio-heading strong{
+ font:700 19px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+ letter-spacing:0!important;
+}
+#launcherIconStudioDialog .icon-studio-heading p{
+ font:400 13px/1.42 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+ letter-spacing:0!important;
+}
+#launcherIconStudioDialog .icon-studio-options{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ gap:9px!important;
+}
+#launcherIconStudioDialog .icon-studio-options button{
+ min-width:0;min-height:83px!important;
+ font:650 14px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+ padding:11px 12px!important;
+ overflow-wrap:normal!important;word-break:normal!important;
+}
+#launcherIconStudioDialog .icon-studio-options button small{
+ font:400 11.5px/1.38 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+ letter-spacing:0!important;overflow-wrap:break-word;word-break:normal!important;
+}
+#launcherIconStudioDialog .icon-studio-subtitle{
+ font:650 13px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+}
+#launcherIconStudioDialog .icon-studio-packs strong{font-size:11px}
+#launcherIconStudioDialog .icon-studio-packs small{font-size:10.5px}
+#launcherIconStudioDialog .icon-studio-note{
+ font:400 12px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+}
+@media(max-width:350px){
+ #launcherIconStudioDialog .icon-studio-options{grid-template-columns:1fr!important}
+ #launcherIconStudioDialog .icon-studio-options button{min-height:65px!important}
+}
