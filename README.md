@@ -10,7 +10,7 @@
 
 This version consolidates Orbit Home and recent launcher improvements, including wallpaper-derived dial colors, slightly rounded radial caps and gaps, an actual radial file manager, and 20 built-in, offline icon styles. The Android **sideload/debug test APK** can request optional full *shared* storage access. Android's private app directories remain protected.
 
-A screen-size/theme screenshot matrix and automated interaction checks now run in GitHub Actions. Chromium-based images do **not** replace physical Samsung Android testing. The [v4.2.0 release notes](docs/releases/v4.2.0.md) explain supported functions, Android permissions and outstanding device checks.
+A screen-size/theme screenshot matrix and automated interaction checks now run in GitHub Actions. Chromium-based images do **not** replace physical Samsung Android testing. The [v4.2.0 release notes](docs/releases/v4.2.0.md) and [visual/bug audit](docs/qa/v4.2.0.md) explain supported functions, corrected regressions, Android permissions and outstanding device checks.
 
 ## v4.1 — App Icon Studio: icons for every installed app
 
