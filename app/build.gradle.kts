@@ -52,7 +52,7 @@ android {
         unitTests {
             isIncludeAndroidResources = true
             all {
-                systemProperty("robolectric.dependency.repo.url", "https://repo.maven.apache.org/maven2")
+                it.systemProperty("robolectric.dependency.repo.url", "https://repo.maven.apache.org/maven2")
             }
         }
     }
