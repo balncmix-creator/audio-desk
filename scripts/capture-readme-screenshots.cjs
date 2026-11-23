@@ -192,6 +192,92 @@ const assert=require('node:assert/strict');
   await page.locator('#launcherSettingsToggle').click();
   await page.locator('#launcherShowRecents').click();
   await page.screenshot({path:path.join(output,'launcher-open-apps.png')});
+
+  // Expanded visual QA: capture all five launcher themes on four Android-sized
+  // viewports, on both Home and Apps. These are honest WebView-style simulator
+  // captures with sample apps, not screenshots taken on a physical handset.
+  const qaRoot=path.join(__dirname,'../qa-artifacts');
+  const qaShots=path.join(qaRoot,'screenshots');
+  fs.mkdirSync(qaShots,{recursive:true});
+  const qa={source:'Chromium Android-WebView asset simulation',
+   created:new Date().toISOString(),sizes:[],warnings:[]};
+  const presets=[
+   {width:320,height:680},{width:360,height:780},
+   {width:393,height:852},{width:430,height:932}
+  ];
+  const modes=['minimal','pixel','windows','warm','orbit'];
+  await page.evaluate(()=>{
+   for(const id of ['launcherHomeOptions','launcherRecentDrawer','launcherLetterPanel',
+    'launcherShortcutMenu','launcherThemeDialog','launcherWallpaperDialog',
+    'launcherClockDialog','iconStudioDialog']){
+    const element=document.getElementById(id);if(element)element.hidden=true;
+   }
+  });
+  for(const viewport of presets){
+   await page.setViewportSize(viewport);
+   for(const mode of modes){
+    for(const destination of ['home','apps']){
+     await page.evaluate(({mode,destination})=>{
+      setLauncherTheme(mode);setLauncherPage(destination,false);
+     },{mode,destination});
+     await page.waitForTimeout(140);
+     const where=mode+'-'+destination+'-'+viewport.width+'x'+viewport.height;
+     const metrics=await page.evaluate(({mode,destination})=>{
+      const dial=document.getElementById('orbitHome');
+      const appList=document.getElementById('launcherAppsGrid');
+      const card=mode==='orbit'&&destination==='home'?dial:
+       destination==='apps'?appList:document.getElementById('launcherHomePage');
+      const rect=card?.getBoundingClientRect();
+      return {theme:mode,screen:destination,viewport:[innerWidth,innerHeight],
+       radialAssets:typeof window.audioDeskOpenRadialFiles==='function',
+       appRows:appList?.querySelectorAll('.launcher-app').length||0,
+       rect:rect?{x:rect.x,y:rect.y,width:rect.width,height:rect.height}:null,
+       horizontalOverflow:document.documentElement.scrollWidth-innerWidth,
+       clockEndRound:mode==='orbit'&&destination==='home'?
+        (document.querySelector('#orbitClock .orbit-ring')?.getAttribute('d')||'').includes(' Q'):null
+      };
+     },{mode,destination});
+     assert.equal(metrics.radialAssets,true,'Orbit files must load in the complete launcher WebView');
+     if(destination==='apps')assert.ok(metrics.appRows>=10,where+' app list disappeared');
+     if(mode==='orbit'&&destination==='home'){
+      assert.equal(await page.locator('#orbitWidgets .orbit-widget-preview-hit').count(),2);
+      assert.equal(metrics.clockEndRound,true,'Orbit edge caps must remain rounded');
+     }
+     if(metrics.horizontalOverflow>2)qa.warnings.push(where+' overflow '+metrics.horizontalOverflow+'px');
+     qa.sizes.push(metrics);
+     await page.screenshot({path:path.join(qaShots,where+'.png'),animations:'disabled'});
+    }
+   }
+  }
+  await page.setViewportSize({width:393,height:852});
+  await page.evaluate(()=>{setLauncherTheme('orbit');setLauncherPage('home',false)});
+  await page.locator('#orbitSettingsGear').click();
+  await page.screenshot({path:path.join(qaShots,'orbit-settings-393x852.png')});
+  await page.locator('#orbitSettingsClose').click();
+  await page.evaluate(()=>window.audioDeskIconStudio.open());
+  assert.equal(await page.locator('[data-icon-pack-choice]').count(),20);
+  await page.screenshot({path:path.join(qaShots,'icon-studio-393x852.png')});
+  await page.locator('#iconStudioDone').click();
+  await page.evaluate(()=>window.audioDeskOpenRadialFiles());
+  assert.equal(await page.locator('#rdfFileRing .rdf-start').count(),6);
+  await page.screenshot({path:path.join(qaShots,'orbit-files-empty-393x852.png')});
+  await page.evaluate(()=>window.receiveAudioDeskRadialFiles({
+   type:'listing',mode:'device',path:['Internal storage','Music'],
+   writable:true,canGoUp:true,count:6,entries:[
+    {id:'folder1',name:'Foley',folder:true,writable:true},
+    {id:'file1',name:'Ambience.wav',folder:false,mime:'audio/wav',writable:true,size:224000},
+    {id:'file2',name:'Dialogue.flac',folder:false,mime:'audio/flac',writable:true,size:544000},
+    {id:'file3',name:'Sound Design',folder:true,writable:true},
+    {id:'file4',name:'Theme.mp3',folder:false,mime:'audio/mpeg',writable:true,size:154000},
+    {id:'file5',name:'Mixdown.wav',folder:false,mime:'audio/wav',writable:true,size:704000}
+   ]
+  }));
+  assert.equal(await page.locator('#rdfFileRing .rdf-file').count(),6);
+  await page.screenshot({path:path.join(qaShots,'orbit-files-content-393x852.png')});
+  qa.uncaughtErrors=errors;
+  fs.writeFileSync(path.join(qaRoot,'visual-review.json'),JSON.stringify(qa,null,2));
+  assert.equal(qa.sizes.length,40,'Visual QA must capture 5 themes × 2 pages × 4 sizes');
+
   assert.deepEqual(errors,[],'the screenshot version of the app must render without script errors');
   console.log('Captured Audio Desk news and launcher UI screenshots with explicitly labeled demo content');
  }finally{await browser.close()}
