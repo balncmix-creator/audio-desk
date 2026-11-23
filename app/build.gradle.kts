@@ -12,8 +12,8 @@ android {
         applicationId = "com.balnc.audioddesk"
         minSdk = 23
         targetSdk = 36
-        versionCode = 52
-        versionName = "4.1"
+        versionCode = 53
+        versionName = "4.2.0"
     }
     signingConfigs {
         create("stableDebug") {
@@ -44,7 +44,18 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    testOptions { unitTests.isIncludeAndroidResources = true }
+    // Robolectric downloads Android framework test jars at runtime. Its
+    // default repo1.maven.org endpoint intermittently returns HTTP errors
+    // on shared CI IPs, making dozens of otherwise unrelated tests fail.
+    // Use Maven Central's canonical repository host, shared with Gradle.
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            all {
+                it.systemProperty("robolectric.dependency.repo.url", "https://repo.maven.apache.org/maven2")
+            }
+        }
+    }
     // Each edition has exactly one index.html; generated asset priority must
     // never determine whether the restricted discovery feature is packaged.
     sourceSets.getByName("main").assets.setSrcDirs(emptyList<String>())
@@ -83,6 +94,8 @@ androidComponents {
 dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.webkit:webkit:1.12.1")
+    implementation("androidx.browser:browser:1.8.0")
+    implementation("androidx.documentfile:documentfile:1.0.1")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.14.1")
 }

@@ -5,6 +5,7 @@
 "use strict";
 const byId=id=>document.getElementById(id);
 const artworks={
+ orbit:[["orbit-vinyl","Forest Orbit","#101211","#35483c","#c5e0c8","vinyl"],["orbit-signal","Midnight Signal","#101621","#283d56","#a8c8f2","wave"],["orbit-graphite","Graphite Studio","#111315","#353b42","#d1d7de","ribbons"],["orbit-amber","Amber Frequency","#171410","#493a26","#e6c89a","bars"]],
  minimal:[
   ["mono-wave","Monochrome Wave","#080b0e","#3f4850","#dee3e6","wave"],
   ["quiet-spectrum","Quiet Spectrum","#121516","#33383b","#bfc5c7","bars"],
@@ -145,9 +146,11 @@ function renderActive(id){
   // Audio SVGs are vector sharp at every Android screen density.
   document.body.dataset.wallpaperLight="false";
   document.body.dataset.wallpaperStatusLight="false";
+   window.audioDeskApplyWallpaperColors?.(art[4],art[2]);
  }else{
   delete document.body.dataset.audioWallpaper;
   artworkImg.hidden=true;artworkImg.removeAttribute("src");
+  window.audioDeskRefreshWallpaperColors?.();
  }
  renderChoices();
 }
@@ -155,6 +158,7 @@ function saveSelected(id){
  deskStorage.setItem(themeStorage(launcherTheme),id||"");
  renderActive(id);
 }
+window.audioDeskClearAudioWallpaper=()=>saveSelected("");
 function switchArt(theme){
  const id=deskStorage.getItem(themeStorage(theme))||"";
  renderActive(id);

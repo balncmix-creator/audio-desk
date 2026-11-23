@@ -2,9 +2,15 @@
 
 **A one-handed Android Home launcher for people who make sound, inspired by minimalist Niagara-style app access and Nokia N9 swipe navigation, without replacing Audio Desk's original retro design.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk Launcher v4.1 APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v4.1/Audio-Desk-Launcher-v4.1.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk Launcher v4.2.0 test APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v4.2.0/Audio-Desk-Launcher-v4.2.0.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
+
+## v4.2.0 — Visual QA, Orbit Home, 20 icon styles and radial files
+
+This version consolidates Orbit Home and recent launcher improvements, including wallpaper-derived dial colors, slightly rounded radial caps and gaps, an actual radial file manager, and 20 built-in, offline icon styles. The Android **sideload/debug test APK** can request optional full *shared* storage access. Android's private app directories remain protected.
+
+A screen-size/theme screenshot matrix and automated interaction checks now run in GitHub Actions. Chromium-based images do **not** replace physical Samsung Android testing. The [v4.2.0 release notes](docs/releases/v4.2.0.md) and [visual/bug audit](docs/qa/v4.2.0.md) explain supported functions, corrected regressions, Android permissions and outstanding device checks.
 
 ## v4.1 — App Icon Studio: icons for every installed app
 

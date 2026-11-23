@@ -31,7 +31,7 @@ body[data-launcher-theme="minimal"] .ad-icon-shell{
  border:1px solid color-mix(in srgb,var(--ds-line) 45%,transparent);
 }
 body[data-launcher-theme="warm"] .ad-icon-shell{
- background:#e9d5ce;border:1px solid #c8b4ae;border-radius:11px;
+ background:var(--theme-panel,#e9d5ce);border:1px solid var(--ds-line);border-radius:11px;
 }
 body[data-launcher-theme="windows"] .ad-icon-shell{
  background:color-mix(in srgb,var(--ds-accent) 50%,var(--ds-panel2));
@@ -39,7 +39,7 @@ body[data-launcher-theme="windows"] .ad-icon-shell{
 }
 body[data-launcher-theme="pixel"] .ad-icon-shell{
  border:2px solid var(--ds-line);border-radius:0;
- background:#20172f;
+ background:var(--ds-panel2);
  width:42px;height:42px;flex-basis:42px;
 }
 body[data-launcher-theme="pixel"] .ad-icon-shell .ad-icon-image{
@@ -129,7 +129,7 @@ body.low-power .ad-icon-shell .ad-icon-fallback{transition:none!important}
 #iconStudioDone{
  display:block;width:100%;padding:12px!important;
  background:var(--ds-accent)!important;
- color:var(--ds-bg)!important;
+ color:var(--theme-accent-ink,#17151c)!important;
  border-color:var(--ds-accent)!important;
 }
 body[data-launcher-theme="pixel"] .icon-studio-panel,
@@ -144,4 +144,183 @@ body[data-launcher-theme="windows"] .icon-studio-panel button{
 }
 @media(prefers-reduced-motion:reduce){
  .ad-icon-shell *{transition:none!important}
+}
+
+
+/* Twenty original icon families generated from installed apps. The skin and
+   glyph palette come from local constants; no third-party icon assets ship. */
+.ad-icon-shell[data-icon-pack]{
+ background:var(--pack-bg)!important;
+ border:1.5px solid var(--pack-edge)!important;
+ border-radius:var(--pack-radius)!important;
+ box-shadow:var(--pack-shadow)!important;
+ overflow:hidden;
+}
+.ad-icon-shell[data-icon-pack] .ad-icon-image{
+ object-fit:contain!important;
+ padding:5px!important;
+ image-rendering:auto!important;
+ filter:none!important;
+}
+.ad-icon-shell[data-icon-pack="ink"],
+.ad-icon-shell[data-icon-pack="blueprint"]{border-width:2px!important}
+.ad-icon-shell[data-icon-pack="ink"] .ad-icon-image,
+.ad-icon-shell[data-icon-pack="blueprint"] .ad-icon-image{
+ padding:6px!important;
+}
+.ad-icon-shell[data-icon-pack="paper"]{
+ border-width:0!important;
+ box-shadow:2px 3px 0 #0003, inset 0 0 0 2px #755b4560!important;
+}
+.ad-icon-shell[data-icon-pack="neon"]{
+ border:1px solid var(--pack-edge)!important;
+}
+.ad-icon-shell[data-icon-pack="arcade"]{
+ border-radius:0!important;border:2px solid var(--pack-edge)!important;
+ box-shadow:2px 2px 0 #080611!important;
+}
+.ad-icon-shell[data-icon-pack="arcade"] .ad-icon-image{
+ image-rendering:pixelated!important;
+ padding:5px!important;
+}
+.ad-icon-shell[data-icon-pack="glass"]{
+ border-color:#ffffff88!important;
+ backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+ box-shadow:inset 0 1px 0 #ffffff99,0 3px 12px #0004!important;
+}
+.ad-icon-shell[data-icon-pack="glass"] .ad-icon-image{
+ padding:3px!important;
+}
+.ad-icon-shell[data-icon-pack] .ad-icon-fallback{
+ color:var(--pack-edge,var(--ds-text))!important;
+}
+.icon-studio-packs{
+ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+ gap:8px;padding:3px 1px;max-height:min(38dvh,340px);overflow-y:auto;
+ scrollbar-width:thin;
+}
+.icon-studio-packs button{
+ display:flex;flex-direction:column;align-items:center;
+ justify-content:flex-start;gap:5px;min-height:112px;
+ min-width:0;padding:8px 4px!important;
+ text-align:center;overflow:hidden;
+}
+.icon-studio-packs button[aria-pressed="true"]{
+ border-color:var(--ds-accent)!important;
+ outline:2px solid var(--ds-accent);outline-offset:0;
+}
+.icon-studio-packs .ad-icon-shell{
+ flex:0 0 43px!important;width:43px!important;height:43px!important;
+ min-height:43px;margin:0 auto!important;
+}
+.icon-studio-packs strong{
+ color:var(--ds-text);font:700 11px/1.25 system-ui,sans-serif;
+ max-width:100%;overflow:hidden;text-overflow:ellipsis;
+ white-space:nowrap;
+}
+.icon-studio-packs small{
+ color:var(--ds-muted);font:400 9px/1.25 system-ui,sans-serif;
+ display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+ overflow:hidden;max-width:100%;
+}
+.ad-pack-placeholder{
+ display:grid;place-items:center;width:100%;height:100%;
+ font-size:26px;color:var(--pack-edge,#fff);
+}
+@media(max-width:350px){
+ .icon-studio-packs{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(prefers-reduced-motion:reduce){
+ .icon-studio-packs *{transition:none!important}
+}
+
+/* v4.2 visual QA: the app-list fallback icon must contrast with its own tile.
+   In Warm Minimal, a pale default SVG stroke on a pale cream tile looked
+   like a blank square until Android completed native icon generation. */
+body[data-launcher-theme="warm"] .ad-icon-shell:not([data-icon-pack]) .ad-icon-fallback,
+body[data-launcher-theme="warm"] .ad-icon-shell:not([data-icon-pack]) .ad-icon-fallback .warm-line-icon{
+ color:#332b28!important;
+}
+body[data-launcher-theme="warm"] .ad-icon-shell:not([data-icon-pack]) .ad-icon-fallback svg{
+ stroke:currentColor!important;
+}
+/* Icon Studio is a functional settings sheet, so do not use the tiny 8-bit
+   UI font or three 95px-wide cards that split every word into letters. */
+#launcherIconStudioDialog .icon-studio-panel{
+ font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important;
+ border-radius:18px 18px 0 0!important;
+ padding:18px 16px max(24px,env(safe-area-inset-bottom,0px))!important;
+}
+#launcherIconStudioDialog .icon-studio-heading strong{
+ font:700 19px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+ letter-spacing:0!important;
+}
+#launcherIconStudioDialog .icon-studio-heading p{
+ font:400 13px/1.42 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+ letter-spacing:0!important;
+}
+#launcherIconStudioDialog .icon-studio-options{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ gap:9px!important;
+}
+#launcherIconStudioDialog .icon-studio-options button{
+ min-width:0;min-height:83px!important;
+ font:650 14px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+ padding:11px 12px!important;
+ overflow-wrap:normal!important;word-break:normal!important;
+}
+#launcherIconStudioDialog .icon-studio-options button small{
+ font:400 11.5px/1.38 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+ letter-spacing:0!important;overflow-wrap:break-word;word-break:normal!important;
+}
+#launcherIconStudioDialog .icon-studio-subtitle{
+ font:650 13px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+}
+#launcherIconStudioDialog .icon-studio-packs strong{font-size:11px}
+#launcherIconStudioDialog .icon-studio-packs small{font-size:10.5px}
+#launcherIconStudioDialog .icon-studio-note{
+ font:400 12px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+}
+@media(max-width:350px){
+ #launcherIconStudioDialog .icon-studio-options{grid-template-columns:1fr!important}
+ #launcherIconStudioDialog .icon-studio-options button{min-height:65px!important}
+}
+
+/* App-list rules used #launcherAppsGrid ID specificity and overrode the
+   earlier fallback color fix; force the actual inner SVG to charcoal.
+   Avoid a second outline around an already bordered icon tile. */
+body[data-launcher-theme="warm"] #launcherAppsGrid .ad-icon-shell:not([data-icon-pack]) .ad-icon-fallback .warm-line-icon,
+body[data-launcher-theme="warm"] #launcherLetterApps .ad-icon-shell:not([data-icon-pack]) .ad-icon-fallback .warm-line-icon{
+ color:#332b28!important;
+ border:0!important;
+ background:transparent!important;
+}
+body[data-launcher-theme="warm"] #launcherAppsGrid .ad-icon-shell:not([data-icon-pack]) .ad-icon-fallback .warm-line-icon svg,
+body[data-launcher-theme="warm"] #launcherLetterApps .ad-icon-shell:not([data-icon-pack]) .ad-icon-fallback .warm-line-icon svg{
+ stroke:#332b28!important;
+}
+
+/* Keep all 20 pack titles readable instead of ellipsizing names like
+   Sandstone and Blueprint in the old four-across 393px layout. */
+#launcherIconStudioDialog .icon-studio-packs{
+ grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ gap:9px!important;
+}
+#launcherIconStudioDialog .icon-studio-packs strong{
+ font:650 12px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+ text-transform:none!important;
+ white-space:normal!important;
+ overflow-wrap:break-word!important;
+ display:block;
+}
+#launcherIconStudioDialog .icon-studio-packs small{
+ font:400 10.5px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+ text-transform:none!important;
+}
+#launcherIconStudioDialog .icon-studio-options button,
+#launcherIconStudioDialog .icon-studio-options button small{
+ text-transform:none!important;
+}
+@media(max-width:350px){
+ #launcherIconStudioDialog .icon-studio-packs{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
