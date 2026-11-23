@@ -14,12 +14,12 @@
  // already installed on the device with no licensing or coverage gaps.
  const packs=[
   ["ink","Ink Mono","Contrasting black and ivory","#111619","#e8ebe9","50%","flat"],
-  ["pearl","Pearl","Soft pearl monochrome","#e7e3db","#faf8f3","50%","gloss"],
+  ["pearl","Pearl","Soft pearl monochrome","#e7e3db","#4b555b","50%","gloss"],
   ["graphite","Graphite","Subtle neutral slate","#30373f","#bfc8d1","27%","flat"],
   ["sage","Sage","Quiet desaturated green","#304c3e","#afcdb3","28%","glass"],
   ["moss","Moss","Earthy dark greens","#1f3b2c","#a4cc80","25%","flat"],
   ["copper","Copper","Warm bronze outlines","#482f25","#f4b17c","29%","gloss"],
-  ["sand","Sandstone","Natural beige and ochre","#9e8263","#f8e1b9","40%","paper"],
+  ["sand","Sandstone","Natural beige and ochre","#ecdcc4","#584132","40%","paper"],
   ["rose","Rose","Soft dusty pink","#5c3048","#f7b5cc","45%","glass"],
   ["lavender","Lavender","Pastel violet","#3e315d","#dec4f6","38%","glass"],
   ["ocean","Ocean","Deep blue and aqua","#102f54","#98d4f5","28%","glass"],
@@ -43,7 +43,8 @@
  const packStyle=pack=>{
   const p=packById.get(pack)||packById.get("sage");
   const [id,, ,background,edge,radius,finish]=p;
-  const fill=finish==="paper"?"linear-gradient(150deg,"+edge+","+background+")":
+  const fill=id==="pearl"?"linear-gradient(135deg,#e7e3db,#faf8f3)":
+   finish==="paper"?"linear-gradient(150deg,"+background+",#fff7e8)":
    finish==="neon"?"linear-gradient(140deg,"+background+",#0b2635)":
    finish==="gloss"?"linear-gradient(135deg,"+background+"," +edge+" 190%)":
    finish==="glass"?"linear-gradient(125deg,"+background+"d9,"+background+"9a)":
