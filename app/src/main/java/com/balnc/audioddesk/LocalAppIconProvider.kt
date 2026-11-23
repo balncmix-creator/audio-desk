@@ -28,12 +28,12 @@ internal class LocalAppIconProvider(
     // third-party artwork, all packs cover every launchable application.
     private val packInk = mapOf(
         "ink" to intArrayOf(26, 28, 31, 241, 242, 240),
-        "pearl" to intArrayOf(67, 70, 74, 249, 244, 233),
+        "pearl" to intArrayOf(44, 50, 55, 98, 102, 105),
         "graphite" to intArrayOf(57, 63, 69, 218, 227, 232),
         "sage" to intArrayOf(53, 85, 68, 212, 234, 216),
         "moss" to intArrayOf(32, 70, 54, 184, 221, 153),
         "copper" to intArrayOf(101, 48, 33, 251, 186, 129),
-        "sand" to intArrayOf(119, 92, 62, 244, 218, 177),
+        "sand" to intArrayOf(52, 43, 35, 108, 80, 60),
         "rose" to intArrayOf(121, 61, 86, 248, 194, 207),
         "lavender" to intArrayOf(74, 55, 122, 219, 193, 248),
         "ocean" to intArrayOf(23, 71, 120, 151, 210, 250),
