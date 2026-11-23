@@ -274,6 +274,11 @@ const assert=require('node:assert/strict');
   }));
   assert.equal(await page.locator('#rdfFileRing .rdf-file').count(),6);
   await page.screenshot({path:path.join(qaShots,'orbit-files-content-393x852.png')});
+  // Restore Orbit Home through its own radial Close action before capturing
+  // the A73 layout; otherwise the file manager correctly blocks touches.
+  await page.locator('#rdfWheel [data-rdf-action="close"]').dispatchEvent('click');
+  assert.equal(await page.locator('#radialFilesPanel').isVisible(),false,
+   'A73 screenshots must show Orbit Home rather than an open modal');
   // Simulated Galaxy A73 (393 CSS px / 1080 physical px, One UI gesture inset).
   // These remain browser QA captures; the native build separately identifies
   // the phone through its trusted platform bridge at runtime.
