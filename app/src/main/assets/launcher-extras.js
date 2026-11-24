@@ -282,3 +282,6 @@ window.audioDeskFolderCreate=()=>folderEdit(null);
 window.audioDeskSetAppLayout=mode=>{if(["grid","list"].includes(mode)){appsLayout=mode;deskStorage.setItem(gridKey,mode);updateGrid()}};
 renderLauncherHome();
 })();
+
+// Load the optional workspace only after the launcher and all native callbacks are initialized.
+window.addEventListener("DOMContentLoaded",()=>{const script=document.createElement("script");script.src="desk-workspace.js";document.body.append(script);},{once:true});
