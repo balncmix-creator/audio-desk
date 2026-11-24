@@ -221,7 +221,11 @@ class MainActivity : Activity() {
         swipeRefresh.setOnRefreshListener {
             refreshHandler.removeCallbacks(refreshFailsafe)
             // Prevent a lost WebView callback from leaving the native spinner running.
-            refreshHandler.postDelayed(refreshFailsafe, 15000L)
+            // Twelve-at-a-time mobile RSS refreshes may legitimately require
+                // more than 15s when several publishers are unavailable.
+                // Keep the refresh indicator alive until JS reports completion,
+                // while still providing a bounded safety stop for crashes.
+                refreshHandler.postDelayed(refreshFailsafe, 60000L)
             appWebView.evaluateJavascript(
                 "if(typeof loadFeeds==='function'){loadFeeds();}else if(window.AudioDesk&&AudioDesk.refreshFinished){AudioDesk.refreshFinished();}",
                 null
