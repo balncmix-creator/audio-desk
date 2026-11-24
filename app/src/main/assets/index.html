@@ -1539,15 +1539,15 @@ function renderSources(){
  $("sources").innerHTML=feeds.map((f,i)=>`<div class="source"><div>${esc(f.name)}<small>${esc(f.cat)}</small></div><button class="save" data-remove="${i}">Remove</button></div>`).join("");
  document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{const removed=feeds.splice(+b.dataset.remove,1)[0];removedFeeds.add(removed.url);deskStorage.setItem("ar_removed_feeds",JSON.stringify([...removedFeeds]));deskStorage.setItem("ar_feeds",JSON.stringify(feeds));renderSources();loadFeeds()});
 }
-async function fetchFeed(feed){
+async function fetchFeed(feed,signal){
  const endpoint="https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(feed.url);
- const r=await fetch(endpoint); if(!r.ok)throw Error("HTTP "+r.status);
+ const r=await fetch(endpoint,signal?{signal}:undefined); if(!r.ok)throw Error("HTTP "+r.status);
  const j=await r.json(); if(j.status!=="ok")throw Error(j.message||"Feed unavailable");
  return (Array.isArray(j.items)?j.items:[]).filter(it=>it&&typeof it==="object").map(it=>{
   const link=articleURL(it.link,feed.url)||articleURL(it.guid);
   const title=String(it.title||"Untitled");
   const images=extractImageCandidates(it);
-  return {title,link,date:it.pubDate||"",desc:cleanDesc(it.description||it.content),image:images[0]||"",images,demo:extractFeedSampleDemo(it),source:feed.name,cat:classify({title,description:it.description||it.content},feed),key:link};
+  return {title,link,date:it.pubDate||"",desc:cleanDesc(it.description||it.content),image:images[0]||"",images,demo:extractFeedSampleDemo(it),source:feed.name,feedUrl:feed.url,cat:classify({title,description:it.description||it.content},feed),key:link};
  }).filter(story=>story.link);
 }
 function normalizeStoryUrl(raw){
@@ -1572,7 +1572,7 @@ async function fetchSearchEngine(engine,query,period){
   const q=encodeURIComponent(query+(windowTerm?" "+windowTerm:""));
   url="https://www.bing.com/news/search?q="+q+"&format=rss&setmkt=en-US";
  }
- const result=await fetchFeed({name:engine+" News Search",url,cat:"Production"});
+ const result=await fetchFeedWithTimeout({name:engine+" News Search",url,cat:"Production"},9000);
  return result.map(x=>({...x,source:engine+" News",cat:classify({title:x.title,description:x.desc},{cat:"Production"}),key:normalizeStoryUrl(x.link)}));
 }
 async function runWebSearch(){
@@ -1637,14 +1637,18 @@ async function fetchGithubReaperRepos(){
  found.forEach(x=>{if(!unique.has(x.key))unique.set(x.key,x)});
  return [...unique.values()];
 }
+// Real cancellation matters on WebView: Promise.race alone returned after 6s
+// but left the network request running. With many RSS sources this exhausted
+// mobile sockets, delayed other feeds and wasted bandwidth.
 async function fetchFeedWithTimeout(feed,timeoutMs=9000){
- let timer;
- try{
-  return await Promise.race([
-   fetchFeed(feed),
-   new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error("Timed out after "+Math.round(timeoutMs/1000)+"s")),timeoutMs)})
-  ]);
- }finally{if(timer)clearTimeout(timer)}
+ const controller=new AbortController();
+ let timedOut=false;
+ const timer=setTimeout(()=>{timedOut=true;controller.abort()},timeoutMs);
+ try{return await fetchFeed(feed,controller.signal)}
+ catch(e){
+  if(timedOut)throw Error("Timed out after "+Math.round(timeoutMs/1000)+"s");
+  throw e;
+ }finally{clearTimeout(timer)}
 }
 function setOfflineNotice(offline){
  const notice=$("offlineNotice");
