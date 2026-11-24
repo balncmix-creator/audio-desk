@@ -1596,7 +1596,12 @@ async function runWebSearch(){
  const engines=[];
  if($("engineGoogle").checked)engines.push("Google");
  if($("engineBing").checked)engines.push("Bing");
- if(!engines.length){$("searchStatus").textContent="Select at least one search engine.";return}
+ if(!engines.length){
+  // Also release the button if the user deselected both engines while a
+  // previous (now superseded) search was still in flight.
+  $("webSearch").disabled=false;
+  $("searchStatus").textContent="Select at least one search engine.";return;
+ }
  $("webSearch").disabled=true;
  $("searchStatus").textContent="Searching "+engines.join(" + ")+"…";
  try{
