@@ -1537,17 +1537,28 @@ function discoverPublisherFeeds(force=false){
 }
 function renderSources(){
  $("sources").innerHTML=feeds.map((f,i)=>`<div class="source"><div>${esc(f.name)}<small>${esc(f.cat)}</small></div><button class="save" data-remove="${i}">Remove</button></div>`).join("");
- document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{const removed=feeds.splice(+b.dataset.remove,1)[0];removedFeeds.add(removed.url);deskStorage.setItem("ar_removed_feeds",JSON.stringify([...removedFeeds]));deskStorage.setItem("ar_feeds",JSON.stringify(feeds));renderSources();loadFeeds()});
+ document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{
+  const removed=feeds.splice(Number(b.dataset.remove),1)[0];
+  if(!removed)return;
+  removedFeeds.add(removed.url);
+  deskStorage.setItem("ar_removed_feeds",JSON.stringify([...removedFeeds]));
+  deskStorage.setItem("ar_feeds",JSON.stringify(feeds));
+  // The source can be removed while its old HTTP request is still pending.
+  // Remove its visible records immediately; bookmarks remain available.
+  items=items.filter(x=>x.feedUrl?x.feedUrl!==removed.url:x.source!==removed.name);
+  try{deskStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)))}catch(e){}
+  renderSources();render();loadFeeds();
+ });
 }
-async function fetchFeed(feed){
+async function fetchFeed(feed,signal){
  const endpoint="https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(feed.url);
- const r=await fetch(endpoint); if(!r.ok)throw Error("HTTP "+r.status);
+ const r=await fetch(endpoint,signal?{signal}:undefined); if(!r.ok)throw Error("HTTP "+r.status);
  const j=await r.json(); if(j.status!=="ok")throw Error(j.message||"Feed unavailable");
  return (Array.isArray(j.items)?j.items:[]).filter(it=>it&&typeof it==="object").map(it=>{
   const link=articleURL(it.link,feed.url)||articleURL(it.guid);
   const title=String(it.title||"Untitled");
   const images=extractImageCandidates(it);
-  return {title,link,date:it.pubDate||"",desc:cleanDesc(it.description||it.content),image:images[0]||"",images,demo:extractFeedSampleDemo(it),source:feed.name,cat:classify({title,description:it.description||it.content},feed),key:link};
+  return {title,link,date:it.pubDate||"",desc:cleanDesc(it.description||it.content),image:images[0]||"",images,demo:extractFeedSampleDemo(it),source:feed.name,feedUrl:feed.url,cat:classify({title,description:it.description||it.content},feed),key:link};
  }).filter(story=>story.link);
 }
 function normalizeStoryUrl(raw){
@@ -1572,43 +1583,64 @@ async function fetchSearchEngine(engine,query,period){
   const q=encodeURIComponent(query+(windowTerm?" "+windowTerm:""));
   url="https://www.bing.com/news/search?q="+q+"&format=rss&setmkt=en-US";
  }
- const result=await fetchFeed({name:engine+" News Search",url,cat:"Production"});
+ const result=await fetchFeedWithTimeout({name:engine+" News Search",url,cat:"Production"},9000);
  return result.map(x=>({...x,source:engine+" News",cat:classify({title:x.title,description:x.desc},{cat:"Production"}),key:normalizeStoryUrl(x.link)}));
 }
+// Search results are ephemeral (not added to the saved RSS cache). A
+// later Enter/search can supersede an earlier slow engine response.
+let newsSearchSerial=0;
 async function runWebSearch(){
+ const requestId=++newsSearchSerial;
  const q=$("search").value.trim();
  const period=$("searchPeriod").value;
  const engines=[];
  if($("engineGoogle").checked)engines.push("Google");
  if($("engineBing").checked)engines.push("Bing");
- if(!engines.length){$("searchStatus").textContent="Select at least one search engine.";return}
+ if(!engines.length){
+  // Also release the button if the user deselected both engines while a
+  // previous (now superseded) search was still in flight.
+  $("webSearch").disabled=false;
+  $("searchStatus").textContent="Select at least one search engine.";return;
+ }
  $("webSearch").disabled=true;
  $("searchStatus").textContent="Searching "+engines.join(" + ")+"…";
- const query=audioSearchQuery(q);
- const settled=await Promise.all(engines.map(async engine=>{try{return {engine,items:await fetchSearchEngine(engine,query,period),error:""}}catch(e){return {engine,items:[],error:String(e.message||e)}}}));
- const combined=settled.flatMap(x=>x.items);
- const byUrl=new Map(),byTitle=new Map();
- for(const item of combined){
-  const u=normalizeStoryUrl(item.link),t=titleKey(item.title);
-  const existing=byUrl.get(u)||byTitle.get(t);
-  if(existing){
-   if((item.desc||"").length>(existing.desc||"").length)Object.assign(existing,item,{source:existing.source+" + "+item.source});
-   else if(!existing.source.includes(item.source))existing.source+=" + "+item.source;
-  }else{byUrl.set(u,item);byTitle.set(t,item)}
+ try{
+  const query=audioSearchQuery(q);
+  const settled=await Promise.all(engines.map(async engine=>{
+   try{return {engine,items:await fetchSearchEngine(engine,query,period),error:""}}
+   catch(e){return {engine,items:[],error:String(e.message||e)}}
+  }));
+  if(requestId!==newsSearchSerial)return;
+  const combined=settled.flatMap(x=>x.items);
+  const byUrl=new Map(),byTitle=new Map();
+  for(const item of combined){
+   const u=normalizeStoryUrl(item.link),t=titleKey(item.title);
+   const existing=byUrl.get(u)||byTitle.get(t);
+   if(existing){
+    // Do not replace the original link/key while it is indexed in byUrl:
+    // doing so detached the source URL from the saved-article identity.
+    if((item.desc||"").length>(existing.desc||"").length)existing.desc=item.desc;
+    if(!existing.image&&item.image)existing.image=item.image;
+    if(!existing.source.split(" + ").includes(item.source))existing.source+=" + "+item.source;
+   }else{byUrl.set(u,item);byTitle.set(t,item)}
+  }
+  const unique=[...byUrl.values()].sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
+  const searchKeys=new Set(unique.map(x=>normalizeStoryUrl(x.link)));
+  // Leave the persisted RSS cache alone. Search results are temporary in-memory.
+  items=[...unique,...items.filter(x=>!searchKeys.has(normalizeStoryUrl(x.link))&&!unique.some(s=>titleKey(s.title)===titleKey(x.title)))];
+  active="All";
+  document.querySelectorAll("[data-filter]").forEach(b=>b.classList.toggle("active",b.dataset.filter==="All"));
+  render();
+  const total=settled.reduce((n,x)=>n+x.items.length,0);
+  const errors=settled.filter(x=>x.error).map(x=>x.engine+": "+x.error);
+  $("searchStatus").textContent=unique.length+" unique results from "+engines.join(" + ")+". "+(total-unique.length)+" duplicates removed."+(errors.length?" Some engines failed: "+errors.join("; "):"");
+  $("count").textContent=unique.length+" search results · "+items.length+" headlines available";
+  $("updated").textContent="Search "+new Date().toLocaleTimeString();
+ }catch(e){
+  if(requestId===newsSearchSerial)$("searchStatus").textContent="News search failed: "+String(e.message||e)+". Retry or switch engines.";
+ }finally{
+  if(requestId===newsSearchSerial)$("webSearch").disabled=false;
  }
- const unique=[...byUrl.values()].sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
- // Keep the ordinary feed cache intact; search results are shown in the same story list.
- const searchKeys=new Set(unique.map(x=>x.key));
- items=[...unique,...items.filter(x=>!searchKeys.has(normalizeStoryUrl(x.link))&&!searchKeys.has(x.key))];
- active="All";
- document.querySelectorAll("[data-filter]").forEach(b=>b.classList.toggle("active",b.dataset.filter==="All"));
- render();
- const total=settled.reduce((n,x)=>n+x.items.length,0);
- const errors=settled.filter(x=>x.error).map(x=>x.engine+": "+x.error);
- $("searchStatus").textContent=unique.length+" unique results from "+engines.join(" + ")+". "+(total-unique.length)+" duplicates removed."+(errors.length?" Some engines failed: "+errors.join("; "):"");
- $("count").textContent=unique.length+" search results · "+items.length+" headlines available";
- $("updated").textContent="Search "+new Date().toLocaleTimeString();
- $("webSearch").disabled=false;
 }
 async function fetchGithubReaperRepos(){
  const queries=["reaper reascript","reaper-scripts","reaper reapack"];
@@ -1637,14 +1669,18 @@ async function fetchGithubReaperRepos(){
  found.forEach(x=>{if(!unique.has(x.key))unique.set(x.key,x)});
  return [...unique.values()];
 }
+// Real cancellation matters on WebView: Promise.race alone returned after 6s
+// but left the network request running. With many RSS sources this exhausted
+// mobile sockets, delayed other feeds and wasted bandwidth.
 async function fetchFeedWithTimeout(feed,timeoutMs=9000){
- let timer;
- try{
-  return await Promise.race([
-   fetchFeed(feed),
-   new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error("Timed out after "+Math.round(timeoutMs/1000)+"s")),timeoutMs)})
-  ]);
- }finally{if(timer)clearTimeout(timer)}
+ const controller=new AbortController();
+ let timedOut=false;
+ const timer=setTimeout(()=>{timedOut=true;controller.abort()},timeoutMs);
+ try{return await fetchFeed(feed,controller.signal)}
+ catch(e){
+  if(timedOut)throw Error("Timed out after "+Math.round(timeoutMs/1000)+"s");
+  throw e;
+ }finally{clearTimeout(timer)}
 }
 function setOfflineNotice(offline){
  const notice=$("offlineNotice");
@@ -1713,47 +1749,88 @@ async function refreshLiveRadar(force=false){
   liveRadarBusy=false;
  }
 }
+// RSS2JSON is a shared public service. Large bursts of simultaneous requests
+// can throttle feeds and saturate a phone's network connections.
+const MAX_PARALLEL_FEEDS=12;
+async function mapFeedsBounded(sources,worker){
+ const results=new Array(sources.length);
+ let next=0;
+ await Promise.all(Array.from({length:Math.min(MAX_PARALLEL_FEEDS,sources.length)},async()=>{
+  while(next<sources.length){
+   const index=next++;
+   results[index]=await worker(sources[index],index);
+  }
+ }));
+ return results;
+}
+function uniqueFeedStories(records,max=500){
+ const urls=new Set(),titles=new Set(),unique=[];
+ for(const item of records){
+  if(!item||!articleURL(item.link))continue;
+  const url=normalizeStoryUrl(item.link),title=titleKey(item.title);
+  // Syndicated copies often use different news index URLs. Only fold
+  // reasonably descriptive titles to avoid conflating generic "Update" posts.
+  if(urls.has(url)||(title.length>=24&&titles.has(title)))continue;
+  urls.add(url);if(title.length>=24)titles.add(title);
+  unique.push(item);
+ }
+ return unique.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0)).slice(0,max);
+}
+let feedRefreshSerial=0,feedRefreshPending=false;
 async function loadFeeds(){
- if($("refresh").disabled){if(window.AudioDesk&&typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();return;}
+ if($("refresh").disabled){
+  // Coalesce a source add/remove or native swipe into one follow-up refresh.
+  // Never report native refreshFinished while the first refresh is still live.
+  feedRefreshPending=true;return;
+ }
+ const requestId=++feedRefreshSerial,sources=feeds.slice();
  $("refresh").disabled=true;
- if(window.AudioDesk && typeof window.AudioDesk.refreshStarted==="function")window.AudioDesk.refreshStarted();
+ if(window.AudioDesk&&typeof window.AudioDesk.refreshStarted==="function")window.AudioDesk.refreshStarted();
  let ok=0,done=0,failed=[];
- $("status").textContent=`Refreshing ${feeds.length} sources…`;
+ $("status").textContent=`Refreshing ${sources.length} sources…`;
  try{
-  const results=await Promise.all(feeds.map(async f=>{
+  const results=await mapFeedsBounded(sources,async f=>{
    try{const x=await fetchFeedWithTimeout(f,6000);ok++;return x}
    catch(e){failed.push(f.name);return []}
    finally{
     done++;
-    $("status").textContent=`Refreshing feeds… ${done}/${feeds.length} checked · ${ok} loaded`;
+    $("status").textContent=`Refreshing feeds… ${done}/${sources.length} checked · ${ok} loaded`;
    }
-  }));
-  // Keep cached stories for unavailable sources, including a fully offline launch.
-  const retained=ok===0?items:items.filter(x=>failed.includes(x.source)||x.source.startsWith("LIVE RADAR — "));
-  const all=[...results.flat(),...retained];
-  const seen=new Set();
-  items=all.filter(x=>{const k=normalizeStoryUrl(x.link)||titleKey(x.title);if(seen.has(k))return false;seen.add(k);return true});
-  try{deskStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)))}catch(e){console.warn("Could not cache headlines",e)}
+  });
+  // Use the source snapshot. A source removed while loading must not be
+  // resurrected by responses from a request that started earlier.
+  const currentUrls=new Set(feeds.map(f=>f.url));
+  const fresh=results.flatMap((stories,i)=>currentUrls.has(sources[i].url)?stories:[]);
+  const retained=ok===0?items:items.filter(x=>
+   failed.includes(x.source)||x.source.startsWith("LIVE RADAR — ")||x.source==="GitHub repository discovery");
+  items=uniqueFeedStories([...fresh,...retained].filter(x=>!x.feedUrl||!removedFeeds.has(x.feedUrl)));
+  try{deskStorage.setItem("ar_items",JSON.stringify(items))}catch(e){console.warn("Could not cache headlines",e)}
   if(ok>0)$("updated").textContent="RSS updated "+new Date().toLocaleTimeString();
   render();
-  const unreachable=!navigator.onLine||(feeds.length>0&&ok===0&&failed.length===feeds.length);
+  const unreachable=!navigator.onLine||(sources.length>0&&ok===0&&failed.length===sources.length);
   setOfflineNotice(unreachable);
-  $("status").textContent=unreachable?"Connection unavailable. Showing cached headlines; retry when online.":`Loaded ${ok}/${feeds.length} RSS sources.`+(failed.length?` ${failed.length} timed out or failed; cached headlines kept.`:"")+" GitHub discovery is updating in the background.";
-  // GitHub discovery stays in the background and never delays the RSS refresh.
+  $("status").textContent=unreachable?"Connection unavailable. Showing cached headlines; retry when online.":`Loaded ${ok}/${sources.length} RSS sources.`+(failed.length?` ${failed.length} timed out or failed; cached headlines kept.`:"")+" GitHub discovery is updating in the background.";
+  // Do not let a previous refresh's background GitHub response overwrite a
+  // newer feed refresh or reintroduce entries from a removed publisher.
   fetchGithubReaperRepos().then(repos=>{
-   const merged=[...items,...repos],unique=new Map();
-   merged.forEach(x=>{const k=normalizeStoryUrl(x.link)||titleKey(x.title);if(!unique.has(k))unique.set(k,x)});
-   items=[...unique.values()].sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
-   try{deskStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)))}catch(e){console.warn("Could not cache GitHub results",e)}
+   if(requestId!==feedRefreshSerial)return;
+   const previousLinks=new Set(items.map(x=>normalizeStoryUrl(x.link)));
+   const added=repos.filter(x=>!previousLinks.has(normalizeStoryUrl(x.link))).length;
+   items=uniqueFeedStories([...items,...repos]);
+   try{deskStorage.setItem("ar_items",JSON.stringify(items))}catch(e){console.warn("Could not cache GitHub results",e)}
    render();
-   $("status").textContent+=` GitHub: ${repos.length} repositories added.`;
+   $("status").textContent+=` GitHub: ${added} repositories added.`;
   }).catch(e=>console.warn("Background GitHub discovery failed",e));
  }catch(e){
   setOfflineNotice(!navigator.onLine);
   $("status").textContent="Refresh failed: "+String(e.message||e);
  }finally{
   $("refresh").disabled=false;
-  if(window.AudioDesk && typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();
+  if(window.AudioDesk&&typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();
+  if(feedRefreshPending){
+   feedRefreshPending=false;
+   queueMicrotask(()=>loadFeeds());
+  }
  }
 }
 // Swipe anywhere in the content panel to switch bottom tabs. The dock itself

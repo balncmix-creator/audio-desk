@@ -2,9 +2,13 @@
 
 **A one-handed Android Home launcher for people who make sound, inspired by minimalist Niagara-style app access and Nokia N9 swipe navigation, without replacing Audio Desk's original retro design.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
 
-[**Download Audio Desk Launcher v4.2.1 Galaxy A73 test APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v4.2.1/Audio-Desk-Launcher-v4.2.1.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
+[**Download Audio Desk Launcher v4.2.2 News Fixes test APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v4.2.2/Audio-Desk-Launcher-v4.2.2.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
+
+## v4.2.2 — News feed reliability
+
+Fixes stuck Google/Bing searches, old RSS sources reappearing after removal, syndicated duplicates and unnecessary parallel network traffic. Adds cancellable requests and regression tests while preserving offline bookmarks and all Galaxy A73 visual improvements. [Release notes](docs/releases/v4.2.2.md).
 
 ## v4.2.1 — Galaxy A73 5G Orbit optimization
 
