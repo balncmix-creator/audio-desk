@@ -1809,10 +1809,12 @@ async function loadFeeds(){
   // newer feed refresh or reintroduce entries from a removed publisher.
   fetchGithubReaperRepos().then(repos=>{
    if(requestId!==feedRefreshSerial)return;
+   const previousLinks=new Set(items.map(x=>normalizeStoryUrl(x.link)));
+   const added=repos.filter(x=>!previousLinks.has(normalizeStoryUrl(x.link))).length;
    items=uniqueFeedStories([...items,...repos]);
    try{deskStorage.setItem("ar_items",JSON.stringify(items))}catch(e){console.warn("Could not cache GitHub results",e)}
    render();
-   $("status").textContent+=` GitHub: ${repos.length} repositories checked.`;
+   $("status").textContent+=` GitHub: ${added} repositories added.`;
   }).catch(e=>console.warn("Background GitHub discovery failed",e));
  }catch(e){
   setOfflineNotice(!navigator.onLine);
