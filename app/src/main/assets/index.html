@@ -1537,7 +1537,18 @@ function discoverPublisherFeeds(force=false){
 }
 function renderSources(){
  $("sources").innerHTML=feeds.map((f,i)=>`<div class="source"><div>${esc(f.name)}<small>${esc(f.cat)}</small></div><button class="save" data-remove="${i}">Remove</button></div>`).join("");
- document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{const removed=feeds.splice(+b.dataset.remove,1)[0];removedFeeds.add(removed.url);deskStorage.setItem("ar_removed_feeds",JSON.stringify([...removedFeeds]));deskStorage.setItem("ar_feeds",JSON.stringify(feeds));renderSources();loadFeeds()});
+ document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{
+  const removed=feeds.splice(Number(b.dataset.remove),1)[0];
+  if(!removed)return;
+  removedFeeds.add(removed.url);
+  deskStorage.setItem("ar_removed_feeds",JSON.stringify([...removedFeeds]));
+  deskStorage.setItem("ar_feeds",JSON.stringify(feeds));
+  // The source can be removed while its old HTTP request is still pending.
+  // Remove its visible records immediately; bookmarks remain available.
+  items=items.filter(x=>x.feedUrl?x.feedUrl!==removed.url:x.source!==removed.name);
+  try{deskStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)))}catch(e){}
+  renderSources();render();loadFeeds();
+ });
 }
 async function fetchFeed(feed,signal){
  const endpoint="https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(feed.url);
@@ -1733,47 +1744,86 @@ async function refreshLiveRadar(force=false){
   liveRadarBusy=false;
  }
 }
+// RSS2JSON is a shared public service. Large bursts of simultaneous requests
+// can throttle feeds and saturate a phone's network connections.
+const MAX_PARALLEL_FEEDS=12;
+async function mapFeedsBounded(sources,worker){
+ const results=new Array(sources.length);
+ let next=0;
+ await Promise.all(Array.from({length:Math.min(MAX_PARALLEL_FEEDS,sources.length)},async()=>{
+  while(next<sources.length){
+   const index=next++;
+   results[index]=await worker(sources[index],index);
+  }
+ }));
+ return results;
+}
+function uniqueFeedStories(records,max=500){
+ const urls=new Set(),titles=new Set(),unique=[];
+ for(const item of records){
+  if(!item||!articleURL(item.link))continue;
+  const url=normalizeStoryUrl(item.link),title=titleKey(item.title);
+  // Syndicated copies often use different news index URLs. Only fold
+  // reasonably descriptive titles to avoid conflating generic "Update" posts.
+  if(urls.has(url)||(title.length>=24&&titles.has(title)))continue;
+  urls.add(url);if(title.length>=24)titles.add(title);
+  unique.push(item);
+ }
+ return unique.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0)).slice(0,max);
+}
+let feedRefreshSerial=0,feedRefreshPending=false;
 async function loadFeeds(){
- if($("refresh").disabled){if(window.AudioDesk&&typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();return;}
+ if($("refresh").disabled){
+  // Coalesce a source add/remove or native swipe into one follow-up refresh.
+  // Never report native refreshFinished while the first refresh is still live.
+  feedRefreshPending=true;return;
+ }
+ const requestId=++feedRefreshSerial,sources=feeds.slice();
  $("refresh").disabled=true;
- if(window.AudioDesk && typeof window.AudioDesk.refreshStarted==="function")window.AudioDesk.refreshStarted();
+ if(window.AudioDesk&&typeof window.AudioDesk.refreshStarted==="function")window.AudioDesk.refreshStarted();
  let ok=0,done=0,failed=[];
- $("status").textContent=`Refreshing ${feeds.length} sources…`;
+ $("status").textContent=`Refreshing ${sources.length} sources…`;
  try{
-  const results=await Promise.all(feeds.map(async f=>{
+  const results=await mapFeedsBounded(sources,async f=>{
    try{const x=await fetchFeedWithTimeout(f,6000);ok++;return x}
    catch(e){failed.push(f.name);return []}
    finally{
     done++;
-    $("status").textContent=`Refreshing feeds… ${done}/${feeds.length} checked · ${ok} loaded`;
+    $("status").textContent=`Refreshing feeds… ${done}/${sources.length} checked · ${ok} loaded`;
    }
-  }));
-  // Keep cached stories for unavailable sources, including a fully offline launch.
-  const retained=ok===0?items:items.filter(x=>failed.includes(x.source)||x.source.startsWith("LIVE RADAR — "));
-  const all=[...results.flat(),...retained];
-  const seen=new Set();
-  items=all.filter(x=>{const k=normalizeStoryUrl(x.link)||titleKey(x.title);if(seen.has(k))return false;seen.add(k);return true});
-  try{deskStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)))}catch(e){console.warn("Could not cache headlines",e)}
+  });
+  // Use the source snapshot. A source removed while loading must not be
+  // resurrected by responses from a request that started earlier.
+  const currentUrls=new Set(feeds.map(f=>f.url));
+  const fresh=results.flatMap((stories,i)=>currentUrls.has(sources[i].url)?stories:[]);
+  const retained=ok===0?items:items.filter(x=>
+   failed.includes(x.source)||x.source.startsWith("LIVE RADAR — ")||x.source==="GitHub repository discovery");
+  items=uniqueFeedStories([...fresh,...retained].filter(x=>!x.feedUrl||!removedFeeds.has(x.feedUrl)));
+  try{deskStorage.setItem("ar_items",JSON.stringify(items))}catch(e){console.warn("Could not cache headlines",e)}
   if(ok>0)$("updated").textContent="RSS updated "+new Date().toLocaleTimeString();
   render();
-  const unreachable=!navigator.onLine||(feeds.length>0&&ok===0&&failed.length===feeds.length);
+  const unreachable=!navigator.onLine||(sources.length>0&&ok===0&&failed.length===sources.length);
   setOfflineNotice(unreachable);
-  $("status").textContent=unreachable?"Connection unavailable. Showing cached headlines; retry when online.":`Loaded ${ok}/${feeds.length} RSS sources.`+(failed.length?` ${failed.length} timed out or failed; cached headlines kept.`:"")+" GitHub discovery is updating in the background.";
-  // GitHub discovery stays in the background and never delays the RSS refresh.
+  $("status").textContent=unreachable?"Connection unavailable. Showing cached headlines; retry when online.":`Loaded ${ok}/${sources.length} RSS sources.`+(failed.length?` ${failed.length} timed out or failed; cached headlines kept.`:"")+" GitHub discovery is updating in the background.";
+  // Do not let a previous refresh's background GitHub response overwrite a
+  // newer feed refresh or reintroduce entries from a removed publisher.
   fetchGithubReaperRepos().then(repos=>{
-   const merged=[...items,...repos],unique=new Map();
-   merged.forEach(x=>{const k=normalizeStoryUrl(x.link)||titleKey(x.title);if(!unique.has(k))unique.set(k,x)});
-   items=[...unique.values()].sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
-   try{deskStorage.setItem("ar_items",JSON.stringify(items.slice(0,500)))}catch(e){console.warn("Could not cache GitHub results",e)}
+   if(requestId!==feedRefreshSerial)return;
+   items=uniqueFeedStories([...items,...repos]);
+   try{deskStorage.setItem("ar_items",JSON.stringify(items))}catch(e){console.warn("Could not cache GitHub results",e)}
    render();
-   $("status").textContent+=` GitHub: ${repos.length} repositories added.`;
+   $("status").textContent+=` GitHub: ${repos.length} repositories checked.`;
   }).catch(e=>console.warn("Background GitHub discovery failed",e));
  }catch(e){
   setOfflineNotice(!navigator.onLine);
   $("status").textContent="Refresh failed: "+String(e.message||e);
  }finally{
   $("refresh").disabled=false;
-  if(window.AudioDesk && typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();
+  if(window.AudioDesk&&typeof window.AudioDesk.refreshFinished==="function")window.AudioDesk.refreshFinished();
+  if(feedRefreshPending){
+   feedRefreshPending=false;
+   queueMicrotask(()=>loadFeeds());
+  }
  }
 }
 // Swipe anywhere in the content panel to switch bottom tabs. The dock itself
