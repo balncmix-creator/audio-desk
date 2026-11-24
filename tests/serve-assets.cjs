@@ -5,7 +5,7 @@ module.exports=function serveLocalAsset(route,edition='main'){
  const url=new URL(route.request().url());
  if(url.origin!=='https://appassets.androidplatform.net')return false;
  const relative=decodeURIComponent(url.pathname).replace(/^\/assets\//,'');
- if(!/^((?:personalization|theme-system|widget-layout|launcher-extras|audio-wallpapers|minimal-gallery|native-icons|windows-live-tiles|music-spectrum|music-spectrum-settings|agenda|acoustics|native-widgets|youtube-widget|orbit-theme|radial-files)\.(js|css)|wallpapers\/[\w./-]+|fonts\/[\w.-]+|pixel-icons\/[\w.-]+)$/.test(relative)||relative.includes('..'))return false;
+ if(!/^((?:personalization|theme-system|widget-layout|launcher-extras|audio-wallpapers|minimal-gallery|native-icons|windows-live-tiles|music-spectrum|music-spectrum-settings|agenda|acoustics|native-widgets|youtube-widget|orbit-theme|radial-files|desk-workspace)\.(js|css)|wallpapers\/[\w./-]+|fonts\/[\w.-]+|pixel-icons\/[\w.-]+)$/.test(relative)||relative.includes('..'))return false;
  const root=path.resolve(__dirname,edition==='play'?'../app/build/generated/playAssets':'../app/src/main/assets');
  const file=path.join(root,relative);
  if(!fs.existsSync(file))return route.fulfill({status:404,body:'Missing bundled asset'});
