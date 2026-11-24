@@ -6,6 +6,10 @@
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
 
+## v4.2.2 — News feed reliability
+
+Fixes stuck Google/Bing searches, old RSS sources reappearing after removal, syndicated duplicates and unnecessary parallel network traffic. Adds cancellable requests and regression tests while preserving offline bookmarks and all Galaxy A73 visual improvements. [Release notes](docs/releases/v4.2.2.md).
+
 ## v4.2.1 — Galaxy A73 5G Orbit optimization
 
 Samsung A73-specific adjustments to the Orbit radial dial: native One UI bottom-gesture inset clearance, zoom/landscape-responsive sizing, 48px Settings control, lower-overhead 120Hz touch handling and battery-conscious blur/animation behavior. Other phones retain the existing UI. Includes A73 viewport and pointer-burst regression tests.
