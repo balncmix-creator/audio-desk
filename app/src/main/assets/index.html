@@ -1575,7 +1575,11 @@ async function fetchSearchEngine(engine,query,period){
  const result=await fetchFeedWithTimeout({name:engine+" News Search",url,cat:"Production"},9000);
  return result.map(x=>({...x,source:engine+" News",cat:classify({title:x.title,description:x.desc},{cat:"Production"}),key:normalizeStoryUrl(x.link)}));
 }
+// Search results are ephemeral (not added to the saved RSS cache). A
+// later Enter/search can supersede an earlier slow engine response.
+let newsSearchSerial=0;
 async function runWebSearch(){
+ const requestId=++newsSearchSerial;
  const q=$("search").value.trim();
  const period=$("searchPeriod").value;
  const engines=[];
@@ -1584,31 +1588,43 @@ async function runWebSearch(){
  if(!engines.length){$("searchStatus").textContent="Select at least one search engine.";return}
  $("webSearch").disabled=true;
  $("searchStatus").textContent="Searching "+engines.join(" + ")+"…";
- const query=audioSearchQuery(q);
- const settled=await Promise.all(engines.map(async engine=>{try{return {engine,items:await fetchSearchEngine(engine,query,period),error:""}}catch(e){return {engine,items:[],error:String(e.message||e)}}}));
- const combined=settled.flatMap(x=>x.items);
- const byUrl=new Map(),byTitle=new Map();
- for(const item of combined){
-  const u=normalizeStoryUrl(item.link),t=titleKey(item.title);
-  const existing=byUrl.get(u)||byTitle.get(t);
-  if(existing){
-   if((item.desc||"").length>(existing.desc||"").length)Object.assign(existing,item,{source:existing.source+" + "+item.source});
-   else if(!existing.source.includes(item.source))existing.source+=" + "+item.source;
-  }else{byUrl.set(u,item);byTitle.set(t,item)}
+ try{
+  const query=audioSearchQuery(q);
+  const settled=await Promise.all(engines.map(async engine=>{
+   try{return {engine,items:await fetchSearchEngine(engine,query,period),error:""}}
+   catch(e){return {engine,items:[],error:String(e.message||e)}}
+  }));
+  if(requestId!==newsSearchSerial)return;
+  const combined=settled.flatMap(x=>x.items);
+  const byUrl=new Map(),byTitle=new Map();
+  for(const item of combined){
+   const u=normalizeStoryUrl(item.link),t=titleKey(item.title);
+   const existing=byUrl.get(u)||byTitle.get(t);
+   if(existing){
+    // Do not replace the original link/key while it is indexed in byUrl:
+    // doing so detached the source URL from the saved-article identity.
+    if((item.desc||"").length>(existing.desc||"").length)existing.desc=item.desc;
+    if(!existing.image&&item.image)existing.image=item.image;
+    if(!existing.source.split(" + ").includes(item.source))existing.source+=" + "+item.source;
+   }else{byUrl.set(u,item);byTitle.set(t,item)}
+  }
+  const unique=[...byUrl.values()].sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
+  const searchKeys=new Set(unique.map(x=>normalizeStoryUrl(x.link)));
+  // Leave the persisted RSS cache alone. Search results are temporary in-memory.
+  items=[...unique,...items.filter(x=>!searchKeys.has(normalizeStoryUrl(x.link))&&!unique.some(s=>titleKey(s.title)===titleKey(x.title)))];
+  active="All";
+  document.querySelectorAll("[data-filter]").forEach(b=>b.classList.toggle("active",b.dataset.filter==="All"));
+  render();
+  const total=settled.reduce((n,x)=>n+x.items.length,0);
+  const errors=settled.filter(x=>x.error).map(x=>x.engine+": "+x.error);
+  $("searchStatus").textContent=unique.length+" unique results from "+engines.join(" + ")+". "+(total-unique.length)+" duplicates removed."+(errors.length?" Some engines failed: "+errors.join("; "):"");
+  $("count").textContent=unique.length+" search results · "+items.length+" headlines available";
+  $("updated").textContent="Search "+new Date().toLocaleTimeString();
+ }catch(e){
+  if(requestId===newsSearchSerial)$("searchStatus").textContent="News search failed: "+String(e.message||e)+". Retry or switch engines.";
+ }finally{
+  if(requestId===newsSearchSerial)$("webSearch").disabled=false;
  }
- const unique=[...byUrl.values()].sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
- // Keep the ordinary feed cache intact; search results are shown in the same story list.
- const searchKeys=new Set(unique.map(x=>x.key));
- items=[...unique,...items.filter(x=>!searchKeys.has(normalizeStoryUrl(x.link))&&!searchKeys.has(x.key))];
- active="All";
- document.querySelectorAll("[data-filter]").forEach(b=>b.classList.toggle("active",b.dataset.filter==="All"));
- render();
- const total=settled.reduce((n,x)=>n+x.items.length,0);
- const errors=settled.filter(x=>x.error).map(x=>x.engine+": "+x.error);
- $("searchStatus").textContent=unique.length+" unique results from "+engines.join(" + ")+". "+(total-unique.length)+" duplicates removed."+(errors.length?" Some engines failed: "+errors.join("; "):"");
- $("count").textContent=unique.length+" search results · "+items.length+" headlines available";
- $("updated").textContent="Search "+new Date().toLocaleTimeString();
- $("webSearch").disabled=false;
 }
 async function fetchGithubReaperRepos(){
  const queries=["reaper reascript","reaper-scripts","reaper reapack"];
