@@ -33,6 +33,8 @@ const assert=require('node:assert/strict');
   });
   await page.goto('https://appassets.androidplatform.net/assets/index.html');
   const sources=await page.evaluate(()=>({defaults:defaults.map(f=>f.url),seeds:publisherSeeds.map(f=>f.site),radar:livePublisherFeeds.map(f=>f.url)}));
+  assert.ok(sources.defaults.some(u=>u.includes('audiopluginguy.com')),'Audio Plugin Guy must be available at startup');
+  assert.ok(sources.seeds.some(u=>new URL(u).hostname.endsWith('audiopluginguy.com')),'Audio Plugin Guy must support native feed discovery');
   assert.ok(sources.defaults.some(u=>u.includes('prosoundweb.com')),'ProSoundWeb must be available at startup');
   assert.ok(sources.seeds.some(u=>new URL(u).hostname.endsWith('prosoundweb.com')),'ProSoundWeb must support native feed discovery');
   assert.equal(sources.defaults.filter(u=>u==='https://rekkerd.org/feed/').length,1,'Rekkerd direct feed must not be duplicated');
