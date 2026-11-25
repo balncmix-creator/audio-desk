@@ -30,3 +30,9 @@ Never mark an unchecked item as passed. Use not applicable with a reason. The au
 
 ## Explicit legacy exception
 The unused `app-icon-engine.js`, `app-icon-engine.css` and historical `tests/app-icon-engine.cjs` are superseded by the active `native-icons` modules and regression. The coverage gate excludes only these exact names and rejects runtime references to the retired assets; they must be restored to coverage or removed if reactivated. All other shared top-level JavaScript/CSS files and executable test files are checked.
+
+## v4.3.1 news candidate (verification pending)
+- New sources: ProSoundWeb, Audio Plugin Guy, MuseHub; Rekkerd and KVR already present. Indexed fallbacks plus discovery of native RSS/Atom feeds. Registration is tested; live publisher availability is not guaranteed.
+- Source health reports observed RSS service status; it does not assert a publisher paywall or test authenticated article access. It must not collect credentials or bypass login.
+- Article-title-first category rules, cache/bookmark migration, UTC normalization, date-window filtering, timestamp reliability preference, and publication vs repository update labels. Rule-based classification remains imperfect and needs real-feed review.
+- Dedicated misleading-headline, mixed-date, HTTP failure/retry and source-registration regression cases. Real-device acceptance and inspection of generated screenshots remain required before a stable claim.

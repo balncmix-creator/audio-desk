@@ -25,7 +25,7 @@ const qaFeeds=[
    };
    localStorage.setItem('ar_last_discovery',Date.now().toString());
   });
-  let slowAlpha=false,blockTimeout=false,requests=0;
+  let slowAlpha=false,blockTimeout=false,requests=0,betaHttp=0;
   await page.route('**/*',async route=>{
    if(serve(route))return;
    const url=route.request().url();
@@ -38,6 +38,7 @@ const qaFeeds=[
      if(blockTimeout)await new Promise(r=>setTimeout(r,500));
      return route.fulfill({json:{status:'ok',items:[]} }).catch(()=>{});
     }
+    if(feed.includes('beta.rss')&&betaHttp)return route.fulfill({status:betaHttp,body:'Fixture access failure'});
     if(feed.includes('alpha.rss')&&slowAlpha)await new Promise(r=>setTimeout(r,450));
     const search=feed.includes('news.google.com/rss/search')||feed.includes('www.bing.com/news/search');
     const fromGoogle=feed.includes('news.google.com');
@@ -176,6 +177,22 @@ const qaFeeds=[
   assert.equal(search.keys.length,1);
   assert.ok(search.persisted.every(x=>!x.includes('The same headline')),
    'temporary search results must not overwrite RSS cache');
+  // Real intercepted HTTP error, rather than a fabricated UI state.
+  betaHttp=401;
+  await page.locator('#refresh').click();
+  await page.waitForFunction(()=>!document.getElementById('refresh').disabled);
+  const auth=await page.evaluate(()=>({
+   state:JSON.parse(localStorage.ar_source_health_v1)['https://feeds.example.test/beta.rss']?.state,
+   summary:document.getElementById('sourceHealthSummary').textContent,
+   cached:items.some(x=>x.title.includes('Beta-only'))
+  }));
+  assert.equal(auth.state,'auth');
+  assert.match(auth.summary,/1 unavailable/);
+  assert.equal(auth.cached,true,'failed feed keeps its cached article');
+  betaHttp=0;
+  await page.locator('#refresh').click();
+  await page.waitForFunction(()=>!document.getElementById('refresh').disabled);
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.ar_source_health_v1)['https://feeds.example.test/beta.rss']?.state),'ok','successful retry clears prior failure');
   assert.deepEqual(errors,[],'no uncaught news feed script errors');
   console.log('PASS: remove-during-refresh, queued followup, stable RSS cache, source dedup, 12-connection cap, HTTP abort, merged news search and native loading indicator');
  }finally{await browser.close()}

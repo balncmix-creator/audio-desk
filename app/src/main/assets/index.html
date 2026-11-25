@@ -942,7 +942,7 @@ function classify(item,feed={}){
  // Explicit repository identity and script intent outweigh generic plugin wording.
  if(item.source==="GitHub repository discovery"||(reaper.test(title)&&(!plugin.test(title)||script.test(title)||howto.test(title)))||(script.test(title)&&reaper.test(text))||(/github\.com/i.test(link)&&reaper.test(link+" "+text)))return "REAPER";
  if(isSamplePack({title})||(!howto.test(title)&&!hardware.test(title)&&!plugin.test(title)&&isSamplePack(item)))return "Sample packs";
- if(hardware.test(title)&&!/\b(?:emulation|emulates|virtual|software|plug[ -]?in)\b/i.test(title))return "Hardware";
+ if(hardware.test(title)&&!/\b(?:emulation|emulates|virtual|software)\b/i.test(title)&&(!plugin.test(title)||/\b(?:bundled|includes?|with|mentions?|review)\b/i.test(title)))return "Hardware";
  if(howto.test(title)){
   if(reaper.test(title))return "REAPER";
   if(design.test(title)&&!/\b(?:dialogue|adr|film sound)\b/.test(title))return "Sound design";
@@ -1618,7 +1618,7 @@ function recordSourceHealth(feed,state,count=0){
  sourceHealth[feed.url]={state,count,checked:Date.now()};
 }
 function renderSourceHealth(){
- const rows=feeds.map(f=>({f,h:Object.hasOwn(sourceHealth,f.url)?sourceHealth[f.url]:null}));
+ const rows=feeds.map(f=>({f,h:Object.prototype.hasOwnProperty.call(sourceHealth,f.url)?sourceHealth[f.url]:null}));
  const problems=rows.filter(({h})=>h&&!["ok","empty"].includes(h.state));
  const unchecked=rows.filter(({h})=>!h).length;
  const loaded=rows.length-problems.length-unchecked;
@@ -2990,6 +2990,7 @@ $("pluginWatchlist").value=deskStorage.getItem("ar_plugin_watchlist")||"";
 $("refreshTorrent").onclick=loadTorrentMonitor;
 $("torrentPeriod").addEventListener("change",loadTorrentMonitor);
 $("webSearch").onclick=runWebSearch;
+$("searchPeriod").addEventListener("change",()=>{if(activeSearchPeriod){activeSearchPeriod=$("searchPeriod").value;render()}});
 $("search").addEventListener("keydown",e=>{if(e.key==="Enter")runWebSearch()});
 $("refresh").onclick=()=>{activeSearchPeriod="";loadFeeds()};
 $("discoverFeeds").onclick=()=>discoverPublisherFeeds(true);
