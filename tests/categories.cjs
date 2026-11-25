@@ -45,11 +45,32 @@ const assert=require('node:assert/strict');
    classify({title:'New production workflow released',description:'Music production techniques'}, {cat:'Production'})
   ]);
   assert.deepEqual(cats,['Sample packs','Sample packs','Sample packs','REAPER','DAWs & plugins','Hardware','Production']);
+  const adversarial=await page.evaluate(()=>{
+   const rows=[
+    ['GitHub REAPER Lua script for automation','Plugin releases','REAPER'],
+    ['New ReaPack extension for audio editing','Plugin releases','REAPER'],
+    ['New microphone announced','Plugin releases','Hardware'],
+    ['REAPER tutorial for film sound','Post Production','REAPER'],
+    ['New Dolby Atmos plugin released','Post Production','Plugin releases'],
+    ['Foley recording techniques','Post Production','Sound design'],
+    ['New Kontakt sample library','DAWs & plugins','Sample packs'],
+    ['Plugin mixing tutorial','Plugin releases','Production'],
+    ['Hardware review of studio monitors','DAWs & plugins','Hardware'],
+    ['Sound design tutorial for a new plugin','Plugin releases','Sound design'],
+    ['How to improve dialogue editing with plugins','Plugin releases','Post Production'],
+    ['Studio monitor review mentions VST','Plugin releases','Hardware'],
+    ['Audio interface launch with bundled plugins','Plugin releases','Hardware'],
+    ['New virtual instrument library','Plugin releases','Sample packs'],
+    ['Unrelated headline','Plugin releases','Production']
+   ];
+   return rows.flatMap(([title,source,expected])=>{const got=classify({title,description:'Audio industry coverage'},{cat:source});return got===expected?[]:[{title,source,expected,got}]});
+  });
+  assert.deepEqual(adversarial,[],'headline intent overrides misleading feed categories');
   const stored=await page.evaluate(()=>({
    items:JSON.parse(localStorage.getItem('ar_items')).map(x=>x.cat),
    saved:JSON.parse(localStorage.getItem('ar_saved_items')).map(x=>x.cat)
   }));
-  assert.deepEqual(stored.items,['Sample packs','DAWs & plugins','Post Production'],'existing offline cache must be migrated');
+  assert.deepEqual(stored.items,['Sample packs','Plugin releases','Post Production'],'existing offline cache must be migrated');
   assert.deepEqual(stored.saved,['Sample packs','Post Production'],'bookmarked article category must be migrated');
   assert.equal(await page.locator('[data-filter="Post Production"]').count(),1,'only one post-production filter must exist');
   assert.equal(await page.locator('[data-filter="Post-production"]').count(),0,'legacy duplicate must be removed');
@@ -60,7 +81,7 @@ const assert=require('node:assert/strict');
   await page.locator('[data-filter="Sample packs"]').click();
   assert.equal(await page.locator('.story').count(),1);
   assert.match(await page.locator('.story').innerText(),/SUBVERSELAB/);
-  await page.locator('[data-filter="DAWs & plugins"]').click();
+  await page.locator('[data-filter="Plugin releases"]').click();
   assert.equal(await page.locator('.story').count(),1);
   assert.match(await page.locator('.story').innerText(),/synthesizer/);
   await page.locator('[data-filter="Saved"]').click();

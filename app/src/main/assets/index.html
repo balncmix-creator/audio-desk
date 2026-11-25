@@ -896,7 +896,7 @@ const autoFeeds=readStore("ar_auto_feeds",[])||[];
 const savedFeeds=readStore("ar_feeds",[])||[];
 const removedFeeds=new Set(readStore("ar_removed_feeds",[])||[]);
 let feeds=[...new Map([...defaults,...savedFeeds,...autoFeeds].filter(f=>f&&typeof f.url==="string").map(f=>[f.url,f])).values()].filter(f=>!removedFeeds.has(f.url));
-let items=readStore("ar_items",[]),active="All",saved=readStore("ar_saved",[]);
+let items=readStore("ar_items",[]),active="All",saved=readStore("ar_saved",[]),activeSearchPeriod="";
 let savedItems=readStore("ar_saved_items",[])||[];
 function articleURL(raw,base){if(typeof raw!=="string"||!raw.trim())return "";try{const u=new URL(String(raw||""),base);return /^https?:$/.test(u.protocol)&&!u.username&&!u.password?u.href:""}catch{return ""}}
 function validStories(records){return records.filter(x=>x&&typeof x.title==="string"&&typeof x.key==="string"&&articleURL(x.link)).map(x=>({...x,link:articleURL(x.link),source:typeof x.source==="string"?x.source:"Audio Desk",desc:typeof x.desc==="string"?x.desc:"",cat:typeof x.cat==="string"?x.cat:"Production",date:typeof x.date==="string"?x.date:"",image:safeImage(x.image)}))}
@@ -924,29 +924,87 @@ function isSamplePack(item){
  const text=(title+" "+description).toLowerCase();
  return /\b(?:sample[\s-]*(?:packs?|librar(?:y|ies)|collections?|bundles?)|sampled[\s-]+(?:instruments?|librar(?:y|ies))|sound[\s-]*(?:packs?|librar(?:y|ies)|banks?)|loop[\s-]*(?:packs?|librar(?:y|ies)|kits?)|one[\s-]*shots?|construction[\s-]*kits?|kontakt[\s-]*(?:librar(?:y|ies)|instruments?)|sfz[\s-]*(?:librar(?:y|ies)|instruments?)|midi[\s-]*(?:packs?|kits?)|preset[\s-]*(?:packs?|banks?)|royalty[\s-]*free[\s-]+samples?|drum[\s-]*sample[\s-]*(?:packs?|kits?)|audio[\s-]+loops?|(?:sound[\s-]*(?:effects?|fx)|sfx)[\s-]*(?:packs?|librar(?:y|ies)|collections?)|(?:instrument|virtual[\s-]+instrument)[\s-]*(?:packs?|librar(?:y|ies)|bundles?))\b/i.test(text);
 }
-function classify(item,feed){
- if(feed.cat==="REAPER")return "REAPER";
+function classify(item,feed={}){
+ const source=String(feed.cat||"");
  if(feed.cat==="Torrent Monitor")return "Torrent Monitor";
  if(feed.cat==="Videos")return "Videos";
- if(isSamplePack(item))return "Sample packs";
- if(feed.cat==="Plugin releases")return "Plugin releases";
- if(/^post[- ]production$/i.test(feed.cat||""))return "Post Production";
- const t=(item.title+" "+(item.description||"")).toLowerCase();
- if(/dialogue|film sound|post.?production|reaper|pro tools|nuendo|atmos|surround|broadcast|foley|adr|sound editorial/.test(t))return "Post Production";
- if(/foley|sound effect|field record|ambisonic|spatial audio|sound design|ai audio|stem separation/.test(t))return "Sound design";
- if(/microphone|monitor|headphone|interface|preamp|converter|hardware|console|mixer|speaker/.test(t))return "Hardware";
- if(/plugin|vst|au\b|aax|clap|daw|synth|sampler|audio software|firmware/.test(t))return "DAWs & plugins";
- return feed.cat||"Production";
+ const title=String(item.title||"").toLowerCase(),desc=String(item.description||item.desc||"").toLowerCase(),link=String(item.link||"");
+ const text=title+" "+desc;
+ const reaper=/\b(?:reaper|reascript|reapack|reaclassical|jsfx|cockos)\b/i;
+ const script=/\b(?:scripts?|reascripts?|reapack|jsfx|lua|extension|actions?)\b/i;
+ const plugin=/\b(?:plug[ -]?ins?|vst3?|aax|clap|audio units?|virtual instrument|software synth(?:esizer)?)\b/i;
+ const release=/\b(?:releases?|released|launch(?:es|ed)?|announc(?:es|ed|ement)|introduc(?:es|ed)|debuts?|now available|new)\b/i;
+ const howto=/\b(?:tutorial|how to|guide|tips|techniques?|workflow|masterclass|walkthrough)\b/i;
+ const hardware=/\b(?:microphones?|headphones?|earbuds?|preamps?|converters?|loudspeakers?|studio monitors?|audio interfaces?|mixing consoles?|hardware|speakers?|field recorders?|control surfaces?)\b/i;
+ const post=/\b(?:dialogue|adr|film sound|film mixing|post[ -]?production|dubbing|sound editorial|broadcast loudness|adm[ /-]?bwf|loudness qc|dolby atmos|surround|pro tools|nuendo)\b/i;
+ const design=/\b(?:foley|field record(?:ing|ings)?|sound design|sound effects?|ambisonics?|spatial audio|stem separation|audio restoration|audio ai)\b/i;
+ const production=/\b(?:mixing|mastering|music production|recording|songwriting|arrangement)\b/i;
+ // Explicit repository identity and script intent outweigh generic plugin wording.
+ if(item.source==="GitHub repository discovery"||(reaper.test(title)&&(!plugin.test(title)||script.test(title)||howto.test(title)))||(script.test(title)&&reaper.test(text))||(/github\.com/i.test(link)&&reaper.test(link+" "+text)))return "REAPER";
+ if(isSamplePack({title})||(!howto.test(title)&&!hardware.test(title)&&!plugin.test(title)&&isSamplePack(item)))return "Sample packs";
+ if(hardware.test(title)&&!/\b(?:emulation|emulates|virtual|software|plug[ -]?in)\b/i.test(title))return "Hardware";
+ if(howto.test(title)){
+  if(reaper.test(title))return "REAPER";
+  if(design.test(title)&&!/\b(?:dialogue|adr|film sound)\b/.test(title))return "Sound design";
+  if(post.test(title))return "Post Production";
+  if(production.test(title)||plugin.test(title))return "Production";
+ }
+ if(plugin.test(title)&&release.test(title))return "Plugin releases";
+ if(post.test(title))return "Post Production";
+ if(design.test(title))return "Sound design";
+ if(plugin.test(title)||/\b(?:daw|synth(?:esizer)?|sampler|audio software)\b/.test(title))return "DAWs & plugins";
+ if(production.test(title))return "Production";
+ // Description supplies context only if title has no decisive signal.
+ if(reaper.test(text)&&(script.test(text)||source==="REAPER"))return "REAPER";
+ if(hardware.test(desc)&&!plugin.test(desc))return "Hardware";
+ if(plugin.test(desc)&&release.test(title))return "Plugin releases";
+ if(post.test(desc))return "Post Production";
+ if(design.test(desc))return "Sound design";
+ if(plugin.test(desc))return "DAWs & plugins";
+ if(source==="REAPER")return "REAPER";
+ if(/^post[- ]production$/i.test(source))return "Post Production";
+ if(source==="Hardware"||source==="Sound design"||source==="Sample packs"||source==="DAWs & plugins")return source;
+ // An ambiguous item from a release-search feed isn't necessarily a release.
+ return "Production";
 }
-// Repair categories in older on-device caches and bookmarks, including offline startup.
+function normalizedNewsDate(raw){
+ if(typeof raw!=="string"||!raw.trim())return "";
+ let value=raw.trim();
+ // RSS2JSON's zone-less SQL-style publication dates are UTC.
+ if(/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?$/.test(value))value=value.replace(" ","T")+"Z";
+ if(/^\d{4}-\d{2}-\d{2}$/.test(value))value+="T00:00:00Z";
+ const t=Date.parse(value);
+ if(!Number.isFinite(t))return "";
+ // Reject rolled-over impossible ISO calendar dates, e.g. February 30.
+ const m=value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+ if(m){const y=+m[1],month=+m[2],day=+m[3];if(month<1||month>12||day<1||day>new Date(Date.UTC(y,month,0)).getUTCDate())return ""}
+ return new Date(t).toISOString();
+}
+function newsTime(raw,now=Date.now()){
+ const value=normalizedNewsDate(raw),t=value?Date.parse(value):NaN;
+ return Number.isFinite(t)&&t<=now?t:0;
+}
+function newsOrder(a,b){return newsTime(b.date)-newsTime(a.date)}
+function newsInPeriod(story,period,now=Date.now()){
+ if(period==="any"||!period)return true;
+ const windows={"1h":3600000,"1d":86400000,"7d":604800000,"30d":2592000000,"365d":31536000000};
+ const t=newsTime(story.date,now);
+ return !!t&&t>=now-(windows[period]||86400000);
+}
+function newsDateLabel(story){
+ const t=newsTime(story.date);
+ if(!t)return "Date unavailable";
+ const mins=Math.floor((Date.now()-t)/60000),d=new Date(t),today=new Date(),yesterday=new Date();yesterday.setDate(today.getDate()-1);
+ const relative=mins<1?"Just now":mins<60?mins+"m ago":mins<1440?Math.floor(mins/60)+"h ago":d.toDateString()===yesterday.toDateString()?"Yesterday":d.toLocaleDateString();
+ return (story.dateKind==="updated"||story.source==="GitHub repository discovery"?"Updated · ":"Published · ")+relative+" · "+d.toLocaleString();
+}
+// Repair cached and bookmarked stories without deleting their keys.
 let correctedCategories=false;
 for(const story of [...items,...savedItems]){
- if(story&&story.cat==="Post-production"){
-  story.cat="Post Production";correctedCategories=true;
- }
- if(story&&isSamplePack(story)&&story.cat!=="Sample packs"){
-  story.cat="Sample packs";correctedCategories=true;
- }
+ const feed=feeds.find(f=>f.url===story.feedUrl)||feeds.find(f=>f.name===story.source)||{cat:story.cat};
+ const category=classify(story,feed),date=normalizedNewsDate(story.date);
+ if(category!==story.cat||date!==story.date){story.cat=category;story.date=date;correctedCategories=true}
+ if(story.source==="GitHub repository discovery"&&story.dateKind!=="updated"){story.dateKind="updated";correctedCategories=true}
 }
 if(correctedCategories){
  try{
@@ -1061,12 +1119,12 @@ async function loadTorrentMonitor(){
  const seen=new Set();
  const cutoff=period==="1d"?Date.now()-86400000:period==="7d"?Date.now()-7*86400000:period==="30d"?Date.now()-30*86400000:period==="365d"?Date.now()-365*86400000:0;
  torrentMonitorItems=settled.flat().filter(x=>{
-  const d=Date.parse(x.date)||0;
+  const d=newsTime(x.date);
   if(cutoff&&d&&d<cutoff)return false;
   const k=normalizeStoryUrl(x.link)||titleKey(x.title);
   if(!k||seen.has(k))return false;
   seen.add(k);return true;
- }).sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
+ }).sort((a,b)=>newsOrder(a,b));
  $("refreshTorrent").disabled=false;
  if(activeView==="torrents")renderTorrentMonitor();
 }
@@ -1082,7 +1140,7 @@ async function scanPluginWatchlist(){
   try{return (await fetchFeedWithTimeout({name:"Watchlist · "+name,url,cat:"Torrent Monitor"})).map(x=>({...x,watchName:name}));}catch{return []}
  }));
  const seen=new Set();
- watchlistItems=settled.flat().filter(x=>{const k=normalizeStoryUrl(x.link)||titleKey(x.title);if(seen.has(k))return false;seen.add(k);return true;}).sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
+ watchlistItems=settled.flat().filter(x=>{const k=normalizeStoryUrl(x.link)||titleKey(x.title);if(seen.has(k))return false;seen.add(k);return true;}).sort((a,b)=>newsOrder(a,b));
  $("watchlistStatus").textContent=watchlistItems.length+" indexed mentions found.";
  $("scanWatchlist").disabled=false;
  if(activeView==="torrents")renderTorrentMonitor();
@@ -1092,7 +1150,7 @@ function renderTorrentMonitor(){
  const unique=new Map([...torrentMonitorItems,...watchlistItems].map(x=>[normalizeStoryUrl(x.link)||titleKey(x.title),x]));
  const rows=[...unique.values()].filter(x=>(x.title+" "+x.desc+" "+x.source+" "+(x.watchName||"")).toLowerCase().includes(q));
  $("resourceCount").textContent=rows.length+" indexed mentions · duplicates removed";
- $("resourceList").innerHTML=rows.length?rows.map(x=>'<div class="resource-card"><div class="resource-title">'+esc(x.title)+'</div><div class="resource-meta">'+esc(x.source)+(x.watchName?" · WATCHLIST: "+esc(x.watchName):"")+' · '+(x.date?new Date(x.date).toLocaleDateString():"Date unavailable")+'</div><p class="resource-desc">'+esc(x.desc)+'</p><a href="'+esc(x.link)+'" target="_blank" rel="noopener">OPEN RESULT ↗</a></div>').join(""):'<div class="empty">No indexed mentions match. This does not prove a plugin is absent from torrent sites.</div>';
+ $("resourceList").innerHTML=rows.length?rows.map(x=>'<div class="resource-card"><div class="resource-title">'+esc(x.title)+'</div><div class="resource-meta">'+esc(x.source)+(x.watchName?" · WATCHLIST: "+esc(x.watchName):"")+' · '+(newsTime(x.date)?new Date(newsTime(x.date)).toLocaleDateString():"Date unavailable")+'</div><p class="resource-desc">'+esc(x.desc)+'</p><a href="'+esc(x.link)+'" target="_blank" rel="noopener">OPEN RESULT ↗</a></div>').join(""):'<div class="empty">No indexed mentions match. This does not prove a plugin is absent from torrent sites.</div>';
 }
 function renderResourceDirectory(){
  const data=activeView==="torrents"?torrentResources:sampleResources;
@@ -1130,10 +1188,10 @@ function renderSamplePackReleases(){
  }
  const q=($("search").value||"").toLowerCase().trim();
  const releases=[...byLink.values()].filter(x=>!q||(x.title+" "+x.desc+" "+x.source).toLowerCase().includes(q))
-  .sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0)).slice(0,24);
+  .sort((a,b)=>newsOrder(a,b)).slice(0,24);
  $("sampleReleases").innerHTML=releases.length?releases.map(x=>
   '<div class="sample-release-card"><div class="sample-release-title">'+esc(x.title)+'</div>'+
-  '<div class="sample-release-meta">'+esc(x.source)+' · '+(x.date?new Date(x.date).toLocaleDateString():"DATE UNAVAILABLE")+'</div>'+
+  '<div class="sample-release-meta">'+esc(x.source)+' · '+(newsTime(x.date)?new Date(newsTime(x.date)).toLocaleDateString():"DATE UNAVAILABLE")+'</div>'+
   '<p class="resource-desc">'+esc(x.desc)+'</p>'+
   '<a href="'+esc(x.link)+'" target="_blank" rel="noopener">OPEN PACK ↗</a>'+
   sampleDemoMarkup(x)+
@@ -1468,10 +1526,10 @@ function render(){
  pendingStoryAccents.clear();
  let q=$("search").value.toLowerCase().trim();
  const available=active==="Saved"?[...new Map([...savedItems,...items].map(x=>[x.key,x])).values()]:items;
- let list=available.filter(x=>(active==="All"|| (active==="Saved"?saved.includes(x.key):x.cat===active)) && (!q||(x.title+" "+x.source+" "+x.desc).toLowerCase().includes(q)));
- list.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
+ let list=available.filter(x=>(active==="All"|| (active==="Saved"?saved.includes(x.key):x.cat===active)) && (active==="Saved"||newsInPeriod(x,activeSearchPeriod)) && (!q||(x.title+" "+x.source+" "+x.desc).toLowerCase().includes(q)));
+ list.sort((a,b)=>newsOrder(a,b));
  $("count").textContent=`${list.length} headlines · ${items.length} collected`;
- $("stories").innerHTML=list.length?list.map(x=>`<article class="story">${x.image?`<img class="storymedia" src="${esc(x.image)}" alt="Image for ${esc(x.title)}" loading="lazy" decoding="async" onload="storyImageLoaded(this)" onerror="storyImageFailed(this)">`:""}<div class="meta"><span>${esc(x.source)}</span><span class="dot"></span><span>${esc(x.cat)}</span><span class="dot"></span><span>${x.date?new Date(x.date).toLocaleString():"Date unavailable"}</span></div><h2><a class="storytitle" href="${esc(x.link)}" target="_blank" rel="noopener">${esc(x.title)}</a></h2><p>${esc(x.desc)}</p><div class="storyfoot"><span class="note">OPEN STORY ↗</span><button class="save" data-save="${esc(x.key)}">${saved.includes(x.key)?"★ Saved":"☆ Save"}</button></div>${x.cat==="Sample packs"?sampleDemoMarkup(x):""}</article>`).join(""):`<div class="empty">No headlines match this view. Try another category or refresh the feeds.</div>`;
+ $("stories").innerHTML=list.length?list.map(x=>`<article class="story">${x.image?`<img class="storymedia" src="${esc(x.image)}" alt="Image for ${esc(x.title)}" loading="lazy" decoding="async" onload="storyImageLoaded(this)" onerror="storyImageFailed(this)">`:""}<div class="meta"><span>${esc(x.source)}</span><span class="dot"></span><span>${esc(x.cat)}</span><span class="dot"></span><span>${esc(newsDateLabel(x))}</span></div><h2><a class="storytitle" href="${esc(x.link)}" target="_blank" rel="noopener">${esc(x.title)}</a></h2><p>${esc(x.desc)}</p><div class="storyfoot"><span class="note">OPEN STORY ↗</span><button class="save" data-save="${esc(x.key)}">${saved.includes(x.key)?"★ Saved":"☆ Save"}</button></div>${x.cat==="Sample packs"?sampleDemoMarkup(x):""}</article>`).join(""):`<div class="empty">No headlines match this view. Try another category or refresh the feeds.</div>`;
  document.querySelectorAll("#stories .story").forEach((card,i)=>{card.__article=list[i]});
  document.querySelectorAll("#stories .storymedia").forEach(img=>{if(img.complete&&img.naturalWidth)storyImageLoaded(img)});
  watchVisibleStories();
@@ -1605,7 +1663,7 @@ async function fetchFeed(feed,signal){
   const link=articleURL(it.link,feed.url)||articleURL(it.guid);
   const title=String(it.title||"Untitled");
   const images=extractImageCandidates(it);
-  return {title,link,date:it.pubDate||"",desc:cleanDesc(it.description||it.content),image:images[0]||"",images,demo:extractFeedSampleDemo(it),source:feed.name,feedUrl:feed.url,cat:classify({title,description:it.description||it.content},feed),key:link};
+  return {title,link,date:normalizedNewsDate(it.pubDate||""),dateKind:"published",desc:cleanDesc(it.description||it.content),image:images[0]||"",images,demo:extractFeedSampleDemo(it),source:feed.name,feedUrl:feed.url,cat:classify({title,link,description:it.description||it.content},feed),key:link};
  }).filter(story=>story.link);
 }
 function normalizeStoryUrl(raw){
@@ -1631,7 +1689,7 @@ async function fetchSearchEngine(engine,query,period){
   url="https://www.bing.com/news/search?q="+q+"&format=rss&setmkt=en-US";
  }
  const result=await fetchFeedWithTimeout({name:engine+" News Search",url,cat:"Production"},9000);
- return result.map(x=>({...x,source:engine+" News",cat:classify({title:x.title,description:x.desc},{cat:"Production"}),key:normalizeStoryUrl(x.link)}));
+ return result.map(x=>({...x,source:engine+" News",cat:classify(x,{cat:"Production"}),key:normalizeStoryUrl(x.link)}));
 }
 // Search results are ephemeral (not added to the saved RSS cache). A
 // later Enter/search can supersede an earlier slow engine response.
@@ -1658,7 +1716,8 @@ async function runWebSearch(){
    catch(e){return {engine,items:[],error:String(e.message||e)}}
   }));
   if(requestId!==newsSearchSerial)return;
-  const combined=settled.flatMap(x=>x.items);
+  const combined=settled.flatMap(x=>x.items).filter(x=>newsInPeriod(x,period));
+  activeSearchPeriod=period;
   const byUrl=new Map(),byTitle=new Map();
   for(const item of combined){
    const u=normalizeStoryUrl(item.link),t=titleKey(item.title);
@@ -1668,17 +1727,18 @@ async function runWebSearch(){
     // doing so detached the source URL from the saved-article identity.
     if((item.desc||"").length>(existing.desc||"").length)existing.desc=item.desc;
     if(!existing.image&&item.image)existing.image=item.image;
+    if(newsTime(item.date)&&(!newsTime(existing.date)||newsTime(item.date)<newsTime(existing.date)))existing.date=item.date;
     if(!existing.source.split(" + ").includes(item.source))existing.source+=" + "+item.source;
    }else{byUrl.set(u,item);byTitle.set(t,item)}
   }
-  const unique=[...byUrl.values()].sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
+  const unique=[...byUrl.values()].sort((a,b)=>newsOrder(a,b));
   const searchKeys=new Set(unique.map(x=>normalizeStoryUrl(x.link)));
   // Leave the persisted RSS cache alone. Search results are temporary in-memory.
   items=[...unique,...items.filter(x=>!searchKeys.has(normalizeStoryUrl(x.link))&&!unique.some(s=>titleKey(s.title)===titleKey(x.title)))];
   active="All";
   document.querySelectorAll("[data-filter]").forEach(b=>b.classList.toggle("active",b.dataset.filter==="All"));
   render();
-  const total=settled.reduce((n,x)=>n+x.items.length,0);
+  const total=combined.length;
   const errors=settled.filter(x=>x.error).map(x=>x.engine+": "+x.error);
   $("searchStatus").textContent=unique.length+" unique results from "+engines.join(" + ")+". "+(total-unique.length)+" duplicates removed."+(errors.length?" Some engines failed: "+errors.join("; "):"");
   $("count").textContent=unique.length+" search results · "+items.length+" headlines available";
@@ -1702,7 +1762,7 @@ async function fetchGithubReaperRepos(){
     const link=repo.html_url;
     found.push({
      title:repo.full_name+" — "+(repo.description||"REAPER script repository"),
-     link,date:repo.pushed_at||repo.updated_at||"",
+     link,date:normalizedNewsDate(repo.pushed_at||repo.updated_at||""),dateKind:"updated",
      desc:(repo.description||"REAPER-related repository")+
        " · "+(repo.language||"Language not specified")+
        " · ★ "+(repo.stargazers_count||0)+
@@ -1783,7 +1843,7 @@ async function refreshLiveRadar(force=false){
     byUrl.add(key);byTitle.add(title);items.push(story);added++;
    }
    if(added){
-    items.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
+    items.sort((a,b)=>newsOrder(a,b));
     items=items.slice(0,500);
     try{deskStorage.setItem("ar_items",JSON.stringify(items))}catch(e){}
     if(activeView==="news")render();
@@ -1812,7 +1872,10 @@ async function mapFeedsBounded(sources,worker){
 }
 function uniqueFeedStories(records,max=500){
  const urls=new Set(),titles=new Set(),unique=[];
- for(const item of records){
+ // Prefer a dated publisher record, then its earliest valid date over an index copy.
+ const reliability=x=>{if(!newsTime(x?.date))return 0;return /news\.google\.com|bing\.com\/news/i.test(String(x?.link||""))?1:2};
+ const ordered=records.filter(Boolean).slice().sort((a,b)=>reliability(b)-reliability(a)||(newsTime(a.date)||Infinity)-(newsTime(b.date)||Infinity));
+ for(const item of ordered){
   if(!item||!articleURL(item.link))continue;
   const url=normalizeStoryUrl(item.link),title=titleKey(item.title);
   // Syndicated copies often use different news index URLs. Only fold
@@ -1821,7 +1884,7 @@ function uniqueFeedStories(records,max=500){
   urls.add(url);if(title.length>=24)titles.add(title);
   unique.push(item);
  }
- return unique.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0)).slice(0,max);
+ return unique.sort((a,b)=>newsOrder(a,b)).slice(0,max);
 }
 let feedRefreshSerial=0,feedRefreshPending=false;
 async function loadFeeds(){
@@ -1903,7 +1966,7 @@ function tabPreviewContent(index){
   const data=category==="Saved"
    ?[...savedItems,...items].filter(x=>saved.includes(x.key))
    :category==="All"?items:items.filter(x=>x.cat===category);
-  records=data.slice().sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0))
+  records=data.slice().sort((a,b)=>newsOrder(a,b))
    .slice(0,3).map(x=>x.title);
  }else if(view==="samples"){
   records=[...items.filter(x=>x.cat==="Sample packs").slice(0,2).map(x=>x.title),
@@ -2357,7 +2420,7 @@ function updateLauncherLiveTiles(){
  $("launcherLiveMonth").textContent=now.toLocaleDateString([],{weekday:"short",month:"short",year:"numeric"}).toUpperCase();
  const story=Array.isArray(items)&&items.length?
   items.filter(x=>x&&typeof x.title==="string"&&x.title.trim()&&x.link&&/^https:\/\//.test(x.link))
-   .reduce((best,x)=>!best||(Date.parse(x.date)||0)>(Date.parse(best.date)||0)?x:best,null):null;
+   .reduce((best,x)=>!best||newsTime(x.date)>newsTime(best.date)?x:best,null):null;
  $("launcherLiveHeadline").textContent=story?story.title:"NO CACHED HEADLINES YET";
  $("launcherLiveNewsSource").textContent=story?String(story.source||"AUDIO DESK").slice(0,64):"OPEN NEWS TO FETCH HEADLINES";
 }
@@ -2918,7 +2981,7 @@ document.addEventListener("touchcancel",()=>{if(launcherGesture)resetLauncherGes
 document.body.dataset.homePage="home";
 
 document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{setView("news");active=b.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===b));render();DeskMotion.enter($("stories"))});
-$("search").addEventListener("input",()=>{if(activeView==="news")render();else if(activeView==="torrents")renderTorrentMonitor();else renderResourceDirectory()});
+$("search").addEventListener("input",()=>{activeSearchPeriod="";if(activeView==="news")render();else if(activeView==="torrents")renderTorrentMonitor();else renderResourceDirectory()});
 $("resourceCategory").addEventListener("change",()=>{if(activeView==="torrents")renderTorrentMonitor();else renderResourceDirectory()});
 $("resourceAccess").addEventListener("change",()=>{if(activeView==="torrents")renderTorrentMonitor();else renderResourceDirectory()});
 document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
@@ -2928,7 +2991,7 @@ $("refreshTorrent").onclick=loadTorrentMonitor;
 $("torrentPeriod").addEventListener("change",loadTorrentMonitor);
 $("webSearch").onclick=runWebSearch;
 $("search").addEventListener("keydown",e=>{if(e.key==="Enter")runWebSearch()});
-$("refresh").onclick=loadFeeds;
+$("refresh").onclick=()=>{activeSearchPeriod="";loadFeeds()};
 $("discoverFeeds").onclick=()=>discoverPublisherFeeds(true);
 $("addFeed").onclick=()=>{let name=$("feedName").value.trim(),url=$("feedUrl").value.trim();if(!name||!/^https?:\/\//i.test(url)){alert("Enter a source name and a valid http(s) RSS URL.");return}removedFeeds.delete(url);deskStorage.setItem("ar_removed_feeds",JSON.stringify([...removedFeeds]));if(!feeds.some(f=>f.url===url))feeds.push({name,url,cat:"Production"});deskStorage.setItem("ar_feeds",JSON.stringify(feeds));$("feedName").value="";$("feedUrl").value="";renderSources();loadFeeds()};
 renderSources();

@@ -49,7 +49,7 @@ const qaFeeds=[
       feed.includes('alpha.rss')?'https://stories.example.test/alpha':'https://stories.example.test/beta';
     return route.fulfill({json:{status:'ok',items:[{
      title:name,link,description:'Audio editing workflow and hardware',
-     pubDate:'2026-11-24 10:00:00'
+     pubDate:new Date(Date.now()-60000).toISOString()
     }]}}).catch(()=>{});
    }
    if(url.includes('api.github.com'))return route.fulfill({json:{items:[]}});
@@ -119,6 +119,20 @@ const qaFeeds=[
    'A genuinely different update'
   ]);
 
+  const chronology=await page.evaluate(()=>{
+   const now=Date.parse('2026-11-25T10:00:00Z');
+   const raw=['2026-11-25 08:00:00','2026-11-25T13:30:00+05:30','2026-02-30','invalid','2027-01-01'];
+   const base={title:'Chronological audio publication fixture',link:'https://publisher.example/a',source:'Publisher'};
+   const records=[{...base,date:'invalid'},{...base,date:'2026-11-24T06:00:00Z'}];
+   return {utc:raw.map(normalizedNewsDate),times:raw.map(x=>newsTime(x,now)),window:newsInPeriod({date:'2026-11-25 09:30:00'},'1h',now),old:newsInPeriod({date:'2026-11-25 08:00:00'},'1h',now),duplicate:uniqueFeedStories(records)[0].date};
+  });
+  assert.equal(chronology.utc[0],chronology.utc[1]);
+  assert.equal(chronology.utc[2],'');
+  assert.equal(chronology.times[3],0);
+  assert.equal(chronology.times[4],0);
+  assert.equal(chronology.window,true);
+  assert.equal(chronology.old,false);
+  assert.equal(chronology.duplicate,'2026-11-24T06:00:00Z');
   const peak=await page.evaluate(async()=>{
    let active=0,max=0;
    await mapFeedsBounded(Array.from({length:45},(_,i)=>i),async n=>{
