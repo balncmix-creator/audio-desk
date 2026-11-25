@@ -27,3 +27,6 @@
 - Artifact name, version and exact commit:
 - Release decision: development candidate / stable approved / blocked.
 Never mark an unchecked item as passed. Use not applicable with a reason. The automated registration and package checks are safeguards, not substitutes for engineering review.
+
+## Explicit legacy exception
+The unused `app-icon-engine.js`, `app-icon-engine.css` and historical `tests/app-icon-engine.cjs` are superseded by the active `native-icons` modules and regression. The coverage gate excludes only these exact names and rejects runtime references to the retired assets; they must be restored to coverage or removed if reactivated. All other shared top-level JavaScript/CSS files and executable test files are checked.
