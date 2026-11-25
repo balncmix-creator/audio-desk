@@ -80,8 +80,8 @@ const qaFeeds=[
    recordSourceHealth(feeds[0],'auth');recordSourceHealth(feeds[1],'blocked');renderSources();
   });
   await page.locator('#sourceHealthSummary').click();
-  assert.match(await page.locator('#sourceHealthList').innerText(),/Authentication reported — sign-in may be required/);
-  assert.match(await page.locator('#sourceHealthList').innerText(),/Access blocked/);
+  assert.match(await page.locator('#sourceHealthList').innerText(),/Authentication reported — sign-in may be required/i);
+  assert.match(await page.locator('#sourceHealthList').innerText(),/Access blocked/i);
   assert.equal(await page.locator('#sourceHealthList a').count(),2);
   await page.locator('#sourceHealthSummary').click();
 
