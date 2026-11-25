@@ -568,6 +568,7 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
 </section>
 <section class="panel">
 <h3>Sources included</h3>
+<details id="sourceHealthPanel"><summary id="sourceHealthSummary">Source health — not checked yet</summary><p class="note">Latest feed check only. A blocked feed or authentication error may come from the feed service rather than the publisher. Article sign-in and paywalls are not verified by RSS. Open the publisher to check access.</p><div id="sourceHealthList" role="status"></div></details>
 <div id="sources"></div>
 <div class="row" style="margin-top:12px"><button class="primary" id="discoverFeeds">⌕ DISCOVER NEW FEEDS</button></div>
 <p class="note" id="discoveryStatus" role="status">Audio Desk checks trusted publishers for new RSS/Atom feeds every seven days while connected. Only verified feeds are added.</p>
@@ -1541,12 +1542,52 @@ function discoverPublisherFeeds(force=false){
   $("discoveryStatus").textContent="Publisher discovery could not start.";
  }
 }
+const sourceHealth=readStore("ar_source_health_v1",{});
+function feedFailureStatus(error){
+ const message=String(error?.message||error||"");
+ if(/\b401\b|authentication required|unauthorized|sign[ -]?in required|login required/i.test(message))return "auth";
+ if(/\b403\b|forbidden|access denied/i.test(message))return "blocked";
+ if(/\b429\b|rate.limit|too many requests|quota/i.test(message))return "rate";
+ if(/timed out|timeout/i.test(message))return "timeout";
+ if(/\b404\b|\b410\b|not found/i.test(message))return "missing";
+ return "failed";
+}
+function sourceHealthLabel(state){
+ return ({ok:"Accessible feed",empty:"Accessible — no articles",auth:"Authentication reported — sign-in may be required",blocked:"Access blocked",rate:"Feed service rate-limited",timeout:"Timed out",missing:"Feed not found",failed:"Feed unavailable",unchecked:"Not checked"})[state]||"Not checked";
+}
+function recordSourceHealth(feed,state,count=0){
+ if(!feeds.some(f=>f.url===feed.url))return;
+ sourceHealth[feed.url]={state,count,checked:Date.now()};
+}
+function renderSourceHealth(){
+ const rows=feeds.map(f=>({f,h:Object.hasOwn(sourceHealth,f.url)?sourceHealth[f.url]:null}));
+ const problems=rows.filter(({h})=>h&&!["ok","empty"].includes(h.state));
+ const unchecked=rows.filter(({h})=>!h).length;
+ const loaded=rows.length-problems.length-unchecked;
+ $("sourceHealthSummary").textContent="Source health — "+problems.length+" unavailable / "+loaded+" accessible / "+unchecked+" unchecked";
+ const list=$("sourceHealthList");
+ list.replaceChildren();
+ for(const {f,h} of problems){
+  const row=document.createElement("div");row.className="source";
+  const info=document.createElement("div");info.textContent=f.name;
+  const status=document.createElement("small");status.textContent=sourceHealthLabel(h.state)+" · Last checked "+new Date(h.checked).toLocaleString();info.append(status);
+  const link=document.createElement("a");
+  const seed=publisherSeeds.find(p=>f.name.toLowerCase().startsWith(p.name.toLowerCase()));
+  const target=articleURL(seed?.site||f.url);
+  if(target){link.href=target;link.target="_blank";link.rel="noopener";link.textContent="Open ↗";row.append(info,link)}else row.append(info);
+  list.append(row);
+ }
+ if(!problems.length){const note=document.createElement("p");note.className="note";note.textContent=unchecked?"No recorded failures; some sources have not been checked.":"No feed access failures in the latest checks.";list.append(note)}
+}
 function renderSources(){
- $("sources").innerHTML=feeds.map((f,i)=>`<div class="source"><div>${esc(f.name)}<small>${esc(f.cat)}</small></div><button class="save" data-remove="${i}">Remove</button></div>`).join("");
+ $("sources").innerHTML=feeds.map((f,i)=>`<div class="source"><div>${esc(f.name)}<small>${esc(f.cat)} · ${esc(sourceHealthLabel(sourceHealth[f.url]?.state))}</small></div><button class="save" data-remove="${i}">Remove</button></div>`).join("");
+ renderSourceHealth();
  document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{
   const removed=feeds.splice(Number(b.dataset.remove),1)[0];
   if(!removed)return;
   removedFeeds.add(removed.url);
+  delete sourceHealth[removed.url];
+  try{deskStorage.setItem("ar_source_health_v1",JSON.stringify(sourceHealth))}catch(e){}
   deskStorage.setItem("ar_removed_feeds",JSON.stringify([...removedFeeds]));
   deskStorage.setItem("ar_feeds",JSON.stringify(feeds));
   // The source can be removed while its old HTTP request is still pending.
@@ -1796,8 +1837,8 @@ async function loadFeeds(){
  $("status").textContent=`Refreshing ${sources.length} sources…`;
  try{
   const results=await mapFeedsBounded(sources,async f=>{
-   try{const x=await fetchFeedWithTimeout(f,6000);ok++;return x}
-   catch(e){failed.push(f.name);return []}
+   try{const x=await fetchFeedWithTimeout(f,6000);ok++;recordSourceHealth(f,x.length?"ok":"empty",x.length);return x}
+   catch(e){failed.push(f.name);recordSourceHealth(f,feedFailureStatus(e));return []}
    finally{
     done++;
     $("status").textContent=`Refreshing feeds… ${done}/${sources.length} checked · ${ok} loaded`;
@@ -1806,6 +1847,9 @@ async function loadFeeds(){
   // Use the source snapshot. A source removed while loading must not be
   // resurrected by responses from a request that started earlier.
   const currentUrls=new Set(feeds.map(f=>f.url));
+  for(const url of Object.keys(sourceHealth))if(!currentUrls.has(url))delete sourceHealth[url];
+  try{deskStorage.setItem("ar_source_health_v1",JSON.stringify(sourceHealth))}catch(e){}
+  renderSources();
   const fresh=results.flatMap((stories,i)=>currentUrls.has(sources[i].url)?stories:[]);
   const retained=ok===0?items:items.filter(x=>
    failed.includes(x.source)||x.source.startsWith("LIVE RADAR — ")||x.source==="GitHub repository discovery");
