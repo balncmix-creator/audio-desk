@@ -66,6 +66,24 @@ const qaFeeds=[
   assert.equal(await page.locator('#stories .story').count(),2);
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.ar_items).length),2);
 
+  // Check the actual health panel and status classifications.
+  const health=await page.evaluate(()=>({
+   summary:document.querySelector('#sourceHealthSummary').textContent,
+   states:['HTTP 401','HTTP 403','HTTP 429','Timed out after 6s','HTTP 404','Network error'].map(s=>feedFailureStatus(new Error(s))),
+   persisted:JSON.parse(localStorage.ar_source_health_v1)
+  }));
+  assert.match(health.summary,/0 unavailable \/ 2 accessible \/ 0 unchecked/);
+  assert.deepEqual(health.states,['auth','blocked','rate','timeout','missing','failed']);
+  assert.equal(health.persisted[qaFeeds[0].url].state,'ok');
+  await page.evaluate(()=>{
+   recordSourceHealth(feeds[0],'auth');recordSourceHealth(feeds[1],'blocked');renderSources();
+  });
+  await page.locator('#sourceHealthSummary').click();
+  assert.match(await page.locator('#sourceHealthList').innerText(),/Authentication reported — sign-in may be required/);
+  assert.match(await page.locator('#sourceHealthList').innerText(),/Access blocked/);
+  assert.equal(await page.locator('#sourceHealthList a').count(),2);
+  await page.locator('#sourceHealthSummary').click();
+
   // Removing a source DURING a slow in-flight refresh must not re-add it.
   slowAlpha=true;
   await page.locator('#refresh').click();
