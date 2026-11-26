@@ -84,6 +84,23 @@ const assert=require('node:assert/strict');
   await page.locator('#appManageSheet [data-manage="storage"]').click();
   assert.equal((await page.evaluate(()=>window.testAppSettings)).at(-1).action,'storage');
   assert.equal(await page.locator('#appManageSheet').isVisible(),false);
+  // All four management options must be available without Home shortcuts.
+  await appButton.dispatchEvent('contextmenu');
+  const manage=page.locator('#appManageSheet');
+  assert.deepEqual(await manage.locator('.manage-actions button').allTextContents(),['App info','Uninstall','Clear cache','Force stop']);
+  await manage.locator('[data-manage="uninstall"]').click();
+  assert.equal((await page.evaluate(()=>window.testAppSettings)).at(-1).action,'uninstall');
+  await appButton.dispatchEvent('contextmenu');
+  await page.evaluate(()=>window.launcherBack());
+  assert.equal(await manage.isVisible(),false);
+  await page.evaluate(()=>{setLauncherPage('home',false);launcherRecents=[{pkg:'com.example.music',activity:'Music',label:'Music',uses:6,opened:Date.now()}];renderLauncherHome();renderLauncherRecents()});
+  const recent=page.locator('#launcherRecentQuick .launcher-app').first();
+  await recent.dispatchEvent('contextmenu');
+  assert.equal(await manage.isVisible(),true,'Recents use the same management menu');
+  assert.equal(await page.locator('#launcherShortcutMenu').isVisible(),false);
+  await manage.locator('[data-manage="force-stop"]').click();
+  assert.equal((await page.evaluate(()=>window.testAppSettings)).at(-1).action,'force-stop');
+  await page.evaluate(()=>{launcherRecents=[];renderLauncherHome();renderLauncherRecents()});
   // Per-theme transparency and persistence.
   await page.evaluate(()=>setLauncherPage('home',false));
   await page.locator('#launcherSettingsToggle').click();

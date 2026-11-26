@@ -200,12 +200,12 @@ manager.setAttribute("aria-label","App management");
 manager.innerHTML='<div class="app-manage-card">'+
  '<div class="folder-heading"><h3 id="appManageTitle">App settings</h3>'+
  '<button type="button" data-manage="close" aria-label="Close app management">×</button></div>'+
- '<p>Android system settings are required for storage and force-stop controls.</p>'+
  '<div class="manage-actions">'+
  '<button type="button" data-manage="info">App info</button>'+
- '<button type="button" data-manage="storage">Storage & clear cache</button>'+
- '<button type="button" data-manage="force-stop">Force stop (Settings)</button>'+
- '<button type="button" data-manage="settings">App settings</button></div></div>';
+ '<button type="button" data-manage="uninstall">Uninstall</button>'+
+ '<button type="button" data-manage="storage">Clear cache</button>'+
+ '<button type="button" data-manage="force-stop">Force stop</button></div>'+
+ '<p>Clear cache and force stop open Android App info. Android requires you to confirm these actions in Settings.</p></div>';
 document.body.appendChild(manager);
 let managed=null;
 function appManage(pkg,activity){
@@ -213,9 +213,16 @@ function appManage(pkg,activity){
   launcherRecents.find(a=>a.pkg===pkg&&a.activity===activity);
  if(!managed)return;
  byId("appManageTitle").textContent=managed.label;
- manager.hidden=false;
+ cancelHomeHold();upStart=null;iconSwipe=null;longConsumed=true;
+ if(launcherGesture)resetLauncherGesture();
+ closeAppShortcuts(true);manager.hidden=false;
+ window.AudioDesk?.hideSearchKeyboard?.();
 }
 function closeManage(){manager.hidden=true;managed=null}
+window.audioDeskManageApp=appManage;
+const oldBack=window.launcherBack,oldGoHome=window.launcherGoHome;
+window.launcherBack=function(){if(!manager.hidden){closeManage();return}return oldBack.apply(this,arguments)};
+window.launcherGoHome=function(){closeManage();return oldGoHome.apply(this,arguments)};
 manager.onclick=e=>{
  if(e.target===manager){closeManage();return}
  const action=e.target.closest("[data-manage]")?.dataset.manage;
@@ -225,58 +232,45 @@ manager.onclick=e=>{
  window.AudioDesk?.openAppSettings?.(managed.pkg,action);
  closeManage();
 };
+const manageTargets="#launcherAppsGrid .launcher-app,#launcherFavorites .launcher-app,#launcherRecentQuick .launcher-app,#launcherLetterApps .launcher-app,#launcherRecentGrid .launcher-resume";
+function stopHeld(){if(appHeld){clearTimeout(appHeld.timer);appHeld=null}}
+function openHeld(pkg,activity){
+ clickBlockedUntil=Date.now()+1000;blockAppClickUntil=clickBlockedUntil;
+ appManage(pkg,activity);
+}
 document.addEventListener("pointerdown",e=>{
- const a=e.target.closest("#launcherAppsGrid .launcher-app,#launcherFavorites .launcher-app,#launcherRecentQuick .launcher-app");
+ const a=e.target.closest(manageTargets);
  if(!a||e.button!==0||!manager.hidden)return;
- clearTimeout(appHeld?.timer);
+ stopHeld();
  const {clientX:x,clientY:y,pointerId}=e;
  appHeld={pkg:a.dataset.launchPkg,activity:a.dataset.launchActivity,x,y,pointerId,
-  home:!!a.closest("#launcherFavorites,#launcherRecentQuick"),
-  timer:setTimeout(()=>{
-   if(!appHeld)return;
-   const h=appHeld;appHeld=null;
-   clickBlockedUntil=Date.now()+850;
-   // Suppress the native app-open tap and Home swipe after a long press.
-   blockAppClickUntil=Date.now()+850;
-   if(h.home){
-    upStart=null;iconSwipe=null;longConsumed=true;
-    showAppShortcuts(h.pkg,h.activity);
-   }else appManage(h.pkg,h.activity);
-  },520)};
+  timer:setTimeout(()=>{if(!appHeld)return;const h=appHeld;appHeld=null;openHeld(h.pkg,h.activity)},520)};
 },true);
 document.addEventListener("pointermove",e=>{
  if(!appHeld||appHeld.pointerId!==e.pointerId)return;
- if(Math.hypot(e.clientX-appHeld.x,e.clientY-appHeld.y)>12){
-  clearTimeout(appHeld.timer);appHeld=null;
- }
+ if(Math.hypot(e.clientX-appHeld.x,e.clientY-appHeld.y)>12)stopHeld();
 },true);
 for(const ev of ["pointerup","pointercancel"])
- document.addEventListener(ev,()=>{if(appHeld){clearTimeout(appHeld.timer);appHeld=null}},true);
-/* Android WebView may emit contextmenu/pointercancel before a hold timer fires.
-   The same Home shortcuts menu must still open for Favourites and Recents. */
+ document.addEventListener(ev,()=>stopHeld(),true);
 document.addEventListener("contextmenu",e=>{
- const a=e.target.closest("#launcherFavorites .launcher-app,#launcherRecentQuick .launcher-app");
- if(!a||launcherPage!=="home")return;
- e.preventDefault();
- if(appHeld){clearTimeout(appHeld.timer);appHeld=null}
- clickBlockedUntil=Date.now()+850;
- blockAppClickUntil=Date.now()+850;
- upStart=null;iconSwipe=null;longConsumed=true;
- if(byId("launcherShortcutMenu").hidden)
-  showAppShortcuts(a.dataset.launchPkg,a.dataset.launchActivity);
+ const a=e.target.closest(manageTargets);
+ if(!a)return;
+ e.preventDefault();stopHeld();
+ if(manager.hidden)openHeld(a.dataset.launchPkg,a.dataset.launchActivity);
 },true);
 document.addEventListener("click",e=>{
- if(Date.now()<clickBlockedUntil&&e.target.closest(".launcher-app")){
+ if(Date.now()<clickBlockedUntil&&e.target.closest(manageTargets)){
   e.preventDefault();e.stopImmediatePropagation();
  }
 },true);
+document.addEventListener("visibilitychange",()=>{if(document.hidden)stopHeld()});
 document.addEventListener("keydown",e=>{
  if(e.key==="Escape"){
   if(!folderSheet.hidden)closeFolder();
   if(!manager.hidden)closeManage();
  }
 },true);
-window.addEventListener("launcher-page-changed",()=>{closeFolder();closeManage()});
+window.addEventListener("launcher-page-changed",()=>{stopHeld();closeFolder();closeManage()});
 /* Expose a small debug/test API; no sensitive native data. */
 window.audioDeskFolderCreate=()=>folderEdit(null);
 window.audioDeskSetAppLayout=mode=>{if(["grid","list"].includes(mode)){appsLayout=mode;deskStorage.setItem(gridKey,mode);updateGrid()}};

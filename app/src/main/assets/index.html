@@ -3223,7 +3223,7 @@ document.addEventListener("click",e=>{
 <script src="orbit-theme.js"></script>
 <script src="radial-files.js"></script>
 <script>
-function hasLauncherOverlay(){return ['launcherLetterPanel','launcherHomeOptions','launcherShortcutMenu','launcherThemeDialog','launcherWallpaperDialog','launcherClockDialog','gridDetail','agendaOverlay'].some(id=>!document.getElementById(id).hidden)}
+function hasLauncherOverlay(){return ['launcherLetterPanel','launcherHomeOptions','launcherShortcutMenu','launcherThemeDialog','launcherWallpaperDialog','launcherClockDialog','gridDetail','agendaOverlay','appManageSheet'].some(id=>document.getElementById(id)?.hidden===false)}
 function syncRefreshAvailability(){window.AudioDesk?.setRefreshEnabled?.(launcherPage==='events'&&!hasLauncherOverlay())}
 for(const id of ['launcherLetterPanel','launcherHomeOptions','launcherShortcutMenu','launcherThemeDialog','launcherWallpaperDialog','launcherClockDialog','gridDetail','agendaOverlay']){
  new MutationObserver(()=>{syncRefreshAvailability();if(hasLauncherOverlay()){cancelHomeHold();upStart=null;if(launcherGesture)resetLauncherGesture()}}).observe($(id),{attributes:true,attributeFilter:['hidden']});
