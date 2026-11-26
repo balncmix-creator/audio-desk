@@ -207,7 +207,7 @@ manager.innerHTML='<div class="app-manage-card">'+
  '<button type="button" data-manage="force-stop">Force stop</button></div>'+
  '<p>Clear cache and force stop open Android App info. Android requires you to confirm these actions in Settings.</p></div>';
 document.body.appendChild(manager);
-let managed=null;
+let managed=null,managedHold=false,releaseBlocked=false;
 function appManage(pkg,activity){
  managed=launcherApps.find(a=>a.pkg===pkg&&a.activity===activity)||
   launcherRecents.find(a=>a.pkg===pkg&&a.activity===activity);
@@ -216,19 +216,20 @@ function appManage(pkg,activity){
  cancelHomeHold();upStart=null;iconSwipe=null;longConsumed=true;
  if(launcherGesture)resetLauncherGesture();
  closeAppShortcuts(true);manager.hidden=false;
+ manager.setAttribute("aria-hidden","false");
  window.AudioDesk?.hideSearchKeyboard?.();
 }
-function closeManage(){manager.hidden=true;managed=null}
+function closeManage(){manager.hidden=true;manager.setAttribute("aria-hidden","true");managed=null;managedHold=false}
 window.audioDeskManageApp=appManage;
 const oldBack=window.launcherBack,oldGoHome=window.launcherGoHome;
 window.launcherBack=function(){if(!manager.hidden){closeManage();return}return oldBack.apply(this,arguments)};
 window.launcherGoHome=function(){closeManage();return oldGoHome.apply(this,arguments)};
 manager.onclick=e=>{
- if(e.target===manager){if(Date.now()>=clickBlockedUntil)closeManage();return}
+ if(e.target===manager){if(!releaseBlocked&&Date.now()>=clickBlockedUntil)closeManage();return}
  const action=e.target.closest("[data-manage]")?.dataset.manage;
  if(!action)return;
  if(action==="close"){closeManage();return}
- if(!managed)return;
+ if(!managed||releaseBlocked)return;
  window.AudioDesk?.openAppSettings?.(managed.pkg,action);
  closeManage();
 };
@@ -237,6 +238,7 @@ function appTarget(target){const node=target?.closest?.(manageTargets);return no
 function stopHeld(){if(appHeld){clearTimeout(appHeld.timer);appHeld=null}}
 function openHeld(pkg,activity){
  clickBlockedUntil=Date.now()+1000;blockAppClickUntil=clickBlockedUntil;
+ managedHold=true;releaseBlocked=true;
  appManage(pkg,activity);
 }
 function beginAppHold(a,x,y,pointerId,touchId=null){
@@ -246,22 +248,23 @@ function beginAppHold(a,x,y,pointerId,touchId=null){
   timer:setTimeout(()=>{if(!appHeld)return;const h=appHeld;appHeld=null;openHeld(h.pkg,h.activity)},480)};
 }
 document.addEventListener("pointerdown",e=>{
+ releaseBlocked=false;
  if(e.button!==0||e.isPrimary===false)return;
- const a=appTarget(e.target);if(a)beginAppHold(a,e.clientX,e.clientY,e.pointerId);
+ const a=appTarget(e.target);if(a){beginAppHold(a,e.clientX,e.clientY,e.pointerId);cancelHomeHold();upStart=null;}
 },true);
 // WebView may cancel its pointer stream during native gesture arbitration.
 // A real touch sequence remains authoritative until it ends or moves.
 document.addEventListener("touchstart",e=>{
  if(e.touches.length!==1){stopHeld();return}
  const a=appTarget(e.target),t=e.touches[0];
- if(a)beginAppHold(a,t.clientX,t.clientY,null,t.identifier);
+ if(a){beginAppHold(a,t.clientX,t.clientY,null,t.identifier);cancelHomeHold();upStart=null;}
 },{capture:true,passive:true});
 document.addEventListener("touchmove",e=>{
  if(!appHeld)return;
  const t=[...e.touches].find(t=>t.identifier===appHeld.touchId);
  if(e.touches.length!==1||!t||Math.hypot(t.clientX-appHeld.x,t.clientY-appHeld.y)>16)stopHeld();
 },{capture:true,passive:true});
-for(const type of ["touchend","touchcancel"])document.addEventListener(type,()=>stopHeld(),{capture:true,passive:true});
+for(const type of ["touchend","touchcancel"])document.addEventListener(type,()=>{stopHeld();if(managedHold){clickBlockedUntil=Date.now()+750;blockAppClickUntil=clickBlockedUntil;}},{capture:true,passive:true});
 document.addEventListener("pointermove",e=>{
  if(!appHeld||appHeld.touchId!==null||appHeld.pointerId!==e.pointerId)return;
  if(Math.hypot(e.clientX-appHeld.x,e.clientY-appHeld.y)>16)stopHeld();
@@ -275,8 +278,8 @@ document.addEventListener("contextmenu",e=>{
  if(manager.hidden)openHeld(a.dataset.launchPkg,a.dataset.launchActivity);
 },true);
 document.addEventListener("click",e=>{
- if(Date.now()<clickBlockedUntil&&appTarget(e.target)){
-  e.preventDefault();e.stopImmediatePropagation();
+ if(releaseBlocked||Date.now()<clickBlockedUntil&&appTarget(e.target)){
+  e.preventDefault();e.stopImmediatePropagation();releaseBlocked=false;
  }
 },true);
 document.addEventListener("visibilitychange",()=>{if(document.hidden)stopHeld()});

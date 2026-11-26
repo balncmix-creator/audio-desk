@@ -407,3 +407,7 @@ body[data-home-page="home"][data-launcher-theme] #launcherHomePage[data-packed-l
 #launcherShell .launcher-app,#launcherRecentGrid .launcher-recent-card,#orbitDial [data-orbit-action]{
  -webkit-touch-callout:none;-webkit-user-select:none;user-select:none
 }
+
+/* Preserve ordinary vertical app-list scrolling while avoiding native selection on app holds. */
+#launcherRecentQuick .launcher-app,#launcherFavorites .launcher-app,#launcherRecentGrid .launcher-recent-card,#launcherAppsGrid .launcher-app,#launcherLetterApps .launcher-app{touch-action:pan-y;-webkit-user-drag:none}
+#launcherRecentQuick .launcher-app img,#launcherFavorites .launcher-app img,#launcherAppsGrid .launcher-app img,#launcherLetterApps .launcher-app img{pointer-events:none;-webkit-user-drag:none}

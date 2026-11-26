@@ -79,9 +79,22 @@ const assert=require('node:assert/strict');
   const cdp=await page.context().newCDPSession(page);
   async function realHold(locator){
    await locator.scrollIntoViewIfNeeded();
-   const box=await locator.boundingBox();
-   const x=Math.round(box.x+box.width/2),y=Math.round(box.y+box.height/2);
-   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
+   // Ensure the selected icon is genuinely hit-testable and not behind a
+   // fixed navigation control, clipping boundary or a transitioning page.
+   await locator.evaluate(el=>el.scrollIntoView({block:'center',inline:'center',behavior:'instant'}));
+   const point=await locator.evaluate(async el=>{
+    for(let i=0;i<20;i++){
+     const r=el.getBoundingClientRect();
+     for(const fx of [.5,.25,.75])for(const fy of [.5,.25,.75]){
+      const x=Math.round(r.left+r.width*fx),y=Math.round(r.top+r.height*fy);
+      if(x>0&&y>0&&x<innerWidth&&y<innerHeight&&el.contains(document.elementFromPoint(x,y)))return {x,y};
+     }
+     await new Promise(requestAnimationFrame);
+    }
+    return null;
+   });
+   assert.ok(point,'app icon must have a visible, unobstructed touch target');
+   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});
    await page.waitForTimeout(600);
    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
    await page.waitForTimeout(80);
@@ -104,6 +117,7 @@ const assert=require('node:assert/strict');
   await page.evaluate(()=>window.launcherBack());
   assert.equal(await manage.isVisible(),false);
   await page.evaluate(()=>{setLauncherPage('home',false);launcherRecents=[{pkg:'com.example.music',activity:'Music',label:'Music',uses:6,opened:Date.now()}];renderLauncherHome();renderLauncherRecents()});
+  await page.waitForFunction(()=>launcherPage==='home'&&!document.getElementById('launcherHomePage').hidden&&document.getElementById('appManageSheet').hidden);
   const recentAppButton=page.locator('#launcherRecentQuick .launcher-app').first();
   await realHold(recentAppButton);
   assert.equal(await manage.isVisible(),true,'Recents use the same management menu');
