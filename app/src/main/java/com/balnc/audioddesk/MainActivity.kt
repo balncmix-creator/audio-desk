@@ -40,6 +40,8 @@ class MainActivity : Activity() {
     private lateinit var swipeRefresh: DeskRefreshLayout
     private lateinit var browserPanel: LinearLayout
     private lateinit var browserAddress: TextView
+    private lateinit var scanFeedsButton: Button
+    private var googleDiscoveryMode = false
     private val refreshHandler = Handler(Looper.getMainLooper())
     private val refreshFailsafe = Runnable { swipeRefresh.isRefreshing = false }
     private lateinit var imageAccents: ImageAccentSampler
@@ -264,6 +266,8 @@ class MainActivity : Activity() {
             setPadding(8, 0, 8, 0)
         }
         browserToolbar.addView(browserAddress, LinearLayout.LayoutParams(0, -2, 1f))
+        scanFeedsButton = toolbarButton("SCAN FEEDS") { scanGoogleResults() }.apply { visibility = View.GONE }
+        browserToolbar.addView(scanFeedsButton)
         browserToolbar.addView(toolbarButton("CLOSE ×") { closeBrowser() })
         browserPanel.addView(browserToolbar)
 
@@ -273,9 +277,11 @@ class MainActivity : Activity() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?) = false
             override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                 browserAddress.text = url ?: ""
+                updateDiscoveryButton(url)
             }
             override fun onPageFinished(view: WebView?, url: String?) {
                 browserAddress.text = url ?: ""
+                updateDiscoveryButton(url)
             }
         }
         browserPanel.addView(browserWebView, LinearLayout.LayoutParams(
@@ -787,6 +793,15 @@ class MainActivity : Activity() {
                 }
             }
         }
+        @JavascriptInterface fun openGoogleDiscovery(query: String) {
+            if (query.length !in 1..200) return
+            runOnUiThread {
+                if (!destroyed) {
+                    googleDiscoveryMode = true
+                    openInBrowser("https://www.google.com/search?q=" + Uri.encode(query))
+                }
+            }
+        }
         @JavascriptInterface fun discoverPublisherFeeds(seeds: String, requestId: String) {
             if (requestId.length !in 1..32 || !requestId.all { it.isDigit() } || seeds.length > 8000) return
             feedDiscovery.discover(seeds) { found ->
@@ -936,6 +951,29 @@ class MainActivity : Activity() {
         callback?.onReceiveValue(if (uri != null && allowed) arrayOf(uri) else null)
     }
 
+    private fun updateDiscoveryButton(url: String?) {
+        if (::scanFeedsButton.isInitialized) {
+            scanFeedsButton.visibility = if (googleDiscoveryMode) View.VISIBLE else View.GONE
+            scanFeedsButton.isEnabled = GoogleResultDiscovery.isGoogleResults(url)
+        }
+    }
+
+    private fun scanGoogleResults() {
+        if (!googleDiscoveryMode || !GoogleResultDiscovery.isGoogleResults(browserWebView.url)) return
+        scanFeedsButton.isEnabled = false
+        // Read only result headings and their public links after an explicit tap.
+        // The external browser never receives the privileged AudioDesk bridge.
+        browserWebView.evaluateJavascript(GoogleResultDiscovery.resultScript) { raw ->
+            if (destroyed || !googleDiscoveryMode || !GoogleResultDiscovery.isGoogleResults(browserWebView.url)) return@evaluateJavascript
+            val rows = GoogleResultDiscovery.decodeRows(raw)
+            googleDiscoveryMode = false
+            closeBrowser()
+            appWebView.evaluateJavascript(
+                "window.receiveGoogleDiscoveryLinks&&window.receiveGoogleDiscoveryLinks(" + rows.toString() + ")", null
+            )
+        }
+    }
+
     private fun openInBrowser(url: String) {
         if (!url.startsWith("https://") && !url.startsWith("http://")) return
         if (::nativeWidgets.isInitialized) nativeWidgets.pause()
@@ -949,10 +987,13 @@ class MainActivity : Activity() {
         swipeRefresh.visibility = View.GONE
         browserPanel.visibility = View.VISIBLE
         applyPixelStatusMode()
+        updateDiscoveryButton(url)
         browserWebView.loadUrl(url)
     }
 
     private fun closeBrowser() {
+        googleDiscoveryMode = false
+        updateDiscoveryButton(null)
         browserWebView.stopLoading()
         browserWebView.loadUrl("about:blank")
         browserPanel.visibility = View.GONE

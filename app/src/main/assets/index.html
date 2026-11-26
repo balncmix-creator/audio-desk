@@ -571,6 +571,10 @@ const deskStorage={getItem(key){try{return localStorage.getItem(key)}catch{retur
 <details id="sourceHealthPanel"><summary id="sourceHealthSummary">Source health — not checked yet</summary><p class="note">Latest feed check only. A blocked feed or authentication error may come from the feed service rather than the publisher. Article sign-in and paywalls are not verified by RSS. Open the publisher to check access.</p><div id="sourceHealthList" role="status"></div></details>
 <div id="sources"></div>
 <div class="row" style="margin-top:12px"><button class="primary" id="discoverFeeds">⌕ DISCOVER NEW FEEDS</button></div>
+<input class="search" id="discoverQuery" aria-label="Google search for new audio publishers" placeholder="Search for audio news, plugins, sound design…">
+<div class="row"><button class="primary" id="discoverGoogle">SEARCH GOOGLE &amp; DISCOVER</button></div>
+<p class="note">Search Google in Audio Desk, then tap SCAN FEEDS in the browser toolbar. New relevant publishers with usable public RSS/Atom feeds are added automatically. No sign-in or private browser history is scanned.</p>
+<details id="discoveryReport" hidden><summary id="discoveryReportTitle">Search discovery results</summary><div id="discoveryReportList"></div></details>
 <p class="note" id="discoveryStatus" role="status">Audio Desk checks trusted publishers for new RSS/Atom feeds every seven days while connected. Only verified feeds are added.</p>
 <p class="note">POST PRODUCTION RADAR is a dedicated stream for film/TV audio post, dialogue editing, ADR, Foley, sound effects, Dolby Atmos, ADM/BWF, spatial audio, Ambisonics, surround plugins, post-production DAWs, restoration, loudness, QC and delivery. It uses multiple topic-specific news searches. Plugin releases uses multiple global news searches in addition to KVR. It cannot guarantee every independent developer announcement, especially social-only posts. The Videos tab collects recent YouTube-related results via a live video-focused RSS search. Feeds are fetched through RSS2JSON. GitHub repository discovery uses GitHub's public API. Some forums and publishers restrict automated feeds, so this is a broad discovery feed rather than a guarantee of every post.</p>
 <p class="note">REAPER links: <a href="https://forum.cockos.com/forumdisplay.php?f=22" target="_blank" rel="noopener">Cockos Pre-Release forum</a> · <a href="https://github.com/ReaTeam/ReaScripts" target="_blank" rel="noopener">ReaTeam ReaScripts</a> · <a href="https://github.com/topics/reaper-scripts" target="_blank" rel="noopener">GitHub Reaper Scripts topic</a></p>
@@ -1542,6 +1546,60 @@ function render(){
 // Publisher feed discovery is bounded, opt-out aware, and only checks curated sites.
 // It runs weekly in the background; users can also request a scan from Sources.
 let discoverySerial=0,discoveryPending=null;
+function discoveryHost(raw){
+ try{const u=new URL(raw);if(u.protocol!=="https:"||u.username||u.password||(u.port&&u.port!=="443"))return "";
+ const h=u.hostname.toLowerCase().replace(/^www\./,"");
+ if(!h.includes(".")||/^\d|:|(?:^|\.)(?:localhost|local|internal|test|invalid)$/.test(h)||!/^[a-z0-9.-]+$/.test(h))return "";
+ return h}catch{return ""}
+}
+function relatedDiscoveryHost(a,b){return !!a&&!!b&&(a===b||a.endsWith("."+b)||b.endsWith("."+a))}
+function knownDiscoveryHosts(){
+ const result=new Set();
+ for(const f of [...feeds,...publisherSeeds.map(p=>({url:p.site})),...[...removedFeeds].map(url=>({url}))]){
+  const h=discoveryHost(f.url);
+  if(h&&!/^(?:news\.google\.com|google\.com|bing\.com|www\.bing\.com)$/.test(h))result.add(h);
+  try{const q=new URL(f.url).searchParams.get("q")||"";for(const m of q.matchAll(/\bsite:([a-z0-9.-]+)/gi))result.add(m[1].toLowerCase().replace(/^www\./,""))}catch{}
+ }
+ return result;
+}
+function relevantDiscoveryText(text){
+ return /\b(?:audio|sound design|sound effects?|foley|reaper|reascript|reapack|daw|vst3?|aax|clap|plug[ -]?ins?|synth(?:esizers?)?|sample librar(?:y|ies)|sample packs?|music production|mixing|mastering|microphones?|studio monitors?|audio interfaces?|pro tools|nuendo|dolby atmos|recording|post.production)\b/i.test(String(text||""));
+}
+function googleDiscoveryCandidates(rows){
+ const known=knownDiscoveryHosts(),seen=new Set(),candidates=[];
+ if(!Array.isArray(rows))return candidates;
+ for(const x of rows.slice(0,60)){
+  if(!x||!relevantDiscoveryText(x.title))continue;
+  const h=discoveryHost(x.url);
+  if(!h||/(?:^|\.)(?:google\.[a-z.]+|gstatic\.com|googleusercontent\.com|youtube\.com|youtu\.be|facebook\.com|instagram\.com|reddit\.com|x\.com|twitter\.com|linkedin\.com|amazon\.[a-z.]+|wikipedia\.org|github\.com|bing\.com)$/.test(h))continue;
+  if([...known,...seen].some(k=>relatedDiscoveryHost(k,h)))continue;
+  seen.add(h);candidates.push({name:h,site:"https://"+h+"/",cat:"Production"});
+  if(candidates.length>=8)break;
+ }
+ return candidates;
+}
+function reportGoogleDiscovery(rows){
+ const panel=$("discoveryReport"),list=$("discoveryReportList");panel.hidden=false;panel.open=true;list.replaceChildren();
+ for(const row of rows){
+  const el=document.createElement("p");el.className="note";el.textContent=row.name+" — "+row.status;list.append(el);
+ }
+ $("discoveryReportTitle").textContent="Search discovery results ("+rows.length+" new publishers checked)";
+}
+function receiveGoogleDiscoveryLinks(rows){
+ if(discoveryPending){$("discoveryStatus").textContent="Another discovery scan is already running. Try again after it finishes.";return}
+ if(!navigator.onLine){$("discoveryStatus").textContent="Offline — cannot discover feeds.";return}
+ const candidates=googleDiscoveryCandidates(rows);
+ if(!candidates.length){$("discoveryStatus").textContent="No new relevant publishers found on this search results page.";reportGoogleDiscovery([]);return}
+ if(!window.AudioDesk||typeof window.AudioDesk.discoverPublisherFeeds!=="function")return;
+ const id=String(++discoverySerial);
+ discoveryPending={id,seeds:candidates,google:true};
+ $("discoverFeeds").disabled=true;$("discoverGoogle").disabled=true;
+ $("discoveryStatus").textContent="Verifying RSS/Atom from "+candidates.length+" new search-result publishers…";
+ reportGoogleDiscovery(candidates.map(x=>({name:x.name,status:"Checking"})));
+ try{window.AudioDesk.discoverPublisherFeeds(JSON.stringify(candidates),id)}
+ catch(e){discoveryPending=null;$("discoverFeeds").disabled=false;$("discoverGoogle").disabled=false;$("discoveryStatus").textContent="Search discovery could not start."}
+}
+
 const DISCOVERY_INTERVAL_MS=7*24*60*60*1000;
 function feedPublisherMatches(url,site){
  try{
@@ -1553,22 +1611,30 @@ function feedPublisherMatches(url,site){
 }
 async function receiveDiscoveredFeeds(requestId,found){
  if(!discoveryPending||discoveryPending.id!==String(requestId))return;
- discoveryPending=null;
+ const pending=discoveryPending;
+ if(pending.processing)return;
+ pending.processing=true;
  if(!Array.isArray(found))found=[];
  const candidates=found.slice(0,20).filter(x=>x&&typeof x.url==="string"&&typeof x.name==="string"&&
-  publisherSeeds.some(p=>p.name===x.name.replace(/ — RSS$/,"")&&p.cat===x.cat&&feedPublisherMatches(x.url,p.site)));
+  (pending.seeds||publisherSeeds).some(p=>p.name===x.name.replace(/ — RSS$/,"")&&p.cat===x.cat&&feedPublisherMatches(x.url,p.site)));
  const unique=[...new Map(candidates.map(x=>[x.url,x])).values()].filter(x=>!removedFeeds.has(x.url)&&!feeds.some(f=>f.url===x.url));
  // The scanner verifies RSS/Atom XML. Also ensure the RSS2JSON service
  // can import it, otherwise new sources would never show any news.
  let added=0;
+ const outcomes=new Map((pending.seeds||[]).map(p=>[p.name,"No verified public feed found; access or sign-in may need manual checking"]));
  for(const x of unique.slice(0,12)){
   try{
    const recent=await fetchFeedWithTimeout(x,3500);
-   if(!recent.length)continue;
+   const name=x.name.replace(/ — RSS$/,"");
+   if(!recent.length){outcomes.set(name,"Feed has no readable items");continue}
+   if(pending.google&&!recent.some(y=>relevantDiscoveryText(y.title+" "+y.desc))){outcomes.set(name,"Feed not sufficiently relevant to audio");continue}
+   if(removedFeeds.has(x.url)||feeds.some(f=>f.url===x.url))continue;
+   if(pending.google&&feeds.some(f=>relatedDiscoveryHost(discoveryHost(f.url),discoveryHost(x.url))))continue;
    feeds.push({name:x.name,url:x.url,cat:x.cat,auto:true});
    autoFeeds.push({name:x.name,url:x.url,cat:x.cat,auto:true});
+   outcomes.set(name,"Added — public feed verified");
    added++;
-  }catch(e){}
+  }catch(e){if(pending.google)outcomes.set(x.name.replace(/ — RSS$/,""),sourceHealthLabel(feedFailureStatus(e)))}
  }
  if(added){
   deskStorage.setItem("ar_auto_feeds",JSON.stringify(autoFeeds.slice(-60)));
@@ -1577,6 +1643,9 @@ async function receiveDiscoveredFeeds(requestId,found){
  }
  $("discoveryStatus").textContent=added?"Found "+added+" new working feed(s), added automatically. "+feeds.length+" sources available.":
   "Scan complete. No new verified feeds ("+feeds.length+" sources). Checking again next week.";
+ if(pending.google)reportGoogleDiscovery([...outcomes].map(([name,status])=>({name,status})));
+ discoveryPending=null;
+ $("discoverGoogle").disabled=false;
  $("discoverFeeds").disabled=false;
 }
 function discoverPublisherFeeds(force=false){
@@ -2994,6 +3063,12 @@ $("searchPeriod").addEventListener("change",()=>{if(activeSearchPeriod){activeSe
 $("search").addEventListener("keydown",e=>{if(e.key==="Enter")runWebSearch()});
 $("refresh").onclick=()=>{activeSearchPeriod="";loadFeeds()};
 $("discoverFeeds").onclick=()=>discoverPublisherFeeds(true);
+$("discoverGoogle").onclick=()=>{
+ if(discoveryPending){$("discoveryStatus").textContent="A feed scan is already running.";return}
+ if(!window.AudioDesk||typeof window.AudioDesk.openGoogleDiscovery!=="function"){$("discoveryStatus").textContent="Google result scanning requires the Android app.";return}
+ const q=$("discoverQuery").value.trim().slice(0,200)||"latest professional audio news plugins sound design";
+ window.AudioDesk.openGoogleDiscovery(q);
+};
 $("addFeed").onclick=()=>{let name=$("feedName").value.trim(),url=$("feedUrl").value.trim();if(!name||!/^https?:\/\//i.test(url)){alert("Enter a source name and a valid http(s) RSS URL.");return}removedFeeds.delete(url);deskStorage.setItem("ar_removed_feeds",JSON.stringify([...removedFeeds]));if(!feeds.some(f=>f.url===url))feeds.push({name,url,cat:"Production"});deskStorage.setItem("ar_feeds",JSON.stringify(feeds));$("feedName").value="";$("feedUrl").value="";renderSources();loadFeeds()};
 renderSources();
 setOfflineNotice(!navigator.onLine);

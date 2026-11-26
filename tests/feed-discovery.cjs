@@ -12,8 +12,10 @@ const assert=require('node:assert/strict');
    window.scans=[];
    window.AudioDesk={
     refreshStarted(){},refreshFinished(){},
+    openGoogleDiscovery(q){window.googleQuery=q},
     discoverPublisherFeeds(seeds,id){
      const sites=JSON.parse(seeds);window.scans.push(sites);
+     if(sites.some(s=>s.site==="https://new-audio.example/")){setTimeout(()=>window.receiveDiscoveredFeeds(id,[{name:"new-audio.example — RSS",url:"https://new-audio.example/feed/",cat:"Production"},{name:"new-audio.example — RSS",url:"https://untrusted.example/feed/",cat:"Production"}]),50);return}
      setTimeout(()=>window.receiveDiscoveredFeeds(id,[
       {name:'Sonic State — RSS',url:'https://sonicstate.com/new-feed.xml',cat:'Plugin releases'},
       {name:'Untrusted — RSS',url:'https://attacker.example.com/feed/',cat:'Plugin releases'},
@@ -58,6 +60,26 @@ const assert=require('node:assert/strict');
   await page.waitForFunction(()=>!document.getElementById('discoverFeeds').disabled);
   assert.equal(await page.evaluate(()=>feeds.some(x=>x.url.includes('new-feed.xml'))),false,'removed feed must not return after rescan');
   assert.ok((await page.evaluate(()=>window.scans)).length>=2,'support manual rediscovery');
+  await page.locator('#discoverQuery').fill('new audio plugins');
+  await page.locator('#discoverGoogle').click();
+  assert.equal(await page.evaluate(()=>window.googleQuery),'new audio plugins');
+  const results=[
+   {title:'New VST plugin from a new publisher',url:'https://new-audio.example/news/plugin'},
+   {title:'Audio plugin duplicate',url:'https://www.new-audio.example/other'},
+   {title:'Latest audio plugin on Rekkerd',url:'https://rekkerd.org/news'},
+   {title:'Audio news on ProSoundWeb',url:'https://www.prosoundweb.com/article'},
+   {title:'Audio tutorial on YouTube',url:'https://www.youtube.com/watch?v=1'},
+   {title:'Local audio server',url:'https://127.0.0.1/audio'},
+   {title:'Football results',url:'https://sports.example/news'}
+  ];
+  const candidates=await page.evaluate(r=>googleDiscoveryCandidates(r).map(x=>x.site),results);
+  assert.deepEqual(candidates,['https://new-audio.example/']);
+  await page.evaluate(r=>receiveGoogleDiscoveryLinks(r),results);
+  await page.waitForFunction(()=>!document.getElementById('discoverGoogle').disabled);
+  assert.equal(await page.evaluate(()=>feeds.filter(f=>f.url==='https://new-audio.example/feed/').length),1);
+  assert.equal(await page.evaluate(()=>feeds.some(f=>f.url==='https://untrusted.example/feed/')),false);
+  assert.match(await page.locator('#discoveryReportList').textContent(),/Added — public feed verified/);
+  assert.deepEqual(await page.evaluate(r=>googleDiscoveryCandidates(r),results),[]);
   assert.deepEqual(errors,[]);
   console.log('PASS: automatic discovery, trusted publisher filtering, duplicates, persistence, removal and rescan');
  }finally{await browser.close()}
