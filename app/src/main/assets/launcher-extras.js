@@ -224,7 +224,7 @@ const oldBack=window.launcherBack,oldGoHome=window.launcherGoHome;
 window.launcherBack=function(){if(!manager.hidden){closeManage();return}return oldBack.apply(this,arguments)};
 window.launcherGoHome=function(){closeManage();return oldGoHome.apply(this,arguments)};
 manager.onclick=e=>{
- if(e.target===manager){closeManage();return}
+ if(e.target===manager){if(Date.now()>=clickBlockedUntil)closeManage();return}
  const action=e.target.closest("[data-manage]")?.dataset.manage;
  if(!action)return;
  if(action==="close"){closeManage();return}
@@ -232,34 +232,50 @@ manager.onclick=e=>{
  window.AudioDesk?.openAppSettings?.(managed.pkg,action);
  closeManage();
 };
-const manageTargets="#launcherAppsGrid .launcher-app,#launcherFavorites .launcher-app,#launcherRecentQuick .launcher-app,#launcherLetterApps .launcher-app,#launcherRecentGrid .launcher-resume";
+const manageTargets="#launcherAppsGrid .launcher-app,#launcherFavorites .launcher-app,#launcherRecentQuick .launcher-app,#launcherLetterApps .launcher-app,#launcherRecentGrid .launcher-recent-card";
+function appTarget(target){const node=target?.closest?.(manageTargets);return node?.matches(".launcher-recent-card")?node.querySelector(".launcher-resume"):node}
 function stopHeld(){if(appHeld){clearTimeout(appHeld.timer);appHeld=null}}
 function openHeld(pkg,activity){
  clickBlockedUntil=Date.now()+1000;blockAppClickUntil=clickBlockedUntil;
  appManage(pkg,activity);
 }
-document.addEventListener("pointerdown",e=>{
- const a=e.target.closest(manageTargets);
- if(!a||e.button!==0||!manager.hidden)return;
+function beginAppHold(a,x,y,pointerId,touchId=null){
+ if(!a?.dataset.launchPkg||!manager.hidden)return;
  stopHeld();
- const {clientX:x,clientY:y,pointerId}=e;
- appHeld={pkg:a.dataset.launchPkg,activity:a.dataset.launchActivity,x,y,pointerId,
-  timer:setTimeout(()=>{if(!appHeld)return;const h=appHeld;appHeld=null;openHeld(h.pkg,h.activity)},520)};
+ appHeld={pkg:a.dataset.launchPkg,activity:a.dataset.launchActivity,x,y,pointerId,touchId,
+  timer:setTimeout(()=>{if(!appHeld)return;const h=appHeld;appHeld=null;openHeld(h.pkg,h.activity)},480)};
+}
+document.addEventListener("pointerdown",e=>{
+ if(e.button!==0||e.isPrimary===false)return;
+ const a=appTarget(e.target);if(a)beginAppHold(a,e.clientX,e.clientY,e.pointerId);
 },true);
+// WebView may cancel its pointer stream during native gesture arbitration.
+// A real touch sequence remains authoritative until it ends or moves.
+document.addEventListener("touchstart",e=>{
+ if(e.touches.length!==1){stopHeld();return}
+ const a=appTarget(e.target),t=e.touches[0];
+ if(a)beginAppHold(a,t.clientX,t.clientY,null,t.identifier);
+},{capture:true,passive:true});
+document.addEventListener("touchmove",e=>{
+ if(!appHeld)return;
+ const t=[...e.touches].find(t=>t.identifier===appHeld.touchId);
+ if(e.touches.length!==1||!t||Math.hypot(t.clientX-appHeld.x,t.clientY-appHeld.y)>16)stopHeld();
+},{capture:true,passive:true});
+for(const type of ["touchend","touchcancel"])document.addEventListener(type,()=>stopHeld(),{capture:true,passive:true});
 document.addEventListener("pointermove",e=>{
- if(!appHeld||appHeld.pointerId!==e.pointerId)return;
- if(Math.hypot(e.clientX-appHeld.x,e.clientY-appHeld.y)>12)stopHeld();
+ if(!appHeld||appHeld.touchId!==null||appHeld.pointerId!==e.pointerId)return;
+ if(Math.hypot(e.clientX-appHeld.x,e.clientY-appHeld.y)>16)stopHeld();
 },true);
-for(const ev of ["pointerup","pointercancel"])
- document.addEventListener(ev,()=>stopHeld(),true);
+for(const type of ["pointerup","pointercancel"])
+ document.addEventListener(type,e=>{if(appHeld?.touchId===null&&appHeld.pointerId===e.pointerId)stopHeld()},true);
 document.addEventListener("contextmenu",e=>{
- const a=e.target.closest(manageTargets);
+ const a=appTarget(e.target);
  if(!a)return;
  e.preventDefault();stopHeld();
  if(manager.hidden)openHeld(a.dataset.launchPkg,a.dataset.launchActivity);
 },true);
 document.addEventListener("click",e=>{
- if(Date.now()<clickBlockedUntil&&e.target.closest(manageTargets)){
+ if(Date.now()<clickBlockedUntil&&appTarget(e.target)){
   e.preventDefault();e.stopImmediatePropagation();
  }
 },true);

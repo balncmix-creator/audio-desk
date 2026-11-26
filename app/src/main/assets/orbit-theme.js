@@ -920,7 +920,7 @@ svg.addEventListener("pointerdown",e=>{
   if(drag!==held||held.moved)return;
   held.managed=true;suppressNativeClickUntil=performance.now()+1000;
   window.audioDeskManageApp?.(app.pkg,app.activity);
- },520);
+ },480);
  try{svg.setPointerCapture(e.pointerId)}catch{}
  e.preventDefault();
 });
@@ -933,7 +933,7 @@ svg.addEventListener("pointermove",e=>{
  const now=performance.now();
  drag.samples.push({t:now,angle:drag.total});
  drag.samples=drag.samples.filter(x=>now-x.t<=110);
- if(Math.abs(drag.total)>3){
+ if(Math.abs(drag.total)>3&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>10){
   drag.moved=true;
   if(galaxyA73)document.body.classList.add("orbit-gesture-active");
  }
@@ -960,7 +960,15 @@ function finish(e,cancel=false){
 }
 svg.addEventListener("pointerup",e=>finish(e));
 svg.addEventListener("pointercancel",e=>finish(e,true));
-svg.addEventListener("contextmenu",e=>{const t=e.target.closest("[data-orbit-action]"),code=t?.dataset.orbitAction;if(code==="picker:launch"||code?.startsWith("recent:"))e.preventDefault()});
+svg.addEventListener("contextmenu",e=>{
+ const t=e.target.closest("[data-orbit-action]"),code=t?.dataset.orbitAction;
+ const app=code==="picker:launch"?launcherApps.find(a=>a.pkg===t?.dataset.pickerPkg&&a.activity===t?.dataset.pickerActivity):code?.startsWith("recent:")?recentList[Number(code.slice(7))]:null;
+ if(!app||drag?.moved)return;
+ e.preventDefault();
+ if(drag){clearTimeout(drag.timer);drag.managed=true}
+ suppressNativeClickUntil=performance.now()+1000;
+ window.audioDeskManageApp?.(app.pkg,app.activity);
+});
 svg.addEventListener("click",e=>{
  if(e.isTrusted&&performance.now()<suppressNativeClickUntil)return;
  const t=e.target.closest("[data-orbit-action]");

@@ -381,3 +381,29 @@ body[data-home-page="home"][data-launcher-theme] #launcherHomePage[data-packed-l
  height:auto!important;min-height:0!important;max-height:none!important;
  overflow:visible!important;
 }
+
+/* App management is a real viewport overlay, never an in-flow body child. */
+#appManageSheet[hidden]{display:none!important}
+#appManageSheet{
+ position:fixed!important;inset:0!important;z-index:120!important;
+ display:flex;align-items:flex-end;justify-content:center;
+ box-sizing:border-box;padding:12px 12px max(12px,var(--bottom-inset,0px),env(safe-area-inset-bottom,0px));
+ background:rgba(0,0,0,.58);color:var(--ds-text,#f5f5f5);
+ font:400 14px/1.45 var(--ds-font,system-ui,sans-serif);overscroll-behavior:contain;
+}
+#appManageSheet .app-manage-card{
+ width:min(100%,440px);max-height:calc(100dvh - 64px);overflow:auto;
+ box-sizing:border-box;padding:16px;background:var(--ds-panel,#232729);
+ border:1px solid var(--ds-line,#596067);border-radius:var(--ds-radius,16px);
+ box-shadow:0 10px 36px #0006;
+}
+#appManageSheet .folder-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+#appManageTitle{font:650 18px/1.3 var(--ds-font,system-ui,sans-serif);margin:0;overflow-wrap:anywhere;color:inherit}
+#appManageSheet button{font:600 14px/1.3 var(--ds-font,system-ui,sans-serif);min-height:48px;color:var(--ds-text,#f5f5f5);background:var(--ds-panel2,#30363a);border:1px solid var(--ds-line,#596067);border-radius:var(--ds-radius,10px);box-sizing:border-box}
+#appManageSheet [data-manage="close"]{min-width:48px}
+#appManageSheet .manage-actions{display:grid;grid-template-columns:1fr;gap:7px}
+#appManageSheet .manage-actions button{text-align:left;padding:12px 14px;width:100%}
+#appManageSheet p{font-size:12px;color:var(--ds-muted,#c3c7ca);margin:12px 0 0}
+#launcherShell .launcher-app,#launcherRecentGrid .launcher-recent-card,#orbitDial [data-orbit-action]{
+ -webkit-touch-callout:none;-webkit-user-select:none;user-select:none
+}

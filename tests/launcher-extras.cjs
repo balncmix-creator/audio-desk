@@ -76,10 +76,20 @@ const assert=require('node:assert/strict');
    'swiping app rows never triggers Home quick actions');
   // Long-pressing Apps opens genuine Android management choices.
   const appButton=page.locator('#launcherAppsGrid .launcher-app').first();
-  const r=await appButton.boundingBox();
-  await appButton.dispatchEvent('pointerdown',{button:0,pointerId:77,clientX:r.x+25,clientY:r.y+25});
-  await page.waitForTimeout(610);
+  const cdp=await page.context().newCDPSession(page);
+  async function realHold(locator){
+   await locator.scrollIntoViewIfNeeded();
+   const box=await locator.boundingBox();
+   const x=Math.round(box.x+box.width/2),y=Math.round(box.y+box.height/2);
+   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
+   await page.waitForTimeout(600);
+   await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+   await page.waitForTimeout(80);
+  }
+  await realHold(appButton);
   assert.equal(await page.locator('#appManageSheet').isVisible(),true);
+  const overlayGeometry=await page.locator('#appManageSheet').evaluate(el=>{const r=el.getBoundingClientRect(),b=el.querySelector('[data-manage="info"]').getBoundingClientRect();return {fixed:getComputedStyle(el).position==='fixed',covers:r.top===0&&r.left===0&&r.bottom>=innerHeight-1,buttonOnScreen:b.top>=0&&b.bottom<=innerHeight,hit:!!document.elementFromPoint(b.x+b.width/2,b.y+b.height/2)?.closest('#appManageSheet')}});
+  assert.deepEqual(overlayGeometry,{fixed:true,covers:true,buttonOnScreen:true,hit:true},'the menu must actually cover the visible viewport and receive taps');
   assert.equal(await page.locator('#appManageSheet [data-manage="storage"]').isVisible(),true);
   await page.locator('#appManageSheet [data-manage="storage"]').click();
   assert.equal((await page.evaluate(()=>window.testAppSettings)).at(-1).action,'storage');
@@ -95,7 +105,7 @@ const assert=require('node:assert/strict');
   assert.equal(await manage.isVisible(),false);
   await page.evaluate(()=>{setLauncherPage('home',false);launcherRecents=[{pkg:'com.example.music',activity:'Music',label:'Music',uses:6,opened:Date.now()}];renderLauncherHome();renderLauncherRecents()});
   const recentAppButton=page.locator('#launcherRecentQuick .launcher-app').first();
-  await recentAppButton.dispatchEvent('contextmenu');
+  await realHold(recentAppButton);
   assert.equal(await manage.isVisible(),true,'Recents use the same management menu');
   assert.equal(await page.locator('#launcherShortcutMenu').isVisible(),false);
   await manage.locator('[data-manage="force-stop"]').click();

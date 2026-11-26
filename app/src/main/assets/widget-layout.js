@@ -502,7 +502,7 @@ function registerWidget(id){
  const el=byId(id);if(!el||el.dataset.widgetResizable==="true")return;
  el.dataset.widgetResizable="true";el.addEventListener("contextmenu",e=>e.preventDefault());
  el.addEventListener("pointerdown",e=>{
-  if(e.button!==0||launcherPage!=="home"||e.target.closest(".launcher-app,.folder-tile,[data-folder-id]"))return;
+  if(e.button!==0||launcherPage!=="home"||e.target.closest(".launcher-app,.launcher-recent-card,.folder-tile,[data-folder-id]"))return;
   clearTimeout(hold?.timer);
   hold={id,x:e.clientX,y:e.clientY,pointerId:e.pointerId,
    timer:setTimeout(()=>{hold=null;openEditor(id)},550)};
