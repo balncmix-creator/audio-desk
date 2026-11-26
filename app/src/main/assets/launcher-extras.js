@@ -209,6 +209,13 @@ manager.innerHTML='<div class="app-manage-card">'+
 document.body.appendChild(manager);
 let managed=null,managedHold=false,releaseBlocked=false;
 function appManage(pkg,activity){
+ if(window.AudioDesk?.showNativeAppManagement){
+  cancelHomeHold();upStart=null;iconSwipe=null;longConsumed=true;
+  if(launcherGesture)resetLauncherGesture();
+  closeAppShortcuts(true);window.getSelection()?.removeAllRanges();
+  window.AudioDesk?.hideSearchKeyboard?.();
+  window.AudioDesk.showNativeAppManagement(pkg);return;
+ }
  managed=launcherApps.find(a=>a.pkg===pkg&&a.activity===activity)||
   launcherRecents.find(a=>a.pkg===pkg&&a.activity===activity);
  if(!managed)return;
@@ -221,6 +228,7 @@ function appManage(pkg,activity){
 }
 function closeManage(){manager.hidden=true;manager.setAttribute("aria-hidden","true");managed=null;managedHold=false}
 window.audioDeskManageApp=appManage;
+// Only the browser development preview uses the HTML fallback. Android always opens a native dialog.
 const oldBack=window.launcherBack,oldGoHome=window.launcherGoHome;
 window.launcherBack=function(){if(!manager.hidden){closeManage();return}return oldBack.apply(this,arguments)};
 window.launcherGoHome=function(){closeManage();return oldGoHome.apply(this,arguments)};
@@ -241,11 +249,31 @@ function openHeld(pkg,activity){
  managedHold=true;releaseBlocked=true;
  appManage(pkg,activity);
 }
+function launcherSurface(){return launcherPage==="home"||launcherPage==="apps"}
+function editableTarget(el){return !!el?.closest?.("input,textarea,[contenteditable]:not([contenteditable=false])")}
+function syncSelectionPolicy(){window.AudioDesk?.setLauncherSelectionBlocked?.(launcherSurface()&&!editableTarget(document.activeElement))}
+window.addEventListener("launcher-page-changed",syncSelectionPolicy);
+document.addEventListener("focusin",syncSelectionPolicy,true);
+document.addEventListener("focusout",()=>setTimeout(syncSelectionPolicy,0),true);
+document.addEventListener("selectstart",e=>{if(launcherSurface()&&!editableTarget(e.target))e.preventDefault()},true);
+document.addEventListener("selectionchange",()=>{
+ if(!launcherSurface()||editableTarget(document.activeElement))return;
+ const selection=window.getSelection();if(selection&&!selection.isCollapsed)selection.removeAllRanges();
+});
+syncSelectionPolicy();
+window.audioDeskNativeHold=(x,y)=>{
+ if(!launcherSurface())return;
+ const target=document.elementFromPoint(x*innerWidth,y*innerWidth);
+ if(editableTarget(target))return;
+ const a=appTarget(target);
+ if(a){stopHeld();openHeld(a.dataset.launchPkg,a.dataset.launchActivity)}
+ else window.audioDeskOrbitNativeHold?.(target);
+};
 function beginAppHold(a,x,y,pointerId,touchId=null){
  if(!a?.dataset.launchPkg||!manager.hidden)return;
  stopHeld();
  appHeld={pkg:a.dataset.launchPkg,activity:a.dataset.launchActivity,x,y,pointerId,touchId,
-  timer:setTimeout(()=>{if(!appHeld)return;const h=appHeld;appHeld=null;openHeld(h.pkg,h.activity)},480)};
+  timer:setTimeout(()=>{if(!appHeld)return;const h=appHeld;appHeld=null;openHeld(h.pkg,h.activity)},420)};
 }
 document.addEventListener("pointerdown",e=>{
  releaseBlocked=false;

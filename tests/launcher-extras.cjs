@@ -125,6 +125,20 @@ const assert=require('node:assert/strict');
   await manage.locator('[data-manage="force-stop"]').click();
   assert.equal((await page.evaluate(()=>window.testAppSettings)).at(-1).action,'force-stop');
   await page.evaluate(()=>{launcherRecents=[];renderLauncherHome();renderLauncherRecents()});
+  // Android uses the native dialog bridge rather than the HTML preview sheet.
+  await page.evaluate(()=>{window.nativeManagementRequests=[];AudioDesk.showNativeAppManagement=pkg=>nativeManagementRequests.push(pkg)});
+  await realHold(page.locator('#launcherRecentQuick .launcher-app').first());
+  assert.ok(await page.evaluate(()=>nativeManagementRequests.length>=1),'touch requests native app management');
+  assert.equal(await manage.isVisible(),false,'no HTML menu when native Android bridge is available');
+  const selectionPolicy=await page.locator('#launcherRecentQuick .app-name').first().evaluate(el=>{
+   const css=getComputedStyle(el).userSelect;
+   const r=document.createRange();r.selectNodeContents(el);window.getSelection().addRange(r);
+   return css;
+  });
+  assert.equal(selectionPolicy,'none','launcher text is non-selectable at the label itself');
+  await page.waitForFunction(()=>window.getSelection().isCollapsed);
+  await page.evaluate(()=>{delete AudioDesk.showNativeAppManagement;setLauncherPage('apps',false)});
+  assert.equal(await page.locator('#launcherAppSearch').evaluate(el=>getComputedStyle(el).userSelect),'text','app search remains editable');
   // Per-theme transparency and persistence.
   await page.evaluate(()=>setLauncherPage('home',false));
   await page.locator('#launcherSettingsToggle').click();

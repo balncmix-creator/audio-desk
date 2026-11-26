@@ -411,3 +411,14 @@ body[data-home-page="home"][data-launcher-theme] #launcherHomePage[data-packed-l
 /* Preserve ordinary vertical app-list scrolling while avoiding native selection on app holds. */
 #launcherRecentQuick .launcher-app,#launcherFavorites .launcher-app,#launcherRecentGrid .launcher-recent-card,#launcherAppsGrid .launcher-app,#launcherLetterApps .launcher-app{touch-action:pan-y;-webkit-user-drag:none}
 #launcherRecentQuick .launcher-app img,#launcherFavorites .launcher-app img,#launcherAppsGrid .launcher-app img,#launcherLetterApps .launcher-app img{pointer-events:none;-webkit-user-drag:none}
+
+/* Launcher labels and decorative elements are never browser-selectable. Keep genuine text input editing. */
+body:is([data-home-page="home"],[data-home-page="apps"]) #launcherShell,
+body:is([data-home-page="home"],[data-home-page="apps"]) #launcherShell *,
+body:is([data-home-page="home"],[data-home-page="apps"]) #launcherAlphaIndex *,
+body:is([data-home-page="home"],[data-home-page="apps"]) #orbitHome *{
+ -webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important;
+}
+body:is([data-home-page="home"],[data-home-page="apps"]) #launcherShell :is(input,textarea,[contenteditable=true]){
+ -webkit-user-select:text!important;user-select:text!important;
+}

@@ -2,6 +2,9 @@ package com.balnc.audioddesk
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.AlertDialog
+import android.view.ActionMode
+import android.view.MotionEvent
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -70,6 +73,10 @@ class MainActivity : Activity() {
     private var pixelBarActive = false
     private var pixelBarSuspended = false
     private var destroyed = false
+    private var launcherSelectionBlocked = true
+    private var launcherTouchX = 0f
+    private var launcherTouchY = 0f
+    private var appManagementDialog: AlertDialog? = null
     private var statusInsetDp = 24
     private var bottomInsetDp = 0
     private var refreshAllowed = false
@@ -148,6 +155,25 @@ class MainActivity : Activity() {
         // Only the trusted local interface reads user-picked content URIs.
         configure(appWebView)
         appWebView.settings.allowContentAccess = true
+        // Consume native browser long-clicks on launcher surfaces, but never on editable inputs.
+        appWebView.setOnTouchListener { _, event ->
+            if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+                launcherTouchX = event.x
+                launcherTouchY = event.y
+            }
+            false
+        }
+        appWebView.setOnLongClickListener {
+            if (!blocksLauncherSelection()) false else {
+                val width = appWebView.width.coerceAtLeast(1)
+                val x = launcherTouchX / width
+                val y = launcherTouchY / width
+                if (appManagementDialog?.isShowing != true) {
+                    appWebView.evaluateJavascript("window.audioDeskNativeHold&&window.audioDeskNativeHold(" + x + "," + y + ")", null)
+                }
+                true
+            }
+        }
         appWebView.webChromeClient = object : WebChromeClient() {
             override fun onShowFileChooser(
                 webView: WebView?, callback: ValueCallback<Array<Uri>>?,
@@ -753,25 +779,32 @@ class MainActivity : Activity() {
                 }
             }
         }
+        @JavascriptInterface fun setLauncherSelectionBlocked(blocked: Boolean) {
+            runOnUiThread { launcherSelectionBlocked = blocked }
+        }
+        @JavascriptInterface fun showNativeAppManagement(pkg: String) {
+            if (!AppManagementActions.validPackage(pkg)) return
+            runOnUiThread {
+                if (destroyed || isFinishing || appManagementDialog?.isShowing == true) return@runOnUiThread
+                if (!launcherSupport.hasLaunchablePackage(pkg)) return@runOnUiThread
+                try {
+                    val info = packageManager.getApplicationInfo(pkg, 0)
+                    val dialog = AppManagementActions.dialog(this@MainActivity, packageManager.getApplicationLabel(info)) { action ->
+                        launchAppManagementAction(pkg, action)
+                    }
+                    appManagementDialog = dialog
+                    dialog.setOnDismissListener { if (appManagementDialog === dialog) appManagementDialog = null }
+                    dialog.show()
+                } catch (_: Exception) {
+                    android.widget.Toast.makeText(this@MainActivity, "App is no longer available.", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
         /** Open Android-owned application management. Android restricts force-stop and
          * cache deletion to Settings; the launcher never claims to do them itself. */
         @JavascriptInterface fun openAppSettings(pkg: String, action: String) {
-            if (destroyed || action !in setOf("info", "uninstall", "storage", "force-stop", "settings")) return
-            if (pkg.length !in 4..160 || '.' !in pkg ||
-                !pkg.all { it.isLetterOrDigit() || it == '.' || it == '_' }) return
-            runOnUiThread {
-                if (destroyed) return@runOnUiThread
-                try {
-                    packageManager.getApplicationInfo(pkg, 0)
-                    val uri = Uri.parse("package:" + pkg)
-                    val intent = if (action == "uninstall") Intent(Intent.ACTION_DELETE, uri)
-                        else Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri)
-                    startActivity(intent)
-                } catch (_: Exception) {
-                    android.widget.Toast.makeText(this@MainActivity,
-                        "Android could not open this app action.", android.widget.Toast.LENGTH_SHORT).show()
-                }
-            }
+            if (!AppManagementActions.validPackage(pkg) || !AppManagementActions.validAction(action)) return
+            runOnUiThread { launchAppManagementAction(pkg, action) }
         }
         @JavascriptInterface fun requestDefaultLauncher() {
             runOnUiThread { if (!destroyed) launcherSupport.requestDefaultHome() }
@@ -975,6 +1008,30 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun blocksLauncherSelection(): Boolean =
+        launcherSelectionBlocked && ::appWebView.isInitialized &&
+            appWebView.hitTestResult?.type != WebView.HitTestResult.EDIT_TEXT_TYPE &&
+            (!::browserPanel.isInitialized || browserPanel.visibility != View.VISIBLE)
+
+    override fun onActionModeStarted(mode: ActionMode?) {
+        super.onActionModeStarted(mode)
+        if (::appWebView.isInitialized && appWebView.hasFocus() && blocksLauncherSelection()) mode?.finish()
+    }
+
+    private fun launchAppManagementAction(pkg: String, action: String) {
+        if (destroyed || !AppManagementActions.validPackage(pkg) || !AppManagementActions.validAction(action)) return
+        try {
+            packageManager.getApplicationInfo(pkg, 0)
+            startActivity(AppManagementActions.intent(pkg, action))
+            if (action == "storage" || action == "force-stop") {
+                val instruction = if (action == "storage") "Open Storage, then Clear cache." else "Tap Force stop in App info."
+                android.widget.Toast.makeText(this, instruction, android.widget.Toast.LENGTH_LONG).show()
+            }
+        } catch (_: Exception) {
+            android.widget.Toast.makeText(this, "Android could not open this app action.", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun openInBrowser(url: String) {
         if (!url.startsWith("https://") && !url.startsWith("http://")) return
         if (::nativeWidgets.isInitialized) nativeWidgets.pause()
@@ -1023,6 +1080,8 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         destroyed = true
+        appManagementDialog?.dismiss()
+        appManagementDialog = null
         if (::pixelStatusBar.isInitialized) pixelStatusBar.stopUpdates()
         wallpaperFileCallback?.onReceiveValue(null)
         wallpaperFileCallback = null
