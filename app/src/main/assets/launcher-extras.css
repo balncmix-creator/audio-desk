@@ -530,7 +530,7 @@ body[data-launcher-theme]:not([data-launcher-theme="pixel"]) :is(header,#swipeMa
 body[data-launcher-theme]:not([data-launcher-theme="pixel"]) :is(header,#swipeMain,nav.bottom-dock) :is(.primary,button.active,.brand span) {
  background:var(--ds-accent)!important;color:var(--theme-accent-ink,var(--ds-bg))!important;
 }
-body[data-launcher-theme]:not([data-launcher-theme="pixel"]) #swipeMain :is(.story,.panel,.resource-card,.sample-release-card) {
+body[data-launcher-theme]:not([data-launcher-theme="pixel"]) #swipeMain :is(.panel,.resource-card,.sample-release-card) {
  background:var(--news-panel)!important;color:var(--news-ink)!important;
  border-color:var(--ds-line)!important;
 }
@@ -542,15 +542,21 @@ body[data-launcher-theme]:not([data-launcher-theme="pixel"]) #swipeMain :is(.sto
 body[data-launcher-theme]:not([data-launcher-theme="pixel"]) #swipeMain .stats {flex-wrap:wrap;align-items:baseline;font-variant-numeric:tabular-nums}
 body[data-launcher-theme]:not([data-launcher-theme="pixel"]) nav.bottom-dock .dock-search {background:var(--news-panel)!important;color:var(--news-ink)!important}
 body[data-launcher-theme]:not([data-launcher-theme="pixel"]) nav.bottom-dock .dock-search input {background:transparent!important;border:0!important}
-body[data-launcher-theme]:not([data-launcher-theme="pixel"])[data-glass-mode="liquid"] :is(header,nav.bottom-dock,#swipeMain .story) {
+body[data-launcher-theme]:not([data-launcher-theme="pixel"])[data-glass-mode="liquid"] :is(header,nav.bottom-dock) {
  background:linear-gradient(145deg,#ffffff38,transparent 38%),var(--glass-base)!important;
  -webkit-backdrop-filter:blur(18px) saturate(1.32);backdrop-filter:blur(18px) saturate(1.32);
 }
-body[data-launcher-theme]:not([data-launcher-theme="pixel"])[data-glass-mode="aero"] :is(header,nav.bottom-dock,#swipeMain .story) {
+body[data-launcher-theme]:not([data-launcher-theme="pixel"])[data-glass-mode="aero"] :is(header,nav.bottom-dock) {
  background:linear-gradient(165deg,#a9daf733,transparent 70%),var(--glass-base)!important;
  -webkit-backdrop-filter:blur(21px) saturate(1.23);backdrop-filter:blur(21px) saturate(1.23);
 }
-body[data-launcher-theme]:not([data-launcher-theme="pixel"])[data-glass-mode="mica"] :is(header,nav.bottom-dock,#swipeMain .story) {
+body[data-launcher-theme]:not([data-launcher-theme="pixel"])[data-glass-mode="mica"] :is(header,nav.bottom-dock) {
  background:var(--glass-strong)!important;
  -webkit-backdrop-filter:blur(30px) saturate(1.08);backdrop-filter:blur(30px) saturate(1.08);
+}
+
+/* Preserve image-derived article surfaces and their dark-surface contrast in every edition. */
+body[data-launcher-theme]:not([data-launcher-theme="pixel"]) #swipeMain .story {
+ --news-ink:#f4f4f4;--news-muted:#bdbdbd;--news-panel:rgb(var(--story-surface,23,23,23));
+ color:var(--news-ink)!important;border-radius:var(--ds-radius)!important;
 }
