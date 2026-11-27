@@ -503,3 +503,54 @@ body[data-launcher-theme][data-glass-mode]:not([data-glass-mode="opaque"]) #laun
 body[data-launcher-theme][data-glass-mode]:not([data-glass-mode="opaque"]) #launcherAlphaIndex button:not(.active) {
  color:var(--glass-ink)!important;
 }
+
+/* News uses the same edition tokens as launcher navigation. */
+body[data-launcher-theme]:not([data-launcher-theme="pixel"]) {
+ --news-bg:var(--ds-bg);--news-panel:var(--ds-panel);--news-ink:var(--ds-text);--news-muted:var(--ds-muted);
+}
+body[data-launcher-theme="warm"] {
+ --news-bg:var(--theme-panel,#eedbd4);--news-panel:var(--theme-panel,#eedbd4);
+ --news-ink:var(--theme-ink,#292529);--news-muted:color-mix(in srgb,var(--news-ink) 80%,var(--news-panel));
+}
+body[data-launcher-theme]:not([data-launcher-theme="pixel"]) :is(header,#swipeMain,nav.bottom-dock) {
+ background:var(--news-bg)!important;color:var(--news-ink)!important;border-color:var(--ds-line)!important;
+ font-family:var(--ds-font)!important;
+}
+body[data-launcher-theme]:not([data-launcher-theme="pixel"]) header {
+ box-sizing:border-box;width:100%!important;max-width:none!important;
+ position:relative!important;inset:auto!important;height:auto!important;min-width:0;
+}
+body[data-launcher-theme]:not([data-launcher-theme="pixel"]) header .top {align-items:center;flex-wrap:wrap}
+body[data-launcher-theme]:not([data-launcher-theme="pixel"]) header .top>div {flex:1 1 180px;min-width:0}
+body[data-launcher-theme]:not([data-launcher-theme="pixel"]) :is(header,#swipeMain,nav.bottom-dock) :is(button,select,input:not([type="checkbox"]),textarea) {
+ background:var(--news-panel)!important;color:var(--news-ink)!important;
+ border:1px solid var(--ds-line)!important;border-radius:var(--ds-radius)!important;
+ box-shadow:none!important;font-family:var(--ds-font)!important;
+}
+body[data-launcher-theme]:not([data-launcher-theme="pixel"]) :is(header,#swipeMain,nav.bottom-dock) :is(.primary,button.active,.brand span) {
+ background:var(--ds-accent)!important;color:var(--theme-accent-ink,var(--ds-bg))!important;
+}
+body[data-launcher-theme]:not([data-launcher-theme="pixel"]) #swipeMain :is(.story,.panel,.resource-card,.sample-release-card) {
+ background:var(--news-panel)!important;color:var(--news-ink)!important;
+ border-color:var(--ds-line)!important;
+}
+body[data-launcher-theme]:not([data-launcher-theme="pixel"]) :is(header,#swipeMain,nav.bottom-dock) :is(.sub,.edition,.stats,.status,.meta,.note,.search-status,.story p,.resource-desc) {
+ color:var(--news-muted)!important;border-color:var(--ds-line)!important;line-height:1.45;
+}
+body[data-launcher-theme]:not([data-launcher-theme="pixel"]) #swipeMain .story::before {color:var(--news-muted);border-color:var(--ds-line)}
+body[data-launcher-theme]:not([data-launcher-theme="pixel"]) #swipeMain :is(.storytitle,a) {color:var(--news-ink)!important}
+body[data-launcher-theme]:not([data-launcher-theme="pixel"]) #swipeMain .stats {flex-wrap:wrap;align-items:baseline;font-variant-numeric:tabular-nums}
+body[data-launcher-theme]:not([data-launcher-theme="pixel"]) nav.bottom-dock .dock-search {background:var(--news-panel)!important;color:var(--news-ink)!important}
+body[data-launcher-theme]:not([data-launcher-theme="pixel"]) nav.bottom-dock .dock-search input {background:transparent!important;border:0!important}
+body[data-launcher-theme]:not([data-launcher-theme="pixel"])[data-glass-mode="liquid"] :is(header,nav.bottom-dock,#swipeMain .story) {
+ background:linear-gradient(145deg,#ffffff38,transparent 38%),var(--glass-base)!important;
+ -webkit-backdrop-filter:blur(18px) saturate(1.32);backdrop-filter:blur(18px) saturate(1.32);
+}
+body[data-launcher-theme]:not([data-launcher-theme="pixel"])[data-glass-mode="aero"] :is(header,nav.bottom-dock,#swipeMain .story) {
+ background:linear-gradient(165deg,#a9daf733,transparent 70%),var(--glass-base)!important;
+ -webkit-backdrop-filter:blur(21px) saturate(1.23);backdrop-filter:blur(21px) saturate(1.23);
+}
+body[data-launcher-theme]:not([data-launcher-theme="pixel"])[data-glass-mode="mica"] :is(header,nav.bottom-dock,#swipeMain .story) {
+ background:var(--glass-strong)!important;
+ -webkit-backdrop-filter:blur(30px) saturate(1.08);backdrop-filter:blur(30px) saturate(1.08);
+}
