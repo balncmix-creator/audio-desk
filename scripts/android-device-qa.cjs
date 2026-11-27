@@ -45,7 +45,7 @@ async function test(name,fn){
  try{await fn();results.push({name,status:'passed'});console.log('PASS',name);}
  catch(e){results.push({name,status:'failed',error:String(e.stack||e)});console.error('FAIL',name,e);try{screenshot('FAIL-'+name.replace(/[^a-z0-9-]/gi,'-'));}catch{}}
 }
-const visible=selector=>'(()=>{const e=document.querySelector('+JSON.stringify(selector)+');return !!e&&e.getClientRects().length>0&&getComputedStyle(e).visibility!=="hidden"})()';
+const visible=selector=>'(()=>{const e=document.querySelector('+JSON.stringify(selector)+');return !!e&&!e.closest("[hidden]")&&e.getClientRects().length>0&&getComputedStyle(e).visibility!=="hidden"})()';
 async function tap(c,selector){
  const p=await c.evaluate('(()=>{const e=document.querySelector('+JSON.stringify(selector)+');if(!e||!e.getClientRects().length)return null;e.scrollIntoView({block:"nearest"});const r=e.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()');
  assert.ok(p,'Visible tap target '+selector);
@@ -253,6 +253,28 @@ async function tap(c,selector){
      await poll(()=>c.evaluate(visible('#launcherWallpaperDialog')));
      await visualCapture(theme+'-wallpaper-picker');
      await c.evaluate('closeCustomize(true);closeHomeOptions(true)');
+     await activate('#launcherSettingsToggle');
+     await poll(()=>c.evaluate(visible('#launcherHomeOptions')));
+     await activate('#launcherClockChoose');
+     await poll(()=>c.evaluate(visible('#launcherClockDialog')));
+     await visualCapture(theme+'-clock-picker');
+     await c.evaluate('closeCustomize(true);closeHomeOptions(true)');
+     // The styled quick actions are hosted by Android, not the DOM.
+     await c.evaluate('(()=>{const a=launcherApps.find(a=>a.pkg&&a.activity);if(!a)throw Error("No installed app");showAppShortcuts(a.pkg,a.activity)})()');
+     await sleep(1000);
+     screenshot('visual-'+theme+'-quick-actions');
+     adb('shell','uiautomator','dump','/sdcard/audio-desk-visual.xml');
+     fs.writeFileSync(dir+'/visual-'+theme+'-quick-actions.xml',adb('shell','cat','/sdcard/audio-desk-visual.xml'));
+     adb('shell','input','keyevent','4');
+     await sleep(500);
+    }else{
+     await activate('#orbitSettingsGear');
+     await poll(()=>c.evaluate(visible('#orbitSettingsPanel')));
+     for(const tab of ['themes','wallpaper','dials','widgets','gestures','general']){
+      await activate('#orbitSettingsTabs [data-orbit-tab="'+tab+'"]');
+      await visualCapture('orbit-settings-'+tab);
+     }
+     await activate('#orbitSettingsClose');
     }
     await c.evaluate('setLauncherPage("apps",false);window.scrollTo(0,0)');
     await visualCapture(theme+'-apps');
