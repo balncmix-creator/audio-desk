@@ -84,6 +84,20 @@ assert.match(orbit,/orbitIconMarkup/,'recents, fan, and widget icon layouts shou
   assert.ok(brokenSlots.length>=1,'unavailable app renders a fallback tile');
   assert.ok(brokenSlots.every(s=>s.fallback!=='none'),
    'failed image still has a readable single-letter fallback');
+  // Actual touch hit-test on a recent radial icon, not a fabricated DOM event.
+  const hit=await page.evaluate(()=>{
+   for(const el of document.querySelectorAll('#orbitRecents [data-orbit-action^="recent:"]')){
+    const r=el.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2;
+    if(x>0&&y>0&&x<innerWidth&&y<innerHeight&&document.elementFromPoint(x,y)?.closest('[data-orbit-action]')===el)return {x,y};
+   }return null;
+  });
+  assert.ok(hit,'a radial recent icon must be touchable');
+  const cdp=await page.context().newCDPSession(page);
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[hit]});
+  await page.waitForTimeout(600);
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  assert.equal(await page.locator('#appManageSheet').isVisible(),true,'radial recents long press opens viewport management');
+  await page.locator('#appManageSheet [data-manage="close"]').click();
   const widgetText=await page.locator('#orbitWidgets').textContent();
   assert.ok((widgetText.match(/NO ACTIVE PLAYER/g)||[]).length<=1,
    'idle media panel does not duplicate status labels');

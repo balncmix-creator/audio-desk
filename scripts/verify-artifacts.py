@@ -25,6 +25,10 @@ for archive_path, asset, source, store in [
         assets = root / 'app/src/main/assets'
         provenance = json.loads((assets / 'wallpapers/provenance.json').read_text())
         required = ['personalization.js', 'personalization.css', 'wallpapers/catalog.js', 'wallpapers/provenance.json']
+        # All first-party shared UI modules must exist in both packaged editions.
+        required += [p.name for p in assets.iterdir() if p.is_file() and p.suffix in {'.js', '.css'}
+                     and p.name not in {'app-icon-engine.js', 'app-icon-engine.css'}]
+        required = list(dict.fromkeys(required))
         required += [str(p.relative_to(assets)).replace('\\', '/') for p in (assets / 'fonts').glob('*')]
         for record in provenance:
             required += [f"wallpapers/{record['id']}.webp", f"wallpapers/thumbs/{record['id']}.webp"]

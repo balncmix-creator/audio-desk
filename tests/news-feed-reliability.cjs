@@ -25,7 +25,7 @@ const qaFeeds=[
    };
    localStorage.setItem('ar_last_discovery',Date.now().toString());
   });
-  let slowAlpha=false,blockTimeout=false,requests=0;
+  let slowAlpha=false,blockTimeout=false,requests=0,betaHttp=0;
   await page.route('**/*',async route=>{
    if(serve(route))return;
    const url=route.request().url();
@@ -38,6 +38,7 @@ const qaFeeds=[
      if(blockTimeout)await new Promise(r=>setTimeout(r,500));
      return route.fulfill({json:{status:'ok',items:[]} }).catch(()=>{});
     }
+    if(feed.includes('beta.rss')&&betaHttp)return route.fulfill({status:betaHttp,body:'Fixture access failure'});
     if(feed.includes('alpha.rss')&&slowAlpha)await new Promise(r=>setTimeout(r,450));
     const search=feed.includes('news.google.com/rss/search')||feed.includes('www.bing.com/news/search');
     const fromGoogle=feed.includes('news.google.com');
@@ -49,7 +50,7 @@ const qaFeeds=[
       feed.includes('alpha.rss')?'https://stories.example.test/alpha':'https://stories.example.test/beta';
     return route.fulfill({json:{status:'ok',items:[{
      title:name,link,description:'Audio editing workflow and hardware',
-     pubDate:'2026-11-24 10:00:00'
+     pubDate:new Date(Date.now()-60000).toISOString()
     }]}}).catch(()=>{});
    }
    if(url.includes('api.github.com'))return route.fulfill({json:{items:[]}});
@@ -65,6 +66,24 @@ const qaFeeds=[
    !document.getElementById('refresh').disabled);
   assert.equal(await page.locator('#stories .story').count(),2);
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.ar_items).length),2);
+
+  // Check the actual health panel and status classifications.
+  const health=await page.evaluate(()=>({
+   summary:document.querySelector('#sourceHealthSummary').textContent,
+   states:['HTTP 401','HTTP 403','HTTP 429','Timed out after 6s','HTTP 404','Network error'].map(s=>feedFailureStatus(new Error(s))),
+   persisted:JSON.parse(localStorage.ar_source_health_v1)
+  }));
+  assert.match(health.summary,/0 unavailable \/ 2 accessible \/ 0 unchecked/);
+  assert.deepEqual(health.states,['auth','blocked','rate','timeout','missing','failed']);
+  assert.equal(health.persisted[qaFeeds[0].url].state,'ok');
+  await page.evaluate(()=>{
+   recordSourceHealth(feeds[0],'auth');recordSourceHealth(feeds[1],'blocked');renderSources();
+  });
+  await page.locator('#sourceHealthSummary').click();
+  assert.match(await page.locator('#sourceHealthList').innerText(),/Authentication reported — sign-in may be required/i);
+  assert.match(await page.locator('#sourceHealthList').innerText(),/Access blocked/i);
+  assert.equal(await page.locator('#sourceHealthList a').count(),2);
+  await page.locator('#sourceHealthSummary').click();
 
   // Removing a source DURING a slow in-flight refresh must not re-add it.
   slowAlpha=true;
@@ -101,6 +120,20 @@ const qaFeeds=[
    'A genuinely different update'
   ]);
 
+  const chronology=await page.evaluate(()=>{
+   const now=Date.parse('2026-11-25T10:00:00Z');
+   const raw=['2026-11-25 08:00:00','2026-11-25T13:30:00+05:30','2026-02-30','invalid','2027-01-01'];
+   const base={title:'Chronological audio publication fixture',link:'https://publisher.example/a',source:'Publisher'};
+   const records=[{...base,date:'invalid'},{...base,date:'2026-11-24T06:00:00Z'}];
+   return {utc:raw.map(normalizedNewsDate),times:raw.map(x=>newsTime(x,now)),window:newsInPeriod({date:'2026-11-25 09:30:00'},'1h',now),old:newsInPeriod({date:'2026-11-25 08:00:00'},'1h',now),duplicate:uniqueFeedStories(records)[0].date};
+  });
+  assert.equal(chronology.utc[0],chronology.utc[1]);
+  assert.equal(chronology.utc[2],'');
+  assert.equal(chronology.times[3],0);
+  assert.equal(chronology.times[4],0);
+  assert.equal(chronology.window,true);
+  assert.equal(chronology.old,false);
+  assert.equal(chronology.duplicate,'2026-11-24T06:00:00Z');
   const peak=await page.evaluate(async()=>{
    let active=0,max=0;
    await mapFeedsBounded(Array.from({length:45},(_,i)=>i),async n=>{
@@ -144,6 +177,22 @@ const qaFeeds=[
   assert.equal(search.keys.length,1);
   assert.ok(search.persisted.every(x=>!x.includes('The same headline')),
    'temporary search results must not overwrite RSS cache');
+  // Real intercepted HTTP error, rather than a fabricated UI state.
+  betaHttp=401;
+  await page.locator('#refresh').click();
+  await page.waitForFunction(()=>!document.getElementById('refresh').disabled);
+  const auth=await page.evaluate(()=>({
+   state:JSON.parse(localStorage.ar_source_health_v1)['https://feeds.example.test/beta.rss']?.state,
+   summary:document.getElementById('sourceHealthSummary').textContent,
+   cached:items.some(x=>x.title.includes('Beta-only'))
+  }));
+  assert.equal(auth.state,'auth');
+  assert.match(auth.summary,/1 unavailable/);
+  assert.equal(auth.cached,true,'failed feed keeps its cached article');
+  betaHttp=0;
+  await page.locator('#refresh').click();
+  await page.waitForFunction(()=>!document.getElementById('refresh').disabled);
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.ar_source_health_v1)['https://feeds.example.test/beta.rss']?.state),'ok','successful retry clears prior failure');
   assert.deepEqual(errors,[],'no uncaught news feed script errors');
   console.log('PASS: remove-during-refresh, queued followup, stable RSS cache, source dedup, 12-connection cap, HTTP abort, merged news search and native loading indicator');
  }finally{await browser.close()}

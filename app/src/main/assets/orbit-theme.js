@@ -913,18 +913,27 @@ svg.addEventListener("pointerdown",e=>{
  drag={id:e.pointerId,which,lastAngle:loc.a,code,target,
   disabled:target?.getAttribute("aria-disabled")==="true",
   center:Number(target?.dataset.orbitAngle),total:0,moved:false,
-  samples:[{t,angle:0}]};
+  samples:[{t,angle:0}],x:e.clientX,y:e.clientY};
+ const held=drag;
+ const app=code==="picker:launch"?launcherApps.find(a=>a.pkg===target?.dataset.pickerPkg&&a.activity===target?.dataset.pickerActivity):code?.startsWith("recent:")?recentList[Number(code.slice(7))]:null;
+ if(app&&!held.disabled)held.timer=setTimeout(()=>{
+  if(drag!==held||held.moved)return;
+  held.managed=true;suppressNativeClickUntil=performance.now()+1000;
+  window.audioDeskManageApp?.(app.pkg,app.activity);
+ },420);
  try{svg.setPointerCapture(e.pointerId)}catch{}
  e.preventDefault();
 });
 svg.addEventListener("pointermove",e=>{
  if(!drag||drag.id!==e.pointerId)return;
+ if(drag.managed)return;
+ if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>12)clearTimeout(drag.timer);
  const loc=coordinates(e),change=angularDifference(drag.lastAngle,loc.a);
  drag.lastAngle=loc.a;drag.total+=change;
  const now=performance.now();
  drag.samples.push({t:now,angle:drag.total});
  drag.samples=drag.samples.filter(x=>now-x.t<=110);
- if(Math.abs(drag.total)>3){
+ if(Math.abs(drag.total)>3&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>10){
   drag.moved=true;
   if(galaxyA73)document.body.classList.add("orbit-gesture-active");
  }
@@ -933,10 +942,11 @@ svg.addEventListener("pointermove",e=>{
 });
 function finish(e,cancel=false){
  if(!drag||drag.id!==e.pointerId)return;
- const d=drag;drag=null;
+ const d=drag;drag=null;clearTimeout(d.timer);
  document.body.classList.remove("orbit-gesture-active");
  if(queuedRingFrame||queuedRingPaints.size)flushQueuedRingPaints();
  suppressNativeClickUntil=performance.now()+350;
+ if(d.managed)return;
  if(cancel){if(d.which)settleRing(d.which);return}
  if(d.code==="seek"){seekAt(coordinates(e).a,d.center);return}
  if(d.which==="recents"&&popupVisible&&d.moved){turnAppPage(d.total<0?1:-1);return}
@@ -950,6 +960,23 @@ function finish(e,cancel=false){
 }
 svg.addEventListener("pointerup",e=>finish(e));
 svg.addEventListener("pointercancel",e=>finish(e,true));
+window.audioDeskOrbitNativeHold=target=>{
+ const t=target?.closest?.("#orbitDial [data-orbit-action]"),code=t?.dataset.orbitAction;
+ const app=code==="picker:launch"?launcherApps.find(a=>a.pkg===t?.dataset.pickerPkg&&a.activity===t?.dataset.pickerActivity):code?.startsWith("recent:")?recentList[Number(code.slice(7))]:null;
+ if(!app||drag?.moved)return;
+ if(drag){clearTimeout(drag.timer);drag.managed=true}
+ suppressNativeClickUntil=performance.now()+1000;
+ window.audioDeskManageApp?.(app.pkg,app.activity);
+};
+svg.addEventListener("contextmenu",e=>{
+ const t=e.target.closest("[data-orbit-action]"),code=t?.dataset.orbitAction;
+ const app=code==="picker:launch"?launcherApps.find(a=>a.pkg===t?.dataset.pickerPkg&&a.activity===t?.dataset.pickerActivity):code?.startsWith("recent:")?recentList[Number(code.slice(7))]:null;
+ if(!app||drag?.moved)return;
+ e.preventDefault();
+ if(drag){clearTimeout(drag.timer);drag.managed=true}
+ suppressNativeClickUntil=performance.now()+1000;
+ window.audioDeskManageApp?.(app.pkg,app.activity);
+});
 svg.addEventListener("click",e=>{
  if(e.isTrusted&&performance.now()<suppressNativeClickUntil)return;
  const t=e.target.closest("[data-orbit-action]");

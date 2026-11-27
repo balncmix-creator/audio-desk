@@ -90,7 +90,7 @@ function refreshSpectrumPalette(){
  lastPaletteAt=performance.now();
 }
 function fontColor(){if(!cachedAccent||performance.now()-lastPaletteAt>700)refreshSpectrumPalette();return cachedAccent}
-function activeHome(){return launcherTheme!=="extreme"&&launcherTheme!=="orbit"&&wanted&&launcherPage==="home"&&!document.hidden&&window.audioDeskForeground!==false&&!widget.hasAttribute("data-widget-removed")&&(widget.dataset.musicLayout||"full")==="full"}
+function activeHome(){return launcherTheme!=="extreme"&&launcherTheme!=="orbit"&&wanted&&document.getElementById("deskWorkspace")?.hidden!==false&&launcherPage==="home"&&!document.hidden&&window.audioDeskForeground!==false&&!widget.hasAttribute("data-widget-removed")&&(widget.dataset.musicLayout||"full")==="full"}
 function updateMusicLayout(){
  const rect=widget.getBoundingClientRect();
  if(rect.width<=0||rect.height<=0)return;
@@ -440,6 +440,7 @@ function manageSpectrumTimer(){
  idleTimer=activeHome()?setInterval(checkInput,2000):0;
 }
 window.addEventListener("audio-desk-foreground",()=>{sync();manageSpectrumTimer()});
+window.addEventListener("audio-desk-workspace-visibility",()=>{sync();manageSpectrumTimer()});
 window.addEventListener("audio-desk-theme-changed",()=>{sync();manageSpectrumTimer()});
 window.addEventListener("audio-desk-widget-visibility",manageSpectrumTimer);
 window.addEventListener("launcher-page-changed",manageSpectrumTimer);
@@ -469,6 +470,6 @@ window.audioDeskSpectrum={
  settings:()=>({...tuning}),configure:configureTuning,preset:applyPreset,
  displayGeometry:()=>({mode:tuning.mode,points:spectrumPlot()}),
  frequencyState:()=>({target:Array.from(target),smooth:Array.from(smooth),lastSource}),
- stop:()=>{wanted=false;deskStorage.setItem(key,"false");sync()}
+ stop:()=>{wanted=false;deskStorage.setItem(key,"false");sync();manageSpectrumTimer()}
 };
 })();

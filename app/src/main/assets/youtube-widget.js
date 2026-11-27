@@ -47,6 +47,7 @@ if(inline){
  }
  if(typeof ResizeObserver==="function"){const ro=new ResizeObserver(()=>schedule(true));ro.observe(widget);ro.observe(slot)}
  for(const event of ["audio-desk-layout-changed","audio-desk-widget-visibility","launcher-page-changed","audio-desk-foreground","audio-desk-theme-changed"])window.addEventListener(event,()=>{last="";schedule(true)});
+ window.addEventListener("audio-desk-workspace-visibility",()=>{if(raf)cancelAnimationFrame(raf);last="";sync(performance.now())});
  window.addEventListener("scroll",()=>schedule(),{passive:true,capture:true});
  window.addEventListener("resize",()=>schedule(true));
  document.addEventListener("visibilitychange",()=>schedule());

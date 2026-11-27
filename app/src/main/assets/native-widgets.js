@@ -129,6 +129,7 @@ window.receiveAudioDeskNativeWidgets=data=>{
  window.dispatchEvent(new Event("audio-desk-native-widgets-changed"));
 };
 for(const event of ["audio-desk-layout-changed","audio-desk-widget-visibility","launcher-page-changed","audio-desk-foreground","audio-desk-theme-changed"])window.addEventListener(event,()=>schedule(true));
+window.addEventListener("audio-desk-workspace-visibility",()=>{if(raf)cancelAnimationFrame(raf);lastPayload="";sync()});
 window.addEventListener("scroll",()=>schedule(),{passive:true,capture:true});
 window.addEventListener("resize",()=>schedule(true));
 document.addEventListener("visibilitychange",()=>schedule());
@@ -136,7 +137,7 @@ const oldTheme=setLauncherTheme;setLauncherTheme=function(theme){oldTheme(theme)
 const observer=new MutationObserver(()=>schedule(true));
 observer.observe(document.body,{attributes:true,attributeFilter:["class","data-launcher-theme","data-home-page"]});
 observer.observe(home,{subtree:true,attributes:true,attributeFilter:["hidden","data-widget-removed","data-layout-sized"]});
-for(const id of ["widgetLayoutOverlay","launcherHomeOptions","launcherLetterPanel","launcherShortcutMenu","launcherThemeDialog","launcherWallpaperDialog","launcherClockDialog","gridDetail","agendaOverlay","launcherFolderSheet","musicSpectrumTuningOverlay"]){
+for(const id of ["widgetLayoutOverlay","launcherHomeOptions","launcherLetterPanel","launcherShortcutMenu","launcherThemeDialog","launcherWallpaperDialog","launcherClockDialog","gridDetail","agendaOverlay","launcherFolderSheet","appManageSheet","musicSpectrumTuningOverlay"]){
  const node=document.getElementById(id);if(node)observer.observe(node,{attributes:true,attributeFilter:["hidden","class"]});
 }
 api.requestNativeWidgets?.();schedule();

@@ -2,6 +2,9 @@ package com.balnc.audioddesk
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.AlertDialog
+import android.view.ActionMode
+import android.view.MotionEvent
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -40,6 +43,8 @@ class MainActivity : Activity() {
     private lateinit var swipeRefresh: DeskRefreshLayout
     private lateinit var browserPanel: LinearLayout
     private lateinit var browserAddress: TextView
+    private lateinit var scanFeedsButton: Button
+    private var googleDiscoveryMode = false
     private val refreshHandler = Handler(Looper.getMainLooper())
     private val refreshFailsafe = Runnable { swipeRefresh.isRefreshing = false }
     private lateinit var imageAccents: ImageAccentSampler
@@ -68,10 +73,15 @@ class MainActivity : Activity() {
     private var pixelBarActive = false
     private var pixelBarSuspended = false
     private var destroyed = false
+    private var launcherSelectionBlocked = true
+    private var launcherTouchX = 0f
+    private var launcherTouchY = 0f
+    private var appManagementDialog: android.app.Dialog? = null
     private var statusInsetDp = 24
     private var bottomInsetDp = 0
     private var refreshAllowed = false
     private var wallpaperFileCallback: ValueCallback<Array<Uri>>? = null
+    private var audioFileRequest = false
     private val wallpaperFileRequest = 2405
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -146,6 +156,25 @@ class MainActivity : Activity() {
         // Only the trusted local interface reads user-picked content URIs.
         configure(appWebView)
         appWebView.settings.allowContentAccess = true
+        // Consume native browser long-clicks on launcher surfaces, but never on editable inputs.
+        appWebView.setOnTouchListener { _, event ->
+            if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+                launcherTouchX = event.x
+                launcherTouchY = event.y
+            }
+            false
+        }
+        appWebView.setOnLongClickListener {
+            if (!blocksLauncherSelection()) false else {
+                val width = appWebView.width.coerceAtLeast(1)
+                val x = launcherTouchX / width
+                val y = launcherTouchY / width
+                if (appManagementDialog?.isShowing != true) {
+                    appWebView.evaluateJavascript("window.audioDeskNativeHold&&window.audioDeskNativeHold(" + x + "," + y + ")", null)
+                }
+                true
+            }
+        }
         appWebView.webChromeClient = object : WebChromeClient() {
             override fun onShowFileChooser(
                 webView: WebView?, callback: ValueCallback<Array<Uri>>?,
@@ -154,16 +183,19 @@ class MainActivity : Activity() {
                 if (webView?.url != "https://appassets.androidplatform.net/assets/index.html") return false
                 wallpaperFileCallback?.onReceiveValue(null)
                 wallpaperFileCallback = callback
+                val types = params?.acceptTypes.orEmpty().filter { it.isNotBlank() }
+                audioFileRequest = types.isNotEmpty() && types.all { it.startsWith("audio/", ignoreCase = true) }
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "image/*"
-                    putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/jpeg", "image/png", "image/webp"))
+                    type = if (audioFileRequest) "audio/*" else "image/*"
+                    if (!audioFileRequest) putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/jpeg", "image/png", "image/webp"))
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
                 try {
                     @Suppress("DEPRECATION")
                     startActivityForResult(intent, wallpaperFileRequest)
                 } catch (_: android.content.ActivityNotFoundException) {
+                    audioFileRequest = false
                     wallpaperFileCallback?.onReceiveValue(null)
                     wallpaperFileCallback = null
                 }
@@ -264,6 +296,8 @@ class MainActivity : Activity() {
             setPadding(8, 0, 8, 0)
         }
         browserToolbar.addView(browserAddress, LinearLayout.LayoutParams(0, -2, 1f))
+        scanFeedsButton = toolbarButton("SCAN FEEDS") { scanGoogleResults() }.apply { visibility = View.GONE }
+        browserToolbar.addView(scanFeedsButton)
         browserToolbar.addView(toolbarButton("CLOSE ×") { closeBrowser() })
         browserPanel.addView(browserToolbar)
 
@@ -273,9 +307,11 @@ class MainActivity : Activity() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?) = false
             override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                 browserAddress.text = url ?: ""
+                updateDiscoveryButton(url)
             }
             override fun onPageFinished(view: WebView?, url: String?) {
                 browserAddress.text = url ?: ""
+                updateDiscoveryButton(url)
             }
         }
         browserPanel.addView(browserWebView, LinearLayout.LayoutParams(
@@ -747,24 +783,64 @@ class MainActivity : Activity() {
                 }
             }
         }
+        @JavascriptInterface fun setLauncherSelectionBlocked(blocked: Boolean) {
+            runOnUiThread { launcherSelectionBlocked = blocked }
+        }
+        @JavascriptInterface fun showStyledAppShortcuts(pkg:String,activityName:String,pinned:Boolean,paletteJson:String) {
+            if(!AppManagementActions.validPackage(pkg)||activityName.length !in 1..300)return
+            runOnUiThread {
+                if(destroyed||isFinishing||appManagementDialog?.isShowing==true||!launcherSupport.hasLaunchablePackage(pkg))return@runOnUiThread
+                try {
+                    val info=packageManager.getApplicationInfo(pkg,0)
+                    val menu=AppManagementActions.menu(this@MainActivity,packageManager.getApplicationLabel(info),packageManager.getApplicationIcon(info),
+                        AppManagementActions.palette(paletteJson),"Quick actions",AppManagementActions.quickRows(pinned),"Checking published app shortcuts…"){action->
+                        when {
+                            action=="pin" -> appWebView.evaluateJavascript("window.audioDeskApplyQuickPin&&window.audioDeskApplyQuickPin("+JSONObject.quote(pkg)+","+JSONObject.quote(activityName)+","+(!pinned)+")",null)
+                            action=="open" -> launchExternalApp(pkg,activityName)
+                            action.startsWith("shortcut:") -> launchAppShortcut(pkg,activityName,action.removePrefix("shortcut:"))
+                        }
+                    }
+                    val dialog=menu.dialog
+                    appManagementDialog=dialog
+                    dialog.setOnDismissListener{if(appManagementDialog===dialog)appManagementDialog=null}
+                    dialog.show()
+                    launcherSupport.shortcuts(pkg,activityName){list->runOnUiThread{
+                        if(!destroyed&&appManagementDialog===dialog&&dialog.isShowing){
+                            val rows=AppManagementActions.quickRows(pinned,list)
+                            menu.update(rows,if(rows.size>2)null else "No published shortcuts available.")
+                        }
+                    }}
+                } catch (_:Exception) {
+                    appManagementDialog?.dismiss()
+                    android.widget.Toast.makeText(this@MainActivity,"App is no longer available.",android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        @JavascriptInterface fun showNativeAppManagement(pkg: String) = showStyledAppManagement(pkg, "")
+        @JavascriptInterface fun showStyledAppManagement(pkg: String, paletteJson: String) {
+            if (!AppManagementActions.validPackage(pkg)) return
+            runOnUiThread {
+                if (destroyed || isFinishing || appManagementDialog?.isShowing == true) return@runOnUiThread
+                if (!launcherSupport.hasLaunchablePackage(pkg)) return@runOnUiThread
+                try {
+                    val info = packageManager.getApplicationInfo(pkg, 0)
+                    val dialog = AppManagementActions.dialog(this@MainActivity, packageManager.getApplicationLabel(info),
+                        packageManager.getApplicationIcon(info), AppManagementActions.palette(paletteJson)) { action ->
+                        launchAppManagementAction(pkg, action)
+                    }
+                    appManagementDialog = dialog
+                    dialog.setOnDismissListener { if (appManagementDialog === dialog) appManagementDialog = null }
+                    dialog.show()
+                } catch (_: Exception) {
+                    android.widget.Toast.makeText(this@MainActivity, "App is no longer available.", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
         /** Open Android-owned application management. Android restricts force-stop and
          * cache deletion to Settings; the launcher never claims to do them itself. */
         @JavascriptInterface fun openAppSettings(pkg: String, action: String) {
-            if (destroyed || action !in setOf("info", "storage", "force-stop", "settings")) return
-            if (pkg.length !in 4..160 || '.' !in pkg ||
-                !pkg.all { it.isLetterOrDigit() || it == '.' || it == '_' }) return
-            runOnUiThread {
-                if (destroyed) return@runOnUiThread
-                try {
-                    packageManager.getApplicationInfo(pkg, 0)
-                    val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                        .setData(Uri.parse("package:" + pkg))
-                    startActivity(intent)
-                } catch (_: Exception) {
-                    android.widget.Toast.makeText(this@MainActivity,
-                        "Android could not open this app's settings.", android.widget.Toast.LENGTH_SHORT).show()
-                }
-            }
+            if (!AppManagementActions.validPackage(pkg) || !AppManagementActions.validAction(action)) return
+            runOnUiThread { launchAppManagementAction(pkg, action) }
         }
         @JavascriptInterface fun requestDefaultLauncher() {
             runOnUiThread { if (!destroyed) launcherSupport.requestDefaultHome() }
@@ -784,6 +860,15 @@ class MainActivity : Activity() {
                                 JSONObject.quote(requestId) + "," + record + ")", null
                         )
                     }
+                }
+            }
+        }
+        @JavascriptInterface fun openGoogleDiscovery(query: String) {
+            if (query.length !in 1..200) return
+            runOnUiThread {
+                if (!destroyed) {
+                    googleDiscoveryMode = true
+                    openInBrowser("https://www.google.com/search?q=" + Uri.encode(query))
                 }
             }
         }
@@ -927,13 +1012,65 @@ class MainActivity : Activity() {
         }
         if (requestCode != wallpaperFileRequest) return
         val callback = wallpaperFileCallback
+        val audioRequest = audioFileRequest
+        audioFileRequest = false
         wallpaperFileCallback = null
         val uri = data?.data?.takeIf { resultCode == RESULT_OK && it.scheme == "content" }
         val allowed = uri?.let {
-            try { contentResolver.getType(it).let { mime -> mime == null || mime in setOf("image/jpeg", "image/jpg", "image/png", "image/webp") } }
-            catch (_: SecurityException) { false }
+            try {
+                val mime = contentResolver.getType(it)
+                if (audioRequest) mime?.startsWith("audio/", ignoreCase = true) == true
+                else mime == null || mime in setOf("image/jpeg", "image/jpg", "image/png", "image/webp")
+            } catch (_: Exception) { false }
         } ?: false
         callback?.onReceiveValue(if (uri != null && allowed) arrayOf(uri) else null)
+    }
+
+    private fun updateDiscoveryButton(url: String?) {
+        if (::scanFeedsButton.isInitialized) {
+            scanFeedsButton.visibility = if (googleDiscoveryMode) View.VISIBLE else View.GONE
+            scanFeedsButton.isEnabled = GoogleResultDiscovery.isGoogleResults(url)
+        }
+    }
+
+    private fun scanGoogleResults() {
+        if (!googleDiscoveryMode || !GoogleResultDiscovery.isGoogleResults(browserWebView.url)) return
+        scanFeedsButton.isEnabled = false
+        // Read only result headings and their public links after an explicit tap.
+        // The external browser never receives the privileged AudioDesk bridge.
+        browserWebView.evaluateJavascript(GoogleResultDiscovery.resultScript) { raw ->
+            if (destroyed || !googleDiscoveryMode || !GoogleResultDiscovery.isGoogleResults(browserWebView.url)) return@evaluateJavascript
+            val rows = GoogleResultDiscovery.decodeRows(raw)
+            googleDiscoveryMode = false
+            closeBrowser()
+            appWebView.evaluateJavascript(
+                "window.receiveGoogleDiscoveryLinks&&window.receiveGoogleDiscoveryLinks(" + rows.toString() + ")", null
+            )
+        }
+    }
+
+    private fun blocksLauncherSelection(): Boolean =
+        launcherSelectionBlocked && ::appWebView.isInitialized &&
+            appWebView.hitTestResult?.type != WebView.HitTestResult.EDIT_TEXT_TYPE &&
+            (!::browserPanel.isInitialized || browserPanel.visibility != View.VISIBLE)
+
+    override fun onActionModeStarted(mode: ActionMode?) {
+        super.onActionModeStarted(mode)
+        if (::appWebView.isInitialized && appWebView.hasFocus() && blocksLauncherSelection()) mode?.finish()
+    }
+
+    private fun launchAppManagementAction(pkg: String, action: String) {
+        if (destroyed || !AppManagementActions.validPackage(pkg) || !AppManagementActions.validAction(action)) return
+        try {
+            packageManager.getApplicationInfo(pkg, 0)
+            startActivity(AppManagementActions.intent(pkg, action))
+            if (action == "storage" || action == "force-stop") {
+                val instruction = if (action == "storage") "Open Storage, then Clear cache." else "Tap Force stop in App info."
+                android.widget.Toast.makeText(this, instruction, android.widget.Toast.LENGTH_LONG).show()
+            }
+        } catch (_: Exception) {
+            android.widget.Toast.makeText(this, "Android could not open this app action.", android.widget.Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun openInBrowser(url: String) {
@@ -949,10 +1086,13 @@ class MainActivity : Activity() {
         swipeRefresh.visibility = View.GONE
         browserPanel.visibility = View.VISIBLE
         applyPixelStatusMode()
+        updateDiscoveryButton(url)
         browserWebView.loadUrl(url)
     }
 
     private fun closeBrowser() {
+        googleDiscoveryMode = false
+        updateDiscoveryButton(null)
         browserWebView.stopLoading()
         browserWebView.loadUrl("about:blank")
         browserPanel.visibility = View.GONE
@@ -981,6 +1121,8 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         destroyed = true
+        appManagementDialog?.dismiss()
+        appManagementDialog = null
         if (::pixelStatusBar.isInitialized) pixelStatusBar.stopUpdates()
         wallpaperFileCallback?.onReceiveValue(null)
         wallpaperFileCallback = null

@@ -76,14 +76,107 @@ const assert=require('node:assert/strict');
    'swiping app rows never triggers Home quick actions');
   // Long-pressing Apps opens genuine Android management choices.
   const appButton=page.locator('#launcherAppsGrid .launcher-app').first();
-  const r=await appButton.boundingBox();
-  await appButton.dispatchEvent('pointerdown',{button:0,pointerId:77,clientX:r.x+25,clientY:r.y+25});
-  await page.waitForTimeout(610);
+  const cdp=await page.context().newCDPSession(page);
+  async function realHold(locator){
+   await locator.scrollIntoViewIfNeeded();
+   // Ensure the selected icon is genuinely hit-testable and not behind a
+   // fixed navigation control, clipping boundary or a transitioning page.
+   await locator.evaluate(el=>el.scrollIntoView({block:'center',inline:'center',behavior:'instant'}));
+   const point=await locator.evaluate(async el=>{
+    for(let i=0;i<20;i++){
+     const r=el.getBoundingClientRect();
+     for(const fx of [.5,.25,.75])for(const fy of [.5,.25,.75]){
+      const x=Math.round(r.left+r.width*fx),y=Math.round(r.top+r.height*fy);
+      if(x>0&&y>0&&x<innerWidth&&y<innerHeight&&el.contains(document.elementFromPoint(x,y)))return {x,y};
+     }
+     await new Promise(requestAnimationFrame);
+    }
+    return null;
+   });
+   assert.ok(point,'app icon must have a visible, unobstructed touch target');
+   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});
+   await page.waitForTimeout(600);
+   await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+   await page.waitForTimeout(80);
+  }
+  await realHold(appButton);
   assert.equal(await page.locator('#appManageSheet').isVisible(),true);
+  const overlayGeometry=await page.locator('#appManageSheet').evaluate(el=>{const r=el.getBoundingClientRect(),b=el.querySelector('[data-manage="info"]').getBoundingClientRect();return {fixed:getComputedStyle(el).position==='fixed',covers:r.top===0&&r.left===0&&r.bottom>=innerHeight-1,buttonOnScreen:b.top>=0&&b.bottom<=innerHeight,hit:!!document.elementFromPoint(b.x+b.width/2,b.y+b.height/2)?.closest('#appManageSheet')}});
+  assert.deepEqual(overlayGeometry,{fixed:true,covers:true,buttonOnScreen:true,hit:true},'the menu must actually cover the visible viewport and receive taps');
   assert.equal(await page.locator('#appManageSheet [data-manage="storage"]').isVisible(),true);
   await page.locator('#appManageSheet [data-manage="storage"]').click();
   assert.equal((await page.evaluate(()=>window.testAppSettings)).at(-1).action,'storage');
   assert.equal(await page.locator('#appManageSheet').isVisible(),false);
+  // All four management options must be available without Home shortcuts.
+  await appButton.dispatchEvent('contextmenu');
+  const manage=page.locator('#appManageSheet');
+  assert.deepEqual(await manage.locator('.manage-actions button').allTextContents(),['App info','Uninstall','Clear cache','Force stop']);
+  await manage.locator('[data-manage="uninstall"]').click();
+  assert.equal((await page.evaluate(()=>window.testAppSettings)).at(-1).action,'uninstall');
+  await appButton.dispatchEvent('contextmenu');
+  await page.evaluate(()=>window.launcherBack());
+  assert.equal(await manage.isVisible(),false);
+  await page.evaluate(()=>{setLauncherPage('home',false);launcherRecents=[{pkg:'com.example.music',activity:'Music',label:'Music',uses:6,opened:Date.now()}];renderLauncherHome();renderLauncherRecents()});
+  await page.waitForFunction(()=>launcherPage==='home'&&!document.getElementById('launcherHomePage').hidden&&document.getElementById('appManageSheet').hidden);
+  const recentAppButton=page.locator('#launcherRecentQuick .launcher-app').first();
+  await realHold(recentAppButton);
+  assert.equal(await manage.isVisible(),true,'Recents use the same management menu');
+  assert.equal(await page.locator('#launcherShortcutMenu').isVisible(),false);
+  await manage.locator('[data-manage="force-stop"]').click();
+  assert.equal((await page.evaluate(()=>window.testAppSettings)).at(-1).action,'force-stop');
+  await page.evaluate(()=>{launcherRecents=[];renderLauncherHome();renderLauncherRecents()});
+  // Android uses the native dialog bridge rather than the HTML preview sheet.
+  await page.evaluate(()=>{window.nativeManagementRequests=[];AudioDesk.showNativeAppManagement=pkg=>nativeManagementRequests.push(pkg)});
+  await realHold(page.locator('#launcherRecentQuick .launcher-app').first());
+  assert.ok(await page.evaluate(()=>nativeManagementRequests.length>=1),'touch requests native app management');
+  assert.equal(await manage.isVisible(),false,'no HTML menu when native Android bridge is available');
+  const selectionPolicy=await page.locator('#launcherRecentQuick .app-name').first().evaluate(el=>{
+   const css=getComputedStyle(el).userSelect;
+   const r=document.createRange();r.selectNodeContents(el);window.getSelection().addRange(r);
+   return css;
+  });
+  assert.equal(selectionPolicy,'none','launcher text is non-selectable at the label itself');
+  await page.waitForFunction(()=>window.getSelection().isCollapsed);
+  await page.evaluate(()=>{
+   window.styledManagementRequests=[];
+   AudioDesk.showStyledAppManagement=(pkg,palette)=>styledManagementRequests.push({pkg,palette:JSON.parse(palette)});
+  });
+  for(const [theme,radius] of [["warm",21],["orbit",21],["minimal",14],["pixel",2],["windows",0],["extreme",0]]){
+   const themed=await page.evaluate(theme=>{
+    setLauncherTheme(theme);
+    const style=document.documentElement.style;
+    style.setProperty("--theme-panel","#e4ebe9");
+    style.setProperty("--theme-ink","#1d3133");
+    style.setProperty("--theme-surface","#29382f");
+    style.setProperty("--theme-surface2","#35483c");
+    style.setProperty("--theme-accent","#bcdac2");
+    window.audioDeskManageApp("com.example.audio","Main");
+    return styledManagementRequests.at(-1).palette;
+   },theme);
+   assert.equal(themed.theme,theme);assert.equal(themed.radius,radius);
+   assert.match(themed.panel,/^#[0-9a-f]{6}$/);
+   if(theme==="warm"){assert.equal(themed.panel,"#e4ebe9");assert.equal(themed.text,"#1d3133");}
+   if(theme==="orbit")assert.equal(themed.panel,"#35483c");
+   if(theme==="extreme")assert.equal(themed.panel,"#101010");
+   assert.equal(await manage.isVisible(),false,"the themed popup is still native");
+  }
+  await page.evaluate(()=>setLauncherTheme("warm"));
+  const quick=await page.evaluate(()=>{
+   setLauncherPage("home",false);
+   const app=launcherApps[0];
+   window.quickRequests=[];
+   AudioDesk.showStyledAppShortcuts=(pkg,activity,pinned,palette)=>quickRequests.push({pkg,activity,pinned,palette:JSON.parse(palette)});
+   showAppShortcuts(app.pkg,app.activity);
+   setLauncherPage("apps",false);
+   showAppShortcuts(app.pkg,app.activity);
+   delete AudioDesk.showStyledAppShortcuts;
+   return quickRequests;
+  });
+  assert.equal(quick.length,1,"native quick actions are Home-only");
+  assert.equal(quick[0].palette.theme,"warm");
+  assert.equal(await page.locator("#launcherShortcutMenu").isVisible(),false);
+  await page.evaluate(()=>{delete AudioDesk.showStyledAppManagement;delete AudioDesk.showNativeAppManagement;setLauncherPage('apps',false)});
+  assert.equal(await page.locator('#launcherAppSearch').evaluate(el=>getComputedStyle(el).userSelect),'text','app search remains editable');
   // Per-theme transparency and persistence.
   await page.evaluate(()=>setLauncherPage('home',false));
   await page.locator('#launcherSettingsToggle').click();

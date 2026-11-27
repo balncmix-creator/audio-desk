@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.webkit.ValueCallback
 import android.webkit.WebView
+import android.webkit.WebChromeClient
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -33,6 +34,33 @@ class WallpaperPickerTest {
         shadowOf(activity).receiveResult(request.intent, Activity.RESULT_CANCELED, null)
         assertTrue(completed)
         assertNull(selected)
+        controller.pause().stop().destroy()
+    }
+
+    @Test fun referenceAudioChooserUsesAudioOnlyAndKeepsPhotoChooserSeparate() {
+        val controller = Robolectric.buildActivity(MainActivity::class.java).setup()
+        val activity = controller.get()
+        val web = ReflectionHelpers.getField<WebView>(activity, "appWebView")
+        val params = object : WebChromeClient.FileChooserParams() {
+            override fun getMode() = MODE_OPEN
+            override fun getAcceptTypes() = arrayOf("audio/*")
+            override fun isCaptureEnabled() = false
+            override fun getTitle(): CharSequence? = null
+            override fun getFilenameHint(): String? = null
+            override fun createIntent() = Intent(Intent.ACTION_OPEN_DOCUMENT)
+        }
+        var called = false
+        assertTrue(web.webChromeClient!!.onShowFileChooser(web, ValueCallback { called = true; assertNull(it) }, params))
+        val request = shadowOf(activity).nextStartedActivityForResult
+        assertEquals("audio/*", request.intent.type)
+        assertTrue(request.intent.hasCategory(Intent.CATEGORY_OPENABLE))
+        assertFalse(request.intent.getBooleanExtra(Intent.EXTRA_ALLOW_MULTIPLE, false))
+        shadowOf(activity).receiveResult(request.intent, Activity.RESULT_OK, Intent().setData(Uri.parse("file:///private/audio.wav")))
+        assertTrue(called)
+        assertTrue(web.webChromeClient!!.onShowFileChooser(web, ValueCallback { }, null))
+        val photo = shadowOf(activity).nextStartedActivityForResult
+        assertEquals("image/*", photo.intent.type)
+        shadowOf(activity).receiveResult(photo.intent, Activity.RESULT_CANCELED, null)
         controller.pause().stop().destroy()
     }
 

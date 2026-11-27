@@ -200,85 +200,158 @@ manager.setAttribute("aria-label","App management");
 manager.innerHTML='<div class="app-manage-card">'+
  '<div class="folder-heading"><h3 id="appManageTitle">App settings</h3>'+
  '<button type="button" data-manage="close" aria-label="Close app management">×</button></div>'+
- '<p>Android system settings are required for storage and force-stop controls.</p>'+
  '<div class="manage-actions">'+
  '<button type="button" data-manage="info">App info</button>'+
- '<button type="button" data-manage="storage">Storage & clear cache</button>'+
- '<button type="button" data-manage="force-stop">Force stop (Settings)</button>'+
- '<button type="button" data-manage="settings">App settings</button></div></div>';
+ '<button type="button" data-manage="uninstall">Uninstall</button>'+
+ '<button type="button" data-manage="storage">Clear cache</button>'+
+ '<button type="button" data-manage="force-stop">Force stop</button></div>'+
+ '<p>Clear cache and force stop open Android App info. Android requires you to confirm these actions in Settings.</p></div>';
 document.body.appendChild(manager);
-let managed=null;
+let managed=null,managedHold=false,releaseBlocked=false;
+// Resolve the *visible theme's* surface roles rather than reusing the
+// dark Orbit ring tokens for every theme. Canvas resolves computed CSS colors
+// (including color-mix and alpha) to a strict native RGB contract.
+function appMenuPalette(){
+ const theme=document.body.dataset.launcherTheme||launcherTheme;
+ const css=getComputedStyle(document.body),read=key=>css.getPropertyValue(key).trim();
+ const canvas=document.createElement("canvas");canvas.width=canvas.height=1;
+ const ctx=canvas.getContext("2d");
+ function rgb(value,fallback,under){
+  if(!ctx||!value||!CSS.supports("color",value))return fallback;
+  ctx.clearRect(0,0,1,1);ctx.fillStyle=under||fallback;ctx.fillRect(0,0,1,1);
+  ctx.fillStyle=value;ctx.fillRect(0,0,1,1);
+  return "#"+Array.from(ctx.getImageData(0,0,1,1).data).slice(0,3).map(x=>x.toString(16).padStart(2,"0")).join("");
+ }
+ const dark=rgb(read("--ds-bg")||read("--theme-dark"),"#101211");
+ const warm=theme==="warm",orbit=theme==="orbit",extreme=theme==="extreme";
+ const panel=rgb(extreme?"#101010":warm?read("--theme-panel"):orbit?read("--theme-surface2"):read("--ds-panel"),warm?"#eedbd4":"#29382f",dark);
+ const ink=rgb(extreme?"#f1f1f1":warm?read("--theme-ink"):orbit?read("--theme-text"):read("--ds-text"),warm?"#25252b":"#e1ece3",panel);
+ const accent=rgb(extreme?"#f1f1f1":read("--ds-accent")||read("--theme-accent"),ink,panel);
+ const tile=rgb(extreme?"#191919":warm?read("--theme-glass"):orbit?read("--theme-surface"):read("--ds-panel2"),panel,panel);
+ const radius=({warm:21,orbit:21,minimal:14,pixel:2,windows:0,extreme:0})[theme]??14;
+ return {theme,dark:tile,panel,text:ink,accent,radius};
+}
+window.audioDeskAppMenuPalette=appMenuPalette;
 function appManage(pkg,activity){
+ if(window.AudioDesk?.showStyledAppManagement||window.AudioDesk?.showNativeAppManagement){
+  cancelHomeHold();upStart=null;iconSwipe=null;longConsumed=true;
+  if(launcherGesture)resetLauncherGesture();
+  closeAppShortcuts(true);window.getSelection()?.removeAllRanges();
+  window.AudioDesk?.hideSearchKeyboard?.();
+  if(window.AudioDesk.showStyledAppManagement){
+   window.AudioDesk.showStyledAppManagement(pkg,JSON.stringify(appMenuPalette()));
+  }else window.AudioDesk.showNativeAppManagement(pkg);
+  return;
+ }
  managed=launcherApps.find(a=>a.pkg===pkg&&a.activity===activity)||
   launcherRecents.find(a=>a.pkg===pkg&&a.activity===activity);
  if(!managed)return;
  byId("appManageTitle").textContent=managed.label;
- manager.hidden=false;
+ cancelHomeHold();upStart=null;iconSwipe=null;longConsumed=true;
+ if(launcherGesture)resetLauncherGesture();
+ closeAppShortcuts(true);manager.hidden=false;
+ manager.setAttribute("aria-hidden","false");
+ window.AudioDesk?.hideSearchKeyboard?.();
 }
-function closeManage(){manager.hidden=true;managed=null}
+function closeManage(){manager.hidden=true;manager.setAttribute("aria-hidden","true");managed=null;managedHold=false}
+window.audioDeskManageApp=appManage;
+// Only the browser development preview uses the HTML fallback. Android always opens a native dialog.
+const oldBack=window.launcherBack,oldGoHome=window.launcherGoHome;
+window.launcherBack=function(){if(!manager.hidden){closeManage();return}return oldBack.apply(this,arguments)};
+window.launcherGoHome=function(){closeManage();return oldGoHome.apply(this,arguments)};
 manager.onclick=e=>{
- if(e.target===manager){closeManage();return}
+ if(e.target===manager){if(!releaseBlocked&&Date.now()>=clickBlockedUntil)closeManage();return}
  const action=e.target.closest("[data-manage]")?.dataset.manage;
  if(!action)return;
  if(action==="close"){closeManage();return}
- if(!managed)return;
+ if(!managed||releaseBlocked)return;
  window.AudioDesk?.openAppSettings?.(managed.pkg,action);
  closeManage();
 };
+const manageTargets="#launcherAppsGrid .launcher-app,#launcherFavorites .launcher-app,#launcherRecentQuick .launcher-app,#launcherLetterApps .launcher-app,#launcherRecentGrid .launcher-recent-card";
+function appTarget(target){const node=target?.closest?.(manageTargets);return node?.matches(".launcher-recent-card")?node.querySelector(".launcher-resume"):node}
+function stopHeld(){if(appHeld){clearTimeout(appHeld.timer);appHeld=null}}
+function openHeld(pkg,activity){
+ clickBlockedUntil=Date.now()+1000;blockAppClickUntil=clickBlockedUntil;
+ managedHold=true;releaseBlocked=true;
+ appManage(pkg,activity);
+}
+function launcherSurface(){return (launcherPage==="home"||launcherPage==="apps")&&document.getElementById("deskWorkspace")?.hidden!==false}
+function editableTarget(el){return !!el?.closest?.("input,textarea,[contenteditable]:not([contenteditable=false])")}
+function syncSelectionPolicy(){window.AudioDesk?.setLauncherSelectionBlocked?.(launcherSurface()&&!editableTarget(document.activeElement))}
+window.addEventListener("launcher-page-changed",syncSelectionPolicy);
+window.addEventListener("audio-desk-workspace-visibility",()=>{stopHeld();managedHold=false;releaseBlocked=false;syncSelectionPolicy()});
+window.addEventListener("audio-desk-foreground",()=>{if(window.audioDeskForeground===false){stopHeld();managedHold=false;releaseBlocked=false}});
+document.addEventListener("focusin",syncSelectionPolicy,true);
+document.addEventListener("focusout",()=>setTimeout(syncSelectionPolicy,0),true);
+document.addEventListener("selectstart",e=>{if(launcherSurface()&&!editableTarget(e.target))e.preventDefault()},true);
+document.addEventListener("selectionchange",()=>{
+ if(!launcherSurface()||editableTarget(document.activeElement))return;
+ const selection=window.getSelection();if(selection&&!selection.isCollapsed)selection.removeAllRanges();
+});
+syncSelectionPolicy();
+window.audioDeskNativeHold=(x,y)=>{
+ if(!launcherSurface()||releaseBlocked||!Number.isFinite(x)||!Number.isFinite(y))return;
+ const target=document.elementFromPoint(x*innerWidth,y*innerWidth);
+ if(editableTarget(target))return;
+ const a=appTarget(target);
+ if(a){stopHeld();openHeld(a.dataset.launchPkg,a.dataset.launchActivity)}
+ else window.audioDeskOrbitNativeHold?.(target);
+};
+function beginAppHold(a,x,y,pointerId,touchId=null){
+ if(!launcherSurface()||!a?.dataset.launchPkg||!manager.hidden)return;
+ stopHeld();
+ appHeld={pkg:a.dataset.launchPkg,activity:a.dataset.launchActivity,x,y,pointerId,touchId,
+  timer:setTimeout(()=>{if(!appHeld)return;const h=appHeld;appHeld=null;openHeld(h.pkg,h.activity)},420)};
+}
 document.addEventListener("pointerdown",e=>{
- const a=e.target.closest("#launcherAppsGrid .launcher-app,#launcherFavorites .launcher-app,#launcherRecentQuick .launcher-app");
- if(!a||e.button!==0||!manager.hidden)return;
- clearTimeout(appHeld?.timer);
- const {clientX:x,clientY:y,pointerId}=e;
- appHeld={pkg:a.dataset.launchPkg,activity:a.dataset.launchActivity,x,y,pointerId,
-  home:!!a.closest("#launcherFavorites,#launcherRecentQuick"),
-  timer:setTimeout(()=>{
-   if(!appHeld)return;
-   const h=appHeld;appHeld=null;
-   clickBlockedUntil=Date.now()+850;
-   // Suppress the native app-open tap and Home swipe after a long press.
-   blockAppClickUntil=Date.now()+850;
-   if(h.home){
-    upStart=null;iconSwipe=null;longConsumed=true;
-    showAppShortcuts(h.pkg,h.activity);
-   }else appManage(h.pkg,h.activity);
-  },520)};
+ releaseBlocked=false;
+ if(e.button!==0||e.isPrimary===false)return;
+ const a=appTarget(e.target);if(a){beginAppHold(a,e.clientX,e.clientY,e.pointerId);cancelHomeHold();upStart=null;}
 },true);
+// WebView may cancel its pointer stream during native gesture arbitration.
+// A real touch sequence remains authoritative until it ends or moves.
+document.addEventListener("touchstart",e=>{
+ if(e.touches.length!==1){stopHeld();return}
+ const a=appTarget(e.target),t=e.touches[0];
+ if(a){beginAppHold(a,t.clientX,t.clientY,null,t.identifier);cancelHomeHold();upStart=null;}
+},{capture:true,passive:true});
+document.addEventListener("touchmove",e=>{
+ if(!appHeld)return;
+ const t=[...e.touches].find(t=>t.identifier===appHeld.touchId);
+ if(e.touches.length!==1||!t||Math.hypot(t.clientX-appHeld.x,t.clientY-appHeld.y)>16)stopHeld();
+},{capture:true,passive:true});
+for(const type of ["touchend","touchcancel"])document.addEventListener(type,()=>{stopHeld();if(managedHold){clickBlockedUntil=Date.now()+750;blockAppClickUntil=clickBlockedUntil;}},{capture:true,passive:true});
 document.addEventListener("pointermove",e=>{
- if(!appHeld||appHeld.pointerId!==e.pointerId)return;
- if(Math.hypot(e.clientX-appHeld.x,e.clientY-appHeld.y)>12){
-  clearTimeout(appHeld.timer);appHeld=null;
- }
+ if(!appHeld||appHeld.touchId!==null||appHeld.pointerId!==e.pointerId)return;
+ if(Math.hypot(e.clientX-appHeld.x,e.clientY-appHeld.y)>16)stopHeld();
 },true);
-for(const ev of ["pointerup","pointercancel"])
- document.addEventListener(ev,()=>{if(appHeld){clearTimeout(appHeld.timer);appHeld=null}},true);
-/* Android WebView may emit contextmenu/pointercancel before a hold timer fires.
-   The same Home shortcuts menu must still open for Favourites and Recents. */
+for(const type of ["pointerup","pointercancel"])
+ document.addEventListener(type,e=>{if(appHeld?.touchId===null&&appHeld.pointerId===e.pointerId)stopHeld()},true);
 document.addEventListener("contextmenu",e=>{
- const a=e.target.closest("#launcherFavorites .launcher-app,#launcherRecentQuick .launcher-app");
- if(!a||launcherPage!=="home")return;
- e.preventDefault();
- if(appHeld){clearTimeout(appHeld.timer);appHeld=null}
- clickBlockedUntil=Date.now()+850;
- blockAppClickUntil=Date.now()+850;
- upStart=null;iconSwipe=null;longConsumed=true;
- if(byId("launcherShortcutMenu").hidden)
-  showAppShortcuts(a.dataset.launchPkg,a.dataset.launchActivity);
+ const a=appTarget(e.target);
+ if(!a)return;
+ e.preventDefault();stopHeld();
+ if(manager.hidden)openHeld(a.dataset.launchPkg,a.dataset.launchActivity);
 },true);
 document.addEventListener("click",e=>{
- if(Date.now()<clickBlockedUntil&&e.target.closest(".launcher-app")){
-  e.preventDefault();e.stopImmediatePropagation();
+ if(releaseBlocked||Date.now()<clickBlockedUntil&&appTarget(e.target)){
+  e.preventDefault();e.stopImmediatePropagation();releaseBlocked=false;
  }
 },true);
+document.addEventListener("visibilitychange",()=>{if(document.hidden)stopHeld()});
 document.addEventListener("keydown",e=>{
  if(e.key==="Escape"){
   if(!folderSheet.hidden)closeFolder();
   if(!manager.hidden)closeManage();
  }
 },true);
-window.addEventListener("launcher-page-changed",()=>{closeFolder();closeManage()});
+window.addEventListener("launcher-page-changed",()=>{stopHeld();closeFolder();closeManage()});
 /* Expose a small debug/test API; no sensitive native data. */
 window.audioDeskFolderCreate=()=>folderEdit(null);
 window.audioDeskSetAppLayout=mode=>{if(["grid","list"].includes(mode)){appsLayout=mode;deskStorage.setItem(gridKey,mode);updateGrid()}};
 renderLauncherHome();
 })();
+
+// Load the optional workspace only after the launcher and all native callbacks are initialized.
+window.addEventListener("DOMContentLoaded",()=>{const script=document.createElement("script");script.src="desk-workspace.js";document.body.append(script);},{once:true});
