@@ -722,3 +722,26 @@ body[data-launcher-theme="warm"] .music-meta small{
  /* Older engines cannot calculate translucent theme colors. Prefer readable
     solid theme surfaces rather than transparent black-on-black controls. */
 }
+
+/* QA28: readable foregrounds on the actual control surfaces. */
+body[data-launcher-theme="minimal"] .music-symbol,
+body[data-launcher-theme="minimal"] #musicSpectrumEnable,
+body[data-launcher-theme="minimal"] #launcherAgendaWidget .agenda-permission,
+body[data-launcher-theme="minimal"] #agendaOverlay .agenda-permission{
+ color:var(--ds-text,#f0f2f2)!important;
+}
+body[data-launcher-theme="warm"][data-glass-mode]:not([data-glass-mode="opaque"]) #launcherAgendaWidget #agendaOpen span,
+body[data-launcher-theme="warm"][data-glass-mode]:not([data-glass-mode="opaque"]) #launcherAgendaWidget .agenda-slide-date,
+body[data-launcher-theme="warm"][data-glass-mode]:not([data-glass-mode="opaque"]) #launcherAgendaWidget .agenda-event-time,
+body[data-launcher-theme="warm"][data-glass-mode]:not([data-glass-mode="opaque"]) #launcherAgendaWidget .agenda-event-location,
+body[data-launcher-theme="warm"][data-glass-mode]:not([data-glass-mode="opaque"]) #launcherAgendaWidget .agenda-empty,
+body[data-launcher-theme="warm"][data-glass-mode]:not([data-glass-mode="opaque"]) #launcherAgendaWidget .agenda-widget-nav,
+body[data-launcher-theme="warm"][data-glass-mode]:not([data-glass-mode="opaque"]) #launcherAgendaWidget .agenda-pin{
+ color:var(--glass-ink,#292529)!important;
+}
+body[data-home-page="events"][data-launcher-theme="warm"] #densityHint,
+body[data-home-page="events"][data-launcher-theme="warm"] #status,
+body[data-home-page="events"][data-launcher-theme="warm"] .dock-search-icon,
+body[data-home-page="events"][data-launcher-theme="warm"] nav.bottom-dock label{
+ color:var(--news-ink,#292529)!important;
+}
