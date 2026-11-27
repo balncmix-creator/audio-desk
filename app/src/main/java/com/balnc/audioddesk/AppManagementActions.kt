@@ -167,7 +167,7 @@ internal object AppManagementActions {
             background=ripple(c,p,12f);isFocusable=true;isClickable=true
             setOnClickListener{d.cancel()}
         },LinearLayout.LayoutParams(-1,-2))
-        scroll.addView(root,ScrollView.LayoutParams(-1,-2))
+        scroll.addView(root,android.widget.FrameLayout.LayoutParams(-1,-2))
         d.setContentView(scroll)
         d.setCancelable(true);d.setCanceledOnTouchOutside(true)
         d.setOnShowListener{
