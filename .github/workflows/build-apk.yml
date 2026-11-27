@@ -37,8 +37,27 @@ jobs:
           gradle-version: '8.11.1'
       - name: Verify stable signing key
         run: test -s app/audio-desk-debug.keystore
+      - name: Cache Robolectric runtime framework artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-runtime-${{ runner.os }}-${{ hashFiles('app/build.gradle.kts') }}
+      - name: Run mandatory JVM unit tests
+        run: |
+          # Retry transient dependency fetch failures; never ignore test failures.
+          for attempt in 1 2 3; do
+            set +e
+            gradle :app:testDebugUnitTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/android-qa-build.log"
+            status=${PIPESTATUS[0]}
+            set -e
+            if [ "$status" -eq 0 ]; then exit 0; fi
+            if ! grep -q 'MavenArtifactFetcher.java\|Could not resolve\|Could not GET' "$RUNNER_TEMP/android-qa-build.log"; then exit "$status"; fi
+            if [ "$attempt" -eq 3 ]; then exit "$status"; fi
+            echo "::warning::Dependency fetch failed; retrying build (attempt $attempt of 3)"
+            sleep $((attempt * 15))
+          done
       - name: Build APK
-        run: gradle :app:testDebugUnitTest :app:assembleDebug :app:bundleRelease --stacktrace
+        run: gradle :app:assembleDebug :app:bundleRelease --stacktrace
       # Preserve the actual Robolectric failures when an external Maven
       # download or real native regression causes the unit-test gate to fail.
       - name: Save native test reports on failure
