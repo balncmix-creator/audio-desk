@@ -621,3 +621,60 @@ body[data-home-page="events"][data-launcher-theme]:not([data-launcher-theme="ext
  background:color-mix(in srgb,var(--news-bg) 88%,transparent)!important;
  backdrop-filter:blur(30px) saturate(1.08);
 }
+
+/* Legacy Android WebView (pre color-mix / :is): explicit selectors and
+   valid palette fallbacks. Modern engines retain their richer effects. */
+@supports not (color:color-mix(in srgb, red, blue)){
+ body[data-home-page="events"][data-launcher-theme="warm"]{
+  --news-panel:var(--theme-panel,#eedbd4);
+  --news-muted:var(--theme-ink,#292529);
+  --news-line:var(--theme-line,#665a5e);
+ }
+ body[data-home-page="events"][data-launcher-theme] header,
+ body[data-home-page="events"][data-launcher-theme] #swipeMain,
+ body[data-home-page="events"][data-launcher-theme] #launcherNavigation,
+ body[data-home-page="events"][data-launcher-theme] nav.bottom-dock{
+  background:var(--news-bg)!important;color:var(--news-ink)!important;
+  border-color:var(--news-line)!important;font-family:var(--news-font)!important;
+ }
+ body[data-home-page="events"][data-launcher-theme] header button,
+ body[data-home-page="events"][data-launcher-theme] #swipeMain button,
+ body[data-home-page="events"][data-launcher-theme] nav.bottom-dock button,
+ body[data-home-page="events"][data-launcher-theme] nav.bottom-dock select,
+ body[data-home-page="events"][data-launcher-theme] .dock-search,
+ body[data-home-page="events"][data-launcher-theme] #launcherNavigation button{
+  color:var(--news-ink)!important;background:var(--news-panel)!important;
+  border:1px solid var(--news-line)!important;border-radius:var(--news-radius)!important;
+  font-family:var(--news-font)!important;box-shadow:none!important;
+ }
+ body[data-home-page="events"][data-launcher-theme] header .primary,
+ body[data-home-page="events"][data-launcher-theme] nav.bottom-dock .primary,
+ body[data-home-page="events"][data-launcher-theme] nav.bottom-dock button.active,
+ body[data-home-page="events"][data-launcher-theme] #launcherNavigation button.active,
+ body[data-home-page="events"][data-launcher-theme] #swipeMain button[aria-pressed="true"],
+ body[data-home-page="events"][data-launcher-theme] header .brand span{
+  background:var(--news-accent)!important;color:var(--news-accent-ink)!important;
+ }
+ body[data-home-page="events"][data-launcher-theme]:not([data-launcher-theme="minimal"]) #swipeMain .story,
+ body[data-home-page="events"][data-launcher-theme] #swipeMain .panel,
+ body[data-home-page="events"][data-launcher-theme] #swipeMain .sample-release-card,
+ body[data-home-page="events"][data-launcher-theme] #swipeMain .resource-card,
+ body[data-home-page="events"][data-launcher-theme] #gridDetailCard{
+  background:var(--news-panel)!important;color:var(--news-ink)!important;border-color:var(--news-line)!important;
+ }
+ body[data-home-page="events"][data-launcher-theme] #swipeMain .storytitle,
+ body[data-home-page="events"][data-launcher-theme] #swipeMain a,
+ body[data-home-page="events"][data-launcher-theme] header .sub,
+ body[data-home-page="events"][data-launcher-theme] header .edition,
+ body[data-home-page="events"][data-launcher-theme] #swipeMain .stats,
+ body[data-home-page="events"][data-launcher-theme] #swipeMain .story p,
+ body[data-home-page="events"][data-launcher-theme] #swipeMain .meta,
+ body[data-home-page="events"][data-launcher-theme] nav.bottom-dock .search-status{
+  color:var(--news-ink)!important;
+ }
+ body[data-home-page="events"][data-launcher-theme]:not([data-launcher-theme="pixel"]) header .brand,
+ body[data-home-page="events"][data-launcher-theme]:not([data-launcher-theme="pixel"]) #swipeMain h2,
+ body[data-home-page="events"][data-launcher-theme]:not([data-launcher-theme="pixel"]) #swipeMain h3{
+  font-family:var(--news-font)!important;
+ }
+}
