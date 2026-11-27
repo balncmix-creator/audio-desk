@@ -101,7 +101,7 @@ async function tap(c,selector){
    for(const mode of ['liquid','aero','mica','opaque']){
     await c.evaluate('(()=>{const e=document.getElementById("launcherGlassMode");e.value='+JSON.stringify(mode)+';e.dispatchEvent(new Event("change",{bubbles:true}))})()');
     await poll(()=>c.evaluate('document.body.dataset.glassMode==='+JSON.stringify(mode)));
-    await sleep(300);screenshot('warm-glass-'+mode);
+    await sleep(apiLevel<=30?1100:650);screenshot('warm-glass-'+mode);
    }
    await tap(c,'#launcherOptionsClose');
   });
@@ -109,7 +109,7 @@ async function tap(c,selector){
    await c.evaluate('openWallpaperPicker()');
    await poll(()=>c.evaluate(visible('#launcherWallpaperDialog')));
    assert.ok(await c.evaluate('document.querySelectorAll(".wallpaper-choice").length>0'));
-   screenshot('warm-wallpapers');
+   await sleep(apiLevel<=30?1100:650);screenshot('warm-wallpapers');
    await c.evaluate('closeCustomize(true)');
   });
   // Exercise real installed widget UI; never inject fabricated sensor samples.
@@ -131,7 +131,7 @@ async function tap(c,selector){
     await poll(()=>c.evaluate(visible('#widgetLayoutOverlay')));
     assert.equal(await c.evaluate('document.querySelectorAll("#widgetLayoutOverlay .widget-resize-handle").length'),8);
     assert.ok(await c.evaluate(visible('#widgetLayoutOverlay [data-layout-control="move"]')));
-    screenshot(theme+'-music-resize');
+    await sleep(apiLevel<=30?1100:650);screenshot(theme+'-music-resize');
     await activate('#widgetLayoutOverlay [data-layout-control="done"]');
     assert.equal(await c.evaluate(visible('#widgetLayoutOverlay')),false);
    });
@@ -141,7 +141,7 @@ async function tap(c,selector){
     await c.evaluate('window.audioDeskAgenda.open()');
     await poll(()=>c.evaluate(visible('#agendaOverlay')));
     await activate('#agendaRefresh');
-    screenshot(theme+'-agenda');
+    await sleep(apiLevel<=30?1100:650);screenshot(theme+'-agenda');
     await activate('#agendaClose');
     assert.equal(await c.evaluate(visible('#agendaOverlay')),false);
    });
@@ -186,8 +186,92 @@ async function tap(c,selector){
    await c.evaluate('openWallpaperPicker()');
    await poll(()=>c.evaluate(visible('#launcherWallpaperDialog')));
    assert.equal(await c.evaluate('getComputedStyle(document.getElementById("launcherAlphaIndex")).visibility'),'hidden');
-   screenshot('warm-wallpaper-modal-fixed');
+   await sleep(apiLevel<=30?1100:650);screenshot('warm-wallpaper-modal-fixed');
    await c.evaluate('closeCustomize(true)');
+  });
+  // Inspect all rendered DOM text, icon and control elements on each visited
+  // screen. Record measured bounds and style instead of claiming unseen UI
+  // is clean. Canvas, native widgets and external WebViews need screenshot review.
+  async function visualCapture(name){
+   await c.evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+   await sleep(apiLevel<=30?1100:650);
+   const inventory=await c.evaluate('('+function(){
+    const vw=innerWidth,vh=innerHeight;
+    const rows=[],flags=[];
+    function rgb(s){const m=s.match(/^rgba?\(([^)]+)\)/);return m?m[1].split(',').map(Number):null}
+    function lum(a){return a.slice(0,3).map(x=>{x=x/255;return x<=.04045?x/12.92:Math.pow((x+.055)/1.055,2.4)}).reduce((v,x,i)=>v+x*[.2126,.7152,.0722][i],0)}
+    for(const e of document.querySelectorAll('body *')){
+     if(e.closest('[hidden],script,style,defs'))continue;
+     const r=e.getBoundingClientRect(),s=getComputedStyle(e);
+     if(!r.width||!r.height||s.visibility==='hidden'||s.display==='none'||Number(s.opacity)===0||r.right<=0||r.bottom<=0||r.left>=vw||r.top>=vh)continue;
+     const text=Array.from(e.childNodes).filter(n=>n.nodeType===3).map(n=>n.textContent.trim()).filter(Boolean).join(' ').slice(0,250);
+     const control=e.matches('button,input,select,textarea,a,[role="button"],[role="slider"]');
+     const icon=e.matches('img,svg,canvas,use,[class*="icon"],[class*="symbol"]');
+     if(!text&&!control&&!icon)continue;
+     const key=e.id?'#'+e.id:e.tagName.toLowerCase()+'.'+String(e.getAttribute('class')||'').split(/\s+/).slice(0,2).join('.');
+     const row={key,text,control,icon,aria:e.getAttribute('aria-label'),rect:[r.x,r.y,r.width,r.height].map(x=>Math.round(x*10)/10),color:s.color,background:s.backgroundColor,font:s.fontFamily,fontSize:s.fontSize,opacity:s.opacity,borderRadius:s.borderRadius,overflow:s.overflow,disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true'};
+     if(e.tagName==='IMG'&&e.complete&&!e.naturalWidth)flags.push({key,kind:'broken-image',src:e.getAttribute('src')});
+     // Only calculate contrast for an opaque solid background; wallpaper,
+     // gradients, external WebViews and translucent layers require human review.
+     let bg=null;
+     for(let p=e;p;p=p.parentElement){const st=getComputedStyle(p),b=rgb(st.backgroundColor);if(st.backgroundImage!=='none')break;if(b&&(b.length===3||b[3]===1)){bg=b;break}if(b&&b[3]>0)break;}
+     const fg=rgb(s.color);
+     if(text&&fg&&bg&&!row.disabled&&Number(s.opacity)===1&&(fg.length===3||fg[3]===1)){
+      const l=[lum(fg),lum(bg)].sort((a,b)=>b-a);row.contrast=Math.round((l[0]+.05)/(l[1]+.05)*100)/100;
+      const big=parseFloat(s.fontSize)>=24||(parseFloat(s.fontSize)>=18.66&&Number(s.fontWeight)>=700);
+      if(row.contrast<(big?3:4.5))flags.push({key,kind:'contrast-candidate',ratio:row.contrast,text});
+     }
+     if(control&&!row.disabled&&r.width<24&&r.height<24)flags.push({key,kind:'small-control',rect:row.rect});
+     if(text&&e.clientWidth>0&&e.scrollWidth>e.clientWidth+2&&!['auto','scroll'].includes(s.overflowX))flags.push({key,kind:s.textOverflow==='ellipsis'?'intentional-ellipsis-candidate':'horizontal-text-overflow',text});
+     rows.push(row);
+    }
+    return {theme:document.body.dataset.launcherTheme,page:document.body.dataset.homePage,viewport:[vw,vh],devicePixelRatio,rows,flags};
+   }.toString()+')()');
+   fs.writeFileSync(dir+'/visual-'+name+'.json',JSON.stringify(inventory,null,2));
+   screenshot('visual-'+name);
+   assert.ok(inventory.rows.length>0,'Empty visual inventory '+name);
+   console.log('VISUAL',name,inventory.rows.length,'elements',inventory.flags.length,'review candidates');
+  }
+  for(const theme of themes){
+   await test(theme+'-visual-inventory',async()=>{
+    await c.evaluate('setLauncherTheme('+JSON.stringify(theme)+');setLauncherPage("home",false);window.scrollTo(0,0)');
+    await visualCapture(theme+'-home');
+    if(theme!=='orbit'){
+     await c.evaluate('showLauncherLetter("C")');
+     await poll(()=>c.evaluate(visible('#launcherLetterPanel')));
+     await visualCapture(theme+'-alphabet');
+     await activate('#launcherLetterClose');
+     await activate('#launcherSettingsToggle');
+     await poll(()=>c.evaluate(visible('#launcherHomeOptions')));
+     await visualCapture(theme+'-options-top');
+     await c.evaluate('document.getElementById("launcherThemeChoose").scrollIntoView({block:"center"})');
+     await visualCapture(theme+'-options-lower');
+     await activate('#launcherThemeChoose');
+     await poll(()=>c.evaluate(visible('#launcherThemeDialog')));
+     await visualCapture(theme+'-theme-picker');
+     await c.evaluate('closeCustomize(true);closeHomeOptions(true);openWallpaperPicker()');
+     await poll(()=>c.evaluate(visible('#launcherWallpaperDialog')));
+     await visualCapture(theme+'-wallpaper-picker');
+     await c.evaluate('closeCustomize(true);closeHomeOptions(true)');
+    }
+    await c.evaluate('setLauncherPage("apps",false);window.scrollTo(0,0)');
+    await visualCapture(theme+'-apps');
+    await c.evaluate('setLauncherPage("events",false);window.scrollTo(0,0)');
+    await visualCapture(theme+'-news');
+    await c.evaluate('setLauncherPage("home",false);window.scrollTo(0,0)');
+   });
+  }
+  await test('warm-visual-contrast-regression',async()=>{
+   await c.evaluate('setLauncherTheme("warm");setLauncherPage("home",false);window.audioDeskRestoreWidget("launcherMusicWidget")');
+   for(const mode of ['opaque','liquid','aero','mica']){
+    await c.evaluate('(()=>{const e=document.getElementById("launcherGlassMode");e.value='+JSON.stringify(mode)+';e.dispatchEvent(new Event("change",{bubbles:true}));})()');
+    await poll(()=>c.evaluate('document.body.dataset.glassMode==='+JSON.stringify(mode)));
+    const actual=await c.evaluate('(()=>{const e=document.querySelector("#musicSpectrumSettingsToggle");return {color:getComputedStyle(e).color,bg:getComputedStyle(e).backgroundColor}})()');
+    assert.notEqual(actual.color,actual.bg);
+    assert.notEqual(actual.bg,'rgba(0, 0, 0, 0)');
+    await visualCapture('warm-glass-'+mode);
+   }
+   await c.evaluate('(()=>{const e=document.getElementById("launcherGlassMode");e.value="opaque";e.dispatchEvent(new Event("change",{bubbles:true}));})()');
   });
   await test('warm-theme-persists-after-process-restart',async()=>{
    await c.evaluate('setLauncherTheme("warm");setLauncherPage("home",false)');
