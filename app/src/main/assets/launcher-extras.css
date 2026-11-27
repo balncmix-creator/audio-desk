@@ -422,3 +422,15 @@ body:is([data-home-page="home"],[data-home-page="apps"]) #orbitHome *{
 body:is([data-home-page="home"],[data-home-page="apps"]) #launcherShell :is(input,textarea,[contenteditable=true]){
  -webkit-user-select:text!important;user-select:text!important;
 }
+
+/* Touch feedback: suppress Chromium's default tap overlay, retain keyboard focus. */
+:is(#launcherShell,#orbitHome,#orbitDial) :is(button,a,[role="button"],.launcher-app,.launcher-recent-card,[data-orbit-action],.launcher-live-tile),
+:is(#launcherShell,#orbitHome,#orbitDial) :is(button,a,[role="button"],.launcher-app,.launcher-recent-card,[data-orbit-action],.launcher-live-tile) * {
+ -webkit-tap-highlight-color: transparent !important;
+}
+:is(#launcherShell,#orbitHome,#orbitDial) :is(.launcher-app,.launcher-recent-card,.launcher-live-tile,[data-orbit-action]):active {
+ opacity:.84;
+}
+:is(#launcherShell,#orbitHome,#orbitDial) :is(.launcher-app,.launcher-recent-card,.launcher-live-tile,[data-orbit-action]):focus:not(:focus-visible) {
+ outline:none;
+}
