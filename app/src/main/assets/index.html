@@ -2914,10 +2914,22 @@ $("launcherShortcutClose").onclick=()=>closeAppShortcuts();
 $("launcherShortcutMenu").onclick=e=>{
  if(e.target===$("launcherShortcutMenu"))closeAppShortcuts();
 };
+window.audioDeskApplyQuickPin=function(pkg,activity,pinned){
+ const key=pkg+"/"+activity;
+ if(launcherPins.includes(key)!==pinned)setLauncherPin(pkg,activity);
+};
 function showAppShortcuts(pkg,activity){
+ if(launcherPage!=="home")return;
  const app=launcherApps.find(a=>a.pkg===pkg&&a.activity===activity)||
    launcherRecents.find(a=>a.pkg===pkg&&a.activity===activity);
  if(!app)return;
+ if(window.AudioDesk?.showStyledAppShortcuts&&window.audioDeskAppMenuPalette){
+  closeAppShortcuts(true);cancelHomeHold();upStart=null;iconSwipe=null;
+  blockAppClickUntil=Date.now()+600;
+  if(launcherGesture)resetLauncherGesture();
+  window.AudioDesk.showStyledAppShortcuts(pkg,activity,launcherPins.includes(launcherAppKey(app)),JSON.stringify(window.audioDeskAppMenuPalette()));
+  return;
+ }
  selectedApp=app;
  cancelHomeHold();upStart=null;DeskMotion.show($("launcherShortcutMenu"));
  $("launcherShortcutTitle").textContent=launcherTheme==="pixel"?
@@ -2959,6 +2971,7 @@ $("launcherShell").addEventListener("touchstart",e=>{
  const t=e.touches[0];
  iconSwipe={x:t.clientX,y:t.clientY,pkg:icon.dataset.launchPkg,activity:icon.dataset.launchActivity};
 },{passive:true});
+$("launcherShell").addEventListener("touchcancel",()=>{iconSwipe=null},{passive:true});
 $("launcherShell").addEventListener("touchend",e=>{
  const start=iconSwipe;iconSwipe=null;
  if(launcherPage!=="home"||!start||!e.changedTouches.length)return;

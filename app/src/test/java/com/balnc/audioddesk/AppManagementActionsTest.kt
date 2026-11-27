@@ -45,6 +45,23 @@ class AppManagementActionsTest {
         assertEquals(4,picked.size)
     }
 
+    @Test fun quickActionsShareNativeDialogAndUpdatePublishedRows() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().get()
+        val picked=mutableListOf<String>()
+        val menu=AppManagementActions.menu(activity,"Example",null,AppManagementActions.palette(),"Quick actions",AppManagementActions.quickRows(true),"Checking…"){picked.add(it)}
+        menu.dialog.show()
+        val root=menu.dialog.findViewById<android.view.View>(android.R.id.content)
+        assertNotNull(root.findViewWithTag<android.view.View>("open"))
+        assertNotNull(root.findViewWithTag<android.view.View>("pin"))
+        assertNull(root.findViewWithTag<android.view.View>("uninstall"))
+        val list=org.json.JSONArray("""[{"id":"new","label":"New project"},{"id":"new","label":"Duplicate"},{"id":"","label":"Invalid"}]""")
+        val rows=AppManagementActions.quickRows(true,list)
+        assertEquals(listOf("Open app","Unpin from Home","New project"),rows.map{it.label})
+        menu.update(rows,null)
+        root.findViewWithTag<android.view.View>("shortcut:new").performClick()
+        assertEquals(listOf("shortcut:new"),picked)
+        assertFalse(menu.dialog.isShowing)
+    }
     @Test fun nativeMenuRetainsThemeGeometryAndLightSurface() {
         for ((theme,radius) in listOf("warm" to 21f,"orbit" to 21f,"minimal" to 14f,"pixel" to 2f,"windows" to 0f,"extreme" to 0f)) {
             val p=AppManagementActions.palette(org.json.JSONObject().put("theme",theme).put("panel","#e4ebe9").put("text","#1d3133").toString())

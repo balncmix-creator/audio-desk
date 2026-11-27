@@ -231,6 +231,7 @@ function appMenuPalette(){
  const radius=({warm:21,orbit:21,minimal:14,pixel:2,windows:0,extreme:0})[theme]??14;
  return {theme,dark:tile,panel,text:ink,accent,radius};
 }
+window.audioDeskAppMenuPalette=appMenuPalette;
 function appManage(pkg,activity){
  if(window.AudioDesk?.showStyledAppManagement||window.AudioDesk?.showNativeAppManagement){
   cancelHomeHold();upStart=null;iconSwipe=null;longConsumed=true;

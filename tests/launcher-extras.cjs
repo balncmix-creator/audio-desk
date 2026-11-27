@@ -161,6 +161,20 @@ const assert=require('node:assert/strict');
    assert.equal(await manage.isVisible(),false,"the themed popup is still native");
   }
   await page.evaluate(()=>setLauncherTheme("warm"));
+  const quick=await page.evaluate(()=>{
+   setLauncherPage("home",false);
+   const app=launcherApps[0];
+   window.quickRequests=[];
+   AudioDesk.showStyledAppShortcuts=(pkg,activity,pinned,palette)=>quickRequests.push({pkg,activity,pinned,palette:JSON.parse(palette)});
+   showAppShortcuts(app.pkg,app.activity);
+   setLauncherPage("apps",false);
+   showAppShortcuts(app.pkg,app.activity);
+   delete AudioDesk.showStyledAppShortcuts;
+   return quickRequests;
+  });
+  assert.equal(quick.length,1,"native quick actions are Home-only");
+  assert.equal(quick[0].palette.theme,"warm");
+  assert.equal(await page.locator("#launcherShortcutMenu").isVisible(),false);
   await page.evaluate(()=>{delete AudioDesk.showStyledAppManagement;delete AudioDesk.showNativeAppManagement;setLauncherPage('apps',false)});
   assert.equal(await page.locator('#launcherAppSearch').evaluate(el=>getComputedStyle(el).userSelect),'text','app search remains editable');
   // Per-theme transparency and persistence.

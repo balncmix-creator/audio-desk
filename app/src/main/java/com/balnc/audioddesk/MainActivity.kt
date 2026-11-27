@@ -786,6 +786,36 @@ class MainActivity : Activity() {
         @JavascriptInterface fun setLauncherSelectionBlocked(blocked: Boolean) {
             runOnUiThread { launcherSelectionBlocked = blocked }
         }
+        @JavascriptInterface fun showStyledAppShortcuts(pkg:String,activityName:String,pinned:Boolean,paletteJson:String) {
+            if(!AppManagementActions.validPackage(pkg)||activityName.length !in 1..300)return
+            runOnUiThread {
+                if(destroyed||isFinishing||appManagementDialog?.isShowing==true||!launcherSupport.hasLaunchablePackage(pkg))return@runOnUiThread
+                try {
+                    val info=packageManager.getApplicationInfo(pkg,0)
+                    val menu=AppManagementActions.menu(this@MainActivity,packageManager.getApplicationLabel(info),packageManager.getApplicationIcon(info),
+                        AppManagementActions.palette(paletteJson),"Quick actions",AppManagementActions.quickRows(pinned),"Checking published app shortcuts…"){action->
+                        when {
+                            action=="pin" -> appWebView.evaluateJavascript("window.audioDeskApplyQuickPin&&window.audioDeskApplyQuickPin("+JSONObject.quote(pkg)+","+JSONObject.quote(activityName)+","+(!pinned)+")",null)
+                            action=="open" -> launchExternalApp(pkg,activityName)
+                            action.startsWith("shortcut:") -> launchAppShortcut(pkg,activityName,action.removePrefix("shortcut:"))
+                        }
+                    }
+                    val dialog=menu.dialog
+                    appManagementDialog=dialog
+                    dialog.setOnDismissListener{if(appManagementDialog===dialog)appManagementDialog=null}
+                    dialog.show()
+                    launcherSupport.shortcuts(pkg,activityName){list->runOnUiThread{
+                        if(!destroyed&&appManagementDialog===dialog&&dialog.isShowing){
+                            val rows=AppManagementActions.quickRows(pinned,list)
+                            menu.update(rows,if(rows.size>2)null else "No published shortcuts available.")
+                        }
+                    }}
+                } catch (_:Exception) {
+                    appManagementDialog?.dismiss()
+                    android.widget.Toast.makeText(this@MainActivity,"App is no longer available.",android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
         @JavascriptInterface fun showNativeAppManagement(pkg: String) = showStyledAppManagement(pkg, "")
         @JavascriptInterface fun showStyledAppManagement(pkg: String, paletteJson: String) {
             if (!AppManagementActions.validPackage(pkg)) return

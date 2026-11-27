@@ -102,6 +102,8 @@ internal object AppManagementActions {
             fun line(x:Float,y:Float,u:Float,v:Float)=canvas.drawLine(x,y,u,v,paint)
             fun poly(vararg coords:Float){path.reset();path.moveTo(coords[0],coords[1]);var i=2;while(i<coords.size){path.lineTo(coords[i],coords[i+1]);i+=2};canvas.drawPath(path,paint)}
             when(key){
+                "open","shortcut"->{poly(5f,19f,19f,5f);poly(10f,5f,19f,5f,19f,14f)}
+                "pin","unpin"->{poly(12f,3f,14.8f,8.7f,21f,9.5f,16.5f,14f,17.6f,20.5f,12f,17.5f,6.4f,20.5f,7.5f,14f,3f,9.5f,9.2f,8.7f,12f,3f);if(key=="unpin")line(3f,21f,21f,3f)}
                 "info"->{canvas.drawCircle(12f,12f,9f,paint);line(12f,11f,12f,17f);line(12f,7f,12f,7.1f)}
                 "storage"->{poly(4f,17f,14f,7f,20f,13f,12f,21f,8f,21f,4f,17f);line(10f,11f,17f,18f)}
                 "force-stop"->{canvas.drawCircle(12f,12f,9f,paint);canvas.drawRoundRect(RectF(9f,9f,15f,15f),1f,1f,paint)}
@@ -111,7 +113,22 @@ internal object AppManagementActions {
         }
     }
 
-    fun dialog(context: Context, title: CharSequence, icon:Drawable?=null, colors:Palette=palette(), select: (String) -> Unit): Dialog {
+    data class MenuRow(val key:String,val label:String,val glyph:String=key,val destructive:Boolean=false)
+    data class Menu(val dialog:Dialog,val update:(List<MenuRow>,String?)->Unit)
+    fun quickRows(pinned:Boolean,shortcuts:org.json.JSONArray=org.json.JSONArray()):List<MenuRow> {
+        val out=mutableListOf(MenuRow("open","Open app"),MenuRow("pin",if(pinned)"Unpin from Home" else "Pin to Home",if(pinned)"unpin" else "pin"))
+        val seen=mutableSetOf<String>()
+        for(i in 0 until minOf(shortcuts.length(),10)){
+            val item=shortcuts.optJSONObject(i)?:continue
+            val id=item.optString("id");val label=item.optString("label").trim().take(90)
+            if(id.length !in 1..200||label.isEmpty()||!seen.add(id))continue
+            out.add(MenuRow("shortcut:"+id,label,"shortcut"))
+        }
+        return out
+    }
+    fun dialog(context: Context, title: CharSequence, icon:Drawable?=null, colors:Palette=palette(), select: (String) -> Unit): Dialog =
+        menu(context,title,icon,colors,"Application settings",actions.mapIndexed{i,key->MenuRow(key,labels[i],key,key=="uninstall")},null,select).dialog
+    fun menu(context: Context,title:CharSequence,icon:Drawable?,colors:Palette,subtitle:String,rows:List<MenuRow>,note:String?,select:(String)->Unit):Menu {
         val c=context;val p=colors
         val font=if(p.theme=="pixel") try{Typeface.createFromAsset(c.assets,"fonts/silkscreen-regular.ttf")}catch(_:Exception){Typeface.MONOSPACE} else Typeface.create(if(p.theme=="windows")"sans-serif-light" else "sans-serif",Typeface.NORMAL)
         val d=Dialog(c)
@@ -139,17 +156,23 @@ internal object AppManagementActions {
         header.addView(tile,LinearLayout.LayoutParams(dp(c,42f),dp(c,42f)))
         val titles=LinearLayout(c).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(c,12f),0,0,0)}
         titles.addView(text(c,title,17f,p.ink).apply{typeface=if(p.theme=="pixel"||p.theme=="windows")font else Typeface.create("sans-serif-medium",Typeface.NORMAL);maxLines=2;ellipsize=android.text.TextUtils.TruncateAt.END})
-        titles.addView(text(c,"Application settings",11f,p.muted).apply{typeface=font;setPadding(0,dp(c,3f),0,0)})
+        titles.addView(text(c,subtitle,11f,p.muted).apply{typeface=font;setPadding(0,dp(c,3f),0,0)})
         header.addView(titles,LinearLayout.LayoutParams(0,-2,1f))
         root.addView(header,LinearLayout.LayoutParams(-1,-2))
         root.addView(divider(c,p))
-        for(i in actions.indices){
-            val key=actions[i];val color=if(key=="uninstall")p.danger else p.ink
+        val rowContainer=LinearLayout(c).apply{orientation=LinearLayout.VERTICAL}
+        root.addView(rowContainer,LinearLayout.LayoutParams(-1,-2))
+        val noteView=text(c,"",11f,p.muted).apply{typeface=font;setPadding(dp(c,13f),dp(c,8f),dp(c,13f),dp(c,12f))}
+        root.addView(noteView,LinearLayout.LayoutParams(-1,-2))
+        fun update(items:List<MenuRow>,message:String?){
+          rowContainer.removeAllViews()
+          for(item in items){
+            val key=item.key;val color=if(item.destructive)p.danger else p.ink
             val row=LinearLayout(c).apply{
                 orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL
                 minimumHeight=dp(c,48f);setPadding(dp(c,13f),dp(c,10f),dp(c,13f),dp(c,10f))
                 background=ripple(c,p,minOf(12f,p.radius));isClickable=true;isFocusable=true
-                contentDescription=labels[i];tag=key
+                contentDescription=item.label;tag=key
                 accessibilityDelegate=object:View.AccessibilityDelegate(){
                     override fun onInitializeAccessibilityNodeInfo(host:View,info:android.view.accessibility.AccessibilityNodeInfo){
                         super.onInitializeAccessibilityNodeInfo(host,info);info.className="android.widget.Button"
@@ -157,13 +180,16 @@ internal object AppManagementActions {
                 }
                 setOnClickListener{if(d.isShowing){d.dismiss();select(key)}}
             }
-            val glyph=ActionGlyph(c,key,if(key=="uninstall")p.danger else p.accent).apply{importantForAccessibility=View.IMPORTANT_FOR_ACCESSIBILITY_NO}
+            val glyph=ActionGlyph(c,item.glyph,if(item.destructive)p.danger else p.accent).apply{importantForAccessibility=View.IMPORTANT_FOR_ACCESSIBILITY_NO}
             row.addView(glyph,LinearLayout.LayoutParams(dp(c,20f),dp(c,20f)))
-            row.addView(text(c,labels[i],14f,color).apply{
+            row.addView(text(c,item.label,14f,color).apply{
                 typeface=font;setPadding(dp(c,15f),0,0,0);importantForAccessibility=View.IMPORTANT_FOR_ACCESSIBILITY_NO
             },LinearLayout.LayoutParams(0,-2,1f))
-            root.addView(row,LinearLayout.LayoutParams(-1,-2))
+            rowContainer.addView(row,LinearLayout.LayoutParams(-1,-2))
+          }
+          noteView.text=message.orEmpty();noteView.visibility=if(message.isNullOrBlank())View.GONE else View.VISIBLE
         }
+        update(rows,note)
         root.addView(divider(c,p))
         root.addView(text(c,"Cancel",13f,p.muted).apply{
             typeface=font;gravity=Gravity.CENTER;minimumHeight=dp(c,48f);tag="cancel"
@@ -185,6 +211,6 @@ internal object AppManagementActions {
                 setGravity(Gravity.CENTER)
             }
         }
-        return d
+        return Menu(d,::update)
     }
 }
