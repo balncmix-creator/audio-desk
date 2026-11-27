@@ -63,6 +63,9 @@ function minWidth(el,fallback){return Math.min(innerWidth-18,Math.max(el?.id==="
 function minHeight(el,fallback){return Math.max(el?.id==="launcherMusicWidget"?48:el?.id==="launcherYouTubeWidget"?144:fallback,Number(el?.dataset.nativeMinHeight)||0)}
 function layoutChanged(){window.dispatchEvent(new Event("audio-desk-layout-changed"))}
 function applySizes(){
+ // Async wallpaper/theme refreshes may request layout restoration during editing.
+ // Preserve the active edit unless the page or theme has actually changed.
+ if(chosen&&launcherPage==='home'&&editingTheme===launcherTheme&&movable().includes(chosen)){requestPos();return;}
  closeEditor();
  document.body.classList.add("widget-dragging");
  geometry=read();
@@ -416,10 +419,11 @@ function position(){
  grip.style.left=limit(centerX,50,innerWidth-50)+"px";
  grip.style.top=limit(centerY,30,innerHeight-30)+"px";
 }
+let editingTheme=null;
 function openEditor(id){
  const el=byId(id);if(!el||!movable().includes(el))return false;
  closeEditor();
- chosen=el;chosen.classList.add("widget-editing");document.body.classList.add("widget-layout-editing");
+ editingTheme=launcherTheme;chosen=el;chosen.classList.add("widget-editing");document.body.classList.add("widget-layout-editing");
  const accent=el.style.getPropertyValue("--native-provider-accent").trim();
  if(/^#[0-9a-f]{6}$/i.test(accent)){
   overlay.style.setProperty("--ds-accent",accent);guides.style.setProperty("--ds-accent",accent);
