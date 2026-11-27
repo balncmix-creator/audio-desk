@@ -29,6 +29,7 @@ class NativeLauncherActivity:Activity(){
     }
     private lateinit var support:HomeLauncherSupport
     private lateinit var audio:NativeAudioPanel
+    private lateinit var widgetHost:NativeWidgetHost
     private lateinit var root:LinearLayout
     private lateinit var body:LinearLayout
     private val prefs by lazy{getSharedPreferences("native_desk",MODE_PRIVATE)}
@@ -63,6 +64,7 @@ class NativeLauncherActivity:Activity(){
         super.onCreate(state)
         support=HomeLauncherSupport(this)
         audio=NativeAudioPanel(this)
+        widgetHost=NativeWidgetHost(this){}
         pinned=prefs.getStringSet("pins",emptySet())!!.toMutableSet()
         removed=prefs.getStringSet("removed",emptySet())!!.toMutableSet()
         saved=prefs.getStringSet("saved",emptySet())!!.toMutableSet()
@@ -73,7 +75,7 @@ class NativeLauncherActivity:Activity(){
         }catch(_:Exception){emptyList()}
         showPage("Home");handler.post(ticker)
     }
-    override fun onResume(){super.onResume();if(::audio.isInitialized)audio.resume();if(::support.isInitialized)support.load(true){a,r->runOnUiThread{
+    override fun onResume(){super.onResume();if(::audio.isInitialized)audio.resume();if(::widgetHost.isInitialized)widgetHost.resume();if(::support.isInitialized)support.load(true){a,r->runOnUiThread{
         if(destroyed)return@runOnUiThread
         apps=decodeApps(a);recents=decodeApps(r)
         if(page=="Home")showPage("Home")else if(page=="Apps")renderAppRows()
@@ -102,7 +104,7 @@ class NativeLauncherActivity:Activity(){
     private fun column()=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}
     private fun row()=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL}
     private fun showPage(next:String){
-        if(::audio.isInitialized)audio.detach();page=next;palette();clock=null;newsList=null;appList=null;newsStatus=null
+        if(::audio.isInitialized)audio.detach();if(::widgetHost.isInitialized)widgetHost.detach();page=next;palette();clock=null;newsList=null;appList=null;newsStatus=null
         root=column().apply{setBackgroundColor(bg)}
         root.setOnApplyWindowInsetsListener{v,insets->
             if(android.os.Build.VERSION.SDK_INT>=30){
@@ -172,6 +174,8 @@ class NativeLauncherActivity:Activity(){
         section("Favourites",apps.filter{it.key in pinned})
         section("Frequently used",apps.filter{it.days>=3&&it.key !in pinned}.sortedByDescending{it.score}.take(6))
         section("Recents",recents.take(8))
+        val widgetColumn=column();content.addView(widgetColumn)
+        widgetHost.attach(widgetColumn,theme,fg,accent,surface)
         body.addView(button("Find an app"){showPage("Apps")})
     }
     private fun showApps(){
@@ -284,13 +288,13 @@ class NativeLauncherActivity:Activity(){
         startActivity(Intent(Intent.ACTION_VIEW,uri))
     }catch(_:Exception){Toast.makeText(this,"No browser available",Toast.LENGTH_SHORT).show()}}
     @Deprecated("Android back") override fun onBackPressed(){if(page!="Home")showPage("Home")}
-    override fun onPause(){if(::audio.isInitialized)audio.pause();super.onPause()}
+    override fun onPause(){if(::audio.isInitialized)audio.pause();if(::widgetHost.isInitialized)widgetHost.pause();super.onPause()}
     @Deprecated("Android activity result")
     override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?){
-        if(!audio.result(requestCode,resultCode,data))super.onActivityResult(requestCode,resultCode,data)
+        if(!widgetHost.result(requestCode,resultCode)&&!audio.result(requestCode,resultCode,data))super.onActivityResult(requestCode,resultCode,data)
     }
     override fun onRequestPermissionsResult(requestCode:Int,permissions:Array<out String>,grantResults:IntArray){
         super.onRequestPermissionsResult(requestCode,permissions,grantResults);audio.permissions(requestCode)
     }
-    override fun onDestroy(){destroyed=true;audio.close();dialog?.dismiss();handler.removeCallbacks(ticker);workers.shutdownNow();support.close();super.onDestroy()}
+    override fun onDestroy(){destroyed=true;audio.close();widgetHost.close();dialog?.dismiss();handler.removeCallbacks(ticker);workers.shutdownNow();support.close();super.onDestroy()}
 }
