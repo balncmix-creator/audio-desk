@@ -678,3 +678,17 @@ body[data-home-page="events"][data-launcher-theme]:not([data-launcher-theme="ext
   font-family:var(--news-font)!important;
  }
 }
+
+/* Screenshot QA: a modal must own its entire touch surface and readable
+   headings, regardless of glass mode or the selected wallpaper. */
+body.launcher-modal-open #launcherAlphaIndex,
+body.launcher-modal-open #launcherAlphaBubble{
+ visibility:hidden!important;pointer-events:none!important;
+}
+body[data-launcher-theme="warm"] #launcherOptionsSheet .launcher-options-heading{
+ background:var(--ds-panel2)!important;color:var(--ds-text)!important;
+ padding:8px 12px;border-radius:var(--ds-radius);
+}
+body[data-launcher-theme="warm"] #launcherOptionsSheet .launcher-options-heading span{
+ color:inherit!important;
+}
