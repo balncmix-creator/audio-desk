@@ -12,8 +12,8 @@ android {
         applicationId = "com.balnc.audioddesk"
         minSdk = 23
         targetSdk = 36
-        versionCode = 63
-        versionName = "4.3.7"
+        versionCode = 64
+        versionName = "4.3.8"
     }
     signingConfigs {
         create("stableDebug") {

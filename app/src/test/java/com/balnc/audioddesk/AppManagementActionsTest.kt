@@ -45,6 +45,16 @@ class AppManagementActionsTest {
         assertEquals(4,picked.size)
     }
 
+    @Test fun nativeMenuRetainsThemeGeometryAndLightSurface() {
+        for ((theme,radius) in listOf("warm" to 21f,"orbit" to 21f,"minimal" to 14f,"pixel" to 2f,"windows" to 0f,"extreme" to 0f)) {
+            val p=AppManagementActions.palette(org.json.JSONObject().put("theme",theme).put("panel","#e4ebe9").put("text","#1d3133").toString())
+            assertEquals(theme,p.theme)
+            assertEquals(radius,p.radius,0f)
+            assertEquals(android.graphics.Color.parseColor("#e4ebe9"),p.panel)
+            assertEquals(android.graphics.Color.parseColor("#1d3133"),p.ink)
+            assertTrue(AppManagementActions.contrast(p.ink,p.panel)>=4.5)
+        }
+    }
     @Test fun wallpaperPaletteKeepsTextReadableAndRejectsMalformedColors() {
         val light=AppManagementActions.palette("""{"panel":"#ededed","text":"#ffffff","accent":"#ffffff","dark":"#f4f4f4"}""")
         val dark=AppManagementActions.palette("""{"panel":"#141414","text":"#111111","accent":"#000000"}""")

@@ -140,14 +140,27 @@ const assert=require('node:assert/strict');
   await page.evaluate(()=>{
    window.styledManagementRequests=[];
    AudioDesk.showStyledAppManagement=(pkg,palette)=>styledManagementRequests.push({pkg,palette:JSON.parse(palette)});
-   document.documentElement.style.setProperty("--theme-surface","#29382f");
-   document.documentElement.style.setProperty("--theme-accent","#bcdac2");
-   window.audioDeskManageApp("com.example.audio","Main");
   });
-  const themed=await page.evaluate(()=>styledManagementRequests.at(-1));
-  assert.equal(themed.palette.panel,"#29382f");
-  assert.equal(themed.palette.accent,"#bcdac2");
-  assert.equal(await manage.isVisible(),false,"the themed popup is still native");
+  for(const [theme,radius] of [["warm",21],["orbit",21],["minimal",14],["pixel",2],["windows",0],["extreme",0]]){
+   const themed=await page.evaluate(theme=>{
+    setLauncherTheme(theme);
+    const style=document.documentElement.style;
+    style.setProperty("--theme-panel","#e4ebe9");
+    style.setProperty("--theme-ink","#1d3133");
+    style.setProperty("--theme-surface","#29382f");
+    style.setProperty("--theme-surface2","#35483c");
+    style.setProperty("--theme-accent","#bcdac2");
+    window.audioDeskManageApp("com.example.audio","Main");
+    return styledManagementRequests.at(-1).palette;
+   },theme);
+   assert.equal(themed.theme,theme);assert.equal(themed.radius,radius);
+   assert.match(themed.panel,/^#[0-9a-f]{6}$/);
+   if(theme==="warm"){assert.equal(themed.panel,"#e4ebe9");assert.equal(themed.text,"#1d3133");}
+   if(theme==="orbit")assert.equal(themed.panel,"#35483c");
+   if(theme==="extreme")assert.equal(themed.panel,"#101010");
+   assert.equal(await manage.isVisible(),false,"the themed popup is still native");
+  }
+  await page.evaluate(()=>setLauncherTheme("warm"));
   await page.evaluate(()=>{delete AudioDesk.showStyledAppManagement;delete AudioDesk.showNativeAppManagement;setLauncherPage('apps',false)});
   assert.equal(await page.locator('#launcherAppSearch').evaluate(el=>getComputedStyle(el).userSelect),'text','app search remains editable');
   // Per-theme transparency and persistence.

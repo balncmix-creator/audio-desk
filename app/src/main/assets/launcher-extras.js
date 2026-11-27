@@ -208,6 +208,29 @@ manager.innerHTML='<div class="app-manage-card">'+
  '<p>Clear cache and force stop open Android App info. Android requires you to confirm these actions in Settings.</p></div>';
 document.body.appendChild(manager);
 let managed=null,managedHold=false,releaseBlocked=false;
+// Resolve the *visible theme's* surface roles rather than reusing the
+// dark Orbit ring tokens for every theme. Canvas resolves computed CSS colors
+// (including color-mix and alpha) to a strict native RGB contract.
+function appMenuPalette(){
+ const theme=document.body.dataset.launcherTheme||launcherTheme;
+ const css=getComputedStyle(document.body),read=key=>css.getPropertyValue(key).trim();
+ const canvas=document.createElement("canvas");canvas.width=canvas.height=1;
+ const ctx=canvas.getContext("2d");
+ function rgb(value,fallback,under){
+  if(!ctx||!value||!CSS.supports("color",value))return fallback;
+  ctx.clearRect(0,0,1,1);ctx.fillStyle=under||fallback;ctx.fillRect(0,0,1,1);
+  ctx.fillStyle=value;ctx.fillRect(0,0,1,1);
+  return "#"+Array.from(ctx.getImageData(0,0,1,1).data).slice(0,3).map(x=>x.toString(16).padStart(2,"0")).join("");
+ }
+ const dark=rgb(read("--ds-bg")||read("--theme-dark"),"#101211");
+ const warm=theme==="warm",orbit=theme==="orbit",extreme=theme==="extreme";
+ const panel=rgb(extreme?"#101010":warm?read("--theme-panel"):orbit?read("--theme-surface2"):read("--ds-panel"),warm?"#eedbd4":"#29382f",dark);
+ const ink=rgb(extreme?"#f1f1f1":warm?read("--theme-ink"):orbit?read("--theme-text"):read("--ds-text"),warm?"#25252b":"#e1ece3",panel);
+ const accent=rgb(extreme?"#f1f1f1":read("--ds-accent")||read("--theme-accent"),ink,panel);
+ const tile=rgb(extreme?"#191919":warm?read("--theme-glass"):orbit?read("--theme-surface"):read("--ds-panel2"),panel,panel);
+ const radius=({warm:21,orbit:21,minimal:14,pixel:2,windows:0,extreme:0})[theme]??14;
+ return {theme,dark:tile,panel,text:ink,accent,radius};
+}
 function appManage(pkg,activity){
  if(window.AudioDesk?.showStyledAppManagement||window.AudioDesk?.showNativeAppManagement){
   cancelHomeHold();upStart=null;iconSwipe=null;longConsumed=true;
@@ -215,8 +238,7 @@ function appManage(pkg,activity){
   closeAppShortcuts(true);window.getSelection()?.removeAllRanges();
   window.AudioDesk?.hideSearchKeyboard?.();
   if(window.AudioDesk.showStyledAppManagement){
-   const css=getComputedStyle(document.documentElement),read=key=>css.getPropertyValue(key).trim();
-   window.AudioDesk.showStyledAppManagement(pkg,JSON.stringify({dark:read("--theme-dark"),panel:read("--theme-surface"),text:read("--theme-text"),accent:read("--theme-accent")}));
+   window.AudioDesk.showStyledAppManagement(pkg,JSON.stringify(appMenuPalette()));
   }else window.AudioDesk.showNativeAppManagement(pkg);
   return;
  }

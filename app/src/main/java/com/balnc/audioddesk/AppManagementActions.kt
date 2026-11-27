@@ -43,7 +43,7 @@ internal object AppManagementActions {
         else Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri)
     }
 
-    data class Palette(val dark:Int,val panel:Int,val ink:Int,val accent:Int,val muted:Int,val line:Int,val danger:Int)
+    data class Palette(val dark:Int,val panel:Int,val ink:Int,val accent:Int,val muted:Int,val line:Int,val danger:Int,val theme:String,val radius:Float)
     private fun blend(a:Int,b:Int,f:Float):Int = Color.rgb(
         (Color.red(a)*(1-f)+Color.red(b)*f).roundToInt(),
         (Color.green(a)*(1-f)+Color.green(b)*f).roundToInt(),
@@ -68,6 +68,8 @@ internal object AppManagementActions {
             val s=j.optString(key).trim()
             return Color.parseColor(if(s.matches(Regex("^#[0-9a-fA-F]{6}$")))s else default)
         }
+        val theme=j.optString("theme").takeIf{it in listOf("warm","orbit","minimal","pixel","windows","extreme")} ?: "orbit"
+        val radius=when(theme){"pixel"->2f;"windows","extreme"->0f;"minimal"->14f;else->21f}
         val dark=color("dark","#141a17")
         val accent=color("accent","#bcdac2")
         // Use the same native-compatible surface sampled by the theme layer;
@@ -75,7 +77,7 @@ internal object AppManagementActions {
         val panel=color("panel","#29382f")
         val ink=readable(color("text","#e1ece3"),panel)
         return Palette(dark,panel,ink,readable(accent,panel),readable(blend(ink,panel,.35f),panel),
-            blend(panel,ink,.12f),readable(Color.rgb(241,169,166),panel))
+            blend(panel,ink,.12f),readable(Color.rgb(241,169,166),panel),theme,radius)
     }
     private fun dp(c:Context,n:Float)=(n*c.resources.displayMetrics.density).roundToInt()
     private fun rounded(c:Context,color:Int,r:Float,stroke:Int?=null)=GradientDrawable().apply{
@@ -111,12 +113,13 @@ internal object AppManagementActions {
 
     fun dialog(context: Context, title: CharSequence, icon:Drawable?=null, colors:Palette=palette(), select: (String) -> Unit): Dialog {
         val c=context;val p=colors
+        val font=if(p.theme=="pixel") try{Typeface.createFromAsset(c.assets,"fonts/silkscreen-regular.ttf")}catch(_:Exception){Typeface.MONOSPACE} else Typeface.create(if(p.theme=="windows")"sans-serif-light" else "sans-serif",Typeface.NORMAL)
         val d=Dialog(c)
         d.requestWindowFeature(Window.FEATURE_NO_TITLE)
         val scroll=ScrollView(c).apply {
             isFillViewport=false;isVerticalScrollBarEnabled=false
             overScrollMode=View.OVER_SCROLL_IF_CONTENT_SCROLLS
-            background=rounded(c,p.panel,21f,p.line)
+            background=rounded(c,p.panel,p.radius,p.line)
             clipToOutline=true
         }
         val root=LinearLayout(c).apply{
@@ -127,7 +130,7 @@ internal object AppManagementActions {
             setPadding(dp(c,10f),dp(c,10f),dp(c,10f),dp(c,13f))
         }
         val tile=ImageView(c).apply{
-            background=rounded(c,p.dark,13f)
+            background=rounded(c,p.dark,minOf(13f,p.radius))
             setPadding(dp(c,6f),dp(c,6f),dp(c,6f),dp(c,6f))
             scaleType=ImageView.ScaleType.FIT_CENTER
             if(icon!=null)setImageDrawable(icon) else setImageResource(android.R.drawable.sym_def_app_icon)
@@ -135,8 +138,8 @@ internal object AppManagementActions {
         }
         header.addView(tile,LinearLayout.LayoutParams(dp(c,42f),dp(c,42f)))
         val titles=LinearLayout(c).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(c,12f),0,0,0)}
-        titles.addView(text(c,title,17f,p.ink).apply{typeface=Typeface.create("sans-serif-medium",Typeface.NORMAL);maxLines=2;ellipsize=android.text.TextUtils.TruncateAt.END})
-        titles.addView(text(c,"Application settings",11f,p.muted).apply{setPadding(0,dp(c,3f),0,0)})
+        titles.addView(text(c,title,17f,p.ink).apply{typeface=if(p.theme=="pixel"||p.theme=="windows")font else Typeface.create("sans-serif-medium",Typeface.NORMAL);maxLines=2;ellipsize=android.text.TextUtils.TruncateAt.END})
+        titles.addView(text(c,"Application settings",11f,p.muted).apply{typeface=font;setPadding(0,dp(c,3f),0,0)})
         header.addView(titles,LinearLayout.LayoutParams(0,-2,1f))
         root.addView(header,LinearLayout.LayoutParams(-1,-2))
         root.addView(divider(c,p))
@@ -145,7 +148,7 @@ internal object AppManagementActions {
             val row=LinearLayout(c).apply{
                 orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL
                 minimumHeight=dp(c,48f);setPadding(dp(c,13f),dp(c,10f),dp(c,13f),dp(c,10f))
-                background=ripple(c,p,12f);isClickable=true;isFocusable=true
+                background=ripple(c,p,minOf(12f,p.radius));isClickable=true;isFocusable=true
                 contentDescription=labels[i];tag=key
                 accessibilityDelegate=object:View.AccessibilityDelegate(){
                     override fun onInitializeAccessibilityNodeInfo(host:View,info:android.view.accessibility.AccessibilityNodeInfo){
@@ -157,14 +160,14 @@ internal object AppManagementActions {
             val glyph=ActionGlyph(c,key,if(key=="uninstall")p.danger else p.accent).apply{importantForAccessibility=View.IMPORTANT_FOR_ACCESSIBILITY_NO}
             row.addView(glyph,LinearLayout.LayoutParams(dp(c,20f),dp(c,20f)))
             row.addView(text(c,labels[i],14f,color).apply{
-                setPadding(dp(c,15f),0,0,0);importantForAccessibility=View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                typeface=font;setPadding(dp(c,15f),0,0,0);importantForAccessibility=View.IMPORTANT_FOR_ACCESSIBILITY_NO
             },LinearLayout.LayoutParams(0,-2,1f))
             root.addView(row,LinearLayout.LayoutParams(-1,-2))
         }
         root.addView(divider(c,p))
         root.addView(text(c,"Cancel",13f,p.muted).apply{
-            gravity=Gravity.CENTER;minimumHeight=dp(c,48f);tag="cancel"
-            background=ripple(c,p,12f);isFocusable=true;isClickable=true
+            typeface=font;gravity=Gravity.CENTER;minimumHeight=dp(c,48f);tag="cancel"
+            background=ripple(c,p,minOf(12f,p.radius));isFocusable=true;isClickable=true
             setOnClickListener{d.cancel()}
         },LinearLayout.LayoutParams(-1,-2))
         scroll.addView(root,android.widget.FrameLayout.LayoutParams(-1,-2))
