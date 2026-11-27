@@ -475,3 +475,31 @@ body[data-launcher-theme] #launcherAlphaIndex button {
 #warmTimeLabel {white-space:nowrap}
 .agenda-widget-nav {align-items:center}
 .spl-value {align-items:baseline}
+
+/* Alphabet navigation participates in the same glass modes as Home. */
+body[data-launcher-theme][data-glass-mode="liquid"] :is(#launcherLetterPanel,#launcherAlphaIndex),
+body[data-launcher-theme][data-glass-mode="aero"] :is(#launcherLetterPanel,#launcherAlphaIndex),
+body[data-launcher-theme][data-glass-mode="mica"] :is(#launcherLetterPanel,#launcherAlphaIndex) {
+ color:var(--glass-ink)!important;
+ border:1px solid color-mix(in srgb,var(--glass-ink) 25%,transparent)!important;
+}
+body[data-launcher-theme][data-glass-mode="liquid"] :is(#launcherLetterPanel,#launcherAlphaIndex) {
+ background:linear-gradient(145deg,rgba(255,255,255,.22),transparent 38%),var(--glass-base)!important;
+ -webkit-backdrop-filter:blur(18px) saturate(1.32);backdrop-filter:blur(18px) saturate(1.32);
+}
+body[data-launcher-theme][data-glass-mode="aero"] :is(#launcherLetterPanel,#launcherAlphaIndex) {
+ background:linear-gradient(165deg,rgba(169,218,247,.20),transparent 70%),var(--glass-base)!important;
+ -webkit-backdrop-filter:blur(21px) saturate(1.23);backdrop-filter:blur(21px) saturate(1.23);
+}
+body[data-launcher-theme][data-glass-mode="mica"] :is(#launcherLetterPanel,#launcherAlphaIndex) {
+ background:var(--glass-strong)!important;
+ -webkit-backdrop-filter:blur(30px) saturate(1.08);backdrop-filter:blur(30px) saturate(1.08);
+}
+body[data-launcher-theme][data-glass-mode]:not([data-glass-mode="opaque"]) #launcherLetterPanel :is(.launcher-app,.launcher-letter-head,#launcherLetterClose) {
+ background:transparent!important;color:var(--glass-ink)!important;
+ border-color:color-mix(in srgb,var(--glass-ink) 20%,transparent)!important;
+}
+body[data-launcher-theme][data-glass-mode]:not([data-glass-mode="opaque"]) #launcherLetterPanel :is(.app-name,#launcherLetterTitle),
+body[data-launcher-theme][data-glass-mode]:not([data-glass-mode="opaque"]) #launcherAlphaIndex button:not(.active) {
+ color:var(--glass-ink)!important;
+}
