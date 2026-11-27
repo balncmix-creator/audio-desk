@@ -98,6 +98,7 @@ internal class NativeAudioPanel(private val activity:Activity){
         show("music")
     }
     private var panel:LinearLayout?=null
+    fun select(id:String){if(id in listOf("music","mic","agenda"))show(id)}
     private fun show(id:String){
         stopCapture();mode=id;panel?.removeAllViews()
         spectrum=null;meterGraph=null;meterLabel=null;captureLabel=null;agendaList=null;mediaLabel=null

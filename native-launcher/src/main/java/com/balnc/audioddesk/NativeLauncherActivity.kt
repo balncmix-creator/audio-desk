@@ -58,7 +58,7 @@ class NativeLauncherActivity:Activity(){
     private var newsList:ListView?=null
     private var newsStatus:TextView?=null
     private val ticker=object:Runnable{
-        override fun run(){if(destroyed)return;clock?.text=DateFormat.getTimeInstance(DateFormat.SHORT).format(Date());handler.postDelayed(this,15000)}
+        override fun run(){if(destroyed)return;clock?.text=DateFormat.getTimeInstance(DateFormat.SHORT).format(Date());orbitView?.invalidate();handler.postDelayed(this,15000)}
     }
     override fun onCreate(state:Bundle?){
         super.onCreate(state)
@@ -86,6 +86,7 @@ class NativeLauncherActivity:Activity(){
     private fun dp(n:Int)=(n*resources.displayMetrics.density).toInt()
     private fun palette(){
         when(theme){
+            "Orbit"->{bg=Color.rgb(16,18,17);surface=Color.rgb(32,38,34);fg=Color.rgb(229,240,231);accent=Color.rgb(197,224,200)}
             "Warm"->{bg=Color.rgb(40,31,30);surface=Color.rgb(69,54,51);fg=Color.rgb(255,240,227);accent=Color.rgb(255,190,163)}
             "Pixel"->{bg=Color.BLACK;surface=Color.rgb(30,30,30);fg=Color.WHITE;accent=Color.rgb(150,240,144)}
             "Tiles"->{bg=Color.rgb(12,22,34);surface=Color.rgb(26,62,87);fg=Color.WHITE;accent=Color.rgb(108,211,255)}
@@ -104,7 +105,7 @@ class NativeLauncherActivity:Activity(){
     private fun column()=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}
     private fun row()=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL}
     private fun showPage(next:String){
-        if(::audio.isInitialized)audio.detach();if(::widgetHost.isInitialized)widgetHost.detach();page=next;palette();clock=null;newsList=null;appList=null;newsStatus=null
+        if(::audio.isInitialized)audio.detach();if(::widgetHost.isInitialized)widgetHost.detach();page=next;palette();clock=null;orbitView=null;newsList=null;appList=null;newsStatus=null
         root=column().apply{setBackgroundColor(bg)}
         root.setOnApplyWindowInsetsListener{v,insets->
             if(android.os.Build.VERSION.SDK_INT>=30){
@@ -118,7 +119,7 @@ class NativeLauncherActivity:Activity(){
         listOf("Home","Apps","News","Audio","Settings").forEach{n->nav.addView(button(n){showPage(n)},LinearLayout.LayoutParams(0,dp(48),1f))}
         root.addView(nav)
         body=column();root.addView(body,LinearLayout.LayoutParams(-1,0,1f))
-        when(page){"Apps"->showApps();"News"->showNews();"Settings"->showSettings();"Audio"->audio.mount(body,fg,accent,surface);else->showHome()}
+        when(page){"Apps"->showApps();"News"->showNews();"Settings"->showSettings();"Audio"->audio.mount(body,fg,accent,surface);"Widgets"->showWidgets();else->showHome()}
         root.requestApplyInsets()
     }
     private fun title(s:String){body.addView(text(s,23f).apply{setTypeface(null,Typeface.BOLD)})}
@@ -163,6 +164,7 @@ class NativeLauncherActivity:Activity(){
         };dialog=d;d.setOnDismissListener{dialog=null};d.show()
     }
     private fun showHome(){
+        if(theme=="Orbit"){showOrbit();return}
         clock=text(DateFormat.getTimeInstance(DateFormat.SHORT).format(Date()),48f)
         body.addView(clock);body.addView(text(DateFormat.getDateInstance(DateFormat.LONG).format(Date()),16f))
         val scroll=ScrollView(this);val content=column();scroll.addView(content);body.addView(scroll,LinearLayout.LayoutParams(-1,0,1f))
@@ -177,6 +179,29 @@ class NativeLauncherActivity:Activity(){
         val widgetColumn=column();content.addView(widgetColumn)
         widgetHost.attach(widgetColumn,theme,fg,accent,surface)
         body.addView(button("Find an app"){showPage("Apps")})
+    }
+    private fun showOrbit(){
+        val stage=FrameLayout(this);body.addView(stage,LinearLayout.LayoutParams(-1,0,1f))
+        val dial=NativeOrbitView(this,
+            launch={item->if(!support.launch(item.pkg,item.activity))Toast.makeText(this,"App unavailable",Toast.LENGTH_SHORT).show()},
+            manage={item->apps.firstOrNull{it.pkg==item.pkg&&it.activity==item.activity}?.let{manage(it)}},
+            search={showPage("Apps");val field=body.getChildAt(1) as? EditText;field?.requestFocus();field?.post{(getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).showSoftInput(field,android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)}},
+            widget={name->when(name){"News"->showPage("News");"Calendar"->{showPage("Audio");audio.select("agenda")};"Music"->{showPage("Audio");audio.select("music")};"Files"->openFiles()}},
+            externalAction={showPage("Widgets")})
+        dial.colors(fg,accent,surface)
+        dial.data(apps.map{NativeOrbitView.App(it.pkg,it.activity,it.label)},recents.map{NativeOrbitView.App(it.pkg,it.activity,it.label)},widgetHost.orbitItems())
+        stage.addView(dial,FrameLayout.LayoutParams(-1,-1))
+        stage.addView(button("⚙"){showPage("Settings")},FrameLayout.LayoutParams(dp(48),dp(48),Gravity.TOP or Gravity.LEFT))
+        orbitView=dial
+    }
+    private var orbitView:NativeOrbitView?=null
+    private fun openFiles(){
+        try{startActivity(Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"))}
+        catch(_:Exception){Toast.makeText(this,"No file picker available",Toast.LENGTH_SHORT).show()}
+    }
+    private fun showWidgets(){
+        title("Android widgets");val scroll=ScrollView(this);val list=column();scroll.addView(list)
+        body.addView(scroll,LinearLayout.LayoutParams(-1,0,1f));widgetHost.attach(list,theme,fg,accent,surface)
     }
     private fun showApps(){
         title("Applications");body.addView(search("Find installed apps",appQuery){appQuery=it;renderAppRows()})
@@ -281,7 +306,7 @@ class NativeLauncherActivity:Activity(){
         body.addView(text("This is a separate HTML-free development build, not the complete Audio Desk replacement.",14f))
         body.addView(button("Default home app"){support.requestDefaultHome()})
         body.addView(text("Appearance",14f))
-        listOf("Minimal","Warm","Pixel","Tiles","Extreme").forEach{t->body.addView(button(if(t==theme)"✓ "+t else t){theme=t;prefs.edit().putString("theme",t).apply();showPage("Settings")})}
+        listOf("Minimal","Warm","Pixel","Tiles","Orbit","Extreme").forEach{t->body.addView(button(if(t==theme)"✓ "+t else t){theme=t;prefs.edit().putString("theme",t).apply();showPage("Settings")})}
     }
     private fun openUrl(url:String){try{
         val uri=Uri.parse(url);if(uri.scheme!="https"&&uri.scheme!="http")return

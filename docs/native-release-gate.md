@@ -16,3 +16,5 @@ The separate native module is a development target, not a replacement APK. Do no
 The migration now reuses the previous genuine audio analysis, notification media session and calendar engines with native Android Views and Canvas. Integration into the exact production home layouts is not finished; do not represent this as parity.
 
 Third-party Android widgets now have a native AppWidgetHost implementation with Android binding/configuration, per-theme dimensions, order and long-press editing. The full freeform snapping/drag system and original theme geometry remain open. No release gate has been waived.
+
+Orbit has an initial native Canvas port with original 334-unit ring geometry, curved clock, independent ring rotation, app fan and long-press. Radial media transports, in-ring native widget preview, exact icon/theme fidelity and real-device verification remain open. Do not publish as a completed release.

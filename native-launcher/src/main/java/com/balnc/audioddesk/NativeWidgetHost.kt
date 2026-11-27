@@ -68,6 +68,7 @@ internal class NativeWidgetHost(private val activity:Activity,private val change
         val height=if(vertical)prefs.getInt("h:$theme:$id",defaultHeight)else defaultHeight
         return Size(width.coerceIn(min.width.coerceAtMost(maxWidth),maxWidth),height.coerceIn(min.height.coerceAtMost(800),800))
     }
+    fun orbitItems():List<NativeOrbitView.External> = order().mapNotNull{id->manager.getAppWidgetInfo(id)?.let{NativeOrbitView.External(id,it.loadLabel(activity.packageManager).toString(),it.provider.packageName)}}
     private fun order():List<Int>{
         val a=try{JSONArray(prefs.getString("order:$theme","[]"))}catch(_:Exception){JSONArray()}
         return ((0 until a.length()).map{a.optInt(it,-1)}.filter{it in ids}+ids).distinct()
