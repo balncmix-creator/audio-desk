@@ -481,7 +481,7 @@ body[data-launcher-theme][data-glass-mode="liquid"] :is(#launcherLetterPanel,#la
 body[data-launcher-theme][data-glass-mode="aero"] :is(#launcherLetterPanel,#launcherAlphaIndex),
 body[data-launcher-theme][data-glass-mode="mica"] :is(#launcherLetterPanel,#launcherAlphaIndex) {
  color:var(--glass-ink)!important;
- border:1px solid color-mix(in srgb,var(--glass-ink) 25%,transparent)!important;
+ border:1px solid color-mix(in srgb,var(--theme-accent,var(--ds-accent)) 75%,transparent)!important;
 }
 body[data-launcher-theme][data-glass-mode="liquid"] :is(#launcherLetterPanel,#launcherAlphaIndex) {
  background:linear-gradient(145deg,rgba(255,255,255,.22),transparent 38%),var(--glass-base)!important;
