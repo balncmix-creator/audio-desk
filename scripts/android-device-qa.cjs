@@ -129,7 +129,7 @@ async function tap(c,selector){
     await c.evaluate('document.getElementById("launcherMusicWidget").scrollIntoView({block:"center"})');
     assert.equal(await c.evaluate('window.audioDeskBeginWidgetResize("launcherMusicWidget")'),true);
     await poll(()=>c.evaluate(visible('#widgetLayoutOverlay')));
-    await c.evaluate('window.dispatchEvent(new Event("resize"))');
+    await c.evaluate('window.dispatchEvent(new Event("resize"));window.audioDeskRestoreWidgetLayouts()');
     await sleep(400);
     assert.equal(await c.evaluate(visible('#widgetLayoutOverlay')),true,'Editor must survive a same-width viewport resize');
     assert.equal(await c.evaluate('document.querySelectorAll("#widgetLayoutOverlay .widget-resize-handle").length'),8);
