@@ -545,7 +545,15 @@ document.addEventListener("keydown",e=>{
 document.addEventListener("pointerdown",e=>{
  if(chosen&&!e.target.closest("#widgetLayoutOverlay")&&!e.target.closest("#"+chosen.id))closeEditor();
 },true);
-window.addEventListener("resize",()=>{applySizes();requestPos()});
+// IME/system-inset changes resize the viewport vertically during editing.
+ // Do not discard the active resize/move session for a height-only change.
+ let lastViewportWidth=innerWidth;
+ window.addEventListener("resize",()=>{
+  const widthChanged=innerWidth!==lastViewportWidth;
+  lastViewportWidth=innerWidth;
+  if(chosen&&!widthChanged){requestPos();return;}
+  applySizes();requestPos();
+ });
 window.addEventListener("launcher-page-changed",closeEditor);
 window.addEventListener("scroll",()=>{if(chosen&&!gesture)requestPos()},{passive:true});
 const restoreToggle=document.createElement("button");
