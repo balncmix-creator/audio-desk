@@ -434,3 +434,44 @@ body:is([data-home-page="home"],[data-home-page="apps"]) #launcherShell :is(inpu
 :is(#launcherShell,#orbitHome,#orbitDial) :is(.launcher-app,.launcher-recent-card,.launcher-live-tile,[data-orbit-action]):focus:not(:focus-visible) {
  outline:none;
 }
+
+/* Alphabet panel shares the Home palette rather than the dark settings surface. */
+body[data-launcher-theme="warm"] #launcherLetterPanel {
+ --ds-panel:var(--theme-panel,#eedbd4);
+ --ds-text:var(--theme-ink,#292529);
+ --ds-line:color-mix(in srgb,var(--theme-ink,#292529) 20%,transparent);
+ --ds-panel2:color-mix(in srgb,var(--theme-panel,#eedbd4) 88%,var(--theme-ink,#292529));
+ --ds-accent:var(--theme-ink,#292529);
+ background:var(--ds-panel)!important;color:var(--ds-text)!important;
+}
+body[data-launcher-theme] #launcherLetterPanel .launcher-letter-head {
+ display:flex;align-items:center;justify-content:space-between;gap:12px;
+ padding:8px 14px;border-color:var(--ds-line)!important;
+}
+body[data-launcher-theme] #launcherLetterTitle {line-height:1.2;margin:0;color:var(--ds-text)!important}
+body[data-launcher-theme] #launcherLetterClose {
+ display:grid;place-items:center;box-sizing:border-box;width:44px;height:44px;
+ min-width:44px;min-height:44px;padding:0;line-height:1;
+ background:var(--ds-panel2)!important;color:var(--ds-text)!important;
+ border-radius:var(--ds-radius)!important;
+}
+body[data-launcher-theme] #launcherLetterApps .launcher-app {
+ display:flex;flex-direction:row;align-items:center;justify-content:flex-start;
+ gap:12px;min-height:52px;width:100%;box-sizing:border-box;padding:8px 12px!important;
+ text-align:start;border-radius:var(--ds-radius)!important;
+}
+body[data-launcher-theme] #launcherLetterApps .app-name {
+ flex:1;min-width:0;text-align:start;line-height:1.4!important;
+ overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+body[data-launcher-theme] #launcherAlphaIndex button {
+ display:grid;place-items:center;box-sizing:border-box;padding:0!important;line-height:1!important;
+}
+#launcherClock,#warmTimeLabel,#launcherLiveTime,#agendaSlidePosition,#splReading,#splMax,#clockSizeValue {
+ font-variant-numeric:tabular-nums;
+}
+#warmDateWidget {align-items:center}
+#warmDateLabel,#warmTimeLabel {line-height:1.25;min-width:0}
+#warmTimeLabel {white-space:nowrap}
+.agenda-widget-nav {align-items:center}
+.spl-value {align-items:baseline}
