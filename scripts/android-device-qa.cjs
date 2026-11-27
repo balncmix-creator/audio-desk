@@ -7,7 +7,7 @@ const pkg='com.balnc.audioddesk', dir='android-qa';
 fs.mkdirSync(dir,{recursive:true});
 const results=[], errors=[];
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const adb=(...args)=>execFileSync('adb',args,{encoding:'utf8',timeout:45000});
+const adb=(...args)=>execFileSync('adb',args,{encoding:'utf8',timeout:45000,maxBuffer:32*1024*1024});
 const screenshot=name=>fs.writeFileSync(dir+'/'+name+'.png',execFileSync('adb',['exec-out','screencap','-p'],{timeout:15000,maxBuffer:16*1024*1024}));
 async function poll(fn,ms=30000){
  const end=Date.now()+ms;let last;
@@ -121,7 +121,7 @@ async function tap(c,selector){
    screenshot('warm-restart');
   });
   await test('native-catalog-activity-launch',async()=>{
-   c.close();c=null;
+   if(c)c.close();c=null;
    const output=adb('shell','am','start','-W','-n',pkg+'/.NativeCatalogActivity');
    assert.match(output,/Status: ok/);
    await sleep(1500);
