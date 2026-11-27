@@ -28,6 +28,7 @@ class NativeLauncherActivity:Activity(){
         val key get()=pkg+"/"+activity
     }
     private lateinit var support:HomeLauncherSupport
+    private lateinit var audio:NativeAudioPanel
     private lateinit var root:LinearLayout
     private lateinit var body:LinearLayout
     private val prefs by lazy{getSharedPreferences("native_desk",MODE_PRIVATE)}
@@ -61,6 +62,7 @@ class NativeLauncherActivity:Activity(){
     override fun onCreate(state:Bundle?){
         super.onCreate(state)
         support=HomeLauncherSupport(this)
+        audio=NativeAudioPanel(this)
         pinned=prefs.getStringSet("pins",emptySet())!!.toMutableSet()
         removed=prefs.getStringSet("removed",emptySet())!!.toMutableSet()
         saved=prefs.getStringSet("saved",emptySet())!!.toMutableSet()
@@ -71,7 +73,7 @@ class NativeLauncherActivity:Activity(){
         }catch(_:Exception){emptyList()}
         showPage("Home");handler.post(ticker)
     }
-    override fun onResume(){super.onResume();if(::support.isInitialized)support.load(true){a,r->runOnUiThread{
+    override fun onResume(){super.onResume();if(::audio.isInitialized)audio.resume();if(::support.isInitialized)support.load(true){a,r->runOnUiThread{
         if(destroyed)return@runOnUiThread
         apps=decodeApps(a);recents=decodeApps(r)
         if(page=="Home")showPage("Home")else if(page=="Apps")renderAppRows()
@@ -100,7 +102,7 @@ class NativeLauncherActivity:Activity(){
     private fun column()=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}
     private fun row()=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL}
     private fun showPage(next:String){
-        page=next;palette();clock=null;newsList=null;appList=null;newsStatus=null
+        if(::audio.isInitialized)audio.detach();page=next;palette();clock=null;newsList=null;appList=null;newsStatus=null
         root=column().apply{setBackgroundColor(bg)}
         root.setOnApplyWindowInsetsListener{v,insets->
             if(android.os.Build.VERSION.SDK_INT>=30){
@@ -111,10 +113,10 @@ class NativeLauncherActivity:Activity(){
         }
         setContentView(root)
         val nav=row()
-        listOf("Home","Apps","News","Settings").forEach{n->nav.addView(button(n){showPage(n)},LinearLayout.LayoutParams(0,dp(48),1f))}
+        listOf("Home","Apps","News","Audio","Settings").forEach{n->nav.addView(button(n){showPage(n)},LinearLayout.LayoutParams(0,dp(48),1f))}
         root.addView(nav)
         body=column();root.addView(body,LinearLayout.LayoutParams(-1,0,1f))
-        when(page){"Apps"->showApps();"News"->showNews();"Settings"->showSettings();else->showHome()}
+        when(page){"Apps"->showApps();"News"->showNews();"Settings"->showSettings();"Audio"->audio.mount(body,fg,accent,surface);else->showHome()}
         root.requestApplyInsets()
     }
     private fun title(s:String){body.addView(text(s,23f).apply{setTypeface(null,Typeface.BOLD)})}
@@ -282,5 +284,13 @@ class NativeLauncherActivity:Activity(){
         startActivity(Intent(Intent.ACTION_VIEW,uri))
     }catch(_:Exception){Toast.makeText(this,"No browser available",Toast.LENGTH_SHORT).show()}}
     @Deprecated("Android back") override fun onBackPressed(){if(page!="Home")showPage("Home")}
-    override fun onDestroy(){destroyed=true;dialog?.dismiss();handler.removeCallbacks(ticker);workers.shutdownNow();support.close();super.onDestroy()}
+    override fun onPause(){if(::audio.isInitialized)audio.pause();super.onPause()}
+    @Deprecated("Android activity result")
+    override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?){
+        if(!audio.result(requestCode,resultCode,data))super.onActivityResult(requestCode,resultCode,data)
+    }
+    override fun onRequestPermissionsResult(requestCode:Int,permissions:Array<out String>,grantResults:IntArray){
+        super.onRequestPermissionsResult(requestCode,permissions,grantResults);audio.permissions(requestCode)
+    }
+    override fun onDestroy(){destroyed=true;audio.close();dialog?.dismiss();handler.removeCallbacks(ticker);workers.shutdownNow();support.close();super.onDestroy()}
 }

@@ -35,7 +35,7 @@ jobs:
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: Audio-Desk-Native-Preview-APK
+          name: Audio-Desk-Native-Development-APK
           path: native-launcher/build/outputs/apk/debug/native-launcher-debug.apk
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
