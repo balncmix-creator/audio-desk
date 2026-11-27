@@ -6,6 +6,7 @@ const assert=require('node:assert/strict');
 const pkg='com.balnc.audioddesk', dir='android-qa';
 fs.mkdirSync(dir,{recursive:true});
 const results=[], errors=[];
+const apiLevel=Number(execFileSync('adb',['shell','getprop','ro.build.version.sdk'],{encoding:'utf8'}).trim());
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const adb=(...args)=>execFileSync('adb',args,{encoding:'utf8',timeout:45000,maxBuffer:32*1024*1024});
 const screenshot=name=>fs.writeFileSync(dir+'/'+name+'.png',execFileSync('adb',['exec-out','screencap','-p'],{timeout:15000,maxBuffer:16*1024*1024}));
@@ -48,10 +49,10 @@ const visible=selector=>'(()=>{const e=document.querySelector('+JSON.stringify(s
 async function tap(c,selector){
  const p=await c.evaluate('(()=>{const e=document.querySelector('+JSON.stringify(selector)+');if(!e||!e.getClientRects().length)return null;e.scrollIntoView({block:"nearest"});const r=e.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()');
  assert.ok(p,'Visible tap target '+selector);
- // CDP dispatches native Chromium touch input to the actual Android WebView.
- await c.call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[p]});
- await sleep(80);
- await c.call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ // Older factory WebView has unreliable CDP touch dispatch. Use Android's
+ // actual input service there instead; never skip the assertion.
+ if(apiLevel<=30){const dpr=await c.evaluate('devicePixelRatio');adb('shell','input','tap',String(Math.round(p.x*dpr)),String(Math.round(p.y*dpr)));}
+ else {await c.call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[p]});await sleep(80);await c.call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}
  await sleep(350);
 }
 (async()=>{
@@ -75,7 +76,7 @@ async function tap(c,selector){
     await poll(()=>c.evaluate('launcherApps.length>0'));
     assert.ok(await c.evaluate(visible('#launcherAppSearch')));
     await tap(c,'#launcherAppSearch');
-    await c.call('Input.insertText',{text:'zzqa_no_app_zz'});
+    if(apiLevel<=30)adb('shell','input','text','zzqa_no_app_zz');else await c.call('Input.insertText',{text:'zzqa_no_app_zz'});
     await sleep(350);
     assert.equal(await c.evaluate('document.getElementById("launcherAppSearch").value'),'zzqa_no_app_zz');
     await c.evaluate('document.getElementById("launcherAppSearch").value="";document.getElementById("launcherAppSearch").dispatchEvent(new Event("input",{bubbles:true}));document.getElementById("launcherAppSearch").blur()');
@@ -111,6 +112,83 @@ async function tap(c,selector){
    screenshot('warm-wallpapers');
    await c.evaluate('closeCustomize(true)');
   });
+  // Exercise real installed widget UI; never inject fabricated sensor samples.
+  async function activate(selector){
+   await c.evaluate('(()=>{const e=document.querySelector('+JSON.stringify(selector)+');if(!e)throw Error("missing "+'+JSON.stringify(selector)+');e.click()})()');
+   await sleep(350);
+  }
+  async function select(id,value){
+   await c.evaluate('(()=>{const e=document.getElementById('+JSON.stringify(id)+');if(!e)throw Error("missing control");e.value='+JSON.stringify(value)+';e.dispatchEvent(new Event("change",{bubbles:true}));return e.value})()');
+   assert.equal(await c.evaluate('document.getElementById('+JSON.stringify(id)+').value'),value);
+  }
+  for(const theme of ['minimal','warm','pixel','windows']){
+   await test(theme+'-music-widget-layout',async()=>{
+    await c.evaluate('setLauncherTheme('+JSON.stringify(theme)+');setLauncherPage("home",false);window.audioDeskRestoreWidget("launcherMusicWidget");window.scrollTo(0,0)');
+    await poll(()=>c.evaluate(visible('#launcherMusicWidget')));
+    assert.ok(await c.evaluate('document.getElementById("musicTrackTitle").textContent.trim().length>0'));
+    await c.evaluate('document.getElementById("launcherMusicWidget").scrollIntoView({block:"center"})');
+    assert.equal(await c.evaluate('window.audioDeskBeginWidgetResize("launcherMusicWidget")'),true);
+    await poll(()=>c.evaluate(visible('#widgetLayoutOverlay')));
+    assert.equal(await c.evaluate('document.querySelectorAll("#widgetLayoutOverlay .widget-resize-handle").length'),8);
+    assert.ok(await c.evaluate(visible('#widgetLayoutOverlay [data-layout-control="move"]')));
+    screenshot(theme+'-music-resize');
+    await activate('#widgetLayoutOverlay [data-layout-control="done"]');
+    assert.equal(await c.evaluate(visible('#widgetLayoutOverlay')),false);
+   });
+   await test(theme+'-agenda-widget',async()=>{
+    await c.evaluate('window.audioDeskRestoreWidget("launcherAgendaWidget")');
+    assert.ok(await c.evaluate('typeof window.audioDeskAgenda?.open==="function"'));
+    await c.evaluate('window.audioDeskAgenda.open()');
+    await poll(()=>c.evaluate(visible('#agendaOverlay')));
+    await activate('#agendaRefresh');
+    screenshot(theme+'-agenda');
+    await activate('#agendaClose');
+    assert.equal(await c.evaluate(visible('#agendaOverlay')),false);
+   });
+   await test(theme+'-acoustic-controls',async()=>{
+    for(const [widget,toggle] of [['launcherSplWidget','acousticAddSpl'],['launcherMicAnalyzer','acousticAddFft']]){
+     if(!await c.evaluate(visible('#'+widget)))await activate('#'+toggle);
+     await poll(()=>c.evaluate(visible('#'+widget)));
+    }
+    for(const weight of ['A','C','Z'])await select('splWeight',weight);
+    await select('splResponse','slow');await activate('#splReset');
+    assert.match(await c.evaluate('document.getElementById("splMax").textContent'),/Max/);
+    await select('micFftRange','120');
+    const before=await c.evaluate('document.getElementById("micFftPeak").getAttribute("aria-pressed")');
+    await activate('#micFftPeak');
+    assert.notEqual(await c.evaluate('document.getElementById("micFftPeak").getAttribute("aria-pressed")'),before);
+    await activate('#micFftClear');
+    for(const id of ['launcherSplWidget','launcherMicAnalyzer']){
+     await c.evaluate('document.getElementById('+JSON.stringify(id)+').scrollIntoView({block:"center"})');
+     await sleep(300);screenshot(theme+'-'+id);
+    }
+   });
+   await test(theme+'-youtube-widget',async()=>{
+    if(!await c.evaluate(visible('#launcherYouTubeWidget')))await activate('#youtubeWidgetToggle');
+    await poll(()=>c.evaluate(visible('#launcherYouTubeWidget')));
+    assert.ok(await c.evaluate('!!document.getElementById("ytSearchInput") && !!document.getElementById("ytHome")'));
+    await c.evaluate('document.getElementById("launcherYouTubeWidget").scrollIntoView({block:"center"})');
+    await sleep(500);screenshot(theme+'-youtube-widget');
+    // Avoid account sign-in or external actions; check the installed widget controls.
+    await activate('#youtubeWidgetToggle');
+    assert.equal(await c.evaluate(visible('#launcherYouTubeWidget')),false);
+   });
+  }
+  await test('widget-removal-and-restore',async()=>{
+   await c.evaluate('setLauncherTheme("warm");setLauncherPage("home",false);window.audioDeskRestoreWidget("launcherMusicWidget");document.getElementById("launcherMusicWidget").scrollIntoView({block:"center"})');
+   assert.equal(await c.evaluate('window.audioDeskBeginWidgetResize("launcherMusicWidget")'),true);
+   await activate('#widgetLayoutOverlay [data-layout-control="remove"]');
+   assert.equal(await c.evaluate('window.audioDeskWidgetRemoved("launcherMusicWidget")'),true);
+   await c.evaluate('window.audioDeskRestoreWidget("launcherMusicWidget")');
+   assert.equal(await c.evaluate('window.audioDeskWidgetRemoved("launcherMusicWidget")'),false);
+  });
+  await test('modal-alphabet-rail-is-hidden',async()=>{
+   await c.evaluate('openWallpaperPicker()');
+   await poll(()=>c.evaluate(visible('#launcherWallpaperDialog')));
+   assert.equal(await c.evaluate('getComputedStyle(document.getElementById("launcherAlphaIndex")).visibility'),'hidden');
+   screenshot('warm-wallpaper-modal-fixed');
+   await c.evaluate('closeCustomize(true)');
+  });
   await test('warm-theme-persists-after-process-restart',async()=>{
    await c.evaluate('setLauncherTheme("warm");setLauncherPage("home",false)');
    c.close();c=null;
@@ -143,7 +221,7 @@ async function tap(c,selector){
   const log=fs.existsSync(dir+'/logcat.txt')?fs.readFileSync(dir+'/logcat.txt','utf8'):'';
   if(/FATAL EXCEPTION[\s\S]{0,600}Process: com\.balnc\.audioddesk(?:,|:)/.test(log))results.push({name:'AndroidRuntime crash',status:'failed'});
   if(errors.length)results.push({name:'WebView uncaught exceptions',status:'failed',errors});
-  fs.writeFileSync(dir+'/report.json',JSON.stringify({results,errors,limitations:['Emulated Android; not a physical device.','Theme setup and persistence checks use CDP; selected interactions use touch events.','Hardware microphone, real media projection, Google sign-in, third-party widgets and real-device battery measurements not covered.']},null,2));
+  fs.writeFileSync(dir+'/report.json',JSON.stringify({results,errors,limitations:['Emulated Android; not a physical device.','Theme setup and widget control changes use CDP; selected interactions use touch events. No claim of complete drag or external widget testing.','Hardware microphone, real media projection, Google sign-in, third-party widgets and real-device battery measurements not covered.']},null,2));
   console.log(JSON.stringify(results,null,2));
   if(results.some(r=>r.status==='failed'))process.exitCode=1;
  }
