@@ -214,15 +214,15 @@ async function tap(c,selector){
      // Only calculate contrast for an opaque solid background; wallpaper,
      // gradients, external WebViews and translucent layers require human review.
      let bg=null;
-     for(let p=e;p;p=p.parentElement){const st=getComputedStyle(p),b=rgb(st.backgroundColor);if(st.backgroundImage!=='none')break;if(b&&(b.length===3||b[3]===1)){bg=b;break}if(b&&b[3]>0)break;}
+     for(let p=e;p;p=p.parentElement){const st=getComputedStyle(p),b=rgb(st.backgroundColor);if(st.backgroundImage!=='none')break;if(b&&(b.length===3||b[3]===1)){bg=b;break}if((b&&b[3]>0)||(!b&&st.backgroundColor!=='transparent'))break;}
      const fg=rgb(s.color);
      if(text&&fg&&bg&&!row.disabled&&Number(s.opacity)===1&&(fg.length===3||fg[3]===1)){
       const l=[lum(fg),lum(bg)].sort((a,b)=>b-a);row.contrast=Math.round((l[0]+.05)/(l[1]+.05)*100)/100;
       const big=parseFloat(s.fontSize)>=24||(parseFloat(s.fontSize)>=18.66&&Number(s.fontWeight)>=700);
       if(row.contrast<(big?3:4.5))flags.push({key,kind:'contrast-candidate',ratio:row.contrast,text});
      }
-     if(control&&!row.disabled&&r.width<24&&r.height<24)flags.push({key,kind:'small-control',rect:row.rect});
-     if(text&&e.clientWidth>0&&e.scrollWidth>e.clientWidth+2&&!['auto','scroll'].includes(s.overflowX))flags.push({key,kind:s.textOverflow==='ellipsis'?'intentional-ellipsis-candidate':'horizontal-text-overflow',text});
+     if(control&&!row.disabled&&r.width<24&&r.height<24){const label=e.closest('label')||e.labels?.[0];const hit=label?.getBoundingClientRect();if(!hit||hit.width<24||hit.height<24)flags.push({key,kind:'small-control',rect:row.rect});}
+     if(text&&e.namespaceURI==='http://www.w3.org/1999/xhtml'&&e.clientWidth>0&&e.scrollWidth>e.clientWidth+2&&!['auto','scroll'].includes(s.overflowX))flags.push({key,kind:s.textOverflow==='ellipsis'?'intentional-ellipsis-candidate':'horizontal-text-overflow',text});
      rows.push(row);
     }
     return {theme:document.body.dataset.launcherTheme,page:document.body.dataset.homePage,viewport:[vw,vh],devicePixelRatio,rows,flags};
@@ -249,6 +249,14 @@ async function tap(c,selector){
      await activate('#launcherThemeChoose');
      await poll(()=>c.evaluate(visible('#launcherThemeDialog')));
      await visualCapture(theme+'-theme-picker');
+     // Extreme Minimal intentionally disables wallpaper and clock pickers.
+     if(theme==='extreme'){
+      await c.evaluate('closeCustomize(true);closeHomeOptions(true);openWallpaperPicker();openClockCustomizer()');
+      assert.equal(await c.evaluate(visible('#launcherWallpaperDialog')),false);
+      assert.equal(await c.evaluate(visible('#launcherClockDialog')),false);
+      assert.equal(await c.evaluate(visible('#launcherWallpaperChoose')),false);
+      assert.equal(await c.evaluate(visible('#launcherClockChoose')),false);
+     }else{
      await c.evaluate('closeCustomize(true);closeHomeOptions(true);openWallpaperPicker()');
      await poll(()=>c.evaluate(visible('#launcherWallpaperDialog')));
      await visualCapture(theme+'-wallpaper-picker');
@@ -259,6 +267,7 @@ async function tap(c,selector){
      await poll(()=>c.evaluate(visible('#launcherClockDialog')));
      await visualCapture(theme+'-clock-picker');
      await c.evaluate('closeCustomize(true);closeHomeOptions(true)');
+     }
      // The styled quick actions are hosted by Android, not the DOM.
      await c.evaluate('(()=>{const a=launcherApps.find(a=>a.pkg&&a.activity);if(!a)throw Error("No installed app");showAppShortcuts(a.pkg,a.activity)})()');
      await sleep(1000);
