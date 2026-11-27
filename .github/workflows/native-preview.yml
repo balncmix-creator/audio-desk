@@ -1,0 +1,46 @@
+name: Build native Audio Desk preview
+on:
+  push:
+    branches: [ feature/native-launcher-migration ]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Native unit tests and APK
+        run: gradle :native-launcher:testDebugUnitTest :native-launcher:assembleDebug --stacktrace
+      - name: Enforce zero bundled web UI
+        run: |
+          python - <<'PY'
+          import pathlib, zipfile
+          apk=pathlib.Path('native-launcher/build/outputs/apk/debug/native-launcher-debug.apk')
+          with zipfile.ZipFile(apk) as z:
+              assert z.testzip() is None
+              assert not [n for n in z.namelist() if n.lower().endswith(('.html','.htm','.css','.js','.mjs'))]
+              for n in z.namelist():
+                  if n.endswith('.dex'):
+                      assert b'Landroid/webkit/WebView;' not in z.read(n), 'Embedded WebView reference'
+          for p in pathlib.Path('native-launcher/src/main').rglob('*.kt'):
+              assert 'android.webkit.WebView' not in p.read_text(), p
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Audio-Desk-Native-Preview-APK
+          path: native-launcher/build/outputs/apk/debug/native-launcher-debug.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: Native-preview-test-reports
+          path: native-launcher/build/reports/tests/
+          if-no-files-found: ignore

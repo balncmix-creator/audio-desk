@@ -7,3 +7,5 @@ dependencyResolutionManagement {
 }
 rootProject.name = "AudioDesk"
 include(":app")
+
+include(":native-launcher")
