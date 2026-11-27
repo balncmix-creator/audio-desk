@@ -129,7 +129,7 @@ window.receiveAudioDeskNativeWidgets=data=>{
  window.dispatchEvent(new Event("audio-desk-native-widgets-changed"));
 };
 for(const event of ["audio-desk-layout-changed","audio-desk-widget-visibility","launcher-page-changed","audio-desk-foreground","audio-desk-theme-changed"])window.addEventListener(event,()=>schedule(true));
-window.addEventListener("audio-desk-workspace-visibility",()=>{lastPayload="";sync()});
+window.addEventListener("audio-desk-workspace-visibility",()=>{if(raf)cancelAnimationFrame(raf);lastPayload="";sync()});
 window.addEventListener("scroll",()=>schedule(),{passive:true,capture:true});
 window.addEventListener("resize",()=>schedule(true));
 document.addEventListener("visibilitychange",()=>schedule());

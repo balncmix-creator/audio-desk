@@ -81,6 +81,7 @@ class MainActivity : Activity() {
     private var bottomInsetDp = 0
     private var refreshAllowed = false
     private var wallpaperFileCallback: ValueCallback<Array<Uri>>? = null
+    private var audioFileRequest = false
     private val wallpaperFileRequest = 2405
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -182,16 +183,19 @@ class MainActivity : Activity() {
                 if (webView?.url != "https://appassets.androidplatform.net/assets/index.html") return false
                 wallpaperFileCallback?.onReceiveValue(null)
                 wallpaperFileCallback = callback
+                val types = params?.acceptTypes.orEmpty().filter { it.isNotBlank() }
+                audioFileRequest = types.isNotEmpty() && types.all { it.startsWith("audio/", ignoreCase = true) }
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "image/*"
-                    putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/jpeg", "image/png", "image/webp"))
+                    type = if (audioFileRequest) "audio/*" else "image/*"
+                    if (!audioFileRequest) putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/jpeg", "image/png", "image/webp"))
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
                 try {
                     @Suppress("DEPRECATION")
                     startActivityForResult(intent, wallpaperFileRequest)
                 } catch (_: android.content.ActivityNotFoundException) {
+                    audioFileRequest = false
                     wallpaperFileCallback?.onReceiveValue(null)
                     wallpaperFileCallback = null
                 }
@@ -976,11 +980,16 @@ class MainActivity : Activity() {
         }
         if (requestCode != wallpaperFileRequest) return
         val callback = wallpaperFileCallback
+        val audioRequest = audioFileRequest
+        audioFileRequest = false
         wallpaperFileCallback = null
         val uri = data?.data?.takeIf { resultCode == RESULT_OK && it.scheme == "content" }
         val allowed = uri?.let {
-            try { contentResolver.getType(it).let { mime -> mime == null || mime in setOf("image/jpeg", "image/jpg", "image/png", "image/webp") } }
-            catch (_: SecurityException) { false }
+            try {
+                val mime = contentResolver.getType(it)
+                if (audioRequest) mime?.startsWith("audio/", ignoreCase = true) == true
+                else mime == null || mime in setOf("image/jpeg", "image/jpg", "image/png", "image/webp")
+            } catch (_: Exception) { false }
         } ?: false
         callback?.onReceiveValue(if (uri != null && allowed) arrayOf(uri) else null)
     }
