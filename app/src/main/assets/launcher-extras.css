@@ -692,3 +692,33 @@ body[data-launcher-theme="warm"] #launcherOptionsSheet .launcher-options-heading
 body[data-launcher-theme="warm"] #launcherOptionsSheet .launcher-options-heading span{
  color:inherit!important;
 }
+
+/* QA18 screenshot fixes: foreground tokens must reflect the actual
+   surface, not the general dark settings palette. */
+body[data-launcher-theme="warm"] #launcherRecentStrip .habit-learning-note{
+ color:var(--theme-ink,#292529)!important;opacity:1!important;
+}
+body[data-launcher-theme="warm"] #musicSpectrumSettingsToggle{
+ background:var(--theme-surface2,#514b50)!important;
+ color:var(--theme-text,#f3e4e0)!important;
+}
+body[data-launcher-theme="warm"] .music-spectrum-actions small,
+body[data-launcher-theme="warm"] .music-note,
+body[data-launcher-theme="warm"] .music-meta small{
+ opacity:1!important;
+}
+@supports not (color:color-mix(in srgb,red,blue)){
+ body[data-launcher-theme="warm"]{
+  --glass-base:var(--theme-panel,#eedbd4);
+  --glass-strong:var(--theme-panel,#eedbd4);
+ }
+ body[data-launcher-theme="minimal"],
+ body[data-launcher-theme="pixel"],
+ body[data-launcher-theme="windows"],
+ body[data-launcher-theme="orbit"]{
+  --glass-base:var(--ds-panel);
+  --glass-strong:var(--ds-panel2);
+ }
+ /* Older engines cannot calculate translucent theme colors. Prefer readable
+    solid theme surfaces rather than transparent black-on-black controls. */
+}
