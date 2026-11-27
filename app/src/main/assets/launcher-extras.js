@@ -249,10 +249,12 @@ function openHeld(pkg,activity){
  managedHold=true;releaseBlocked=true;
  appManage(pkg,activity);
 }
-function launcherSurface(){return launcherPage==="home"||launcherPage==="apps"}
+function launcherSurface(){return (launcherPage==="home"||launcherPage==="apps")&&document.getElementById("deskWorkspace")?.hidden!==false}
 function editableTarget(el){return !!el?.closest?.("input,textarea,[contenteditable]:not([contenteditable=false])")}
 function syncSelectionPolicy(){window.AudioDesk?.setLauncherSelectionBlocked?.(launcherSurface()&&!editableTarget(document.activeElement))}
 window.addEventListener("launcher-page-changed",syncSelectionPolicy);
+window.addEventListener("audio-desk-workspace-visibility",()=>{stopHeld();managedHold=false;releaseBlocked=false;syncSelectionPolicy()});
+window.addEventListener("audio-desk-foreground",()=>{if(window.audioDeskForeground===false){stopHeld();managedHold=false;releaseBlocked=false}});
 document.addEventListener("focusin",syncSelectionPolicy,true);
 document.addEventListener("focusout",()=>setTimeout(syncSelectionPolicy,0),true);
 document.addEventListener("selectstart",e=>{if(launcherSurface()&&!editableTarget(e.target))e.preventDefault()},true);
@@ -262,7 +264,7 @@ document.addEventListener("selectionchange",()=>{
 });
 syncSelectionPolicy();
 window.audioDeskNativeHold=(x,y)=>{
- if(!launcherSurface())return;
+ if(!launcherSurface()||releaseBlocked||!Number.isFinite(x)||!Number.isFinite(y))return;
  const target=document.elementFromPoint(x*innerWidth,y*innerWidth);
  if(editableTarget(target))return;
  const a=appTarget(target);
@@ -270,7 +272,7 @@ window.audioDeskNativeHold=(x,y)=>{
  else window.audioDeskOrbitNativeHold?.(target);
 };
 function beginAppHold(a,x,y,pointerId,touchId=null){
- if(!a?.dataset.launchPkg||!manager.hidden)return;
+ if(!launcherSurface()||!a?.dataset.launchPkg||!manager.hidden)return;
  stopHeld();
  appHeld={pkg:a.dataset.launchPkg,activity:a.dataset.launchActivity,x,y,pointerId,touchId,
   timer:setTimeout(()=>{if(!appHeld)return;const h=appHeld;appHeld=null;openHeld(h.pkg,h.activity)},420)};
