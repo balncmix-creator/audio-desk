@@ -5,6 +5,22 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080808">
 <title>THE AUDIO DESK // 8-BIT NEWS</title>
+<script>
+// Android 11's factory WebView predates these standard DOM/Array APIs.
+// Install only missing methods before any launcher module initializes.
+(function(){
+ function replaceChildren(){while(this.firstChild)this.removeChild(this.firstChild);
+  for(var i=0;i<arguments.length;i++){var value=arguments[i];this.appendChild(value instanceof Node?value:document.createTextNode(String(value)));}}
+ [Element.prototype,DocumentFragment.prototype,Document.prototype].forEach(function(p){
+  if(!p.replaceChildren)Object.defineProperty(p,"replaceChildren",{value:replaceChildren,writable:true,configurable:true});
+ });
+ function at(index){var len=this.length,n=Math.trunc(Number(index)||0);if(n<0)n+=len;return n>=0&&n<len?this[n]:undefined;}
+ [Array.prototype,String.prototype,Object.getPrototypeOf(Uint8Array.prototype)].forEach(function(p){
+  if(!p.at)Object.defineProperty(p,"at",{value:at,writable:true,configurable:true});
+ });
+ if(!Object.hasOwn)Object.defineProperty(Object,"hasOwn",{value:function(o,k){return Object.prototype.hasOwnProperty.call(o,k)},writable:true,configurable:true});
+})();
+</script>
 <style>
 [hidden]{display:none!important}
 :root{color-scheme:dark;--bg:#080808;--panel:#101010;--ink:#f4f4f4;--muted:#929292;--line:#555;--soft:#1b1b1b;--pixel:#fff}
