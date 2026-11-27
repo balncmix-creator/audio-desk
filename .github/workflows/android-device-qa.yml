@@ -27,8 +27,25 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
+      - name: Cache Robolectric runtime framework artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-runtime-${{ runner.os }}-${{ hashFiles('app/build.gradle.kts') }}
       - name: Compile the exact APK under test
-        run: gradle :app:testDebugUnitTest :app:assembleDebug --stacktrace
+        run: |
+          # Retry transient dependency fetch failures; never ignore test failures.
+          for attempt in 1 2 3; do
+            set +e
+            gradle :app:testDebugUnitTest :app:assembleDebug --stacktrace 2>&1 | tee "$RUNNER_TEMP/android-qa-build.log"
+            status=${PIPESTATUS[0]}
+            set -e
+            if [ "$status" -eq 0 ]; then exit 0; fi
+            if ! grep -q 'MavenArtifactFetcher.java\|Could not resolve\|Could not GET' "$RUNNER_TEMP/android-qa-build.log"; then exit "$status"; fi
+            if [ "$attempt" -eq 3 ]; then exit "$status"; fi
+            echo "::warning::Dependency fetch failed; retrying build (attempt $attempt of 3)"
+            sleep $((attempt * 15))
+          done
       - name: Detect and enable KVM on hosted Linux runner
         id: acceleration
         run: |
