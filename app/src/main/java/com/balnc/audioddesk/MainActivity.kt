@@ -378,8 +378,11 @@ class MainActivity : Activity() {
     private fun applyWebInsets() {
         if (destroyed || !::appWebView.isInitialized) return
         appWebView.evaluateJavascript(
-            "document.documentElement.style.setProperty('--status-top','" + statusInsetDp + "px');" +
-            "document.documentElement.style.setProperty('--system-bottom','" + bottomInsetDp + "px')", null
+            // Insets can arrive before the initial WebView document exists.
+            // onPageFinished reapplies the latest values once the root is ready.
+            "(function(){var root=document.documentElement;if(!root)return;" +
+            "root.style.setProperty('--status-top','" + statusInsetDp + "px');" +
+            "root.style.setProperty('--system-bottom','" + bottomInsetDp + "px');})()", null
         )
     }
 
