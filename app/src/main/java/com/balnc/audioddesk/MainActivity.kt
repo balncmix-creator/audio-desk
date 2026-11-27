@@ -76,7 +76,7 @@ class MainActivity : Activity() {
     private var launcherSelectionBlocked = true
     private var launcherTouchX = 0f
     private var launcherTouchY = 0f
-    private var appManagementDialog: AlertDialog? = null
+    private var appManagementDialog: android.app.Dialog? = null
     private var statusInsetDp = 24
     private var bottomInsetDp = 0
     private var refreshAllowed = false
@@ -786,14 +786,16 @@ class MainActivity : Activity() {
         @JavascriptInterface fun setLauncherSelectionBlocked(blocked: Boolean) {
             runOnUiThread { launcherSelectionBlocked = blocked }
         }
-        @JavascriptInterface fun showNativeAppManagement(pkg: String) {
+        @JavascriptInterface fun showNativeAppManagement(pkg: String) = showStyledAppManagement(pkg, "")
+        @JavascriptInterface fun showStyledAppManagement(pkg: String, paletteJson: String) {
             if (!AppManagementActions.validPackage(pkg)) return
             runOnUiThread {
                 if (destroyed || isFinishing || appManagementDialog?.isShowing == true) return@runOnUiThread
                 if (!launcherSupport.hasLaunchablePackage(pkg)) return@runOnUiThread
                 try {
                     val info = packageManager.getApplicationInfo(pkg, 0)
-                    val dialog = AppManagementActions.dialog(this@MainActivity, packageManager.getApplicationLabel(info)) { action ->
+                    val dialog = AppManagementActions.dialog(this@MainActivity, packageManager.getApplicationLabel(info),
+                        packageManager.getApplicationIcon(info), AppManagementActions.palette(paletteJson)) { action ->
                         launchAppManagementAction(pkg, action)
                     }
                     appManagementDialog = dialog

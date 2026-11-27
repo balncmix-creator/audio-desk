@@ -137,7 +137,18 @@ const assert=require('node:assert/strict');
   });
   assert.equal(selectionPolicy,'none','launcher text is non-selectable at the label itself');
   await page.waitForFunction(()=>window.getSelection().isCollapsed);
-  await page.evaluate(()=>{delete AudioDesk.showNativeAppManagement;setLauncherPage('apps',false)});
+  await page.evaluate(()=>{
+   window.styledManagementRequests=[];
+   AudioDesk.showStyledAppManagement=(pkg,palette)=>styledManagementRequests.push({pkg,palette:JSON.parse(palette)});
+   document.documentElement.style.setProperty("--theme-surface","#29382f");
+   document.documentElement.style.setProperty("--theme-accent","#bcdac2");
+   window.audioDeskManageApp("com.example.audio","Main");
+  });
+  const themed=await page.evaluate(()=>styledManagementRequests.at(-1));
+  assert.equal(themed.palette.panel,"#29382f");
+  assert.equal(themed.palette.accent,"#bcdac2");
+  assert.equal(await manage.isVisible(),false,"the themed popup is still native");
+  await page.evaluate(()=>{delete AudioDesk.showStyledAppManagement;delete AudioDesk.showNativeAppManagement;setLauncherPage('apps',false)});
   assert.equal(await page.locator('#launcherAppSearch').evaluate(el=>getComputedStyle(el).userSelect),'text','app search remains editable');
   // Per-theme transparency and persistence.
   await page.evaluate(()=>setLauncherPage('home',false));

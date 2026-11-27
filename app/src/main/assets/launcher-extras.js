@@ -209,12 +209,16 @@ manager.innerHTML='<div class="app-manage-card">'+
 document.body.appendChild(manager);
 let managed=null,managedHold=false,releaseBlocked=false;
 function appManage(pkg,activity){
- if(window.AudioDesk?.showNativeAppManagement){
+ if(window.AudioDesk?.showStyledAppManagement||window.AudioDesk?.showNativeAppManagement){
   cancelHomeHold();upStart=null;iconSwipe=null;longConsumed=true;
   if(launcherGesture)resetLauncherGesture();
   closeAppShortcuts(true);window.getSelection()?.removeAllRanges();
   window.AudioDesk?.hideSearchKeyboard?.();
-  window.AudioDesk.showNativeAppManagement(pkg);return;
+  if(window.AudioDesk.showStyledAppManagement){
+   const css=getComputedStyle(document.documentElement),read=key=>css.getPropertyValue(key).trim();
+   window.AudioDesk.showStyledAppManagement(pkg,JSON.stringify({dark:read("--theme-dark"),panel:read("--theme-surface"),text:read("--theme-text"),accent:read("--theme-accent")}));
+  }else window.AudioDesk.showNativeAppManagement(pkg);
+  return;
  }
  managed=launcherApps.find(a=>a.pkg===pkg&&a.activity===activity)||
   launcherRecents.find(a=>a.pkg===pkg&&a.activity===activity);
