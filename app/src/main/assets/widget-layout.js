@@ -42,6 +42,9 @@ window.audioDeskWidgetRemoved=id=>readRemoved().has(id);
 const limit=(v,a,b)=>Math.min(Math.max(v,a),b);
 let chosen=null,edit=null,hold=null,gesture=null,cancelClickUntil=0,raf=0;
 let geometry={};
+const nativeEditor=typeof window.AudioDesk?.renderNativeWidgetEditor==="function";
+let nativeEditorPayload="";
+window.audioDeskNativeEditing=false;
 function read(){
  try{
   const raw=JSON.parse(deskStorage.getItem(storeKey())||"{}");
@@ -123,7 +126,9 @@ function closeEditor(){
  if(chosen){chosen.classList.remove("widget-editing");chosen=null}
  document.body.classList.remove("widget-dragging","widget-layout-editing");
  document.getElementById("widgetLayoutOverlay")?.setAttribute("hidden","");
- guides.replaceChildren();overlay.style.removeProperty("--ds-accent");guides.style.removeProperty("--ds-accent");layoutChanged();
+ guides.replaceChildren();overlay.style.removeProperty("--ds-accent");guides.style.removeProperty("--ds-accent");
+ if(window.audioDeskNativeEditing){window.audioDeskNativeEditing=false;nativeEditorPayload="";window.AudioDesk.renderNativeWidgetEditor(JSON.stringify({visible:false}))}
+ layoutChanged();
 }
 const overlay=document.createElement("div");
 overlay.id="widgetLayoutOverlay";
@@ -140,6 +145,8 @@ overlay.innerHTML='<div class="layout-outline"></div>'+
   '<button type="button" class="widget-resize-handle" data-edge="'+edge+
   '" aria-label="Drag '+edge+' edge to resize widget"></button>').join("");
 document.body.appendChild(overlay);
+if(nativeEditor){const style=document.createElement("style");style.textContent="#widgetLayoutOverlay.native-editor-chrome,#widgetLayoutOverlay.native-editor-chrome *{visibility:hidden!important;pointer-events:none!important}";document.head.append(style);overlay.classList.add("native-editor-chrome")}
+
 const guides=document.createElement("div");
 guides.id="widgetSnapGuides";
 document.body.appendChild(guides);
@@ -396,6 +403,18 @@ function position(){
  if(!chosen||overlay.hidden)return;
  layoutChanged();
  const r=chosen.getBoundingClientRect();
+ if(nativeEditor&&window.audioDeskNativeEditing){
+  const style=getComputedStyle(chosen);
+  const c=document.createElement("canvas");c.width=c.height=1;
+  const ctx=c.getContext("2d",{willReadFrequently:true});
+  function hex(v,fallback){if(!ctx||!v||!CSS.supports("color",v.trim()))return fallback;ctx.clearRect(0,0,1,1);ctx.fillStyle=v.trim();ctx.fillRect(0,0,1,1);const p=ctx.getImageData(0,0,1,1).data;return p[3]?"#"+Array.from(p.slice(0,3),n=>n.toString(16).padStart(2,"0")).join(""):fallback}
+  const accent=hex(style.getPropertyValue("--native-provider-accent")||style.getPropertyValue("--ds-accent"),"#dddddd");
+  const panel=hex(style.getPropertyValue(launcherTheme==="warm"?"--theme-panel":"--ds-panel"),"#25282a");
+  const ink=hex(style.color,"#ffffff");
+  const json=JSON.stringify({visible:true,viewport:innerWidth,x:r.left,y:r.top,w:r.width,h:r.height,ink,panel,accent,horizontal:chosen.dataset.nativeHorizontal!=="false",vertical:chosen.dataset.nativeVertical!=="false"});
+  if(json!==nativeEditorPayload){nativeEditorPayload=json;window.AudioDesk.renderNativeWidgetEditor(json)}
+  return;
+ }
  const outline=overlay.querySelector(".layout-outline");
  Object.assign(outline.style,{left:r.left+"px",top:r.top+"px",width:r.width+"px",height:r.height+"px"});
  const centerX=(r.left+r.right)/2,centerY=(r.top+r.bottom)/2;
@@ -429,12 +448,38 @@ function openEditor(id){
   overlay.style.setProperty("--ds-accent",accent);guides.style.setProperty("--ds-accent",accent);
  }
  overlay.hidden=false;
+ window.audioDeskNativeEditing=nativeEditor;
+ nativeEditorPayload="";
  cancelClickUntil=Date.now()+850;
  position();
  return true;
 }
 window.audioDeskBeginWidgetResize=openEditor;
 window.audioDeskRestoreWidgetLayouts=applySizes;
+window.audioDeskNativeEditorAction=(action,edge,dx,dy)=>{
+ if(!nativeEditor||!window.audioDeskNativeEditing||!chosen)return;
+ if(action==="done"||action==="reset"||action==="remove"){
+  overlay.querySelector('[data-layout-control="'+action+'"]')?.click();return;
+ }
+ if(action==="begin"&&(edge==="move"||edges.includes(edge))){
+  const initial=layout(chosen);
+  gesture={pointerId:-1,kind:edge==="move"?"move":"resize",edge,rect:initial,flow:edge.includes("s")?flowBaseline():null};
+  document.body.classList.add("widget-dragging");return;
+ }
+ if(!gesture||gesture.pointerId!==-1)return;
+ if(action==="drag"&&Number.isFinite(dx)&&Number.isFinite(dy)){
+  const g=gesture;
+  const rect=g.kind==="move"?moveDimensions(g.rect,dx,dy):resizeDimensions(g.rect,g.edge,dx,dy);
+  if(g.kind==="resize"){const raw=resizeDimensions(g.rect,g.edge,dx,dy,false);applyFlowResize(rect,raw,g.edge,g.flow)}
+  else guardedChange(chosen,()=>applyRect(rect,null));
+  requestPos();
+ }else if(action==="end"){
+  saveFlow(gesture.flow);gesture=null;save();updateHomeExtent();guides.replaceChildren();
+  document.body.classList.remove("widget-dragging");requestPos();
+ }
+};
+window.addEventListener("audio-desk-foreground",()=>{if(window.audioDeskNativeEditing){nativeEditorPayload="";if(window.audioDeskForeground===false)closeEditor();else requestPos()}});
+
 overlay.addEventListener("click",e=>{
  const action=e.target.closest("[data-layout-control]")?.dataset.layoutControl;
  if(action==="done"){save();closeEditor()}
