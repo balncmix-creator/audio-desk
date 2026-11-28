@@ -529,6 +529,15 @@ class MainActivity : Activity() {
             }
         }
 
+        @JavascriptInterface fun renderNativeAcousticWidgets(payload: String) {
+            if(payload.length>50000)return
+            runOnUiThread {
+                if (!destroyed && ::nativeSpectrumPlot.isInitialized) {
+                    if (pixelBarSuspended || browserPanel.visibility == View.VISIBLE) nativeSpectrumPlot.hide()
+                    else nativeSpectrumPlot.updateFull(payload)
+                }
+            }
+        }
         @JavascriptInterface fun renderNativeMicSpectrum(payload: String) {
             if (payload.length > 40000) return
             runOnUiThread {
