@@ -5,6 +5,22 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080808">
 <title>THE AUDIO DESK // 8-BIT NEWS</title>
+<script>
+// Android 11's factory WebView predates these standard DOM/Array APIs.
+// Install only missing methods before any launcher module initializes.
+(function(){
+ function replaceChildren(){while(this.firstChild)this.removeChild(this.firstChild);
+  for(var i=0;i<arguments.length;i++){var value=arguments[i];this.appendChild(value instanceof Node?value:document.createTextNode(String(value)));}}
+ [Element.prototype,DocumentFragment.prototype,Document.prototype].forEach(function(p){
+  if(!p.replaceChildren)Object.defineProperty(p,"replaceChildren",{value:replaceChildren,writable:true,configurable:true});
+ });
+ function at(index){var len=this.length,n=Math.trunc(Number(index)||0);if(n<0)n+=len;return n>=0&&n<len?this[n]:undefined;}
+ [Array.prototype,String.prototype,Object.getPrototypeOf(Uint8Array.prototype)].forEach(function(p){
+  if(!p.at)Object.defineProperty(p,"at",{value:at,writable:true,configurable:true});
+ });
+ if(!Object.hasOwn)Object.defineProperty(Object,"hasOwn",{value:function(o,k){return Object.prototype.hasOwnProperty.call(o,k)},writable:true,configurable:true});
+})();
+</script>
 <style>
 [hidden]{display:none!important}
 :root{color-scheme:dark;--bg:#080808;--panel:#101010;--ink:#f4f4f4;--muted:#929292;--line:#555;--soft:#1b1b1b;--pixel:#fff}
@@ -442,7 +458,9 @@ const DeskMotion=(()=>{
   cancel(node);
   if(!node||preference.matches||document.body?.dataset.performanceMode==="true"||typeof node.animate!=='function')return Promise.resolve();
   return new Promise(resolve=>{
-   const animation=node.animate(frames,{duration:document.body?.classList.contains('low-power')?Math.round(duration*.65):duration,easing:ease});
+   const warm=document.body?.dataset.launcherTheme==='warm';
+   const adjusted=warm?Math.min(duration,220):duration;
+   const animation=node.animate(frames,{duration:document.body?.classList.contains('low-power')?Math.round(adjusted*.65):adjusted,easing:warm?'cubic-bezier(.2,.8,.2,1)':ease});
    const finish=()=>{if(running.get(node)===animation)running.delete(node);resolve()};
    running.set(node,animation);animation.onfinish=finish;animation.oncancel=finish;
   });
@@ -2476,8 +2494,18 @@ function renderLauncherHome(){
  $("launcherLiveTiles").hidden=!windows;
  if(windows)updateLauncherLiveTiles();
  $("launcherFavoritesEmpty").hidden=true;
- $("launcherFavoritesEdit").textContent=launcherPins.length?
-  "★ "+launcherPins.length+" PINNED · MANAGE TILES":"☆ MANAGE TILES / PINS";
+ if(launcherTheme==="warm"){
+  const button=$("launcherFavoritesEdit");
+  const label=launcherPins.length?launcherPins.length+" pinned · Manage apps":"Manage pinned apps";
+  if(button.dataset.warmPinnedLabel!==label||!button.querySelector(".theme-action-icon")){
+   button.textContent=label;
+   const icon=document.createElement("span");icon.className="theme-action-icon";
+   icon.innerHTML=warmIconSvg("apps");button.prepend(icon);button.dataset.warmPinnedLabel=label;
+  }
+ }else{
+  $("launcherFavoritesEdit").textContent=launcherPins.length?
+   "★ "+launcherPins.length+" PINNED · MANAGE TILES":"☆ MANAGE TILES / PINS";
+ }
  syncLauncherAlphabet();
 }
 function updateLauncherLiveTiles(){
@@ -3005,11 +3033,12 @@ function gesturePanels(){
 }
 function renderLauncherDrag(dx,target){
  const p=Math.min(1,Math.abs(dx)/Math.max(200,window.innerWidth*.8));
+ const warm=launcherTheme==="warm";
  for(const node of gesturePanels()){
   node.style.transition="none";
   node.style.willChange="transform,opacity";
-  node.style.transform="translate3d("+(dx*.08)+"px,0,0) scale("+(1-p*.10)+")";
-  node.style.opacity=String(1-p*.65);
+  node.style.transform="translate3d("+(dx*(warm?.18:.08))+"px,0,0) scale("+(1-p*(warm?.025:.10))+")";
+  node.style.opacity=String(1-p*(warm?.24:.65));
 
  }
  launcherGhost.hidden=false;
@@ -3026,7 +3055,9 @@ document.addEventListener("touchstart",e=>{
  // News→Home works from anywhere on the feed, never only its outer edge.
  const appListRow=launcherPage==="apps"&&!!e.target.closest("#launcherAppsGrid .launcher-app");
   if(e.target.closest("#launcherAlphaIndex,#launcherAgendaWidget,#agendaOverlay,.native-app-widget,input,textarea,select,audio,video,iframe,[contenteditable]"))return;
-  if(e.target.closest(".launcher-app,button,a")&&!appListRow)return;
+  // Warm news cards are tappable links, but must also support horizontal navigation.
+  const warmNewsCard=launcherTheme==="warm"&&launcherPage==="events"&&!!e.target.closest("#stories")&&!e.target.closest("button");
+  if(e.target.closest(".launcher-app,button,a")&&!appListRow&&!warmNewsCard)return;
  launcherGesture={x,y:t.clientY,lastX:x,locked:false,edge};
 },{capture:true,passive:true});
 document.addEventListener("touchmove",e=>{
@@ -3039,6 +3070,8 @@ document.addEventListener("touchmove",e=>{
   const idx=launcherPages.indexOf(launcherPage),target=idx-Math.sign(dx);
   if(target<0||target>=launcherPages.length){launcherGesture=null;return}
   g.locked=true;g.target=launcherPages[target];
+  // Cancel a pending app long press before stopping the touch stream.
+  window.audioDeskCancelAppHold?.();
   // A drag starting on an Apps-list row must never launch that app on release.
   if(launcherPage==="apps")blockAppClickUntil=Date.now()+850;
   cancelHomeHold();upStart=null;iconSwipe=null;
@@ -3052,6 +3085,7 @@ document.addEventListener("touchmove",e=>{
 document.addEventListener("touchend",e=>{
  const g=launcherGesture;if(!g)return;
  if(!g.locked){launcherGesture=null;return}
+ window.audioDeskCancelAppHold?.();
  e.stopImmediatePropagation();
  const dx=(e.changedTouches[0]?.clientX??g.lastX)-g.x;
  const next=g.target,passed=Math.abs(dx)>Math.max(75,window.innerWidth*.19);
@@ -3237,7 +3271,10 @@ document.addEventListener("click",e=>{
 <script src="radial-files.js"></script>
 <script>
 function hasLauncherOverlay(){return ['launcherLetterPanel','launcherHomeOptions','launcherShortcutMenu','launcherThemeDialog','launcherWallpaperDialog','launcherClockDialog','gridDetail','agendaOverlay','appManageSheet','deskWorkspace'].some(id=>document.getElementById(id)?.hidden===false)}
-function syncRefreshAvailability(){window.AudioDesk?.setRefreshEnabled?.(launcherPage==='events'&&!hasLauncherOverlay())}
+function syncRefreshAvailability(){
+ document.body.classList.toggle("launcher-modal-open",['launcherHomeOptions','launcherShortcutMenu','launcherThemeDialog','launcherWallpaperDialog','launcherClockDialog','gridDetail','agendaOverlay','appManageSheet','deskWorkspace'].some(id=>document.getElementById(id)?.hidden===false));
+ window.AudioDesk?.setRefreshEnabled?.(launcherPage==='events'&&!hasLauncherOverlay())
+}
 for(const id of ['launcherLetterPanel','launcherHomeOptions','launcherShortcutMenu','launcherThemeDialog','launcherWallpaperDialog','launcherClockDialog','gridDetail','agendaOverlay','appManageSheet']){
  new MutationObserver(()=>{syncRefreshAvailability();if(hasLauncherOverlay()){cancelHomeHold();upStart=null;if(launcherGesture)resetLauncherGesture()}}).observe($(id),{attributes:true,attributeFilter:['hidden']});
 }

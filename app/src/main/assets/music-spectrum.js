@@ -85,8 +85,11 @@ const reducedMotion=matchMedia("(prefers-reduced-motion: reduce)");
 const rawScratch=new Float32Array(RESOLUTION);
 function refreshSpectrumPalette(){
  const style=getComputedStyle(widget);
- cachedAccent=style.getPropertyValue("--ds-accent").trim()||"#dddddd";
- cachedPale=style.getPropertyValue("--theme-text").trim()||cachedAccent;
+ // The Warm music card is light even when the global settings surface
+ // is dark. Use the actual local foreground for chart labels and curves.
+ const localInk=style.color;
+ cachedAccent=launcherTheme==="warm"?localInk:(style.getPropertyValue("--ds-accent").trim()||"#dddddd");
+ cachedPale=launcherTheme==="warm"?localInk:(style.getPropertyValue("--theme-text").trim()||cachedAccent);
  lastPaletteAt=performance.now();
 }
 function fontColor(){if(!cachedAccent||performance.now()-lastPaletteAt>700)refreshSpectrumPalette();return cachedAccent}
@@ -107,7 +110,7 @@ function updateMusicLayout(){
   sync();manageSpectrumTimer();
  }
 }
-function setStatus(text){if(status.textContent!==text)status.textContent=text}
+function setStatus(text){if(status.textContent!==text)status.textContent=text;queueNativeMusic()}
 function showProjection(allow){
  projection.hidden=!allow||typeof window.AudioDesk?.requestSpectrumProjection!=="function";
 }
@@ -205,7 +208,7 @@ function drawSpectrum(accent,reduced){
   if(x<12||x>w-12)continue;
   context.beginPath();context.moveTo(x,3);context.lineTo(x,bottom);
   context.strokeStyle=accent;context.globalAlpha=.095;context.stroke();
-  context.fillStyle=accent;context.globalAlpha=.60;context.fillText(name,x,h-1);
+  context.fillStyle=accent;context.globalAlpha=launcherTheme==="warm"?.85:.70;context.fillText(name,x,h-1);
  }
  context.beginPath();context.moveTo(0,bottom);
  context.lineTo(w,bottom);
@@ -253,7 +256,85 @@ function curve(points,offset,gain,w,h,polarity){
  }
  context.lineTo(w,y(count-1));
 }
+const nativeMusic=typeof window.AudioDesk?.renderNativeMusicWidget==="function";
+let lastNativeMusic="",nativeMusicFrame=0;
+// Keep the original themed surface (including gradients and glass) in place.
+// Only the contents are replaced by the native controls; the editor shows them again.
+const nativeMusicStyle=document.createElement("style");
+nativeMusicStyle.textContent="#launcherMusicWidget.native-music-content > *{visibility:hidden!important}";
+if(nativeMusic)document.head.append(nativeMusicStyle);
+const paletteCanvas=document.createElement("canvas");
+paletteCanvas.width=paletteCanvas.height=1;
+const paletteContext=paletteCanvas.getContext("2d",{willReadFrequently:true});
+const nativeMusicColorCache=new Map();
+function nativeMusicColor(value,fallback,opaque=false){
+ if(!paletteContext||!value)return fallback;
+ const key=JSON.stringify([value,fallback,opaque]);
+ if(nativeMusicColorCache.has(key))return nativeMusicColorCache.get(key);
+ if(!CSS.supports("color",value.trim()))return fallback;
+ try{
+  paletteContext.clearRect(0,0,1,1);
+  paletteContext.fillStyle=value.trim();
+  paletteContext.fillRect(0,0,1,1);
+  const [r,g,b,a]=paletteContext.getImageData(0,0,1,1).data;
+  if(!a&&opaque)return fallback;
+  const h=n=>n.toString(16).padStart(2,"0");
+  const result="#"+(opaque?"":h(a))+h(r)+h(g)+h(b);
+  if(nativeMusicColorCache.size>=128)nativeMusicColorCache.clear();
+  nativeMusicColorCache.set(key,result);
+  return result;
+ }catch{return fallback}
+}
+function syncNativeMusic(){
+ if(!nativeMusic)return false;
+ const edit=byId("widgetLayoutOverlay");
+ const legacyEditing=!window.audioDeskNativeEditing&&(document.body.classList.contains("widget-dragging")||(edit&&!edit.hidden));
+ const blocked=legacyEditing||
+ (typeof hasLauncherOverlay==="function"&&hasLauncherOverlay())||
+ [...document.querySelectorAll('[role="dialog"],[aria-modal="true"],.customize-overlay')].some(n=>!n.hidden&&n.getClientRects().length&&getComputedStyle(n).visibility!=="hidden"&&getComputedStyle(n).display!=="none");
+ const rect=widget.getBoundingClientRect(),style=getComputedStyle(widget),root=getComputedStyle(document.documentElement);
+ const top=Math.max(0,parseFloat(root.getPropertyValue("--status-top"))||0),bottom=innerHeight-Math.max(0,parseFloat(root.getPropertyValue("--system-bottom"))||0);
+ const allowed=launcherTheme!=="orbit"&&launcherTheme!=="extreme"&&launcherPage==="home"&&byId("deskWorkspace")?.hidden!==false&&!document.hidden&&window.audioDeskForeground!==false&&!widget.hidden&&!widget.hasAttribute("data-widget-removed")&&!blocked&&rect.width>0&&rect.height>0&&rect.bottom>top&&rect.top<bottom&&widget.getClientRects().length>0&&style.display!=="none";
+ widget.classList.toggle("native-music-content",!!allowed);
+ widget.inert=!!allowed;
+ let data={visible:!!allowed};
+ if(allowed){
+  const control=getComputedStyle(byId("musicToggle"));
+  const ink=nativeMusicColor(getComputedStyle(byId("musicTrackTitle")).color,"#eeeeee",true);
+  const themePanel=nativeMusicColor(style.getPropertyValue(launcherTheme==="warm"?"--theme-panel":"--ds-panel"),launcherTheme==="warm"?"#f0dbd5":"#27292c",true);
+  const panel=nativeMusicColor(style.backgroundColor,themePanel,true);
+  data={visible:true,viewport:innerWidth,x:rect.left,y:rect.top,w:rect.width,h:rect.height,top,bottom,
+   layout:widget.dataset.musicLayout||"full",panel,surfaceInWeb:true,
+   ink,accent:nativeMusicColor(fontColor(),ink,true),muted:nativeMusicColor(getComputedStyle(byId("musicTrackArtist")).color,ink,true),
+   control:nativeMusicColor(control.backgroundColor,"#00000000"),controlInk:nativeMusicColor(control.color,ink,true),radius:parseFloat(style.borderTopLeftRadius)||0,
+   status:status.textContent,enable:!enable.hidden,projection:!projection.hidden,
+   spectrumMode:tuning.mode,height:tuning.height,trails:Math.min(tuning.trails,document.body.classList.contains("low-power")?3:7),
+   active:active&&hasData&&level>.006,points:Array.from(smooth),
+   history:tuning.mode==="wave"?history.map(x=>Array.from(x)):[]};
+ }
+ const json=JSON.stringify(data);
+ if(json!==lastNativeMusic){lastNativeMusic=json;window.AudioDesk.renderNativeMusicWidget(json)}
+ return !!allowed;
+}
+function queueNativeMusic(){
+ if(nativeMusic&&!nativeMusicFrame)nativeMusicFrame=requestAnimationFrame(()=>{nativeMusicFrame=0;syncNativeMusic()});
+}
+window.audioDeskNativeMusicAction=name=>{
+ const map={enable:"musicSpectrumEnable",projection:"musicSpectrumProjection",settings:"musicSpectrumSettingsToggle"};
+ if(name==="edit")window.audioDeskBeginWidgetResize?.(widget.id);
+ else if(Object.prototype.hasOwnProperty.call(map,name))byId(map[name])?.click();
+ lastNativeMusic="";queueNativeMusic();
+};
+if(nativeMusic){
+ document.addEventListener("scroll",queueNativeMusic,true);
+ window.addEventListener("resize",queueNativeMusic);
+ for(const event of ["launcher-page-changed","audio-desk-foreground","audio-desk-theme-changed","audio-desk-workspace-visibility","audio-desk-widget-visibility","audio-desk-layout-changed"])window.addEventListener(event,()=>{lastNativeMusic="";queueNativeMusic()});
+ new MutationObserver(()=>queueNativeMusic()).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["hidden","class","aria-modal","data-widget-removed","data-music-layout"]});
+ if("ResizeObserver" in window)new ResizeObserver(queueNativeMusic).observe(widget);
+ queueNativeMusic();
+}
 function draw(){
+ if(syncNativeMusic())return;
  if(!context)return;
  const w=canvas.width,h=canvas.height;
  if(!w||!h)return;

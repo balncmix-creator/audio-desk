@@ -57,6 +57,48 @@ const assert=require('node:assert/strict');
   assert.equal(results[4].images,0);
   assert.equal(results[1].images,1,'sampling must not hide cross-origin publisher images');
   assert.ok((await page.evaluate(()=>window.accentRequests)).some(r=>r.url.includes('blue')));
+  // News chrome uses the current edition palette, including the previously
+  // unstyled Orbit and Pixel variants. Compare resolved values, not CSS text.
+  const initialTheme=await page.evaluate(()=>document.body.dataset.launcherTheme);
+  for(const theme of ['minimal','warm','windows','pixel','extreme','orbit']){
+   const styles=await page.evaluate(theme=>{
+    setLauncherTheme(theme);setLauncherPage('events',false);
+    const body=document.body, oldGlass=body.dataset.glassMode;
+    body.dataset.glassMode='opaque';
+    const probe=document.createElement('span');
+    probe.style.backgroundColor='var(--news-bg)';probe.style.color='var(--news-ink)';
+    body.appendChild(probe);
+    const expected=getComputedStyle(probe).backgroundColor;
+    const expectedInk=getComputedStyle(probe).color;
+    const header=document.querySelector('header');
+    const nav=document.getElementById('launcherNavigation');
+    const dock=document.querySelector('nav.bottom-dock');
+    const story=document.querySelector('.story');
+    const result={expected,expectedInk,header:getComputedStyle(header).backgroundColor,
+     nav:getComputedStyle(nav).backgroundColor,dock:getComputedStyle(dock).backgroundColor,
+     ink:getComputedStyle(header).color,storyInk:getComputedStyle(story).color,
+     storyBg:getComputedStyle(story).backgroundColor,
+     font:getComputedStyle(header.querySelector('.brand')).fontFamily,
+     arcade:getComputedStyle(document.getElementById('arcade-bg')).display,
+     radius:getComputedStyle(dock.querySelector('.dock-search')).borderTopLeftRadius};
+    probe.remove();
+    if(oldGlass===undefined)delete body.dataset.glassMode;else body.dataset.glassMode=oldGlass;
+    return result;
+   },theme);
+   assert.notEqual(styles.expected,'rgba(0, 0, 0, 0)',theme+' palette resolves');
+   for(const key of ['header','nav','dock'])assert.equal(styles[key],styles.expected,theme+' '+key+' matches news palette');
+   assert.equal(styles.ink,styles.expectedInk,theme+' header ink matches palette');
+   if(theme!=='pixel'){
+    assert.equal(styles.arcade,'none',theme+' has no pixel arcade');
+    assert.doesNotMatch(styles.font,/Silkscreen|Press Start/i,theme+' typography');
+   }
+   if(theme==='orbit')assert.equal(styles.radius,'17px','Orbit news radius');
+   if(theme==='warm'){
+    assert.equal(styles.storyInk,styles.expectedInk,'warm article follows theme ink');
+    assert.notEqual(styles.storyBg,'rgb(23, 23, 23)','warm article uses theme surface');
+   }
+  }
+  await page.evaluate(theme=>setLauncherTheme(theme),initialTheme);
   // A response from an earlier render cannot recolour a replacement article.
   await page.evaluate(()=>{
    window.oldAccent=window.accentRequests.find(r=>r.url.includes('blue'));
