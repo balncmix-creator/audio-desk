@@ -49,9 +49,10 @@ internal class NativeMusicWidget(
     }
     private val title=label("Music controls",14f).apply{typeface=Typeface.create("sans-serif-medium",0)}
     private val artist=label("Connect a compatible player",11f)
-    private val previous=button("‹‹","Previous track"){transport("previous")}
-    private val play=button("▶","Play or pause"){transport("toggle")}
-    private val next=button("››","Next track"){transport("next")}
+    private fun transportIcon(kind:String,action:()->Unit)=NativeMusicControl(activity,kind).apply{setOnClickListener{action()}}
+    private val previous=transportIcon("previous"){transport("previous")}
+    private val play=transportIcon("play"){transport("toggle")}
+    private val next=transportIcon("next"){transport("next")}
     private val connect=button("Connect","Enable Android media controls",access).apply{textSize=11f}
     private val enable=button("Enable FFT","Enable real audio spectrum"){localAction("enable")}.apply{textSize=11f}
     private val projection=button("Capture","Capture permitted playback"){localAction("projection")}.apply{textSize=11f}
@@ -66,7 +67,7 @@ internal class NativeMusicWidget(
     private val meta=LinearLayout(activity).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER_VERTICAL;addView(title,LinearLayout.LayoutParams(-1,dp(20)));addView(artist,LinearLayout.LayoutParams(-1,dp(15)))}
     private val transportRow=LinearLayout(activity).apply{
         orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL
-        for(v in listOf(previous,play,next,connect))addView(v,LinearLayout.LayoutParams(0,-1,1f))
+        for(v in listOf(previous,play,next,connect))addView(v,LinearLayout.LayoutParams(0,-1,1f).apply{leftMargin=dp(2);rightMargin=dp(2)})
     }
     private val actions=LinearLayout(activity).apply{
         orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL
@@ -100,7 +101,7 @@ internal class NativeMusicWidget(
         val enabled=j.optBoolean("enabled");val available=j.optBoolean("available");val playing=j.optBoolean("playing")
         set(title,if(available)j.optString("title").ifBlank{"Music controls"}else "Music controls")
         set(artist,if(available)j.optString("artist").ifBlank{j.optString("app")}else if(enabled)"No active player" else "Connect a compatible player")
-        set(play,if(playing)"Ⅱ" else "▶");play.contentDescription=if(playing)"Pause" else "Play"
+        play.setPlaying(playing)
         previous.isEnabled=available&&j.optBoolean("canPrevious");next.isEnabled=available&&j.optBoolean("canNext");play.isEnabled=available&&j.optBoolean("canToggle")
         for(v in listOf(previous,play,next))v.alpha=if(v.isEnabled)1f else .38f
         connect.visibility=if(enabled)View.GONE else View.VISIBLE
@@ -158,6 +159,7 @@ internal class NativeMusicWidget(
             for(v in labels)v.setTextColor(ink)
             artist.setTextColor(muted);status.setTextColor(muted);time.setTextColor(muted)
             for(v in buttons)v.background=bg(color(j,"control",Color.TRANSPARENT),dp(8).toFloat())
+            for(v in listOf(previous,play,next))v.setPalette(ink,accent,color(j,"panel",Color.DKGRAY))
             seekBar.progressTintList=ColorStateList.valueOf(accent);seekBar.thumbTintList=ColorStateList.valueOf(accent)
         }
         enable.visibility=if(j.optBoolean("enable"))View.VISIBLE else View.GONE
