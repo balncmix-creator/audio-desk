@@ -70,7 +70,44 @@ for(const [node,k] of [[weight,"weight"],[response,"response"],[offset,"offset"]
 el("splCalClear").onclick=()=>{offset.value="";save("offset","");max=-Infinity;el("splMax").textContent="Max —";renderSpl()};
 el("splReset").onclick=()=>{max=-Infinity;el("splMax").textContent="Max —";renderSpl()};
 const canvas=el("micFftCanvas"),ctx=canvas.getContext("2d");
+const nativePlot=typeof window.AudioDesk?.renderNativeMicSpectrum==="function";
+let lastNativePlot="",plotFrame=0;
+function updateNativePlot(){
+ if(!nativePlot)return false;
+ const editing=el("widgetLayoutOverlay");
+ const modal=(typeof hasLauncherOverlay==="function"&&hasLauncherOverlay())||
+  [...document.querySelectorAll('[role="dialog"],[aria-modal="true"],.customize-overlay')].some(n=>!n.hidden&&n.getClientRects().length&&getComputedStyle(n).visibility!=="hidden"&&getComputedStyle(n).display!=="none");
+ const rect=canvas.getBoundingClientRect();
+ const allowed=visible(fft)&&!modal&&!document.body.classList.contains("widget-dragging")&&(!editing||editing.hidden)&&rect.width>0&&rect.height>0&&getComputedStyle(canvas).display!=="none"&&canvas.getClientRects().length>0;
+ // Keep the web canvas as a transitional fallback while editing; never paint
+ // both layers during ordinary native display.
+ canvas.style.opacity=allowed?"0":"";
+ let payload={visible:!!allowed};
+ if(allowed){
+  const style=getComputedStyle(fft),rootStyle=getComputedStyle(document.documentElement);
+  const toHex=value=>{
+   const v=value.trim();if(/^#[0-9a-f]{6}$/i.test(v))return v;
+   const m=v.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+   if(m)return "#"+m.slice(1,4).map(x=>Math.max(0,Math.min(255,+x)).toString(16).padStart(2,"0")).join("");
+   if(/^#[0-9a-f]{3}$/i.test(v))return "#"+v.slice(1).split("").map(x=>x+x).join("");
+   return "#dddddd";
+  };
+  payload={visible:true,viewport:innerWidth,x:rect.left,y:rect.top,w:rect.width,h:rect.height,
+   top:Math.max(0,parseFloat(rootStyle.getPropertyValue("--status-top"))||0),
+   bottom:innerHeight-Math.max(0,parseFloat(rootStyle.getPropertyValue("--system-bottom"))||0),
+   accent:toHex(style.getPropertyValue("--ds-accent")||style.color),
+   muted:toHex(style.getPropertyValue("--ds-muted")||style.color),
+   range:Number(range.value)||90,held,bands,peak};
+ }
+ const json=JSON.stringify(payload);
+ if(json!==lastNativePlot){lastNativePlot=json;window.AudioDesk.renderNativeMicSpectrum(json)}
+ return !!allowed;
+}
+function scheduleNativePlot(){
+ if(nativePlot&&!plotFrame)plotFrame=requestAnimationFrame(()=>{plotFrame=0;draw()});
+}
 function draw(){
+ if(updateNativePlot())return;
  if(!ctx||fft.hidden||fft.hasAttribute("data-widget-removed"))return;
  const w=canvas.width,h=canvas.height;if(w<10||h<10)return;
  ctx.clearRect(0,0,w,h);
@@ -101,6 +138,15 @@ function resize(){
  if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}draw()
 }
 if("ResizeObserver" in window)new ResizeObserver(resize).observe(canvas);
+if(nativePlot){
+ document.addEventListener("scroll",scheduleNativePlot,true);
+ window.addEventListener("resize",scheduleNativePlot);
+ for(const event of ["launcher-page-changed","audio-desk-foreground","audio-desk-theme-changed","audio-desk-workspace-visibility","audio-desk-widget-visibility"])
+  window.addEventListener(event,()=>{lastNativePlot="";scheduleNativePlot()});
+ // Observe only structural and visibility changes, not meter text updates.
+ const observer=new MutationObserver(records=>{if(records.some(r=>r.target!==canvas))scheduleNativePlot()});
+ observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["hidden","class","aria-modal","data-widget-removed"]});
+}
 range.onchange=()=>{save("range",range.value);draw()};
 el("micFftPeak").onclick=()=>{held=!held;peak=[];el("micFftPeak").setAttribute("aria-pressed",String(held));draw()};
 el("micFftClear").onclick=()=>{peak=[];draw()};
