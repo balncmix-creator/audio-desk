@@ -258,6 +258,26 @@ function curve(points,offset,gain,w,h,polarity){
 }
 const nativeMusic=typeof window.AudioDesk?.renderNativeMusicWidget==="function";
 let lastNativeMusic="",nativeMusicFrame=0;
+// Keep the original themed surface (including gradients and glass) in place.
+// Only the contents are replaced by the native controls; the editor shows them again.
+const nativeMusicStyle=document.createElement("style");
+nativeMusicStyle.textContent="#launcherMusicWidget.native-music-content > *{visibility:hidden!important}";
+if(nativeMusic)document.head.append(nativeMusicStyle);
+const paletteCanvas=document.createElement("canvas");
+paletteCanvas.width=paletteCanvas.height=1;
+const paletteContext=paletteCanvas.getContext("2d",{willReadFrequently:true});
+function nativeMusicColor(value,fallback,opaque=false){
+ if(!paletteContext||!value||!CSS.supports("color",value.trim()))return fallback;
+ try{
+  paletteContext.clearRect(0,0,1,1);
+  paletteContext.fillStyle=value.trim();
+  paletteContext.fillRect(0,0,1,1);
+  const [r,g,b,a]=paletteContext.getImageData(0,0,1,1).data;
+  if(!a&&opaque)return fallback;
+  const h=n=>n.toString(16).padStart(2,"0");
+  return "#"+(opaque?"":h(a))+h(r)+h(g)+h(b);
+ }catch{return fallback}
+}
 function syncNativeMusic(){
  if(!nativeMusic)return false;
  const edit=byId("widgetLayoutOverlay");
@@ -267,23 +287,18 @@ function syncNativeMusic(){
  const rect=widget.getBoundingClientRect(),style=getComputedStyle(widget),root=getComputedStyle(document.documentElement);
  const top=Math.max(0,parseFloat(root.getPropertyValue("--status-top"))||0),bottom=innerHeight-Math.max(0,parseFloat(root.getPropertyValue("--system-bottom"))||0);
  const allowed=launcherTheme!=="orbit"&&launcherTheme!=="extreme"&&launcherPage==="home"&&byId("deskWorkspace")?.hidden!==false&&!document.hidden&&window.audioDeskForeground!==false&&!widget.hidden&&!widget.hasAttribute("data-widget-removed")&&!blocked&&rect.width>0&&rect.height>0&&rect.bottom>top&&rect.top<bottom&&widget.getClientRects().length>0&&style.display!=="none";
- widget.style.opacity=allowed?"0":"";
+ widget.classList.toggle("native-music-content",!!allowed);
  widget.inert=!!allowed;
  let data={visible:!!allowed};
  if(allowed){
-  const hex=(v,fallback="#dddddd")=>{
-   v=String(v||"").trim();
-   if(/^#[0-9a-f]{6}$/i.test(v))return v;
-   if(/^#[0-9a-f]{3}$/i.test(v))return "#"+v.slice(1).split("").map(x=>x+x).join("");
-   const m=v.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?/i);
-   if(m){if(m[4]!==undefined&&Number(m[4])===0)return fallback;return "#"+m.slice(1,4).map(x=>Math.max(0,Math.min(255,+x)).toString(16).padStart(2,"0")).join("")}
-   return fallback;
-  };
   const control=getComputedStyle(byId("musicToggle"));
+  const ink=nativeMusicColor(getComputedStyle(byId("musicTrackTitle")).color,"#eeeeee",true);
+  const themePanel=nativeMusicColor(style.getPropertyValue(launcherTheme==="warm"?"--theme-panel":"--ds-panel"),launcherTheme==="warm"?"#f0dbd5":"#27292c",true);
+  const panel=nativeMusicColor(style.backgroundColor,themePanel,true);
   data={visible:true,viewport:innerWidth,x:rect.left,y:rect.top,w:rect.width,h:rect.height,top,bottom,
-   layout:widget.dataset.musicLayout||"full",panel:hex(style.backgroundColor,hex(style.getPropertyValue("--ds-panel"),"#27292c")),
-   ink:hex(style.color),accent:hex(fontColor()),muted:hex(getComputedStyle(byId("musicTrackArtist")).color,hex(style.color)),
-   control:hex(control.backgroundColor,"#00000000"),radius:parseFloat(style.borderTopLeftRadius)||0,
+   layout:widget.dataset.musicLayout||"full",panel,surfaceInWeb:true,
+   ink,accent:nativeMusicColor(fontColor(),ink,true),muted:nativeMusicColor(getComputedStyle(byId("musicTrackArtist")).color,ink,true),
+   control:nativeMusicColor(control.backgroundColor,"#00000000"),controlInk:nativeMusicColor(control.color,ink,true),radius:parseFloat(style.borderTopLeftRadius)||0,
    status:status.textContent,enable:!enable.hidden,projection:!projection.hidden,
    spectrumMode:tuning.mode,height:tuning.height,trails:Math.min(tuning.trails,document.body.classList.contains("low-power")?3:7),
    active:active&&hasData&&level>.006,points:Array.from(smooth),
