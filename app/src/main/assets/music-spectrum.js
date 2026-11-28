@@ -85,8 +85,11 @@ const reducedMotion=matchMedia("(prefers-reduced-motion: reduce)");
 const rawScratch=new Float32Array(RESOLUTION);
 function refreshSpectrumPalette(){
  const style=getComputedStyle(widget);
- cachedAccent=style.getPropertyValue("--ds-accent").trim()||"#dddddd";
- cachedPale=style.getPropertyValue("--theme-text").trim()||cachedAccent;
+ // The Warm music card is light even when the global settings surface
+ // is dark. Use the actual local foreground for chart labels and curves.
+ const localInk=style.color;
+ cachedAccent=launcherTheme==="warm"?localInk:(style.getPropertyValue("--ds-accent").trim()||"#dddddd");
+ cachedPale=launcherTheme==="warm"?localInk:(style.getPropertyValue("--theme-text").trim()||cachedAccent);
  lastPaletteAt=performance.now();
 }
 function fontColor(){if(!cachedAccent||performance.now()-lastPaletteAt>700)refreshSpectrumPalette();return cachedAccent}
@@ -205,7 +208,7 @@ function drawSpectrum(accent,reduced){
   if(x<12||x>w-12)continue;
   context.beginPath();context.moveTo(x,3);context.lineTo(x,bottom);
   context.strokeStyle=accent;context.globalAlpha=.095;context.stroke();
-  context.fillStyle=accent;context.globalAlpha=.60;context.fillText(name,x,h-1);
+  context.fillStyle=accent;context.globalAlpha=launcherTheme==="warm"?.85:.70;context.fillText(name,x,h-1);
  }
  context.beginPath();context.moveTo(0,bottom);
  context.lineTo(w,bottom);
