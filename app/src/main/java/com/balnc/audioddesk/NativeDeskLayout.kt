@@ -10,8 +10,9 @@ internal object NativeDeskLayout {
     val defaults=listOf(DeskTile("clock",0,0,4,2),DeskTile("music",0,2,4,4),
         DeskTile("agenda",0,6,4,3),DeskTile("favorites",0,9,4,3),
         DeskTile("spl",0,12,4,4),DeskTile("mic",0,16,4,4))
+    fun minimumHeight(id:String)=when(id){"spl","mic"->4;"agenda","favorites"->3;else->2}
     fun normalize(t:DeskTile):DeskTile {
-        val w=t.w.coerceIn(2,columns);val h=t.h.coerceIn(2,8)
+        val w=t.w.coerceIn(2,columns);val h=t.h.coerceIn(minimumHeight(t.id),8)
         return t.copy(x=t.x.coerceIn(0,columns-w),y=t.y.coerceIn(0,maxRows-h),w=w,h=h)
     }
     /** Selected tile takes priority; conflicting items shift down deterministically. */
