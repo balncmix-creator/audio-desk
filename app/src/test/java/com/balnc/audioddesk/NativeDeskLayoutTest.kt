@@ -22,6 +22,15 @@ class NativeDeskLayoutTest {
         val restored=NativeDeskLayout.restore(values)
         assertEquals(6,restored.size);assertEquals(NativeDeskLayout.defaults,restored)
     }
+    @Test fun nativeEdgeResizeAnchorsAndMoveSnap(){
+        val initial=DeskTile("music",1,4,3,4)
+        assertEquals(DeskTile("music",2,5,2,3),NativeDeskLayout.edit(initial,"nw",1,1))
+        assertEquals(DeskTile("music",0,4,3,4),NativeDeskLayout.edit(initial,"move",-8,0))
+        assertEquals(DeskTile("music",1,4,3,2),NativeDeskLayout.edit(initial,"s",0,-10))
+        assertEquals(DeskTile("spl",0,3,4,4),NativeDeskLayout.edit(DeskTile("spl",0,3,4,4),"s",0,-2))
+        val moved=NativeDeskLayout.place(NativeDeskLayout.defaults,NativeDeskLayout.edit(initial,"move",0,-4))
+        assertTrue(moved.indices.all{i->moved.indices.all{j->i==j||!moved[i].overlaps(moved[j])}})
+    }
     @Test fun gesturesHaveDirectionAndThreshold(){
         assertEquals(DeskGesture.NONE,NativeDeskGestures.classify(15f,-20f,70f,true))
         assertEquals(DeskGesture.NONE,NativeDeskGestures.classify(90f,-100f,70f,true))
