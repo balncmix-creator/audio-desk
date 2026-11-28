@@ -110,7 +110,7 @@ function updateMusicLayout(){
   sync();manageSpectrumTimer();
  }
 }
-function setStatus(text){if(status.textContent!==text)status.textContent=text}
+function setStatus(text){if(status.textContent!==text)status.textContent=text;queueNativeMusic()}
 function showProjection(allow){
  projection.hidden=!allow||typeof window.AudioDesk?.requestSpectrumProjection!=="function";
 }
@@ -256,7 +256,62 @@ function curve(points,offset,gain,w,h,polarity){
  }
  context.lineTo(w,y(count-1));
 }
+const nativeMusic=typeof window.AudioDesk?.renderNativeMusicWidget==="function";
+let lastNativeMusic="",nativeMusicFrame=0;
+function syncNativeMusic(){
+ if(!nativeMusic)return false;
+ const edit=byId("widgetLayoutOverlay");
+ const blocked=document.body.classList.contains("widget-dragging")||(edit&&!edit.hidden)||
+ (typeof hasLauncherOverlay==="function"&&hasLauncherOverlay())||
+ [...document.querySelectorAll('[role="dialog"],[aria-modal="true"],.customize-overlay')].some(n=>!n.hidden&&n.getClientRects().length&&getComputedStyle(n).visibility!=="hidden"&&getComputedStyle(n).display!=="none");
+ const rect=widget.getBoundingClientRect(),style=getComputedStyle(widget),root=getComputedStyle(document.documentElement);
+ const top=Math.max(0,parseFloat(root.getPropertyValue("--status-top"))||0),bottom=innerHeight-Math.max(0,parseFloat(root.getPropertyValue("--system-bottom"))||0);
+ const allowed=launcherTheme!=="orbit"&&launcherTheme!=="extreme"&&launcherPage==="home"&&byId("deskWorkspace")?.hidden!==false&&!document.hidden&&window.audioDeskForeground!==false&&!widget.hidden&&!widget.hasAttribute("data-widget-removed")&&!blocked&&rect.width>0&&rect.height>0&&rect.bottom>top&&rect.top<bottom&&widget.getClientRects().length>0&&style.display!=="none";
+ widget.style.opacity=allowed?"0":"";
+ widget.inert=!!allowed;
+ let data={visible:!!allowed};
+ if(allowed){
+  const hex=(v,fallback="#dddddd")=>{
+   v=String(v||"").trim();
+   if(/^#[0-9a-f]{6}$/i.test(v))return v;
+   if(/^#[0-9a-f]{3}$/i.test(v))return "#"+v.slice(1).split("").map(x=>x+x).join("");
+   const m=v.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?/i);
+   if(m){if(m[4]!==undefined&&Number(m[4])===0)return fallback;return "#"+m.slice(1,4).map(x=>Math.max(0,Math.min(255,+x)).toString(16).padStart(2,"0")).join("")}
+   return fallback;
+  };
+  const control=getComputedStyle(byId("musicToggle"));
+  data={visible:true,viewport:innerWidth,x:rect.left,y:rect.top,w:rect.width,h:rect.height,top,bottom,
+   layout:widget.dataset.musicLayout||"full",panel:hex(style.backgroundColor,hex(style.getPropertyValue("--ds-panel"),"#27292c")),
+   ink:hex(style.color),accent:hex(fontColor()),muted:hex(getComputedStyle(byId("musicTrackArtist")).color,hex(style.color)),
+   control:hex(control.backgroundColor,"#00000000"),radius:parseFloat(style.borderTopLeftRadius)||0,
+   status:status.textContent,enable:!enable.hidden,projection:!projection.hidden,
+   spectrumMode:tuning.mode,height:tuning.height,trails:Math.min(tuning.trails,document.body.classList.contains("low-power")?3:7),
+   active:active&&hasData&&level>.006,points:Array.from(smooth),
+   history:tuning.mode==="wave"?history.map(x=>Array.from(x)):[]};
+ }
+ const json=JSON.stringify(data);
+ if(json!==lastNativeMusic){lastNativeMusic=json;window.AudioDesk.renderNativeMusicWidget(json)}
+ return !!allowed;
+}
+function queueNativeMusic(){
+ if(nativeMusic&&!nativeMusicFrame)nativeMusicFrame=requestAnimationFrame(()=>{nativeMusicFrame=0;syncNativeMusic()});
+}
+window.audioDeskNativeMusicAction=name=>{
+ const map={enable:"musicSpectrumEnable",projection:"musicSpectrumProjection",settings:"musicSpectrumSettingsToggle"};
+ if(name==="edit")window.audioDeskBeginWidgetResize?.(widget.id);
+ else if(Object.prototype.hasOwnProperty.call(map,name))byId(map[name])?.click();
+ lastNativeMusic="";queueNativeMusic();
+};
+if(nativeMusic){
+ document.addEventListener("scroll",queueNativeMusic,true);
+ window.addEventListener("resize",queueNativeMusic);
+ for(const event of ["launcher-page-changed","audio-desk-foreground","audio-desk-theme-changed","audio-desk-workspace-visibility","audio-desk-widget-visibility","audio-desk-layout-changed"])window.addEventListener(event,()=>{lastNativeMusic="";queueNativeMusic()});
+ new MutationObserver(()=>queueNativeMusic()).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["hidden","class","aria-modal","data-widget-removed","data-music-layout"]});
+ if("ResizeObserver" in window)new ResizeObserver(queueNativeMusic).observe(widget);
+ queueNativeMusic();
+}
 function draw(){
+ if(syncNativeMusic())return;
  if(!context)return;
  const w=canvas.width,h=canvas.height;
  if(!w||!h)return;
