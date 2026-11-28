@@ -83,6 +83,9 @@ class NativeDeskActivity:Activity(){
     private var connect:TextView?=null
     private var seek:SeekBar?=null
     private var seekDragging=false
+    private var musicTime:TextView?=null
+    private var musicSeekRow:LinearLayout?=null
+    private var fftButton:NativeMusicControl?=null
     private var spectrumStatus:TextView?=null
     private var agendaText:TextView?=null
     private var agendaDate:TextView?=null
@@ -235,38 +238,82 @@ class NativeDeskActivity:Activity(){
                 tiles=NativeDeskLayout.place(tiles,DeskTile(id,x.value,y.value,w.value,h.value));saveLayout();showHome()
             }.show()
     }
-    private fun musicCard(full:Boolean)=card("MUSIC","music").apply{
+    private fun mediaIcon(kind:String,action:()->Unit)=NativeMusicControl(this,kind).apply{
+        setPalette(theme.ink,theme.accent,theme.panel)
+        setOnClickListener{action()}
+        setOnLongClickListener{editTile("music");true}
+    }
+    private fun musicCard(full:Boolean)=column().apply{
         fullMusic=full
-        musicTitle=text("Music controls",15f);musicArtist=text("Connect a compatible player",11f).apply{setTextColor(theme.muted)}
-        add(musicTitle!!,20);add(musicArtist!!,16)
+        background=theme.surface(density,bordered=true);clipToOutline=true
+        setPadding(dp(12),dp(if(full)10 else 6),dp(12),dp(if(full)10 else 6))
+        setOnLongClickListener{editTile("music");true}
+        musicTitle=text("Music player",if(full)17f else 14f).apply{
+            typeface=Typeface.create("sans-serif-medium",0);maxLines=1
+            setOnLongClickListener{editTile("music");true}
+        }
+        musicArtist=text("Connect your player",11f).apply{
+            setTextColor(theme.muted);maxLines=1
+            setOnLongClickListener{editTile("music");true}
+        }
+        val meta=column().apply{
+            gravity=Gravity.CENTER_VERTICAL;add(musicTitle!!,if(full)23 else 19);add(musicArtist!!,15)
+        }
+        connect=mediaIcon("connect"){media.openAccessSettings()}
+        fftButton=if(full)mediaIcon("fft"){fftOn=!fftOn;requestAudioIfNeeded();syncAudio()} else null
+        val header=LinearLayout(this@NativeDeskActivity).apply{
+            gravity=Gravity.CENTER_VERTICAL
+            addView(meta,LinearLayout.LayoutParams(0,-1,1f))
+            addView(connect,LinearLayout.LayoutParams(dp(34),dp(34)))
+            fftButton?.let{addView(it,LinearLayout.LayoutParams(dp(34),dp(34)))}
+        }
+        add(header,if(full)42 else 34)
         musicGraph=if(full)Plot(false)else null
-        musicGraph?.let{addView(it,LinearLayout.LayoutParams(-1,0,1f))}
-        spectrumStatus=text("Spectrum off",10f);if(full)add(spectrumStatus!!,15)
+        musicGraph?.let{g->addView(g,LinearLayout.LayoutParams(-1,0,1f).apply{topMargin=dp(7);bottomMargin=dp(3)})}
+        spectrumStatus=text("Spectrum off",10f).apply{setTextColor(theme.muted);maxLines=1}
+        if(full)add(spectrumStatus!!,14)
         seek=SeekBar(this@NativeDeskActivity).apply{
-            max=1000;contentDescription="Playback position";progressTintList=android.content.res.ColorStateList.valueOf(theme.accent)
+            max=1000;contentDescription="Playback position";splitTrack=false
+            progressTintList=android.content.res.ColorStateList.valueOf(theme.accent)
+            progressBackgroundTintList=android.content.res.ColorStateList.valueOf(theme.line)
+            thumbTintList=android.content.res.ColorStateList.valueOf(theme.accent)
+            setPadding(dp(3),0,dp(3),0)
             setOnSeekBarChangeListener(object:SeekBar.OnSeekBarChangeListener{
                 override fun onStartTrackingTouch(v:SeekBar){seekDragging=true}
-                override fun onProgressChanged(v:SeekBar,p:Int,user:Boolean){}
+                override fun onProgressChanged(v:SeekBar,p:Int,user:Boolean){if(user)updateMusicTime(mediaState.optLong("durationMs")*p/1000,mediaState.optLong("durationMs"))}
                 override fun onStopTrackingTouch(v:SeekBar){seekDragging=false;if(v.isEnabled)updateMedia(media.seek(mediaState.optLong("durationMs")*v.progress/1000))}
             })
-        };if(full)add(seek!!,23)
-        previous=control("‹‹"){updateMedia(media.command("previous"))}
-        play=control("▶"){updateMedia(media.command("toggle"))}
-        next=control("››"){updateMedia(media.command("next"))}
-        connect=control("Connect"){media.openAccessSettings()}
-        if(full)add(row(previous!!,play!!,next!!,connect!!,control("FFT"){fftOn=!fftOn;requestAudioIfNeeded();syncAudio()}),36)
-        else add(row(previous!!,play!!,next!!,connect!!),36)
+        }
+        musicTime=text("",10f).apply{gravity=Gravity.END or Gravity.CENTER_VERTICAL;setTextColor(theme.muted);maxLines=1}
+        musicSeekRow=LinearLayout(this@NativeDeskActivity).apply{
+            gravity=Gravity.CENTER_VERTICAL;addView(seek,LinearLayout.LayoutParams(0,-1,1f))
+            addView(musicTime,LinearLayout.LayoutParams(dp(76),-1))
+        }
+        if(full)add(musicSeekRow!!,23)
+        previous=mediaIcon("previous"){updateMedia(media.command("previous"))}
+        play=mediaIcon("play"){updateMedia(media.command("toggle"))}
+        next=mediaIcon("next"){updateMedia(media.command("next"))}
+        val transport=LinearLayout(this@NativeDeskActivity).apply{
+            gravity=Gravity.CENTER
+            for(v in listOf(previous!!,play!!,next!!))addView(v,LinearLayout.LayoutParams(dp(if(full)42 else 36),dp(if(full)42 else 36)).apply{leftMargin=dp(3);rightMargin=dp(3)})
+        }
+        add(transport,if(full)45 else 39)
+    }
+    private fun updateMusicTime(pos:Long,duration:Long){
+        fun stamp(ms:Long):String{val n=ms.coerceAtLeast(0)/1000;return "${n/60}:${(n%60).toString().padStart(2,'0')}"}
+        musicTime?.text=stamp(pos)+" / "+stamp(duration)
     }
     private fun updateMedia(j:JSONObject){
         mediaState=j;val available=j.optBoolean("available");val enabled=j.optBoolean("enabled")
-        musicTitle?.text=if(available)j.optString("title").ifBlank{"Music controls"}else "Music controls"
-        musicArtist?.text=if(available)j.optString("artist").ifBlank{j.optString("app")}else if(enabled)"No active player" else "Connect a compatible player"
-        play?.text=if(j.optBoolean("playing"))"Ⅱ" else "▶"
-        for((v,key) in listOf(previous to "canPrevious",play to "canToggle",next to "canNext")){v?.isEnabled=available&&j.optBoolean(key);v?.alpha=if(v?.isEnabled==true)1f else .35f}
+        musicTitle?.text=if(available)j.optString("title").ifBlank{"Music player"}else "Music player"
+        musicArtist?.text=if(available)j.optString("artist").ifBlank{j.optString("app")}else if(enabled)"No active track" else "Connect your player"
+        (play as? NativeMusicControl)?.setPlaying(j.optBoolean("playing"))
+        for((v,key) in listOf(previous to "canPrevious",play to "canToggle",next to "canNext")){v?.isEnabled=available&&j.optBoolean(key);v?.alpha=if(v?.isEnabled==true)1f else .45f}
         connect?.visibility=if(enabled)View.GONE else View.VISIBLE
         val dur=j.optLong("durationMs");val pos=j.optLong("positionMs",-1)
-        seek?.visibility=if(dur>0&&pos>=0)View.VISIBLE else View.GONE;seek?.isEnabled=j.optBoolean("canSeek")
-        if(!seekDragging&&dur>0&&pos>=0)seek?.progress=(pos.toDouble()/dur*1000).toInt().coerceIn(0,1000)
+        musicSeekRow?.visibility=if(fullMusic&&dur>0&&pos>=0)View.VISIBLE else View.GONE
+        seek?.isEnabled=j.optBoolean("canSeek")
+        if(!seekDragging&&dur>0&&pos>=0){seek?.progress=(pos.toDouble()/dur*1000).toInt().coerceIn(0,1000);updateMusicTime(pos,dur)}
     }
     private fun agendaCard()=card("AGENDA","agenda").apply{
         agendaText=text("Calendar access optional",15f);agendaDate=text("",11f)
@@ -431,7 +478,9 @@ class NativeDeskActivity:Activity(){
         if(!foreground||currentPage!="home")return
         val allowed=checkSelfPermission(Manifest.permission.RECORD_AUDIO)==PackageManager.PERMISSION_GRANTED
         acoustics.setActive(allowed&&splOn,allowed&&micOn)
-        if(allowed&&fftOn&&fullMusic)spectrum.start()else{spectrum.stop();musicGraph?.clear()}
+        fftButton?.alpha=if(fftOn)1f else .5f
+        fftButton?.contentDescription=if(fftOn)"Disable audio spectrum" else "Enable audio spectrum"
+        if(allowed&&fftOn&&fullMusic)spectrum.start()else{spectrum.stop();musicGraph?.clear();spectrumStatus?.text="Spectrum off"}
         if(!micOn){micGraph?.clear();micStatus?.text="Microphone off"}
         if(!splOn){splText?.text="— dBFS";splBar?.progress=0}
     }
