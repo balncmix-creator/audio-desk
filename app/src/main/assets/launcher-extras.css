@@ -745,3 +745,20 @@ body[data-home-page="events"][data-launcher-theme="warm"] .dock-search-icon,
 body[data-home-page="events"][data-launcher-theme="warm"] nav.bottom-dock label{
  color:var(--news-ink,#292529)!important;
 }
+
+/* Warm Minimal motion QA: directional resize grips, rather than eight
+   identical right-facing chevrons. Keep the existing hit targets. */
+body[data-launcher-theme="warm"] #widgetLayoutOverlay .widget-resize-handle::after{
+ position:static;inset:auto;transform:rotate(var(--warm-grip-angle,-45deg));
+}
+body[data-launcher-theme="warm"] #widgetLayoutOverlay [data-edge="n"]{--warm-grip-angle:-135deg}
+body[data-launcher-theme="warm"] #widgetLayoutOverlay [data-edge="ne"]{--warm-grip-angle:-90deg}
+body[data-launcher-theme="warm"] #widgetLayoutOverlay [data-edge="e"]{--warm-grip-angle:-45deg}
+body[data-launcher-theme="warm"] #widgetLayoutOverlay [data-edge="se"]{--warm-grip-angle:0deg}
+body[data-launcher-theme="warm"] #widgetLayoutOverlay [data-edge="s"]{--warm-grip-angle:45deg}
+body[data-launcher-theme="warm"] #widgetLayoutOverlay [data-edge="sw"]{--warm-grip-angle:90deg}
+body[data-launcher-theme="warm"] #widgetLayoutOverlay [data-edge="w"]{--warm-grip-angle:135deg}
+body[data-launcher-theme="warm"] #widgetLayoutOverlay [data-edge="nw"]{--warm-grip-angle:180deg}
+/* Avoid covering the alphabet rail and the launcher gear with editor controls. */
+body[data-launcher-theme="warm"].widget-layout-editing #launcherAlphaIndex,
+body[data-launcher-theme="warm"].widget-layout-editing #launcherSettingsToggle{visibility:hidden!important}
