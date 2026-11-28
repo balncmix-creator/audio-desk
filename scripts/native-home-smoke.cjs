@@ -23,13 +23,13 @@ function screen(name){fs.writeFileSync('android-qa/native-'+name+'.png',execFile
  fs.mkdirSync('android-qa',{recursive:true});
  adb('shell','am','start','-W','-n','com.balnc.audioddesk/.NativeDeskActivity');
  await sleep(1200);
- let xml=await hierarchy();assert.match(xml,/text="CLOCK"/);assert.match(xml,/text="MUSIC"/);
+ let xml=await hierarchy();assert.match(xml,/text="CLOCK"/);assert.match(xml,/text="Music player"/);
  assert.doesNotMatch(xml,/class="android\.webkit\.WebView"/);
  screen('home');
- const [x,y]=bounds(xml,'CLOCK');
+ const [x,y]=bounds(xml,'Music player');
  adb('shell','input','swipe',String(x),String(y),String(x),String(y),'900');
- await sleep(500);xml=await hierarchy();assert.match(xml,/Move and resize widget/);
- screen('layout');adb('shell','input','keyevent','4');await sleep(300);
+ await sleep(500);xml=await hierarchy();assert.match(xml,/content-desc="Resize nw"/);assert.match(xml,/text="Done"/);
+ screen('layout');tap(...bounds(xml,'Done'));await sleep(300);
  xml=await hierarchy();tap(...bounds(xml,'Apps'));await sleep(500);
  xml=await hierarchy();assert.match(xml,/Search installed apps/);assert.doesNotMatch(xml,/class="android\.webkit\.WebView"/);
  screen('apps');
