@@ -60,6 +60,8 @@ class MainActivity : Activity() {
     private lateinit var nativeWidgets: NativeWidgetPanel
     private lateinit var nativeSpectrumPlot: NativeSpectrumPlot
     private lateinit var nativeMusicWidget: NativeMusicWidget
+    private lateinit var nativeWidgetEditor: NativeWidgetEditor
+    private var nativeEditorScale=1f
     private lateinit var radialFiles: RadialFileSupport
     private lateinit var youtubeWidget: YouTubeWidgetPanel
     private val acousticPermissionRequest = 6212
@@ -346,6 +348,12 @@ class MainActivity : Activity() {
                 Gravity.TOP
             )
         )
+        nativeWidgetEditor = NativeWidgetEditor(findViewById<FrameLayout>(android.R.id.content)) { action, edge, dx, dy ->
+            if (!destroyed) appWebView.evaluateJavascript(
+                "window.audioDeskNativeEditorAction&&window.audioDeskNativeEditorAction(" +
+                    JSONObject.quote(action) + "," + JSONObject.quote(edge) + "," +
+                    (dx/nativeEditorScale) + "," + (dy/nativeEditorScale) + ")", null)
+        }
         ViewCompat.requestApplyInsets(root)
         appWebView.loadUrl("https://appassets.androidplatform.net/assets/index.html")
         // Android 16 no longer dispatches onBackPressed for apps targeting API 36.
@@ -535,6 +543,27 @@ class MainActivity : Activity() {
             }
         }
 
+        @JavascriptInterface fun renderNativeWidgetEditor(payload: String) {
+            if(payload.length>4096)return
+            runOnUiThread {
+                if(destroyed || !::nativeWidgetEditor.isInitialized)return@runOnUiThread
+                val j=try{JSONObject(payload)}catch(_:Exception){nativeWidgetEditor.hide();return@runOnUiThread}
+                if(!j.optBoolean("visible")||pixelBarSuspended||browserPanel.visibility==View.VISIBLE){nativeWidgetEditor.hide();return@runOnUiThread}
+                val viewport=j.optDouble("viewport")
+                val x=j.optDouble("x");val y=j.optDouble("y");val w=j.optDouble("w");val h=j.optDouble("h")
+                if(listOf(viewport,x,y,w,h).any{!it.isFinite()}||viewport<=0||w<=0||h<=0||appWebView.width<=0){nativeWidgetEditor.hide();return@runOnUiThread}
+                val scale=(appWebView.width/viewport).toFloat()
+                if(!scale.isFinite()||scale<=0f)return@runOnUiThread
+                nativeEditorScale=scale
+                val host=findViewById<FrameLayout>(android.R.id.content)
+                val a=IntArray(2);val b=IntArray(2);appWebView.getLocationInWindow(a);host.getLocationInWindow(b)
+                val l=a[0]-b[0]+x.toFloat()*scale;val t=a[1]-b[1]+y.toFloat()*scale
+                fun color(key:String,fallback:Int)=try{android.graphics.Color.parseColor(j.optString(key))}catch(_:Exception){fallback}
+                nativeWidgetEditor.show(android.graphics.RectF(l,t,l+w.toFloat()*scale,t+h.toFloat()*scale),
+                    color("ink",android.graphics.Color.WHITE),color("panel",0xff25282a.toInt()),color("accent",android.graphics.Color.WHITE),
+                    horizontal=j.optBoolean("horizontal",true),vertical=j.optBoolean("vertical",true),canCancel=false)
+            }
+        }
         @JavascriptInterface fun renderNativeMusicWidget(payload: String) {
             if(payload.length>30000)return
             runOnUiThread {
@@ -993,6 +1022,7 @@ class MainActivity : Activity() {
     }
 
     override fun onPause() {
+        if (::nativeWidgetEditor.isInitialized) nativeWidgetEditor.hide()
         if (::nativeMusicWidget.isInitialized) nativeMusicWidget.hide()
         if (::nativeSpectrumPlot.isInitialized) nativeSpectrumPlot.hide()
         if (::acousticSupport.isInitialized) acousticSupport.stop()
@@ -1120,6 +1150,7 @@ class MainActivity : Activity() {
 
     private fun openInBrowser(url: String) {
         if (!url.startsWith("https://") && !url.startsWith("http://")) return
+        if (::nativeWidgetEditor.isInitialized) nativeWidgetEditor.hide()
         if (::nativeMusicWidget.isInitialized) nativeMusicWidget.hide()
         if (::nativeSpectrumPlot.isInitialized) nativeSpectrumPlot.hide()
         if (::nativeWidgets.isInitialized) nativeWidgets.pause()
@@ -1181,6 +1212,7 @@ class MainActivity : Activity() {
         if (::agendaSupport.isInitialized) agendaSupport.close()
         if (::acousticSupport.isInitialized) acousticSupport.stop()
         if (::radialFiles.isInitialized) radialFiles.close()
+        if (::nativeWidgetEditor.isInitialized) nativeWidgetEditor.close()
         if (::nativeMusicWidget.isInitialized) nativeMusicWidget.close()
         if (::nativeSpectrumPlot.isInitialized) nativeSpectrumPlot.close()
         if (::nativeWidgets.isInitialized) nativeWidgets.close()
