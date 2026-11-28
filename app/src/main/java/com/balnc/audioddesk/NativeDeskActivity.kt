@@ -115,8 +115,9 @@ class NativeDeskActivity:Activity(){
         acoustics=AcousticMeterSupport(this){j->runOnUiThread{if(foreground&&currentPage=="home")updateAcoustic(j)}}
         spectrum=AudioSpectrumSupport(this){j->runOnUiThread{if(foreground&&currentPage=="home"){
             if(j.optString("state")=="capturing"){
-                musicGraph?.update(j.optJSONArray("bands"),false)
-                spectrumStatus?.text="Real playback FFT"
+                val rms=j.optDouble("rms",0.0).coerceIn(0.0,1.0)
+                musicGraph?.update(j.optJSONArray("bands"),false,rms)
+                spectrumStatus?.text=if(rms>.006)String.format(Locale.US,"LIVE FFT · %.1f dBFS",20*kotlin.math.log10(rms)) else "Silent · no playback signal"
             }else{
                 musicGraph?.clear()
                 spectrumStatus?.text=when(j.optString("state")){"unsupported"->"Output mix unavailable";"permission"->"Audio permission required";"listening"->"Listening for playback";else->"Spectrum idle"}
@@ -214,7 +215,7 @@ class NativeDeskActivity:Activity(){
                     clock=text("",33f);date=text("",12f)
                     addView(clock,LinearLayout.LayoutParams(-1,0,1f));add(date!!,19)
                 }
-                "music"->musicCard(t.h>=4)
+                "music"->musicCard(t.h>=4,t.w==2)
                 "agenda"->agendaCard()
                 "favorites"->card("RECENT APPS","favorites").apply{favorites=column();addView(favorites,LinearLayout.LayoutParams(-1,0,1f))}
                 "spl"->splCard()
@@ -243,7 +244,7 @@ class NativeDeskActivity:Activity(){
         setOnClickListener{action()}
         setOnLongClickListener{editTile("music");true}
     }
-    private fun musicCard(full:Boolean)=column().apply{
+    private fun musicCard(full:Boolean,narrow:Boolean)=column().apply{
         fullMusic=full
         background=theme.surface(density,bordered=true);clipToOutline=true
         setPadding(dp(12),dp(if(full)10 else 6),dp(12),dp(if(full)10 else 6))
@@ -295,7 +296,7 @@ class NativeDeskActivity:Activity(){
         next=mediaIcon("next"){updateMedia(media.command("next"))}
         val transport=LinearLayout(this@NativeDeskActivity).apply{
             gravity=Gravity.CENTER
-            for(v in listOf(previous!!,play!!,next!!))addView(v,LinearLayout.LayoutParams(dp(if(full)42 else 36),dp(if(full)42 else 36)).apply{leftMargin=dp(3);rightMargin=dp(3)})
+            for(v in listOf(previous!!,play!!,next!!))addView(v,LinearLayout.LayoutParams(dp(if(narrow)32 else if(full)42 else 36),dp(if(narrow)32 else if(full)42 else 36)).apply{leftMargin=dp(3);rightMargin=dp(3)})
         }
         add(transport,if(full)45 else 39)
     }
@@ -368,21 +369,45 @@ class NativeDeskActivity:Activity(){
         private var points=FloatArray(0);private var peak=FloatArray(0)
         fun clear(){points=FloatArray(0);peak=FloatArray(0);invalidate()}
         fun clearPeak(){peak=FloatArray(0);invalidate()}
-        fun update(a:JSONArray?,hold:Boolean){
+        fun update(a:JSONArray?,hold:Boolean,rms:Double=1.0){
             if(a==null)return
-            points=FloatArray(minOf(a.length(),512)){i->a.optDouble(i,if(microphone)-140.0 else 0.0).takeIf{it.isFinite()}?.toFloat()?:0f}
+            val count=minOf(a.length(),512)
+            val gain=if(rms>.006)kotlin.math.sqrt((rms/.12).coerceIn(0.0,1.0)).toFloat()else 0f
+            val old=points
+            points=FloatArray(count){i->
+                val v=a.optDouble(i,if(microphone)-140.0 else 0.0).takeIf{it.isFinite()}?.toFloat()?:0f
+                if(microphone)v else {
+                    val target=v.coerceIn(0f,1f)*gain
+                    val prior=old.getOrElse(i){0f}
+                    prior+(target-prior)*if(target>prior).45f else .14f
+                }
+            }
             if(hold)peak=FloatArray(points.size){i->maxOf(points[i],peak.getOrElse(i){-140f})}else peak=FloatArray(0)
             invalidate()
         }
         override fun onDraw(c:Canvas){
             super.onDraw(c);if(width<2||height<2)return
             paint.color=theme.accent;paint.strokeWidth=density;paint.style=Paint.Style.FILL;paint.alpha=40
-            for(i in 1..3){val y=height*i/4f;c.drawLine(0f,y,width.toFloat(),y,paint)}
+            val bottom=if(microphone)height.toFloat()else (height-dp(13)).toFloat().coerceAtLeast(1f)
+            if(microphone){for(i in 1..3){val y=height*i/4f;c.drawLine(0f,y,width.toFloat(),y,paint)}}
+            else {
+                paint.alpha=48;c.drawLine(0f,bottom,width.toFloat(),bottom,paint)
+                paint.textSize=dp(9).toFloat();paint.textAlign=Paint.Align.CENTER
+                for((frequency,label) in listOf(100.0 to "100",1000.0 to "1k",10000.0 to "10k")){
+                    val x=((kotlin.math.ln(frequency/42.0)/kotlin.math.ln(10500.0/42.0))*width).toFloat().coerceIn(dp(12).toFloat(),(width-dp(12)).coerceAtLeast(dp(12)).toFloat())
+                    paint.alpha=20;c.drawLine(x,0f,x,bottom,paint)
+                    paint.alpha=140;c.drawText(label,x,height-dp(1).toFloat(),paint)
+                }
+            }
             fun trace(a:FloatArray,alpha:Int){
                 if(a.size<2)return;path.reset()
                 for(i in a.indices){val x=width*i.toFloat()/(a.size-1);val n=if(microphone)(1+a[i]/micRange).coerceIn(0f,1f)else a[i].coerceIn(0f,1f)
-                    val y=height*(1-n);if(i==0)path.moveTo(x,y)else path.lineTo(x,y)}
-                paint.alpha=alpha;paint.style=Paint.Style.STROKE;c.drawPath(path,paint);paint.style=Paint.Style.FILL
+                    val y=bottom*(1-n);if(i==0)path.moveTo(x,y)else path.lineTo(x,y)}
+                if(!microphone){
+                    val fill=Path(path);fill.lineTo(width.toFloat(),bottom);fill.lineTo(0f,bottom);fill.close()
+                    paint.alpha=32;paint.style=Paint.Style.FILL;c.drawPath(fill,paint)
+                }
+                paint.alpha=alpha;paint.strokeWidth=1.4f*density;paint.style=Paint.Style.STROKE;c.drawPath(path,paint);paint.style=Paint.Style.FILL
             }
             trace(points,235);trace(peak,110)
         }
