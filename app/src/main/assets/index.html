@@ -2494,8 +2494,18 @@ function renderLauncherHome(){
  $("launcherLiveTiles").hidden=!windows;
  if(windows)updateLauncherLiveTiles();
  $("launcherFavoritesEmpty").hidden=true;
- $("launcherFavoritesEdit").textContent=launcherPins.length?
-  "★ "+launcherPins.length+" PINNED · MANAGE TILES":"☆ MANAGE TILES / PINS";
+ if(launcherTheme==="warm"){
+  const button=$("launcherFavoritesEdit");
+  const label=launcherPins.length?launcherPins.length+" pinned · Manage apps":"Manage pinned apps";
+  if(button.dataset.warmPinnedLabel!==label||!button.querySelector(".theme-action-icon")){
+   button.textContent=label;
+   const icon=document.createElement("span");icon.className="theme-action-icon";
+   icon.innerHTML=warmIconSvg("apps");button.prepend(icon);button.dataset.warmPinnedLabel=label;
+  }
+ }else{
+  $("launcherFavoritesEdit").textContent=launcherPins.length?
+   "★ "+launcherPins.length+" PINNED · MANAGE TILES":"☆ MANAGE TILES / PINS";
+ }
  syncLauncherAlphabet();
 }
 function updateLauncherLiveTiles(){
