@@ -288,7 +288,8 @@ function nativeMusicColor(value,fallback,opaque=false){
 function syncNativeMusic(){
  if(!nativeMusic)return false;
  const edit=byId("widgetLayoutOverlay");
- const blocked=document.body.classList.contains("widget-dragging")||(edit&&!edit.hidden)||
+ const legacyEditing=!window.audioDeskNativeEditing&&(document.body.classList.contains("widget-dragging")||(edit&&!edit.hidden));
+ const blocked=legacyEditing||
  (typeof hasLauncherOverlay==="function"&&hasLauncherOverlay())||
  [...document.querySelectorAll('[role="dialog"],[aria-modal="true"],.customize-overlay')].some(n=>!n.hidden&&n.getClientRects().length&&getComputedStyle(n).visibility!=="hidden"&&getComputedStyle(n).display!=="none");
  const rect=widget.getBoundingClientRect(),style=getComputedStyle(widget),root=getComputedStyle(document.documentElement);
