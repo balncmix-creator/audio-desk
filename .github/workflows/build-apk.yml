@@ -126,7 +126,7 @@ jobs:
           else
             gh release create "$TAG" "$APK" AudioDesk.apk.sha256 --target "$GITHUB_SHA" --title "Audio Desk — Test build #${GITHUB_RUN_NUMBER}" --notes "Development debug APK. Build, browser tests, JVM tests and package checks passed. Separate emulator QA may still be running or incomplete. Source: ${GITHUB_SHA}. Build: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. Not a production or fully native release." --prerelease --latest=false
           fi
-  publish-existing-and-gallery:
+  emulator-readme-gallery:
     if: (github.ref == 'refs/heads/feature/audio-desk-native-migration-20261127' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'feature/audio-desk-native-migration-20261127')
     runs-on: ubuntu-latest
     permissions:
@@ -136,24 +136,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: feature/audio-desk-native-migration-20261127
-      - name: Publish already-built #477 as a test prerelease
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if gh release view test-build-477 >/dev/null 2>&1; then exit 0; fi
-          gh run download 46101887632 --name Audio-Desk-APK --dir "$RUNNER_TEMP/build477"
-          cp "$RUNNER_TEMP/build477/app-debug.apk" AudioDesk.apk
-          sha256sum AudioDesk.apk > AudioDesk.apk.sha256
-          gh release create test-build-477 AudioDesk.apk AudioDesk.apk.sha256 --target 9459e150a0127ed7762e4e0e97aeaf3e54cd31ed --title "Audio Desk — Test build #477" --notes "Warm Minimal targeted motion QA: 29/29 passed. Android 11 and JVM tests passed. Broad Android 15 regression was incomplete in the original run; see https://github.com/balncmix-creator/audio-desk/actions/runs/46101887675 for subsequent attempts. Visual refinements and native migration remain incomplete. Signed debug APK." --prerelease --latest=false
-      - name: Publish fully regression-tested #485 as a test prerelease
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if gh release view test-build-485 >/dev/null 2>&1; then exit 0; fi
-          gh run download 46107224708 --name Audio-Desk-APK --dir "$RUNNER_TEMP/build485"
-          cp "$RUNNER_TEMP/build485/app-debug.apk" AudioDesk.apk
-          sha256sum AudioDesk.apk > AudioDesk.apk.sha256
-          gh release create test-build-485 AudioDesk.apk AudioDesk.apk.sha256 --target 0be144b2d6e94635370aba879b44f6fbd534b103 --title "Audio Desk — Test build #485" --notes "Duplicate quick-action labels corrected. Mandatory build and JVM checks, Android 11 and Android 15 device QA, and Warm Minimal motion QA passed. See https://github.com/balncmix-creator/audio-desk/actions/runs/46107224649. Debug-signed development APK; physical-device testing and further visual refinements remain." --prerelease --latest=false
       - name: Add genuine emulator screenshot gallery to development README
         env:
           GH_TOKEN: ${{ github.token }}
