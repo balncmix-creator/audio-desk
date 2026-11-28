@@ -50,10 +50,13 @@ async function evalJS(x){return c.evaluate(x)}
 const visible=s=>'(()=>{const e=document.querySelector('+JSON.stringify(s)+');return !!e&&!e.closest("[hidden]")&&e.getClientRects().length>0&&getComputedStyle(e).visibility!=="hidden"})()';
 async function target(s){const p=await evalJS('(()=>{const e=document.querySelector('+JSON.stringify(s)+');if(!e||!e.getClientRects().length||e.closest("[hidden]"))return null;e.scrollIntoView({block:"nearest"});const r=e.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()');assert.ok(p,'Missing target '+s);return p}
 async function gesture(a,b=a,duration=90){
- await c.call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[a]});
- const count=Math.max(1,Math.round(duration/35));
- for(let i=1;i<=count;i++){await sleep(duration/count);if(a.x!==b.x||a.y!==b.y)await c.call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:a.x+(b.x-a.x)*i/count,y:a.y+(b.y-a.y)*i/count}]});}
- await c.call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await sleep(850);
+ // Use the actual Android input service; CDP touch dispatch stalls after
+ // an external activity takes and returns focus.
+ const dpr=await evalJS('devicePixelRatio');
+ const xy=p=>[String(Math.round(p.x*dpr)),String(Math.round(p.y*dpr))];
+ if(a.x===b.x&&a.y===b.y&&duration<200)adb('shell','input','tap',...xy(a));
+ else adb('shell','input','swipe',...xy(a),...xy(b),String(duration));
+ await sleep(850);
 }
 async function tap(s){await gesture(await target(s))}
 async function swipe(x1,y1,x2,y2){const [w,h]=await evalJS('[innerWidth,innerHeight]');await gesture({x:w*x1,y:h*y1},{x:w*x2,y:h*y2},360)}
@@ -119,14 +122,15 @@ async function record(name,fn){
     await sleep(1400);adb('shell','input','keyevent','4');await sleep(900);
     adb('shell','input','keyevent','3');await sleep(1200);
     await poll(()=>adb('shell','dumpsys','activity','activities').split('\n').some(l=>/mResumedActivity|topResumedActivity/.test(l)&&l.includes(pkg)));
+    c.close();c=await connect();await poll(()=>evalJS('window.audioDeskForeground!==false'));await sleep(1000);
    });
    await step('app-list-long-press',async()=>{await apps();const sel='#launcherAppsGrid button[data-launch-pkg="'+choices[0].pkg+'"]';await gesture(await target(sel),undefined,850);await sleep(1000);adb('shell','input','keyevent','4')});
    await step('favorite-icon-quick-actions',async()=>{
     const a=choices[0];
     await evalJS('(()=>{const a='+JSON.stringify(a)+';if(!launcherPins.includes(a.pkg+"/"+a.activity))setLauncherPin(a.pkg,a.activity)})()');await home();
-    const sel='#launcherFavorites button[data-launch-pkg="'+a.pkg+'"]';
+    const sel='button[data-launch-pkg="'+a.pkg+'"]';
     if(theme==='orbit'){note('orbit-favorite-touch','not-covered','Radial picker needs a separate gesture path');await evalJS('showAppShortcuts('+JSON.stringify(a.pkg)+','+JSON.stringify(a.activity)+')')}
-    else await gesture(await target(sel),undefined,850);
+    else {const selector=await evalJS('Array.from(document.querySelectorAll('+JSON.stringify(sel)+')).find(e=>e.getClientRects().length&&!e.closest("[hidden]"))?.closest("[id]")?.id||null');assert.ok(selector,"Visible pinned app");await gesture(await target('#'+selector+' '+sel),undefined,850);}
     await sleep(1200);adb('shell','uiautomator','dump','/sdcard/motion-window.xml');fs.writeFileSync(dir+'/long-press.xml',adb('shell','cat','/sdcard/motion-window.xml'));adb('shell','input','keyevent','4');await sleep(900);
    });
   });
