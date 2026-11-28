@@ -62,6 +62,22 @@ class AppManagementActionsTest {
         assertEquals(listOf("shortcut:new"),picked)
         assertFalse(menu.dialog.isShowing)
     }
+
+    @Test fun duplicateShortcutLabelsWithDifferentIdsDoNotFillMenu() {
+        val list=org.json.JSONArray()
+        fun add(id:String,label:String){list.put(org.json.JSONObject().put("id",id).put("label",label))}
+        add("subscriptions","Subscriptions")
+        add("shorts_current","Shorts")
+        repeat(14){add("shorts_copy_"+it,if(it%2==0)" SHORTS " else "Shorts")}
+        add("search","Search")
+        add("search_copy","Search")
+        add("studio","Creator Studio")
+        val rows=AppManagementActions.quickRows(false,list)
+        assertEquals(listOf("Open app","Pin to Home","Subscriptions","Shorts","Search","Creator Studio"),rows.map{it.label})
+        assertEquals("shortcut:shorts_current",rows[3].key)
+        assertEquals("shorts",AppManagementActions.shortcutLabelKey("  SHORTS  "))
+        assertEquals("new project",AppManagementActions.shortcutLabelKey("New   Project"))
+    }
     @Test fun nativeMenuRetainsThemeGeometryAndLightSurface() {
         for ((theme,radius) in listOf("warm" to 21f,"orbit" to 21f,"minimal" to 14f,"pixel" to 2f,"windows" to 0f,"extreme" to 0f)) {
             val p=AppManagementActions.palette(org.json.JSONObject().put("theme",theme).put("panel","#e4ebe9").put("text","#1d3133").toString())
