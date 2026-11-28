@@ -1,6 +1,5 @@
 package com.balnc.audioddesk
 
-import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
@@ -43,7 +42,7 @@ internal class NativeWidgetEditor(
     private val actions=linkedMapOf<String,TextView>()
     init{
         clipChildren=false;clipToPadding=false;visibility=GONE
-        addView(outline,LayoutParams(-1,-1))
+        addView(outline,FrameLayout.LayoutParams(-1,-1))
         for(edge in listOf("nw","n","ne","w","e","sw","s","se")){
             val handle=object:View(context){
                 private val paint=Paint(Paint.ANTI_ALIAS_FLAG)
@@ -52,14 +51,14 @@ internal class NativeWidgetEditor(
                     paint.color=accent;c.drawCircle(width/2f,height/2f,dp(5).toFloat(),paint)
                 }
             }.apply{isClickable=true;isFocusable=true;contentDescription="Resize "+edge}
-            handles[edge]=handle;addView(handle,LayoutParams(dp(36),dp(36)));bindDrag(handle,edge)
+            handles[edge]=handle;addView(handle,FrameLayout.LayoutParams(dp(36),dp(36)));bindDrag(handle,edge)
         }
-        addView(move,LayoutParams(dp(78),dp(36)));bindDrag(move,"move")
+        addView(move,FrameLayout.LayoutParams(dp(78),dp(36)));bindDrag(move,"move")
         for((key,label)in listOf("remove" to "Remove","reset" to "Reset","cancel" to "Cancel","done" to "Done")){
             val button=TextView(context).apply{text=label;gravity=Gravity.CENTER;textSize=12f;isClickable=true;isFocusable=true;setOnClickListener{action(key,"",0f,0f)}}
             actions[key]=button;toolbar.addView(button,LinearLayout.LayoutParams(dp(61),dp(38)))
         }
-        addView(toolbar,LayoutParams(-2,dp(38)))
+        addView(toolbar,FrameLayout.LayoutParams(-2,dp(38)))
         host.addView(this,FrameLayout.LayoutParams(-1,-1))
     }
     private fun bindDrag(view:View,edge:String){
@@ -93,7 +92,7 @@ internal class NativeWidgetEditor(
         if(host.width<=0||host.height<=0)return
         val w=host.width.toFloat();val h=host.height.toFloat()
         fun place(v:View,x:Float,y:Float,width:Int,height:Int){
-            val p=v.layoutParams as LayoutParams
+            val p=v.layoutParams as FrameLayout.LayoutParams
             val l=(x-width/2f).roundToInt().coerceIn(0,(host.width-width).coerceAtLeast(0))
             val t=(y-height/2f).roundToInt().coerceIn(dp(6),(host.height-height-dp(6)).coerceAtLeast(dp(6)))
             if(p.width!=width||p.height!=height||p.leftMargin!=l||p.topMargin!=t){p.width=width;p.height=height;p.leftMargin=l;p.topMargin=t;v.layoutParams=p}
