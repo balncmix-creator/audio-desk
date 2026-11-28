@@ -11,16 +11,24 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
+import android.os.Looper
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk=[28])
 class NativeAcousticCardsTest {
     @Test fun nativeCardsDisplayControlsAndHideOnLifecycle() {
-        val activity=Robolectric.buildActivity(Activity::class.java).setup().get()
+        val controller=Robolectric.buildActivity(Activity::class.java).setup().visible()
+        val activity=controller.get()
         val web=WebView(activity)
         activity.setContentView(web)
+        shadowOf(Looper.getMainLooper()).idle()
+        val decor=activity.window.decorView
+        decor.measure(View.MeasureSpec.makeMeasureSpec(400,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(800,View.MeasureSpec.EXACTLY))
+        decor.layout(0,0,400,800)
         web.layout(0,0,400,800)
+        assertTrue("WebView must be attached and visible before rendering: shown=${web.isShown}, attached=${web.isAttachedToWindow}",web.isShown)
         val panel=NativeSpectrumPlot(activity,web)
         fun card(y:Int)=JSONObject().put("visible",true).put("x",10).put("y",y)
             .put("w",360).put("h",250).put("top",0).put("bottom",800)
@@ -37,11 +45,13 @@ class NativeAcousticCardsTest {
             return if(v is ViewGroup)(0 until v.childCount).flatMap{labels(v.getChildAt(it))}else emptyList()
         }
         val names=labels(root)
-        assertTrue(names.containsAll(listOf("SPL meter","-36.1","dBFS A","Fast","Reset max","Calibration","Mic spectrum","90 dB","Peak on")))
+        assertTrue("Native visible labels: $names",names.containsAll(listOf("SPL meter","-36.1","dBFS A","Fast","Reset max","Calibration","Mic spectrum","90 dB","Peak on")))
         assertEquals(2,names.count{it=="Start mic"})
         panel.hide()
         assertFalse(labels(root).contains("SPL meter"))
         assertFalse(labels(root).contains("Mic spectrum"))
         panel.close()
+        controller.pause().stop().destroy()
+        shadowOf(Looper.getMainLooper()).idle()
     }
 }
