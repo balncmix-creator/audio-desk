@@ -120,7 +120,15 @@ async function record(name,fn){
     adb('shell','input','keyevent','3');await sleep(1200);
     await poll(()=>adb('shell','dumpsys','activity','activities').split('\n').some(l=>/mResumedActivity|topResumedActivity/.test(l)&&l.includes(pkg)));
    });
-   await step('app-icon-long-press-menu',async()=>{await apps();const sel='#launcherAppsGrid button[data-launch-pkg="'+choices[0].pkg+'"]';await gesture(await target(sel),undefined,850);await sleep(1000);adb('shell','uiautomator','dump','/sdcard/motion-window.xml');fs.writeFileSync(dir+'/long-press.xml',adb('shell','cat','/sdcard/motion-window.xml'));adb('shell','input','keyevent','4')});
+   await step('app-list-long-press',async()=>{await apps();const sel='#launcherAppsGrid button[data-launch-pkg="'+choices[0].pkg+'"]';await gesture(await target(sel),undefined,850);await sleep(1000);adb('shell','input','keyevent','4')});
+   await step('favorite-icon-quick-actions',async()=>{
+    const a=choices[0];
+    await evalJS('(()=>{const a='+JSON.stringify(a)+';if(!launcherPins.includes(a.pkg+"/"+a.activity))setLauncherPin(a.pkg,a.activity)})()');await home();
+    const sel='#launcherFavorites button[data-launch-pkg="'+a.pkg+'"]';
+    if(theme==='orbit'){note('orbit-favorite-touch','not-covered','Radial picker needs a separate gesture path');await evalJS('showAppShortcuts('+JSON.stringify(a.pkg)+','+JSON.stringify(a.activity)+')')}
+    else await gesture(await target(sel),undefined,850);
+    await sleep(1200);adb('shell','uiautomator','dump','/sdcard/motion-window.xml');fs.writeFileSync(dir+'/long-press.xml',adb('shell','cat','/sdcard/motion-window.xml'));adb('shell','input','keyevent','4');await sleep(900);
+   });
   });
   if(['minimal','warm','pixel','windows'].includes(theme))await record('widgets',async()=>{
    await closeMenus();await home();
