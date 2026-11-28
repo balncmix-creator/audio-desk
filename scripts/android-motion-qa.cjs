@@ -142,6 +142,7 @@ async function record(name,fn){
     await evalJS('window.audioDeskRestoreWidget("launcherMusicWidget");document.getElementById("launcherMusicWidget").scrollIntoView({block:"center"})');
     await gesture(await target('#launcherMusicWidget'),undefined,850);
     if(!await evalJS(visible('#widgetLayoutOverlay'))){note('music-long-press','failed','Editor did not open from touch');assert.equal(await evalJS('window.audioDeskBeginWidgetResize("launcherMusicWidget")'),true)}
+    if(theme==='warm'){const angles=await evalJS('Array.from(document.querySelectorAll("#widgetLayoutOverlay .widget-resize-handle")).map(e=>getComputedStyle(e,"::after").transform)');assert.equal(new Set(angles).size,8,'Every Warm Minimal resize handle must indicate its own direction');assert.equal(await evalJS('getComputedStyle(document.getElementById("launcherAlphaIndex")).visibility'),'hidden');}
     const p=await target('#widgetLayoutOverlay .widget-resize-handle[data-edge="se"]');await gesture(p,{x:p.x-24,y:p.y-28},550);
     const m=await target('#widgetLayoutOverlay .layout-move-handle');await gesture(m,{x:m.x,y:m.y+40},600);
     await tap('#widgetLayoutOverlay [data-layout-control="done"]');
