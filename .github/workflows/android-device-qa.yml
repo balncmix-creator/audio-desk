@@ -55,6 +55,7 @@ jobs:
           script: |
             mkdir -p android-qa
             adb install -r app/build/outputs/apk/debug/app-debug.apk
+            node scripts/native-home-smoke.cjs
             node scripts/android-device-qa.cjs
       - name: Upload runtime evidence even on failure
         if: always()
