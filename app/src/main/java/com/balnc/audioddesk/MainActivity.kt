@@ -59,6 +59,7 @@ class MainActivity : Activity() {
     private lateinit var acousticSupport: AcousticMeterSupport
     private lateinit var nativeWidgets: NativeWidgetPanel
     private lateinit var nativeSpectrumPlot: NativeSpectrumPlot
+    private lateinit var nativeMusicWidget: NativeMusicWidget
     private lateinit var radialFiles: RadialFileSupport
     private lateinit var youtubeWidget: YouTubeWidgetPanel
     private val acousticPermissionRequest = 6212
@@ -329,6 +330,10 @@ class MainActivity : Activity() {
 
         setContentView(root)
         nativeSpectrumPlot = NativeSpectrumPlot(this, appWebView)
+        nativeMusicWidget = NativeMusicWidget(this, appWebView,
+            { action -> sendMediaState(mediaWidgetSupport.command(action)) },
+            { position -> sendMediaState(mediaWidgetSupport.seek(position)) },
+            { mediaWidgetSupport.openAccessSettings() })
         youtubeWidget = YouTubeWidgetPanel(this, appWebView)
         // The 8-bit bar is a *native Android View* layered over the wallpaper,
         // not HTML and not an attempt to reskin SystemUI outside this app.
@@ -416,6 +421,7 @@ class MainActivity : Activity() {
 
     private fun sendMediaState(data: JSONObject) {
         runOnUiThread {
+            if (!destroyed && ::nativeMusicWidget.isInitialized) nativeMusicWidget.mediaState(data)
             if (!destroyed && ::appWebView.isInitialized)
                 appWebView.evaluateJavascript(
                     "window.receiveAudioDeskMedia&&window.receiveAudioDeskMedia(" + data.toString() + ")", null
@@ -529,6 +535,15 @@ class MainActivity : Activity() {
             }
         }
 
+        @JavascriptInterface fun renderNativeMusicWidget(payload: String) {
+            if(payload.length>30000)return
+            runOnUiThread {
+                if (!destroyed && ::nativeMusicWidget.isInitialized) {
+                    if (pixelBarSuspended || browserPanel.visibility == View.VISIBLE) nativeMusicWidget.hide()
+                    else nativeMusicWidget.update(payload)
+                }
+            }
+        }
         @JavascriptInterface fun renderNativeAcousticWidgets(payload: String) {
             if(payload.length>50000)return
             runOnUiThread {
@@ -978,6 +993,7 @@ class MainActivity : Activity() {
     }
 
     override fun onPause() {
+        if (::nativeMusicWidget.isInitialized) nativeMusicWidget.hide()
         if (::nativeSpectrumPlot.isInitialized) nativeSpectrumPlot.hide()
         if (::acousticSupport.isInitialized) acousticSupport.stop()
         if (::nativeWidgets.isInitialized) nativeWidgets.pause()
@@ -1104,6 +1120,7 @@ class MainActivity : Activity() {
 
     private fun openInBrowser(url: String) {
         if (!url.startsWith("https://") && !url.startsWith("http://")) return
+        if (::nativeMusicWidget.isInitialized) nativeMusicWidget.hide()
         if (::nativeSpectrumPlot.isInitialized) nativeSpectrumPlot.hide()
         if (::nativeWidgets.isInitialized) nativeWidgets.pause()
         if (::acousticSupport.isInitialized) acousticSupport.stop()
@@ -1164,6 +1181,7 @@ class MainActivity : Activity() {
         if (::agendaSupport.isInitialized) agendaSupport.close()
         if (::acousticSupport.isInitialized) acousticSupport.stop()
         if (::radialFiles.isInitialized) radialFiles.close()
+        if (::nativeMusicWidget.isInitialized) nativeMusicWidget.close()
         if (::nativeSpectrumPlot.isInitialized) nativeSpectrumPlot.close()
         if (::nativeWidgets.isInitialized) nativeWidgets.close()
         if (::youtubeWidget.isInitialized) youtubeWidget.close()
