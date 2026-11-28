@@ -762,3 +762,45 @@ body[data-launcher-theme="warm"] #widgetLayoutOverlay [data-edge="nw"]{--warm-gr
 /* Avoid covering the alphabet rail and the launcher gear with editor controls. */
 body[data-launcher-theme="warm"].widget-layout-editing #launcherAlphaIndex,
 body[data-launcher-theme="warm"].widget-layout-editing #launcherSettingsToggle{visibility:hidden!important}
+
+/* Warm Minimal cohesion: default icon geometry, readable strokes and
+   consistent rhythm. Explicit icon packs and packed user layouts retain their styles. */
+body[data-launcher-theme="warm"] .launcher-settings-fab .warm-settings-symbol{
+ display:grid;place-items:center;width:24px;height:24px;color:var(--ds-text)!important;
+}
+body[data-launcher-theme="warm"] .launcher-settings-fab .warm-settings-symbol svg,
+body[data-launcher-theme="warm"] .theme-action-icon svg{
+ width:22px;height:22px;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;
+}
+body[data-launcher-theme="warm"] .launcher-settings-fab{
+ border-radius:16px!important;box-shadow:none!important;
+ background:var(--ds-panel2)!important;border-color:var(--ds-line)!important;
+}
+body[data-launcher-theme="warm"] #launcherHomeOptions .launcher-options-action{
+ align-items:center;gap:12px;text-align:start;
+}
+body[data-launcher-theme="warm"] .launcher-app .ad-icon-shell:not([data-icon-pack]){
+ box-sizing:border-box;width:40px;height:40px;flex:0 0 40px;
+ border-radius:11px;overflow:hidden;
+}
+body[data-launcher-theme="warm"] .launcher-app .ad-icon-shell:not([data-icon-pack]) .ad-icon-image{
+ padding:3px!important;object-fit:contain;
+}
+body[data-launcher-theme="warm"] .launcher-app .ad-icon-shell:not([data-icon-pack]) .warm-line-icon svg{
+ width:24px;height:24px;stroke-width:1.75;
+}
+body[data-launcher-theme="warm"] #launcherFavorites .launcher-app{
+ gap:12px;
+}
+body[data-launcher-theme="warm"] #launcherRecentQuick .ad-icon-shell:not([data-icon-pack]){
+ box-sizing:border-box;width:40px;height:40px;flex-basis:40px;border-radius:11px;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherHomePage:not([data-packed-layout]) #warmWidgets{
+ gap:10px;
+}
+body[data-home-page="home"][data-launcher-theme="warm"] #launcherHomePage:not([data-packed-layout]) > :is(#launcherMusicWidget,#launcherAgendaWidget,#launcherSplWidget,#launcherMicAnalyzer,#launcherYouTubeWidget):not([data-layout-sized="true"]){
+ margin-block-start:0!important;margin-block-end:10px!important;
+}
+/* News should scroll vertically without competing with a horizontal page swipe.
+   Preserve the horizontally scrollable filter toolbar and pinch zoom. */
+body[data-launcher-theme="warm"][data-home-page="events"] #stories{touch-action:pan-y pinch-zoom}
