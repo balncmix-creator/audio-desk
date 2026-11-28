@@ -1,6 +1,8 @@
 # Audio Desk Launcher
 
-**A one-handed Android Home launcher for people who make sound, inspired by minimalist Niagara-style app access and Nokia N9 swipe navigation, without replacing Audio Desk's original retro design.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
+**An Android launcher for audio professionals, music producers and sound engineers who want to stay connected to the audio industry.**
+
+Audio Desk brings everyday app access, customizable home screens and audio industry news together, with updates on DAWs, plug-ins, music production, sound design, film and TV audio post-production, sample libraries and studio technology.
 
 [**Download Audio Desk Launcher v4.2.2 News Fixes test APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v4.2.2/Audio-Desk-Launcher-v4.2.2.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
