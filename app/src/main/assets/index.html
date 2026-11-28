@@ -458,7 +458,9 @@ const DeskMotion=(()=>{
   cancel(node);
   if(!node||preference.matches||document.body?.dataset.performanceMode==="true"||typeof node.animate!=='function')return Promise.resolve();
   return new Promise(resolve=>{
-   const animation=node.animate(frames,{duration:document.body?.classList.contains('low-power')?Math.round(duration*.65):duration,easing:ease});
+   const warm=document.body?.dataset.launcherTheme==='warm';
+   const adjusted=warm?Math.min(duration,220):duration;
+   const animation=node.animate(frames,{duration:document.body?.classList.contains('low-power')?Math.round(adjusted*.65):adjusted,easing:warm?'cubic-bezier(.2,.8,.2,1)':ease});
    const finish=()=>{if(running.get(node)===animation)running.delete(node);resolve()};
    running.set(node,animation);animation.onfinish=finish;animation.oncancel=finish;
   });
@@ -3021,11 +3023,12 @@ function gesturePanels(){
 }
 function renderLauncherDrag(dx,target){
  const p=Math.min(1,Math.abs(dx)/Math.max(200,window.innerWidth*.8));
+ const warm=launcherTheme==="warm";
  for(const node of gesturePanels()){
   node.style.transition="none";
   node.style.willChange="transform,opacity";
-  node.style.transform="translate3d("+(dx*.08)+"px,0,0) scale("+(1-p*.10)+")";
-  node.style.opacity=String(1-p*.65);
+  node.style.transform="translate3d("+(dx*(warm?.18:.08))+"px,0,0) scale("+(1-p*(warm?.025:.10))+")";
+  node.style.opacity=String(1-p*(warm?.24:.65));
 
  }
  launcherGhost.hidden=false;
@@ -3042,7 +3045,9 @@ document.addEventListener("touchstart",e=>{
  // News→Home works from anywhere on the feed, never only its outer edge.
  const appListRow=launcherPage==="apps"&&!!e.target.closest("#launcherAppsGrid .launcher-app");
   if(e.target.closest("#launcherAlphaIndex,#launcherAgendaWidget,#agendaOverlay,.native-app-widget,input,textarea,select,audio,video,iframe,[contenteditable]"))return;
-  if(e.target.closest(".launcher-app,button,a")&&!appListRow)return;
+  // Warm news cards are tappable links, but must also support horizontal navigation.
+  const warmNewsCard=launcherTheme==="warm"&&launcherPage==="events"&&!!e.target.closest("#stories")&&!e.target.closest("button");
+  if(e.target.closest(".launcher-app,button,a")&&!appListRow&&!warmNewsCard)return;
  launcherGesture={x,y:t.clientY,lastX:x,locked:false,edge};
 },{capture:true,passive:true});
 document.addEventListener("touchmove",e=>{
