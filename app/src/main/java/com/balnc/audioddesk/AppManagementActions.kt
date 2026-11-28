@@ -115,14 +115,22 @@ internal object AppManagementActions {
 
     data class MenuRow(val key:String,val label:String,val glyph:String=key,val destructive:Boolean=false)
     data class Menu(val dialog:Dialog,val update:(List<MenuRow>,String?)->Unit)
+    fun shortcutLabelKey(label:String):String =
+        java.text.Normalizer.normalize(label,java.text.Normalizer.Form.NFKC)
+            .replace(Regex("[\\p{Z}\\s]+")," ").trim().lowercase(java.util.Locale.ROOT)
     fun quickRows(pinned:Boolean,shortcuts:org.json.JSONArray=org.json.JSONArray()):List<MenuRow> {
         val out=mutableListOf(MenuRow("open","Open app"),MenuRow("pin",if(pinned)"Unpin from Home" else "Pin to Home",if(pinned)"unpin" else "pin"))
-        val seen=mutableSetOf<String>()
-        for(i in 0 until minOf(shortcuts.length(),10)){
+        val seenIds=mutableSetOf<String>()
+        val seenLabels=mutableSetOf<String>()
+        for(i in 0 until shortcuts.length()){
             val item=shortcuts.optJSONObject(i)?:continue
             val id=item.optString("id");val label=item.optString("label").trim().take(90)
-            if(id.length !in 1..200||label.isEmpty()||!seen.add(id))continue
+            val normalized=shortcutLabelKey(label)
+            if(id.length !in 1..200||normalized.isEmpty()||id in seenIds||normalized in seenLabels)continue
+            seenIds.add(id)
+            seenLabels.add(normalized)
             out.add(MenuRow("shortcut:"+id,label,"shortcut"))
+            if(out.size>=12)break
         }
         return out
     }
