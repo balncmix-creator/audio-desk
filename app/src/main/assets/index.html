@@ -3055,6 +3055,8 @@ document.addEventListener("touchmove",e=>{
   const idx=launcherPages.indexOf(launcherPage),target=idx-Math.sign(dx);
   if(target<0||target>=launcherPages.length){launcherGesture=null;return}
   g.locked=true;g.target=launcherPages[target];
+  // Cancel a pending app long press before stopping the touch stream.
+  window.audioDeskCancelAppHold?.();
   // A drag starting on an Apps-list row must never launch that app on release.
   if(launcherPage==="apps")blockAppClickUntil=Date.now()+850;
   cancelHomeHold();upStart=null;iconSwipe=null;
@@ -3068,6 +3070,7 @@ document.addEventListener("touchmove",e=>{
 document.addEventListener("touchend",e=>{
  const g=launcherGesture;if(!g)return;
  if(!g.locked){launcherGesture=null;return}
+ window.audioDeskCancelAppHold?.();
  e.stopImmediatePropagation();
  const dx=(e.changedTouches[0]?.clientX??g.lastX)-g.x;
  const next=g.target,passed=Math.abs(dx)>Math.max(75,window.innerWidth*.19);
