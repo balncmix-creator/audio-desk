@@ -271,6 +271,9 @@ manager.onclick=e=>{
 const manageTargets="#launcherAppsGrid .launcher-app,#launcherFavorites .launcher-app,#launcherRecentQuick .launcher-app,#launcherLetterApps .launcher-app,#launcherRecentGrid .launcher-recent-card";
 function appTarget(target){const node=target?.closest?.(manageTargets);return node?.matches(".launcher-recent-card")?node.querySelector(".launcher-resume"):node}
 function stopHeld(){if(appHeld){clearTimeout(appHeld.timer);appHeld=null}}
+// The page swipe capture handler stops propagation before this module sees movement.
+// Explicitly cancel pending app holds as soon as a horizontal swipe is recognized.
+window.audioDeskCancelAppHold=stopHeld;
 function openHeld(pkg,activity){
  clickBlockedUntil=Date.now()+1000;blockAppClickUntil=clickBlockedUntil;
  managedHold=true;releaseBlocked=true;
@@ -291,7 +294,7 @@ document.addEventListener("selectionchange",()=>{
 });
 syncSelectionPolicy();
 window.audioDeskNativeHold=(x,y)=>{
- if(!launcherSurface()||releaseBlocked||!Number.isFinite(x)||!Number.isFinite(y))return;
+ if(!launcherSurface()||releaseBlocked||launcherGesture?.locked||Date.now()<blockAppClickUntil||!Number.isFinite(x)||!Number.isFinite(y))return;
  const target=document.elementFromPoint(x*innerWidth,y*innerWidth);
  if(editableTarget(target))return;
  const a=appTarget(target);
