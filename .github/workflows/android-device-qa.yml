@@ -51,7 +51,7 @@ jobs:
           profile: pixel_2
           disable-animations: true
           emulator-boot-timeout: 1800
-          emulator-options: ${{ steps.acceleration.outputs.flags }} -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -memory 2048 -cores 2
+          emulator-options: ${{ steps.acceleration.outputs.flags }} -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -memory 3072 -cores 2
           script: |
             mkdir -p android-qa
             adb install -r app/build/outputs/apk/debug/app-debug.apk
@@ -154,6 +154,9 @@ jobs:
             mkdir -p motion-qa
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             node scripts/android-motion-qa.cjs
+      - name: Install video validation tools
+        if: always()
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Validate recording streams
         if: always()
         run: |
