@@ -45,11 +45,13 @@ assert.ok(['minimal','warm','pixel','windows','extreme','orbit'].includes(theme)
 let c;
 const steps=[];
 function note(name,status,detail){steps.push({name,status,detail,time:new Date().toISOString()});console.log(status,name,detail||'');}
-async function step(name,fn){try{await fn();note(name,'passed')}catch(e){note(name,'failed',String(e.stack||e))}}
+async function step(name,fn){try{await fn();note(name,'passed')}catch(e){note(name,'failed',String(e.stack||e));try{if(!foreground()){adb('shell','input','keyevent','3');await sleep(900);if(c)c.close();c=await connect();}await closeMenus();await home();}catch(recovery){note(name+'-recovery','failed',String(recovery));}}}
+function foreground(){return adb('shell','dumpsys','activity','activities').split('\n').some(l=>/mResumedActivity|topResumedActivity/.test(l)&&l.includes(pkg));}
 async function evalJS(x){return c.evaluate(x)}
 const visible=s=>'(()=>{const e=document.querySelector('+JSON.stringify(s)+');return !!e&&!e.closest("[hidden]")&&e.getClientRects().length>0&&getComputedStyle(e).visibility!=="hidden"})()';
 async function target(s){const p=await evalJS('(()=>{const e=document.querySelector('+JSON.stringify(s)+');if(!e||!e.getClientRects().length||e.closest("[hidden]"))return null;e.scrollIntoView({block:"nearest"});const r=e.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()');assert.ok(p,'Missing target '+s);return p}
 async function gesture(a,b=a,duration=90){
+ assert.ok(foreground(),'Launcher is not the foreground activity; refusing to tap external UI');
  // Use the actual Android input service; CDP touch dispatch stalls after
  // an external activity takes and returns focus.
  const dpr=await evalJS('devicePixelRatio');
@@ -91,7 +93,7 @@ async function record(name,fn){
    await step('home-to-apps-swipe',async()=>{await home();await swipe(.8,.46,.2,.46);assert.equal(await evalJS('launcherPage'),'apps')});
    await step('app-list-scroll',async()=>{await apps();await swipe(.45,.77,.45,.25);await swipe(.45,.25,.45,.77)});
    await step('search-keyboard',async()=>{await tap('#launcherAppSearch');adb('shell','input','text','Settings');await sleep(850);assert.match(await evalJS('document.getElementById("launcherAppSearch").value'),/Settings/i);adb('shell','input','keyevent','4');await evalJS('document.getElementById("launcherAppSearch").value="";document.getElementById("launcherAppSearch").dispatchEvent(new Event("input",{bubbles:true}));document.getElementById("launcherAppSearch").blur();window.AudioDesk.hideSearchKeyboard()')});
-   await step('apps-to-home-swipe',async()=>{await apps();await swipe(.2,.46,.8,.46);assert.equal(await evalJS('launcherPage'),'home')});
+   await step('apps-to-home-swipe',async()=>{await apps();const p=await target('#launcherAppsGrid .launcher-app');const w=await evalJS('innerWidth');await gesture({x:Math.min(p.x,w*.30),y:p.y},{x:w*.83,y:p.y},550);await sleep(700);assert.equal(await evalJS('launcherPage'),'home');assert.ok(foreground(),'Swipe must not open Android App Info');const xmlPath='/sdcard/warm-swipe-window.xml';adb('shell','uiautomator','dump',xmlPath);const xml=adb('shell','cat',xmlPath);assert.doesNotMatch(xml,/text="(?:App info|Clear cache|Force stop)"/i,'Swipe must not open app management dialog');});
    await step('home-to-news-swipe',async()=>{await home();await swipe(.2,.46,.8,.46);assert.equal(await evalJS('launcherPage'),'events');await swipe(.45,.75,.45,.3)});
    await step('news-to-home-swipe',async()=>{await evalJS('setLauncherPage("events",true)');await swipe(.8,.46,.2,.46);assert.equal(await evalJS('launcherPage'),'home')});
    await step('home-up-swipe',async()=>{await home();await swipe(.48,.72,.48,.22);if(theme==='windows')assert.equal(await evalJS('launcherPage'),'home');else if(theme!=='orbit')assert.equal(await evalJS('launcherPage'),'apps');adb('shell','input','keyevent','4')});
