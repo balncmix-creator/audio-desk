@@ -7,7 +7,47 @@ on:
 permissions:
   contents: write
 jobs:
+  manual-test-apk:
+    if: ${{ (github.ref == 'refs/heads/feature/audio-desk-native-migration-20261127' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'feature/audio-desk-native-migration-20261127') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Compile and sign debug APK
+        run: |
+          test -s app/audio-desk-debug.keystore
+          gradle :app:assembleDebug --stacktrace
+      - name: Verify APK signature and publish user-testing prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK="AudioDesk.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$APK"
+          test -s "$APK"
+          SIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
+          test -n "$SIGNER"
+          "$SIGNER" verify "$APK"
+          sha256sum "$APK" > AudioDesk.apk.sha256
+          TAG="test-build-${GITHUB_RUN_NUMBER}"
+          NOTES="User-testing debug APK; compilation and signature checked only. Automated UI and regression tests are not required for this development prerelease. Native migration and wallpaper integration may be incomplete. Source: ${GITHUB_SHA}."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" AudioDesk.apk.sha256 --clobber
+          else
+            gh release create "$TAG" "$APK" AudioDesk.apk.sha256 --target "$GITHUB_SHA" --title "Audio Desk — Manual test build #${GITHUB_RUN_NUMBER}" --notes "$NOTES" --prerelease --latest=false
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Audio-Desk-Manual-Test-APK
+          path: AudioDesk.apk
+          if-no-files-found: error
   build:
+    if: ${{ !((github.ref == 'refs/heads/feature/audio-desk-native-migration-20261127' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'feature/audio-desk-native-migration-20261127')) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
