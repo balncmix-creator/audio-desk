@@ -182,7 +182,7 @@ class NativeDeskActivity:Activity(){
         currentPage="home";page.removeAllViews();page.setBackgroundColor(android.graphics.Color.TRANSPARENT)
         root.setBackgroundColor(theme.background);header()
         grid=WidgetGrid()
-        val scroll=ScrollView(this).apply{isFillViewport=false;isVerticalScrollBarEnabled=false;addView(grid,ScrollView.LayoutParams(-1,-2))}
+        val scroll=ScrollView(this).apply{isFillViewport=false;isVerticalScrollBarEnabled=false;addView(grid,FrameLayout.LayoutParams(-1,-2))}
         page.addView(scroll,LinearLayout.LayoutParams(-1,0,1f))
         page.add(row(control("News"){showNews()},control("Search"){showApps(true)},control("Apps"){showApps(false)}),44)
         buildTiles();updateClock();updateMedia(mediaState);updateAgenda();renderFavorites()
