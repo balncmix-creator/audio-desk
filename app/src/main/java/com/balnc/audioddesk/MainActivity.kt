@@ -58,6 +58,8 @@ class MainActivity : Activity() {
     private lateinit var agendaSupport: AgendaSupport
     private lateinit var acousticSupport: AcousticMeterSupport
     private lateinit var nativeWidgets: NativeWidgetPanel
+    private lateinit var nativeSpectrumPlot: NativeSpectrumPlot
+    private lateinit var nativeMusicWidget: NativeMusicWidget
     private lateinit var radialFiles: RadialFileSupport
     private lateinit var youtubeWidget: YouTubeWidgetPanel
     private val acousticPermissionRequest = 6212
@@ -98,6 +100,11 @@ class MainActivity : Activity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Device QA uses Chrome DevTools only in debuggable builds. Never
+        // expose WebView inspection in the Play/release edition.
+        WebView.setWebContentsDebuggingEnabled(
+            applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0
+        )
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = Color.TRANSPARENT
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -322,6 +329,11 @@ class MainActivity : Activity() {
         ))
 
         setContentView(root)
+        nativeSpectrumPlot = NativeSpectrumPlot(this, appWebView)
+        nativeMusicWidget = NativeMusicWidget(this, appWebView,
+            { action -> sendMediaState(mediaWidgetSupport.command(action)) },
+            { position -> sendMediaState(mediaWidgetSupport.seek(position)) },
+            { mediaWidgetSupport.openAccessSettings() })
         youtubeWidget = YouTubeWidgetPanel(this, appWebView)
         // The 8-bit bar is a *native Android View* layered over the wallpaper,
         // not HTML and not an attempt to reskin SystemUI outside this app.
@@ -373,8 +385,11 @@ class MainActivity : Activity() {
     private fun applyWebInsets() {
         if (destroyed || !::appWebView.isInitialized) return
         appWebView.evaluateJavascript(
-            "document.documentElement.style.setProperty('--status-top','" + statusInsetDp + "px');" +
-            "document.documentElement.style.setProperty('--system-bottom','" + bottomInsetDp + "px')", null
+            // Insets can arrive before the initial WebView document exists.
+            // onPageFinished reapplies the latest values once the root is ready.
+            "(function(){var root=document.documentElement;if(!root)return;" +
+            "root.style.setProperty('--status-top','" + statusInsetDp + "px');" +
+            "root.style.setProperty('--system-bottom','" + bottomInsetDp + "px');})()", null
         )
     }
 
@@ -406,6 +421,7 @@ class MainActivity : Activity() {
 
     private fun sendMediaState(data: JSONObject) {
         runOnUiThread {
+            if (!destroyed && ::nativeMusicWidget.isInitialized) nativeMusicWidget.mediaState(data)
             if (!destroyed && ::appWebView.isInitialized)
                 appWebView.evaluateJavascript(
                     "window.receiveAudioDeskMedia&&window.receiveAudioDeskMedia(" + data.toString() + ")", null
@@ -519,6 +535,33 @@ class MainActivity : Activity() {
             }
         }
 
+        @JavascriptInterface fun renderNativeMusicWidget(payload: String) {
+            if(payload.length>30000)return
+            runOnUiThread {
+                if (!destroyed && ::nativeMusicWidget.isInitialized) {
+                    if (pixelBarSuspended || browserPanel.visibility == View.VISIBLE) nativeMusicWidget.hide()
+                    else nativeMusicWidget.update(payload)
+                }
+            }
+        }
+        @JavascriptInterface fun renderNativeAcousticWidgets(payload: String) {
+            if(payload.length>50000)return
+            runOnUiThread {
+                if (!destroyed && ::nativeSpectrumPlot.isInitialized) {
+                    if (pixelBarSuspended || browserPanel.visibility == View.VISIBLE) nativeSpectrumPlot.hide()
+                    else nativeSpectrumPlot.updateFull(payload)
+                }
+            }
+        }
+        @JavascriptInterface fun renderNativeMicSpectrum(payload: String) {
+            if (payload.length > 40000) return
+            runOnUiThread {
+                if (!destroyed && ::nativeSpectrumPlot.isInitialized) {
+                    if (pixelBarSuspended || browserPanel.visibility == View.VISIBLE) nativeSpectrumPlot.hide()
+                    else nativeSpectrumPlot.update(payload)
+                }
+            }
+        }
         @JavascriptInterface fun enableAcousticMic() {
             runOnUiThread {
                 if (destroyed || pixelBarSuspended) return@runOnUiThread
@@ -950,6 +993,8 @@ class MainActivity : Activity() {
     }
 
     override fun onPause() {
+        if (::nativeMusicWidget.isInitialized) nativeMusicWidget.hide()
+        if (::nativeSpectrumPlot.isInitialized) nativeSpectrumPlot.hide()
         if (::acousticSupport.isInitialized) acousticSupport.stop()
         if (::nativeWidgets.isInitialized) nativeWidgets.pause()
         if (::youtubeWidget.isInitialized) youtubeWidget.hide()
@@ -1075,6 +1120,8 @@ class MainActivity : Activity() {
 
     private fun openInBrowser(url: String) {
         if (!url.startsWith("https://") && !url.startsWith("http://")) return
+        if (::nativeMusicWidget.isInitialized) nativeMusicWidget.hide()
+        if (::nativeSpectrumPlot.isInitialized) nativeSpectrumPlot.hide()
         if (::nativeWidgets.isInitialized) nativeWidgets.pause()
         if (::acousticSupport.isInitialized) acousticSupport.stop()
         if (::spectrumSupport.isInitialized) spectrumSupport.stop()
@@ -1134,6 +1181,8 @@ class MainActivity : Activity() {
         if (::agendaSupport.isInitialized) agendaSupport.close()
         if (::acousticSupport.isInitialized) acousticSupport.stop()
         if (::radialFiles.isInitialized) radialFiles.close()
+        if (::nativeMusicWidget.isInitialized) nativeMusicWidget.close()
+        if (::nativeSpectrumPlot.isInitialized) nativeSpectrumPlot.close()
         if (::nativeWidgets.isInitialized) nativeWidgets.close()
         if (::youtubeWidget.isInitialized) youtubeWidget.close()
         stopSpectrumProjection()

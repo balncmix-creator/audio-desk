@@ -1,0 +1,178 @@
+name: Android installed APK QA
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - feature/audio-desk-native-migration-20261127
+permissions:
+  contents: read
+jobs:
+  device-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [30, 35]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Compile the exact APK under test
+        run: gradle :app:assembleDebug --stacktrace
+      - name: Detect and enable KVM on hosted Linux runner
+        id: acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          sudo udevadm settle
+          if test -r /dev/kvm && test -w /dev/kvm; then
+            echo 'flags=-accel on' >> "$GITHUB_OUTPUT"
+          else
+            echo 'KVM unavailable; falling back to software emulation'
+            echo 'flags=-accel off' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Boot Android, install APK, exercise UI
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-boot-timeout: 1800
+          emulator-options: ${{ steps.acceleration.outputs.flags }} -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -memory 3072 -cores 2
+          script: |
+            mkdir -p android-qa
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            node scripts/native-home-smoke.cjs
+            node scripts/android-device-qa.cjs
+      - name: Upload runtime evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-device-QA-api-${{ matrix.api }}
+          path: |
+            android-qa/
+          if-no-files-found: warn
+          retention-days: 30
+  jvm-unit-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Cache Robolectric runtime framework artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-runtime-${{ runner.os }}-${{ hashFiles('app/build.gradle.kts') }}
+      - name: Run mandatory JVM unit tests
+        run: |
+          # Retry transient dependency fetch failures; never ignore test failures.
+          for attempt in 1 2 3; do
+            set +e
+            gradle :app:testDebugUnitTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/android-qa-build.log"
+            status=${PIPESTATUS[0]}
+            set -e
+            if [ "$status" -eq 0 ]; then exit 0; fi
+            if ! grep -q 'MavenArtifactFetcher.java\|Could not resolve\|Could not GET' "$RUNNER_TEMP/android-qa-build.log"; then exit "$status"; fi
+            if [ "$attempt" -eq 3 ]; then exit "$status"; fi
+            echo "::warning::Dependency fetch failed; retrying build (attempt $attempt of 3)"
+            sleep $((attempt * 15))
+          done
+      - name: Upload unit test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: JVM-unit-test-report
+          path: |
+            app/build/reports/tests/testDebugUnitTest/
+            app/build/test-results/testDebugUnitTest/
+          if-no-files-found: warn
+          retention-days: 30
+  motion-record:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        theme: [warm]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Compile installed debug APK and check motion script syntax
+        run: |
+          node --check scripts/android-motion-qa.cjs
+          gradle :app:assembleDebug --stacktrace
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          sudo udevadm settle
+          test -r /dev/kvm && test -w /dev/kvm
+      - name: Record actual Android UI with animations enabled
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          MOTION_THEME: ${{ matrix.theme }}
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: false
+          emulator-boot-timeout: 1800
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -memory 3072 -cores 2
+          script: |
+            mkdir -p motion-qa
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            node scripts/android-motion-qa.cjs
+      - name: Install video validation tools
+        if: always()
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Validate recording streams
+        if: always()
+        run: |
+          shopt -s nullglob
+          videos=(motion-qa/*.mp4)
+          test "${#videos[@]}" -gt 0
+          for video in "${videos[@]}"; do
+            ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height,avg_frame_rate,duration -of json "$video" > "$video.json"
+            ffmpeg -v error -xerror -i "$video" -map 0:v:0 -f null -
+          done
+      - name: Upload videos, interaction reports and frame statistics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Motion-QA-${{ matrix.theme }}-API35
+          path: motion-qa/
+          if-no-files-found: error
+          retention-days: 30
