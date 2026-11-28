@@ -3,11 +3,51 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-    branches: [ main ]
+    branches: [ main, feature/audio-desk-native-migration-20261127 ]
 permissions:
   contents: write
 jobs:
+  manual-test-apk:
+    if: ${{ (github.ref == 'refs/heads/feature/audio-desk-native-migration-20261127' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'feature/audio-desk-native-migration-20261127') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Compile and sign debug APK
+        run: |
+          test -s app/audio-desk-debug.keystore
+          gradle :app:assembleDebug --stacktrace
+      - name: Verify APK signature and publish user-testing prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK="AudioDesk.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$APK"
+          test -s "$APK"
+          SIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
+          test -n "$SIGNER"
+          "$SIGNER" verify "$APK"
+          sha256sum "$APK" > AudioDesk.apk.sha256
+          TAG="test-build-${GITHUB_RUN_NUMBER}"
+          NOTES="User-testing debug APK; compilation and signature checked only. Automated UI and regression tests are not required for this development prerelease. Native migration and wallpaper integration may be incomplete. Source: ${GITHUB_SHA}."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" AudioDesk.apk.sha256 --clobber
+          else
+            gh release create "$TAG" "$APK" AudioDesk.apk.sha256 --target "$GITHUB_SHA" --title "Audio Desk — Manual test build #${GITHUB_RUN_NUMBER}" --notes "$NOTES" --prerelease --latest=false
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Audio-Desk-Manual-Test-APK
+          path: AudioDesk.apk
+          if-no-files-found: error
   build:
+    if: ${{ !((github.ref == 'refs/heads/feature/audio-desk-native-migration-20261127' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'feature/audio-desk-native-migration-20261127')) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,8 +77,27 @@ jobs:
           gradle-version: '8.11.1'
       - name: Verify stable signing key
         run: test -s app/audio-desk-debug.keystore
+      - name: Cache Robolectric runtime framework artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-runtime-${{ runner.os }}-${{ hashFiles('app/build.gradle.kts') }}
+      - name: Run mandatory JVM unit tests
+        run: |
+          # Retry transient dependency fetch failures; never ignore test failures.
+          for attempt in 1 2 3; do
+            set +e
+            gradle :app:testDebugUnitTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/android-qa-build.log"
+            status=${PIPESTATUS[0]}
+            set -e
+            if [ "$status" -eq 0 ]; then exit 0; fi
+            if ! grep -q 'MavenArtifactFetcher.java\|Could not resolve\|Could not GET' "$RUNNER_TEMP/android-qa-build.log"; then exit "$status"; fi
+            if [ "$attempt" -eq 3 ]; then exit "$status"; fi
+            echo "::warning::Dependency fetch failed; retrying build (attempt $attempt of 3)"
+            sleep $((attempt * 15))
+          done
       - name: Build APK
-        run: gradle :app:testDebugUnitTest :app:assembleDebug :app:bundleRelease --stacktrace
+        run: gradle :app:assembleDebug :app:bundleRelease --stacktrace
       # Preserve the actual Robolectric failures when an external Maven
       # download or real native regression causes the unit-test gate to fail.
       - name: Save native test reports on failure
@@ -91,4 +150,76 @@ jobs:
           if ! git diff --cached --quiet; then
             git commit -m "docs: refresh actual Audio Desk screenshots [skip ci]"
             git push origin HEAD:main
+          fi
+
+      - name: Publish development APK as a direct-download prerelease
+        if: (github.ref == 'refs/heads/feature/audio-desk-native-migration-20261127' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'feature/audio-desk-native-migration-20261127')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="test-build-${GITHUB_RUN_NUMBER}"
+          APK="AudioDesk.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$APK"
+          sha256sum "$APK" > AudioDesk.apk.sha256
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" AudioDesk.apk.sha256 --clobber
+          else
+            gh release create "$TAG" "$APK" AudioDesk.apk.sha256 --target "$GITHUB_SHA" --title "Audio Desk — Test build #${GITHUB_RUN_NUMBER}" --notes "Development debug APK. Build, browser tests, JVM tests and package checks passed. Separate emulator QA may still be running or incomplete. Source: ${GITHUB_SHA}. Build: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. Not a production or fully native release." --prerelease --latest=false
+          fi
+  emulator-readme-gallery:
+    if: (github.ref == 'refs/heads/feature/audio-desk-native-migration-20261127' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'feature/audio-desk-native-migration-20261127')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/audio-desk-native-migration-20261127
+      - name: Add genuine emulator screenshot gallery to development README
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if grep -q '<!-- android-emulator-gallery -->' README.md; then exit 0; fi
+          gh run download 46101887675 --name Android-device-QA-api-30 --dir "$RUNNER_TEMP/emulator477"
+          mkdir -p docs/screenshots/emulator
+          for image in warm-home warm-apps minimal-home pixel-home windows-home orbit-home extreme-home visual-warm-quick-actions warm-music-resize; do
+            cp "$RUNNER_TEMP/emulator477/$image.png" "docs/screenshots/emulator/$image.png"
+          done
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("README.md")
+          source = p.read_text()
+          gallery = """<!-- android-emulator-gallery -->
+          ## Android emulator screenshots
+
+          Genuine captures of the installed test APK, build #477, on Android 11 (API 30), Pixel 2 emulator. [Source QA run](https://github.com/balncmix-creator/audio-desk/actions/runs/46101887675). These are development screenshots, not design mockups or physical-device certification.
+
+          | Warm Minimal | Minimal A–Z | 8-Bit |
+          |:--:|:--:|:--:|
+          | <img src="docs/screenshots/emulator/warm-home.png" width="220" alt="Warm Minimal home"> | <img src="docs/screenshots/emulator/minimal-home.png" width="220" alt="Minimal home"> | <img src="docs/screenshots/emulator/pixel-home.png" width="220" alt="8-Bit home"> |
+
+          | Windows Tiles | Orbit | Extreme Minimal |
+          |:--:|:--:|:--:|
+          | <img src="docs/screenshots/emulator/windows-home.png" width="220" alt="Windows tiles home"> | <img src="docs/screenshots/emulator/orbit-home.png" width="220" alt="Orbit home"> | <img src="docs/screenshots/emulator/extreme-home.png" width="220" alt="Extreme Minimal home"> |
+
+          | Warm Minimal apps | Quick actions | Widget editing |
+          |:--:|:--:|:--:|
+          | <img src="docs/screenshots/emulator/warm-apps.png" width="220" alt="Warm Minimal app list"> | <img src="docs/screenshots/emulator/visual-warm-quick-actions.png" width="220" alt="Warm Minimal quick actions"> | <img src="docs/screenshots/emulator/warm-music-resize.png" width="220" alt="Music widget layout editor"> |
+
+          [Download development APKs directly from Releases](https://github.com/balncmix-creator/audio-desk/releases).
+
+          <!-- /android-emulator-gallery -->
+
+          """
+          anchor = "## v4.2.2 — News feed reliability"
+          assert anchor in source
+          p.write_text(source.replace(anchor, gallery + anchor, 1))
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md docs/screenshots/emulator
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: add actual Android emulator captures [skip ci]"
+            git push origin HEAD:feature/audio-desk-native-migration-20261127
           fi

@@ -1,10 +1,33 @@
 # Audio Desk Launcher
 
-**A one-handed Android Home launcher for people who make sound, inspired by minimalist Niagara-style app access and Nokia N9 swipe navigation, without replacing Audio Desk's original retro design.** Follow what is happening in film and TV audio post, REAPER, sound design, DAWs and audio plug-ins, sample libraries, studio technology and more.
+**An Android launcher for audio professionals, music producers and sound engineers who want to stay connected to the audio industry.**
+
+Audio Desk brings everyday app access, customizable home screens and audio industry news together, with updates on DAWs, plug-ins, music production, sound design, film and TV audio post-production, sample libraries and studio technology.
 
 [**Download Audio Desk Launcher v4.2.2 News Fixes test APK**](https://github.com/balncmix-creator/audio-desk/releases/download/v4.2.2/Audio-Desk-Launcher-v4.2.2.apk) · [Browse releases](https://github.com/balncmix-creator/audio-desk/releases) · [Report an issue](https://github.com/balncmix-creator/audio-desk/issues)
 
 > **Android test release:** The direct APK uses a stable **debug signing key**, not a private production key or Play Store signing. Install only if you trust this repository and its published builds.
+
+<!-- android-emulator-gallery -->
+## Android emulator screenshots
+
+Genuine captures of the installed test APK, build #477, on Android 11 (API 30), Pixel 2 emulator. [Source QA run](https://github.com/balncmix-creator/audio-desk/actions/runs/46101887675). These are development screenshots, not design mockups or physical-device certification.
+
+| Warm Minimal | Minimal A–Z | 8-Bit |
+|:--:|:--:|:--:|
+| <img src="docs/screenshots/emulator/warm-home.png" width="220" alt="Warm Minimal home"> | <img src="docs/screenshots/emulator/minimal-home.png" width="220" alt="Minimal home"> | <img src="docs/screenshots/emulator/pixel-home.png" width="220" alt="8-Bit home"> |
+
+| Windows Tiles | Orbit | Extreme Minimal |
+|:--:|:--:|:--:|
+| <img src="docs/screenshots/emulator/windows-home.png" width="220" alt="Windows tiles home"> | <img src="docs/screenshots/emulator/orbit-home.png" width="220" alt="Orbit home"> | <img src="docs/screenshots/emulator/extreme-home.png" width="220" alt="Extreme Minimal home"> |
+
+| Warm Minimal apps | Quick actions | Widget editing |
+|:--:|:--:|:--:|
+| <img src="docs/screenshots/emulator/warm-apps.png" width="220" alt="Warm Minimal app list"> | <img src="docs/screenshots/emulator/visual-warm-quick-actions.png" width="220" alt="Warm Minimal quick actions"> | <img src="docs/screenshots/emulator/warm-music-resize.png" width="220" alt="Music widget layout editor"> |
+
+[Download development APKs directly from Releases](https://github.com/balncmix-creator/audio-desk/releases).
+
+<!-- /android-emulator-gallery -->
 
 ## v4.2.2 — News feed reliability
 

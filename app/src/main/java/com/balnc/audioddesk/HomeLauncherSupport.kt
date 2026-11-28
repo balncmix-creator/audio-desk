@@ -197,10 +197,23 @@ internal class HomeLauncherSupport(private val activity: Activity) {
                                     LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED
                             )
                         val shortcuts = service.getShortcuts(query, Process.myUserHandle()).orEmpty()
-                        for (item in shortcuts.take(12)) {
-                            if (!item.isEnabled) continue
-                            result.put(JSONObject().put("id", item.id)
-                                .put("label", item.shortLabel?.toString().orEmpty().take(90)))
+                        // Prefer current app-published actions to stale pinned-only copies.
+                        // Apps can expose multiple shortcut IDs with the same visible label.
+                        val ordered = shortcuts.filter { it.isEnabled }
+                            .sortedWith(compareBy<android.content.pm.ShortcutInfo> {
+                                if (it.isDynamic || it.isDeclaredInManifest) 0 else 1
+                            }.thenBy { it.rank })
+                        val seenIds = mutableSetOf<String>()
+                        val seenLabels = mutableSetOf<String>()
+                        for (item in ordered) {
+                            val label = item.shortLabel?.toString().orEmpty().trim().take(90)
+                            val key = AppManagementActions.shortcutLabelKey(label)
+                            if (item.id.length !in 1..200 || key.isEmpty() ||
+                                item.id in seenIds || key in seenLabels) continue
+                            seenIds.add(item.id)
+                            seenLabels.add(key)
+                            result.put(JSONObject().put("id", item.id).put("label", label))
+                            if (result.length() >= 10) break
                         }
                     }
                 } catch (_: Exception) { /* Permission or work-profile restrictions */ }
