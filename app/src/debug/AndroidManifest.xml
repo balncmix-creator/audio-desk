@@ -2,4 +2,16 @@
     <!-- Sideloaded testing edition ONLY. The Play/release edition keeps
          Android's scoped folder picker and does not request broad access. -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <!-- Migration preview: separate launcher entry, never a HOME handler. -->
+    <application>
+        <activity android:name=".NativeCatalogActivity"
+            android:label="Audio Desk Native Preview"
+            android:exported="true"
+            android:theme="@android:style/Theme.Material.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
 </manifest>
