@@ -52,6 +52,11 @@ class NativeDeskActivity:Activity(){
     private lateinit var background:ImageView
     private lateinit var page:LinearLayout
     private lateinit var grid:WidgetGrid
+    private lateinit var editor:NativeWidgetEditor
+    private var editingId:String?=null
+    private var editorOriginal=emptyList<DeskTile>()
+    private var dragBase=emptyList<DeskTile>()
+    private var dragTile:DeskTile?=null
     private var tiles=NativeDeskLayout.defaults
     private var all=emptyList<NativeCatalogApp>()
     private var recent=emptyList<NativeCatalogApp>()
@@ -138,8 +143,8 @@ class NativeDeskActivity:Activity(){
             val ime=i.getInsets(WindowInsetsCompat.Type.ime())
             v.setPadding(b.left+dp(12),b.top+dp(8),b.right+dp(12),maxOf(b.bottom,ime.bottom)+dp(8));i
         }
-        setContentView(root);showHome();loadWallpaper(wallpaper.selection())
-        if(android.os.Build.VERSION.SDK_INT>=33)onBackInvokedDispatcher.registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT){if(currentPage!="home"){hideKeyboard();showHome()}else finish()}
+        setContentView(root);editor=NativeWidgetEditor(root,::nativeEditAction);showHome();loadWallpaper(wallpaper.selection())
+        if(android.os.Build.VERSION.SDK_INT>=33)onBackInvokedDispatcher.registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT){if(editingId!=null){finishEdit(false)}else if(currentPage!="home"){hideKeyboard();showHome()}else finish()}
         ViewCompat.requestApplyInsets(page)
     }
     private fun restoreLayout(){
@@ -183,10 +188,11 @@ class NativeDeskActivity:Activity(){
         })
     }
     private fun showHome(){
+        if(editingId!=null){editingId=null;editor.hide()}
         currentPage="home";page.removeAllViews();page.setBackgroundColor(android.graphics.Color.TRANSPARENT)
         root.setBackgroundColor(theme.background);header()
         grid=WidgetGrid()
-        val scroll=ScrollView(this).apply{isFillViewport=false;isVerticalScrollBarEnabled=false;addView(grid,FrameLayout.LayoutParams(-1,-2))}
+        val scroll=ScrollView(this).apply{isFillViewport=false;isVerticalScrollBarEnabled=false;addView(grid,FrameLayout.LayoutParams(-1,-2));setOnScrollChangeListener{_,_,_,_,_->positionEditor()}}
         page.addView(scroll,LinearLayout.LayoutParams(-1,0,1f))
         page.add(row(control("News"){showNews()},control("Search"){showApps(true)},control("Apps"){showApps(false)}),44)
         buildTiles();updateClock();updateMedia(mediaState);updateAgenda();renderFavorites()
@@ -197,6 +203,7 @@ class NativeDeskActivity:Activity(){
         private val cells=LinkedHashMap<String,View>()
         fun bind(t:DeskTile,v:View){cells[t.id]=v;addView(v)}
         fun clear(){cells.clear();removeAllViews()}
+        fun tileView(id:String)=cells[id]
         override fun onMeasure(ws:Int,hs:Int){
             val width=MeasureSpec.getSize(ws);val cell=width/NativeDeskLayout.columns;val unit=dp(58);val gap=dp(7)
             for(t in tiles)cells[t.id]?.measure(MeasureSpec.makeMeasureSpec((cell*t.w-gap).coerceAtLeast(1),MeasureSpec.EXACTLY),MeasureSpec.makeMeasureSpec(unit*t.h-gap,MeasureSpec.EXACTLY))
@@ -205,6 +212,7 @@ class NativeDeskActivity:Activity(){
         override fun onLayout(changed:Boolean,l:Int,t:Int,r:Int,b:Int){
             val cell=(r-l)/NativeDeskLayout.columns;val unit=dp(58)
             for(tile in tiles)cells[tile.id]?.let{v->val x=tile.x*cell;val y=tile.y*unit;v.layout(x,y,x+v.measuredWidth,y+v.measuredHeight)}
+            if(editingId!=null)post{positionEditor()}
         }
     }
     private fun buildTiles(){
@@ -226,18 +234,47 @@ class NativeDeskActivity:Activity(){
         }
     }
     private fun editTile(id:String){
-        val old=tiles.firstOrNull{it.id==id}?:return
-        val editor=column().apply{setPadding(dp(16),dp(8),dp(16),dp(12))}
-        fun picker(label:String,min:Int,max:Int,value:Int):NumberPicker{
-            editor.add(text(label),24)
-            return NumberPicker(this).apply{minValue=min;maxValue=max;this.value=value.coerceIn(min,max);wrapSelectorWheel=false;editor.add(this,80)}
+        if(tiles.none{it.id==id}||currentPage!="home")return
+        if(editingId==id)return
+        if(editingId!=null)finishEdit(true)
+        editingId=id;editorOriginal=tiles.toList();dragBase=emptyList();dragTile=null
+        positionEditor()
+    }
+    private fun positionEditor(){
+        val id=editingId?:return
+        if(!::grid.isInitialized||!::editor.isInitialized||currentPage!="home")return
+        val v=grid.tileView(id)?:return
+        val loc=IntArray(2);val host=IntArray(2);v.getLocationInWindow(loc);root.getLocationInWindow(host)
+        val x=(loc[0]-host[0]).toFloat();val y=(loc[1]-host[1]).toFloat()
+        if(v.width<=0||v.height<=0)return
+        editor.show(android.graphics.RectF(x,y,x+v.width,y+v.height),theme.ink,theme.panel,theme.accent,canRemove=false)
+    }
+    private fun nativeEditAction(action:String,edge:String,dx:Float,dy:Float){
+        val id=editingId?:return
+        when(action){
+            "begin"->{dragBase=tiles.toList();dragTile=tiles.firstOrNull{it.id==id}}
+            "drag"->{
+                val start=dragTile?:return
+                val cell=(grid.width.toFloat()/NativeDeskLayout.columns).coerceAtLeast(1f)
+                val target=NativeDeskLayout.edit(start,edge,Math.round(dx/cell),Math.round(dy/dp(58)))
+                val proposed=NativeDeskLayout.place(dragBase,target)
+                if(proposed!=tiles){tiles=proposed;grid.requestLayout()}
+            }
+            "end"->{dragTile=null;dragBase=emptyList();refreshEditedTiles()}
+            "reset"->{val original=NativeDeskLayout.defaults.firstOrNull{it.id==id}?:return;tiles=NativeDeskLayout.place(tiles,original);refreshEditedTiles()}
+            "done"->finishEdit(true)
+            "cancel"->finishEdit(false)
         }
-        val x=picker("Column",0,NativeDeskLayout.columns-2,old.x);val y=picker("Row",0,NativeDeskLayout.maxRows-2,old.y)
-        val w=picker("Width",2,4,old.w);val h=picker("Height",NativeDeskLayout.minimumHeight(id),8,old.h)
-        AlertDialog.Builder(this).setTitle("Move and resize widget").setView(ScrollView(this).apply{addView(editor)})
-            .setNegativeButton("Cancel",null).setPositiveButton("Apply"){_,_->
-                tiles=NativeDeskLayout.place(tiles,DeskTile(id,x.value,y.value,w.value,h.value));saveLayout();showHome()
-            }.show()
+    }
+    private fun refreshEditedTiles(){
+        buildTiles();updateClock();updateMedia(mediaState);updateAgenda();renderFavorites();syncAudio()
+        grid.requestLayout();grid.post{positionEditor()}
+    }
+    private fun finishEdit(commit:Boolean){
+        if(editingId==null)return
+        if(commit)saveLayout()else tiles=editorOriginal
+        editingId=null;dragTile=null;dragBase=emptyList();editor.hide()
+        refreshEditedTiles()
     }
     private fun mediaIcon(kind:String,action:()->Unit)=NativeMusicControl(this,kind).apply{
         setPalette(theme.ink,theme.accent,theme.panel)
@@ -436,7 +473,7 @@ class NativeDeskActivity:Activity(){
             }.show()
         }}
     }
-    private fun leaveHome(){handler.removeCallbacks(ticker);acoustics.stop();spectrum.stop()}
+    private fun leaveHome(){if(editingId!=null){saveLayout();editingId=null;editor.hide()};handler.removeCallbacks(ticker);acoustics.stop();spectrum.stop()}
     private fun showApps(keyboard:Boolean){
         leaveHome();currentPage="apps";page.removeAllViews();page.setBackgroundColor(theme.background)
         page.add(control("‹ Home"){hideKeyboard();showHome()},40)
@@ -473,6 +510,7 @@ class NativeDeskActivity:Activity(){
     }
     private fun hideKeyboard(){(getSystemService(INPUT_METHOD_SERVICE)as InputMethodManager).hideSoftInputFromWindow(page.windowToken,0)}
     override fun dispatchTouchEvent(e:MotionEvent):Boolean{
+        if(editingId!=null)return super.dispatchTouchEvent(e)
         when(e.actionMasked){
             MotionEvent.ACTION_DOWN->{
                 touchX=e.x;touchY=e.y
@@ -549,6 +587,6 @@ class NativeDeskActivity:Activity(){
     }
     override fun onResume(){super.onResume();foreground=true;refreshApps();agenda.refresh();if(currentPage=="home"){handler.removeCallbacks(ticker);handler.post(ticker);syncAudio()}}
     override fun onPause(){foreground=false;leaveHome();super.onPause()}
-    override fun onBackPressed(){if(currentPage!="home"){hideKeyboard();showHome()}else super.onBackPressed()}
-    override fun onDestroy(){closed=true;generation++;handler.removeCallbacksAndMessages(null);acoustics.stop();spectrum.close();agenda.close();apps.close();wallpaper.close();systemWallpaper.close();background.setImageDrawable(null);wallpaperBitmap?.recycle();super.onDestroy()}
+    override fun onBackPressed(){if(editingId!=null){finishEdit(false);return};if(currentPage!="home"){hideKeyboard();showHome()}else super.onBackPressed()}
+    override fun onDestroy(){if(::editor.isInitialized)editor.close();closed=true;generation++;handler.removeCallbacksAndMessages(null);acoustics.stop();spectrum.close();agenda.close();apps.close();wallpaper.close();systemWallpaper.close();background.setImageDrawable(null);wallpaperBitmap?.recycle();super.onDestroy()}
 }
