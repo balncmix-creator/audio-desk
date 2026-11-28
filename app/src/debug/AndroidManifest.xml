@@ -4,8 +4,8 @@
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
     <!-- Migration preview: separate launcher entry, never a HOME handler. -->
     <application>
-        <activity android:name=".NativeCatalogActivity"
-            android:label="Audio Desk Native Preview"
+        <activity android:name=".NativeDeskActivity"
+            android:label="Audio Desk Native Home"
             android:exported="true"
             android:theme="@android:style/Theme.Material.NoActionBar">
             <intent-filter>
