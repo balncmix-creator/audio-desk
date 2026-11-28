@@ -149,17 +149,18 @@ internal class NativeMusicWidget(
         place(slot,FrameLayout.LayoutParams(right-left,lower-upper).apply{leftMargin=wp[0]-rp[0]+left;topMargin=wp[1]-rp[1]+upper})
         place(body,FrameLayout.LayoutParams(fw,fh).apply{leftMargin=fx-left;topMargin=fy-upper})
         layoutFor(j.optString("layout","full"))
-        val key=listOf("panel","ink","muted","accent","control","radius").joinToString("|"){j.optString(it)}
+        val key=listOf("panel","ink","muted","accent","control","controlInk","radius","surfaceInWeb").joinToString("|"){j.optString(it)}
         val ink=color(j,"ink",Color.WHITE);val accent=color(j,"accent",ink);val muted=color(j,"muted",ink)
         if(key!=palette){
             palette=key
             val radius=(j.optDouble("radius",14.0).coerceIn(0.0,40.0)*scale).toFloat()
             fun bg(c:Int,r:Float)=GradientDrawable().apply{setColor(c);cornerRadius=r}
-            body.background=bg(color(j,"panel",Color.DKGRAY),radius);body.clipToOutline=true
+            val panel=color(j,"panel",Color.DKGRAY)
+            body.background=bg(if(j.optBoolean("surfaceInWeb"))Color.TRANSPARENT else panel,radius);body.clipToOutline=true
             for(v in labels)v.setTextColor(ink)
             artist.setTextColor(muted);status.setTextColor(muted);time.setTextColor(muted)
-            for(v in buttons)v.background=bg(color(j,"control",Color.TRANSPARENT),dp(8).toFloat())
-            for(v in listOf(previous,play,next))v.setPalette(ink,accent,color(j,"panel",Color.DKGRAY))
+            for(v in buttons){v.background=bg(color(j,"control",Color.TRANSPARENT),dp(8).toFloat());v.setTextColor(color(j,"controlInk",ink))}
+            for(v in listOf(previous,play,next))v.setPalette(ink,accent,panel)
             seekBar.progressTintList=ColorStateList.valueOf(accent);seekBar.thumbTintList=ColorStateList.valueOf(accent)
         }
         enable.visibility=if(j.optBoolean("enable"))View.VISIBLE else View.GONE
