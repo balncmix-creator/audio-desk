@@ -94,6 +94,7 @@ class NativeDeskActivity:Activity(){
     private var touchX=0f
     private var touchY=0f
     private var gestureAllowed=false
+    private var fullMusic=true
     private val ticker=object:Runnable{
         override fun run(){
             if(!foreground||currentPage!="home")return
@@ -134,6 +135,7 @@ class NativeDeskActivity:Activity(){
             v.setPadding(b.left+dp(12),b.top+dp(8),b.right+dp(12),maxOf(b.bottom,ime.bottom)+dp(8));i
         }
         setContentView(root);showHome();loadWallpaper(wallpaper.selection())
+        if(android.os.Build.VERSION.SDK_INT>=33)onBackInvokedDispatcher.registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT){if(currentPage!="home"){hideKeyboard();showHome()}else finish()}
         ViewCompat.requestApplyInsets(page)
     }
     private fun restoreLayout(){
@@ -209,7 +211,7 @@ class NativeDeskActivity:Activity(){
                     clock=text("",33f);date=text("",12f)
                     addView(clock,LinearLayout.LayoutParams(-1,0,1f));add(date!!,19)
                 }
-                "music"->musicCard()
+                "music"->musicCard(t.h>=4)
                 "agenda"->agendaCard()
                 "favorites"->card("RECENT APPS","favorites").apply{favorites=column();addView(favorites,LinearLayout.LayoutParams(-1,0,1f))}
                 "spl"->splCard()
@@ -226,18 +228,20 @@ class NativeDeskActivity:Activity(){
             editor.add(text(label),24)
             return NumberPicker(this).apply{minValue=min;maxValue=max;this.value=value.coerceIn(min,max);wrapSelectorWheel=false;editor.add(this,80)}
         }
-        val x=picker("Column",0,NativeDeskLayout.columns-2,old.x);val y=picker("Row",0,40,old.y)
-        val w=picker("Width",2,4,old.w);val h=picker("Height",2,8,old.h)
+        val x=picker("Column",0,NativeDeskLayout.columns-2,old.x);val y=picker("Row",0,NativeDeskLayout.maxRows-2,old.y)
+        val w=picker("Width",2,4,old.w);val h=picker("Height",NativeDeskLayout.minimumHeight(id),8,old.h)
         AlertDialog.Builder(this).setTitle("Move and resize widget").setView(ScrollView(this).apply{addView(editor)})
             .setNegativeButton("Cancel",null).setPositiveButton("Apply"){_,_->
                 tiles=NativeDeskLayout.place(tiles,DeskTile(id,x.value,y.value,w.value,h.value));saveLayout();showHome()
             }.show()
     }
-    private fun musicCard()=card("MUSIC","music").apply{
+    private fun musicCard(full:Boolean)=card("MUSIC","music").apply{
+        fullMusic=full
         musicTitle=text("Music controls",15f);musicArtist=text("Connect a compatible player",11f).apply{setTextColor(theme.muted)}
         add(musicTitle!!,20);add(musicArtist!!,16)
-        musicGraph=Plot(false);addView(musicGraph,LinearLayout.LayoutParams(-1,0,1f))
-        spectrumStatus=text("Spectrum off",10f);add(spectrumStatus!!,15)
+        musicGraph=if(full)Plot(false)else null
+        musicGraph?.let{addView(it,LinearLayout.LayoutParams(-1,0,1f))}
+        spectrumStatus=text("Spectrum off",10f);if(full)add(spectrumStatus!!,15)
         seek=SeekBar(this@NativeDeskActivity).apply{
             max=1000;contentDescription="Playback position";progressTintList=android.content.res.ColorStateList.valueOf(theme.accent)
             setOnSeekBarChangeListener(object:SeekBar.OnSeekBarChangeListener{
@@ -245,18 +249,19 @@ class NativeDeskActivity:Activity(){
                 override fun onProgressChanged(v:SeekBar,p:Int,user:Boolean){}
                 override fun onStopTrackingTouch(v:SeekBar){seekDragging=false;if(v.isEnabled)updateMedia(media.seek(mediaState.optLong("durationMs")*v.progress/1000))}
             })
-        };add(seek!!,23)
+        };if(full)add(seek!!,23)
         previous=control("‹‹"){updateMedia(media.command("previous"))}
         play=control("▶"){updateMedia(media.command("toggle"))}
         next=control("››"){updateMedia(media.command("next"))}
         connect=control("Connect"){media.openAccessSettings()}
-        add(row(previous!!,play!!,next!!,connect!!,control("FFT"){fftOn=!fftOn;requestAudioIfNeeded();syncAudio()}),36)
+        if(full)add(row(previous!!,play!!,next!!,connect!!,control("FFT"){fftOn=!fftOn;requestAudioIfNeeded();syncAudio()}),36)
+        else add(row(previous!!,play!!,next!!,connect!!),36)
     }
     private fun updateMedia(j:JSONObject){
         mediaState=j;val available=j.optBoolean("available");val enabled=j.optBoolean("enabled")
         musicTitle?.text=if(available)j.optString("title").ifBlank{"Music controls"}else "Music controls"
-        musicArtist?.text=if(available)j.optString("artist").ifBlank{j.optString("app")}else if(enabled)"No active player"else"Connect a compatible player"
-        play?.text=if(j.optBoolean("playing"))"Ⅱ"else"▶"
+        musicArtist?.text=if(available)j.optString("artist").ifBlank{j.optString("app")}else if(enabled)"No active player" else "Connect a compatible player"
+        play?.text=if(j.optBoolean("playing"))"Ⅱ" else "▶"
         for((v,key) in listOf(previous to "canPrevious",play to "canToggle",next to "canNext")){v?.isEnabled=available&&j.optBoolean(key);v?.alpha=if(v?.isEnabled==true)1f else .35f}
         connect?.visibility=if(enabled)View.GONE else View.VISIBLE
         val dur=j.optLong("durationMs");val pos=j.optLong("positionMs",-1)
@@ -270,18 +275,18 @@ class NativeDeskActivity:Activity(){
     }
     private fun updateAgenda(){
         val e=agendaEvents.optJSONObject(eventIndex)
-        agendaText?.text=e?.optString("title")?:if(agenda.granted())"No upcoming events"else"Calendar access optional"
-        agendaDate?.text=if(e==null)""else DateFormat.getDateTimeInstance(DateFormat.MEDIUM,DateFormat.SHORT).format(Date(e.optLong("begin")))
+        agendaText?.text=e?.optString("title")?:if(agenda.granted())"No upcoming events" else "Calendar access optional"
+        agendaDate?.text=if(e==null)"" else  DateFormat.getDateTimeInstance(DateFormat.MEDIUM,DateFormat.SHORT).format(Date(e.optLong("begin")))
     }
     private fun splCard()=card("SPL METER","spl").apply{
         splText=text("— dBFS",26f);splMax=text("Max —",11f)
         addView(splText,LinearLayout.LayoutParams(-1,0,1f))
         splBar=ProgressBar(this@NativeDeskActivity,null,android.R.attr.progressBarStyleHorizontal).apply{max=100;progressTintList=android.content.res.ColorStateList.valueOf(theme.accent)}
         add(splBar!!,9);add(splMax!!,20)
-        val start=control(if(splOn)"Stop mic"else"Start mic"){}
-        start.setOnClickListener{splOn=!splOn;start.text=if(splOn)"Stop mic"else"Start mic";requestAudioIfNeeded();syncAudio()}
+        val start=control(if(splOn)"Stop mic" else "Start mic"){}
+        start.setOnClickListener{splOn=!splOn;start.text=if(splOn)"Stop mic" else "Start mic";requestAudioIfNeeded();syncAudio()}
         val w=control(weight){};w.setOnClickListener{weight=listOf("A","C","Z")[(listOf("A","C","Z").indexOf(weight)+1)%3];w.text=weight;maximum=Double.NEGATIVE_INFINITY;prefs.edit().putString("weight",weight).apply()}
-        val r=control(response){};r.setOnClickListener{response=if(response=="fast")"slow"else"fast";r.text=response;maximum=Double.NEGATIVE_INFINITY;prefs.edit().putString("response",response).apply()}
+        val r=control(response){};r.setOnClickListener{response=if(response=="fast")"slow" else "fast";r.text=response;maximum=Double.NEGATIVE_INFINITY;prefs.edit().putString("response",response).apply()}
         add(row(start,w,r),36)
         add(row(control("Calibrate"){calibrate()},control("Reset max"){maximum=Double.NEGATIVE_INFINITY;splMax?.text="Max —"}),36)
     }
@@ -294,10 +299,10 @@ class NativeDeskActivity:Activity(){
     private fun micCard()=card("MIC SPECTRUM","mic").apply{
         micGraph=Plot(true);addView(micGraph,LinearLayout.LayoutParams(-1,0,1f))
         micStatus=text("Microphone off",10f);add(micStatus!!,17)
-        val start=control(if(micOn)"Stop mic"else"Start mic"){}
-        start.setOnClickListener{micOn=!micOn;start.text=if(micOn)"Stop mic"else"Start mic";requestAudioIfNeeded();syncAudio()}
+        val start=control(if(micOn)"Stop mic" else "Start mic"){}
+        start.setOnClickListener{micOn=!micOn;start.text=if(micOn)"Stop mic" else "Start mic";requestAudioIfNeeded();syncAudio()}
         val range=control("$micRange dB"){};range.setOnClickListener{micRange=when(micRange){90->120;120->60;else->90};range.text="$micRange dB";prefs.edit().putInt("range",micRange).apply();micGraph?.invalidate()}
-        val peak=control(if(peakHold)"Peak on"else"Peak hold"){};peak.setOnClickListener{peakHold=!peakHold;peak.text=if(peakHold)"Peak on"else"Peak hold";micGraph?.clearPeak()}
+        val peak=control(if(peakHold)"Peak on" else "Peak hold"){};peak.setOnClickListener{peakHold=!peakHold;peak.text=if(peakHold)"Peak on" else "Peak hold";micGraph?.clearPeak()}
         add(row(start,range,peak,control("Clear"){micGraph?.clearPeak()}),36)
     }
     private fun updateAcoustic(j:JSONObject){
@@ -305,7 +310,7 @@ class NativeDeskActivity:Activity(){
         val value=j.optJSONObject("levels")?.optJSONObject(weight)?.optDouble(response,Double.NaN)?:Double.NaN
         if(splOn&&value.isFinite()){
             val n=value+(calibration?:0.0);maximum=maxOf(maximum,n)
-            splText?.text=String.format(Locale.US,"%.1f %s",n,if(calibration!=null)"dB$weight SPL est."else"dBFS $weight")
+            splText?.text=String.format(Locale.US,"%.1f %s",n,if(calibration!=null)"dB$weight SPL est." else "dBFS $weight")
             splMax?.text=String.format(Locale.US,"Max %.1f",maximum)
             splBar?.progress=(if(calibration!=null)(n-25)/105*100 else value+100).toInt().coerceIn(0,100)
         }
@@ -397,7 +402,13 @@ class NativeDeskActivity:Activity(){
     private fun hideKeyboard(){(getSystemService(INPUT_METHOD_SERVICE)as InputMethodManager).hideSoftInputFromWindow(page.windowToken,0)}
     override fun dispatchTouchEvent(e:MotionEvent):Boolean{
         when(e.actionMasked){
-            MotionEvent.ACTION_DOWN->{touchX=e.x;touchY=e.y;gestureAllowed=true}
+            MotionEvent.ACTION_DOWN->{
+                touchX=e.x;touchY=e.y
+                val bounds=android.graphics.Rect()
+                val slider=seek
+                gestureAllowed=!(currentPage=="home"&&slider!=null&&slider.isShown&&slider.getGlobalVisibleRect(bounds)&&bounds.contains(e.rawX.toInt(),e.rawY.toInt())) &&
+                    !(currentPage=="apps"&&currentFocus is EditText)
+            }
             MotionEvent.ACTION_POINTER_DOWN->gestureAllowed=false
             MotionEvent.ACTION_UP->if(gestureAllowed){
                 val dx=e.x-touchX;val dy=e.y-touchY
@@ -420,7 +431,7 @@ class NativeDeskActivity:Activity(){
         if(!foreground||currentPage!="home")return
         val allowed=checkSelfPermission(Manifest.permission.RECORD_AUDIO)==PackageManager.PERMISSION_GRANTED
         acoustics.setActive(allowed&&splOn,allowed&&micOn)
-        if(allowed&&fftOn)spectrum.start()else{spectrum.stop();musicGraph?.clear()}
+        if(allowed&&fftOn&&fullMusic)spectrum.start()else{spectrum.stop();musicGraph?.clear()}
         if(!micOn){micGraph?.clear();micStatus?.text="Microphone off"}
         if(!splOn){splText?.text="— dBFS";splBar?.progress=0}
     }
@@ -428,11 +439,11 @@ class NativeDeskActivity:Activity(){
         val options=arrayOf("Warm Minimal","Studio Graphite","Choose bundled wallpaper","Choose your photo","Reset widget layout","Existing launcher")
         AlertDialog.Builder(this).setTitle("Native Home settings").setItems(options){_,i->
             when(i){
-                0,1->{prefs.edit().putString("theme",if(i==0)"warm"else"graphite").apply();refreshTheme();showHome()}
+                0,1->{prefs.edit().putString("theme",if(i==0)"warm" else "graphite").apply();refreshTheme();showHome()}
                 2->{val files=wallpaper.bundled;val choices=listOf("No wallpaper")+files
                     AlertDialog.Builder(this).setTitle("Bundled wallpapers").setItems(choices.map{it.removeSuffix(".webp").replace('-',' ')}.toTypedArray()){_,p->
-                        val value=if(p==0)""else choices[p];wallpaper.select(value);loadWallpaper(value)
-                        if(p>0)AlertDialog.Builder(this).setTitle("Apply to Android too?").setItems(arrayOf("Launcher only","System Home","System Home + Lock")){_,target->if(target>0)systemWallpaper.applyBundled(value.removeSuffix(".webp"),50,target==2,1){_,ok,msg->runOnUiThread{Toast.makeText(this,if(ok)"Wallpaper applied"else msg,Toast.LENGTH_SHORT).show()}}}.show()
+                        val value=if(p==0)"" else  choices[p];wallpaper.select(value);loadWallpaper(value)
+                        if(p>0)AlertDialog.Builder(this).setTitle("Apply to Android too?").setItems(arrayOf("Launcher only","System Home","System Home + Lock")){_,target->if(target>0)systemWallpaper.applyBundled(value.removeSuffix(".webp"),50,target==2,1){_,ok,msg->runOnUiThread{Toast.makeText(this,if(ok)"Wallpaper applied" else  msg,Toast.LENGTH_SHORT).show()}}}.show()
                     }.show()}
                 3->{startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply{type="image/*";addCategory(Intent.CATEGORY_OPENABLE);addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)},73)}
                 4->{tiles=NativeDeskLayout.defaults;saveLayout();showHome()}
