@@ -58,6 +58,7 @@ class MainActivity : Activity() {
     private lateinit var agendaSupport: AgendaSupport
     private lateinit var acousticSupport: AcousticMeterSupport
     private lateinit var nativeWidgets: NativeWidgetPanel
+    private lateinit var nativeSpectrumPlot: NativeSpectrumPlot
     private lateinit var radialFiles: RadialFileSupport
     private lateinit var youtubeWidget: YouTubeWidgetPanel
     private val acousticPermissionRequest = 6212
@@ -327,6 +328,7 @@ class MainActivity : Activity() {
         ))
 
         setContentView(root)
+        nativeSpectrumPlot = NativeSpectrumPlot(this, appWebView)
         youtubeWidget = YouTubeWidgetPanel(this, appWebView)
         // The 8-bit bar is a *native Android View* layered over the wallpaper,
         // not HTML and not an attempt to reskin SystemUI outside this app.
@@ -527,6 +529,15 @@ class MainActivity : Activity() {
             }
         }
 
+        @JavascriptInterface fun renderNativeMicSpectrum(payload: String) {
+            if (payload.length > 40000) return
+            runOnUiThread {
+                if (!destroyed && ::nativeSpectrumPlot.isInitialized) {
+                    if (pixelBarSuspended || browserPanel.visibility == View.VISIBLE) nativeSpectrumPlot.hide()
+                    else nativeSpectrumPlot.update(payload)
+                }
+            }
+        }
         @JavascriptInterface fun enableAcousticMic() {
             runOnUiThread {
                 if (destroyed || pixelBarSuspended) return@runOnUiThread
@@ -958,6 +969,7 @@ class MainActivity : Activity() {
     }
 
     override fun onPause() {
+        if (::nativeSpectrumPlot.isInitialized) nativeSpectrumPlot.hide()
         if (::acousticSupport.isInitialized) acousticSupport.stop()
         if (::nativeWidgets.isInitialized) nativeWidgets.pause()
         if (::youtubeWidget.isInitialized) youtubeWidget.hide()
@@ -1083,6 +1095,7 @@ class MainActivity : Activity() {
 
     private fun openInBrowser(url: String) {
         if (!url.startsWith("https://") && !url.startsWith("http://")) return
+        if (::nativeSpectrumPlot.isInitialized) nativeSpectrumPlot.hide()
         if (::nativeWidgets.isInitialized) nativeWidgets.pause()
         if (::acousticSupport.isInitialized) acousticSupport.stop()
         if (::spectrumSupport.isInitialized) spectrumSupport.stop()
@@ -1142,6 +1155,7 @@ class MainActivity : Activity() {
         if (::agendaSupport.isInitialized) agendaSupport.close()
         if (::acousticSupport.isInitialized) acousticSupport.stop()
         if (::radialFiles.isInitialized) radialFiles.close()
+        if (::nativeSpectrumPlot.isInitialized) nativeSpectrumPlot.close()
         if (::nativeWidgets.isInitialized) nativeWidgets.close()
         if (::youtubeWidget.isInitialized) youtubeWidget.close()
         stopSpectrumProjection()
