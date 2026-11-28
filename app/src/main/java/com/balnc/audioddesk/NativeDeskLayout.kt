@@ -27,6 +27,17 @@ internal object NativeDeskLayout {
         }
         return out.sortedWith(compareBy({it.y},{it.x},{it.id}))
     }
+    /** Resize from the selected edge, keeping the opposite edge fixed. */
+    fun edit(start:DeskTile,edge:String,dx:Int,dy:Int):DeskTile {
+        if(edge=="move")return normalize(start.copy(x=start.x+dx,y=start.y+dy))
+        var l=start.x;var r=start.x+start.w;var t=start.y;var b=start.y+start.h
+        val minH=minimumHeight(start.id)
+        if('w' in edge)l=(l+dx).coerceIn(maxOf(0,r-columns),r-2)
+        if('e' in edge)r=(r+dx).coerceIn(l+2,columns)
+        if('n' in edge)t=(t+dy).coerceIn(maxOf(0,b-8),b-minH)
+        if('s' in edge)b=(b+dy).coerceIn(t+minH,minOf(maxRows,t+8))
+        return DeskTile(start.id,l,t,r-l,b-t)
+    }
     fun restore(items:List<DeskTile>):List<DeskTile>{
         var out=emptyList<DeskTile>()
         for(t in items.filter{it.id in defaults.map{d->d.id}}.distinctBy{it.id}.take(defaults.size)){
