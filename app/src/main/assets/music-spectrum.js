@@ -266,8 +266,12 @@ if(nativeMusic)document.head.append(nativeMusicStyle);
 const paletteCanvas=document.createElement("canvas");
 paletteCanvas.width=paletteCanvas.height=1;
 const paletteContext=paletteCanvas.getContext("2d",{willReadFrequently:true});
+const nativeMusicColorCache=new Map();
 function nativeMusicColor(value,fallback,opaque=false){
- if(!paletteContext||!value||!CSS.supports("color",value.trim()))return fallback;
+ if(!paletteContext||!value)return fallback;
+ const key=JSON.stringify([value,fallback,opaque]);
+ if(nativeMusicColorCache.has(key))return nativeMusicColorCache.get(key);
+ if(!CSS.supports("color",value.trim()))return fallback;
  try{
   paletteContext.clearRect(0,0,1,1);
   paletteContext.fillStyle=value.trim();
@@ -275,7 +279,10 @@ function nativeMusicColor(value,fallback,opaque=false){
   const [r,g,b,a]=paletteContext.getImageData(0,0,1,1).data;
   if(!a&&opaque)return fallback;
   const h=n=>n.toString(16).padStart(2,"0");
-  return "#"+(opaque?"":h(a))+h(r)+h(g)+h(b);
+  const result="#"+(opaque?"":h(a))+h(r)+h(g)+h(b);
+  if(nativeMusicColorCache.size>=128)nativeMusicColorCache.clear();
+  nativeMusicColorCache.set(key,result);
+  return result;
  }catch{return fallback}
 }
 function syncNativeMusic(){
