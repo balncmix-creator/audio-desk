@@ -80,7 +80,7 @@ function updateNativePlot(){
  const editing=el("widgetLayoutOverlay");
  const modal=(typeof hasLauncherOverlay==="function"&&hasLauncherOverlay())||
   [...document.querySelectorAll('[role="dialog"],[aria-modal="true"],.customize-overlay')].some(n=>!n.hidden&&n.getClientRects().length&&getComputedStyle(n).visibility!=="hidden"&&getComputedStyle(n).display!=="none");
- const blocked=modal||document.body.classList.contains("widget-dragging")||(editing&&!editing.hidden);
+ const blocked=modal||(!window.audioDeskNativeEditing&&(document.body.classList.contains("widget-dragging")||(editing&&!editing.hidden)));
  const rootStyle=getComputedStyle(document.documentElement);
  const top=Math.max(0,parseFloat(rootStyle.getPropertyValue("--status-top"))||0);
  const bottom=innerHeight-Math.max(0,parseFloat(rootStyle.getPropertyValue("--system-bottom"))||0);
